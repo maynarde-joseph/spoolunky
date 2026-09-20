@@ -169,14 +169,62 @@ three or more closed anchors make a *net*.
 | **Trapdoor** | 3+ anchors | 5 | A camouflaged hatch over a hole; prey walks over it and drops into whatever you built underneath. |
 | **Web Sack** | anchored point | 4 | Storage. Park a wrapped kill in it to eat later — keeps biomass fresh, hides it from scavengers. |
 
-### Designing traps, not picking them
+### How much control the player gets
 
-The intended depth is **combining** the above rather than unlocking a bigger
-number. A tripline at a doorway that pings you, feeding into a funnel lure that
-steers the rat down the wall, into a pressure snare strung over the drain — that
-chain is the game's version of a build. Later tiers add trigger links so the
-chain can fire *itself*: a tripline can be wired to release a snare's tension,
-so the trap arms and fires without you in the room.
+**Decided, and it is a three-layer split:**
+
+1. **Shape — complete freedom.** You choose every anchor: where the web hangs,
+   how big it is, what angle it sits at, what gap it spans. This is where the
+   skill is, because it is really the skill of reading a room.
+2. **Weave — preset.** The pattern decides how the inside is filled and how it
+   behaves. Patterns are *techniques*, not blueprints.
+3. **Combination — where "designing a trap" actually lives.** See below.
+
+Thread-by-thread control over the inside of a web is deliberately **not** on the
+table. It is a CAD problem rather than a game verb, it collapses into "more
+threads is always better", and it destroys the thing both the player and the
+prey AI need most: being able to glance at a web and know what it does.
+
+The exception is single strands — triplines, draglines, bridges. One line *is*
+legible, so those stay fully manual. The rule of thumb: **manual at the thread
+level for lines, pattern-driven for areas.**
+
+### Trigger links
+
+A web can be **wired** to another web. When the first one goes off, the signal
+runs down the line and the second one reacts. This is what turns a pile of webs
+into a machine, and it is what makes traps work while you are somewhere else.
+
+* A **snare** that gets a signal *whips out*, dragging in prey within about
+  three times its own radius. That reach is the whole point: left alone, a
+  snare only catches what blunders into it, so wiring one up lets you catch
+  something that was never going to touch your silk.
+* **Anything else** that gets a signal **tenses**: it pulls taut and holds
+  roughly twice as well for a few seconds. So a tripline at the doorway can
+  tighten the orb web across the vent a moment before the moth reaches it.
+* Signals **chain**, so A sets off B sets off C, with a depth limit so a pair
+  wired into a loop cannot ring forever.
+* Firing spends a snare's tension whether or not it caught anything. Wiring a
+  line badly wastes the arming, which is what makes placement a craft.
+
+Signal lines are drawn as cold dashed threads, deliberately unlike structural
+silk, so a player can read their own machine at a glance — and they flash when
+a signal travels down them.
+
+So a build looks like: tripline across the vent → wired to a snare over the
+drain → funnel lure at the far end to steer things in. That chain is the game's
+version of a loadout.
+
+### Next for trap design
+**Saved designs.** Let the player name a web they have tuned and re-place it in
+one click — the pattern plus its wiring and settings, not the exact anchors. The
+catalogue stops being only what we shipped and becomes partly theirs. Cheap to
+build, because patterns are already plain resources: a player's design is the
+same data written to `user://`.
+
+After that, **tuning dials** — two or three per web (tension, tackiness,
+spoke-vs-sheet bias) that trade off against each other rather than only going
+up.
 
 ### Web physics rules
 * **Anchors must be on real surfaces**, and a strand cannot exceed your
@@ -284,6 +332,7 @@ is: each new zone opens with you as the smallest thing in it.
 | **Mouse Wheel / Z / C** | Cycle web pattern |
 | **E** | Interact — wrap prey, then drain it; re-arm a sprung snare |
 | **X** | Demolish the web you are looking at (50% silk back) |
+| **G** | Wire one web to another — press on each end |
 | **H** | Toggle help |
 | **R** | Free-fly (debug, from the character template) |
 | **T** | Release mouse · **Esc** Quit |
@@ -308,8 +357,10 @@ rolls with the body; that is settled, see section 7.
 A purpose-built tier-1/2 room at spider scale, real prey lanes, the vent exit,
 the first "you are too big for this" moment.
 
-**Milestone 4 — Trap chains**
-Trigger links between webs, tension silk, repair, web sacks, saving/loading
+**Milestone 4 — Trap chains** *(started)*
+Done: trigger links — wire any web to any other, snares strike at range when
+signalled, everything else tenses, signals chain.
+Left: saved designs, tuning dials, tension silk, repair, web sacks, and saving
 built webs with the world.
 
 **Milestone 5 — Zone two and the loop at scale**

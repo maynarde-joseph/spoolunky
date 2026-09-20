@@ -25,10 +25,19 @@ enum Problem {
 ## Where finished webs are parented. Defaults to a "Webs" node in the level.
 @export var web_container_path: NodePath
 
+## Flat silk cost of running a signal line between two webs.
+@export var link_base_cost := 1.5
+
+## Silk per metre of signal line.
+@export var link_silk_per_metre := 0.5
+
 var patterns: Array[WebPattern] = []
 var pattern_index := 0
 var building := false
 var anchors := PackedVector3Array()
+
+## Web waiting to be wired to something, while the player picks the other end.
+var link_source: WebStructure = null
 
 var aim_valid := false
 var aim_point := Vector3.ZERO
@@ -206,6 +215,81 @@ func unlocked_patterns() -> Array[WebPattern]:
 		if _is_unlocked(pattern):
 			available.append(pattern)
 	return available
+
+
+# --- trigger links ------------------------------------------------------
+
+## Wires one web to another, a press at each end. A web that is wired up sets
+## off whatever hangs off it — a tripline across a doorway springing a snare on
+## the other side of the room — which is how a pile of webs becomes a machine.
+func toggle_link() -> void:
+	var web := aimed_web()
+
+	if link_source == null:
+		if web == null:
+			notice.emit("Look at a web to wire it up")
+			return
+		if not web.can_signal():
+			notice.emit("A %s never has anything to report" % web.pattern.display_name)
+			return
+		link_source = web
+		notice.emit("Wiring from the %s — now look at what it should set off"
+			% web.pattern.display_name)
+		state_changed.emit()
+		return
+
+	var source := link_source
+	link_source = null
+	state_changed.emit()
+
+	if web == null or web == source:
+		notice.emit("Wiring cancelled")
+		return
+	link_webs(source, web)
+
+
+## Runs a signal line between two specific webs, skipping the aiming. Returns
+## false, and spends nothing, if the pair cannot be wired or cannot be paid for.
+func link_webs(source: WebStructure, target: WebStructure) -> bool:
+	if source == null or not is_instance_valid(source):
+		notice.emit("That web is gone")
+		return false
+	if target == null or not is_instance_valid(target):
+		notice.emit("Nothing there to set off")
+		return false
+	if not source.can_signal():
+		notice.emit("A %s never has anything to report" % source.pattern.display_name)
+		return false
+	if not target.can_receive_signal():
+		notice.emit("A %s can't do anything with a signal" % target.pattern.display_name)
+		return false
+	if not source.can_link_to(target):
+		notice.emit("Those two are already wired together")
+		return false
+
+	var span := source.signal_point().distance_to(target.signal_point())
+	var cost := link_base_cost + span * link_silk_per_metre * _quality()
+	if not _silk.spend(cost):
+		notice.emit("Not enough silk for the line — %d needed" % ceili(cost))
+		return false
+
+	source.link_to(target)
+	notice.emit("%s now sets off the %s (%d silk)"
+		% [source.pattern.display_name, target.pattern.display_name, roundi(cost)])
+	return true
+
+
+## Forgets a half-finished wiring job.
+func cancel_link() -> void:
+	if link_source == null:
+		return
+	link_source = null
+	state_changed.emit()
+	notice.emit("Wiring cancelled")
+
+
+func is_linking() -> bool:
+	return link_source != null and is_instance_valid(link_source)
 
 
 # --- existing webs ------------------------------------------------------

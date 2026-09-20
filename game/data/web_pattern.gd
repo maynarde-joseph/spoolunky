@@ -118,6 +118,24 @@ enum Trigger {
 @export var catches_prey := true
 
 
+@export_group("Trigger links")
+
+## Whether this web can be wired up as the source of a signal — i.e. whether
+## anything interesting ever happens to it. Bridges don't report.
+@export var can_signal := true
+
+## SNARE only: how far a remotely-triggered snare can whip out and drag prey
+## in, as a multiple of the web's own radius. This is what a wired snare can do
+## that an untouched one cannot.
+@export var signal_strike_factor := 2.5
+
+## Non-snare webs tense up when signalled: hold strength is multiplied by this
+## for [member tense_duration] seconds.
+@export var tense_multiplier := 2.0
+
+@export var tense_duration := 5.0
+
+
 ## True if this pattern is available at the given growth stage index.
 func is_unlocked_at(stage_index: int) -> bool:
 	return stage_index >= unlock_stage

@@ -25,3 +25,4 @@ hold_strength = 3.2
 durability = 30.0
 snap_hold_time = 5.0
 rearm_cost = 5.0
+signal_strike_factor = 3.0

@@ -17,6 +17,7 @@ F                      spin the web
 Wheel or Z / C         change web pattern
 E                      wrap prey, then drain it (also re-arms a snare)
 X                      pull down the web you're looking at
+G                      wire one web to another — press on each end
 R                      free-fly (debug)   T  free the mouse   Esc  quit
 H                      hide this"""
 
@@ -130,6 +131,13 @@ func _refresh_state() -> void:
 func _refresh_build_panel() -> void:
 	var builder := _spider.web_builder
 	if builder == null:
+		return
+
+	if builder.is_linking():
+		pattern_label.text = "Wiring from the %s" % builder.link_source.pattern.display_name
+		hint_label.text = "[G] on the web it should set off, or on nothing to cancel"
+		var aimed := builder.aimed_web()
+		problem_label.text = aimed.status_line() if aimed != null else ""
 		return
 
 	if not builder.building:

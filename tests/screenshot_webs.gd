@@ -67,8 +67,40 @@ func _run() -> void:
 	root.get_texture().get_image().save_png("user://webs_orb_closeup.png")
 	print("saved ", ProjectSettings.globalize_path("user://webs_orb_closeup.png"))
 
+	# Third shot: a wired trap chain — tripline into a snare, with prey waiting.
+	builder.stop()
+	spider.silk.refill(9000.0)
+	# Off to one side, clear of the pattern line-up, so the wire is readable.
+	_spin(builder, "pressure_snare", Vector3(-11.0, 1.2, -1.8), 0.7)
+	_strand(builder, "trip_line", Vector3(-11.0, 0.35, 1.8), Vector3(-11.0, 2.0, 1.8))
+	await physics_frame
+	var webs := level.get_node("Webs")
+	var snare: WebStructure = null
+	var trip: WebStructure = null
+	for child in webs.get_children():
+		var web := child as WebStructure
+		if web == null:
+			continue
+		if web.pattern.id == "pressure_snare":
+			snare = web
+		elif web.pattern.id == "trip_line":
+			trip = web
+	if trip != null and snare != null:
+		builder.link_webs(trip, snare)
+		trip.fire()
+	await physics_frame
+
+	camera.global_position = Vector3(-7.0, 1.9, 0.0)
+	camera.look_at(Vector3(-11.0, 1.2, 0.0), Vector3.UP)
+	for i in 8:
+		await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("user://webs_trigger_link.png")
+	print("saved ", ProjectSettings.globalize_path("user://webs_trigger_link.png"))
+
 	current_scene = null
 	level.free()
+	await process_frame
 	quit(0)
 
 

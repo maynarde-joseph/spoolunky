@@ -50,6 +50,7 @@ func _run() -> void:
 	await _test_growth(spider, builder)
 	await _test_tripline_alert(spider, builder, webs, level)
 	await _test_pressure_snare(spider, builder, webs, silk, level)
+	await _test_trigger_links(spider, builder, webs, silk, level)
 	await _test_sandbox_wiring(level, spider)
 	await _test_demolish(builder, webs, silk)
 
@@ -303,6 +304,112 @@ func _test_pressure_snare(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 	await physics_frame
 
 
+## The point of the whole feature: a tripline metres away springs a snare, and
+## the snare grabs prey that never touched it.
+func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
+		silk: SilkPool, level: Node) -> void:
+	silk.refill(silk.maximum)
+	var base := spider.global_position + Vector3(0, 0.4, -3.0)
+
+	_select_pattern(builder, "pressure_snare")
+	builder.start()
+	for point in _square(base, 0.7):
+		builder.add_anchor(point)
+	builder.finish()
+	builder.stop()
+	await physics_frame
+	var snare := _newest_web(webs, "pressure_snare") as WebNet
+	if not _check(snare != null, "a snare to wire up"):
+		return
+
+	# A tripline well clear of the snare — nothing that crosses it is anywhere
+	# near the silk.
+	var trip_at := base + Vector3(3.5, 0, 0)
+	_select_pattern(builder, "trip_line")
+	builder.start()
+	builder.add_anchor(trip_at + Vector3(0, -0.4, -0.6))
+	builder.add_anchor(trip_at + Vector3(0, -0.4, 0.6))
+	builder.stop()
+	await physics_frame
+	var trip := _newest_web(webs, "trip_line") as WebStrand
+	if not _check(trip != null, "a tripline to wire it to"):
+		return
+
+	# Wire them together, both ends by hand the way the player does.
+	var before := silk.current
+	_check(builder.link_webs(trip, snare), "the two webs can be wired together")
+	await physics_frame
+	_check(trip.links.has(snare), "the tripline is wired to the snare")
+	_check(silk.current < before, "the signal line costs silk")
+	_check(not builder.is_linking(), "wiring finished")
+	_check(trip.link_mesh != null and trip.link_mesh.mesh != null,
+		"the signal line is drawn so the player can read it")
+	# A solid line would be one segment: two crossed quads, twelve vertices.
+	# Dashes are what stop it reading as structural silk.
+	var wire_verts: int = trip.link_mesh.mesh.surface_get_array_len(0)
+	_check(wire_verts > 12 * 4, "and drawn dashed, not as another strand of silk (%d verts)"
+		% wire_verts)
+
+	# A fly loitering near the snare, but not in it.
+	var centre := snare.to_global(snare.centre_local)
+	var bystander := _spawn_fly(level, centre + Vector3(0, 0, 1.3))
+	await physics_frame
+	await physics_frame
+	var reach: float = snare.radius * snare.pattern.signal_strike_factor
+	_check(not bystander.is_stuck(), "a fly beside the snare is not caught by it")
+	_check(centre.distance_to(bystander.global_position) > snare.radius,
+		"and is genuinely outside the web")
+	_check(centre.distance_to(bystander.global_position) < reach,
+		"but inside the snare's strike range (%.1fm)" % reach)
+
+	# Now trip the line, far away.
+	_check(snare.armed, "the snare is armed before anything happens")
+	var crosser := _spawn_fly(level, (trip.point_a + trip.point_b) * 0.5)
+	await physics_frame
+	await physics_frame
+
+	_check(not snare.armed, "crossing the tripline springs the distant snare")
+	_check(bystander.is_stuck(),
+		"and the snare drags in a fly that never touched it")
+	_check(snare.snared_count() == 1, "the snare has it")
+	_check(not crosser.is_stuck(), "while the fly on the tripline walks on")
+
+	# Tensing: a plain web wired to something pulls taut instead of springing.
+	silk.refill(silk.maximum)
+	_select_pattern(builder, "orb_web")
+	builder.start()
+	for point in _square(base + Vector3(-2.5, 0, 0), 0.6):
+		builder.add_anchor(point)
+	builder.finish()
+	builder.stop()
+	await physics_frame
+	var orb := _newest_web(webs, "orb_web") as WebNet
+	if _check(orb != null, "an orb web to tense"):
+		var relaxed := orb.hold_strength()
+		orb.receive_signal(trip, 1)
+		_check(orb.is_tensed(), "a signal draws a plain web tight")
+		_check(orb.hold_strength() > relaxed,
+			"which makes it hold better (%.1f -> %.1f)" % [relaxed, orb.hold_strength()])
+		_check(orb.armed, "and does not spring it — there is nothing to spring")
+
+	# A chain of webs must not be able to ring round forever.
+	trip.links.append(orb)
+	orb.links.append(trip)
+	trip.fire()
+	_check(true, "a loop of wired webs settles instead of hanging")
+	orb.links.erase(trip)
+	trip.links.erase(orb)
+
+	# Pulling a web down takes its wiring with it.
+	bystander.consume()
+	var had_links := trip.links.size()
+	_check(had_links > 0, "the tripline still has wiring to lose")
+	snare.demolish()
+	await physics_frame
+	_check(trip.links.size() == had_links - 1, "demolishing a web unwires it")
+	_check(trip.link_mesh.mesh == null, "and its signal line stops being drawn")
+
+
 func _test_sandbox_wiring(level: Node, spider: SpiderPlayer) -> void:
 	var spawner := level.get_node_or_null("PreySpawner") as PreySpawner
 	if _check(spawner != null, "the level has a prey spawner"):
@@ -362,6 +469,17 @@ func _first_web(webs: Node3D) -> WebStructure:
 		if web != null and not web.is_queued_for_deletion():
 			return web
 	return null
+
+
+## Most recently built web of a kind — several of the same pattern exist by the
+## time the later checks run.
+func _newest_web(webs: Node3D, pattern_id: String) -> WebStructure:
+	var found: WebStructure = null
+	for child in webs.get_children():
+		var web := child as WebStructure
+		if web != null and not web.is_queued_for_deletion() and web.pattern.id == pattern_id:
+			found = web
+	return found
 
 
 func _find_web(webs: Node3D, pattern_id: String) -> WebStructure:

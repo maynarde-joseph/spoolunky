@@ -41,6 +41,7 @@ dropped into it.
 | **Wheel** or **Z** / **C** | change web pattern |
 | **E** | wrap caught prey, then drain it (also re-arms a sprung snare) |
 | **X** | pull down the web you're looking at, for half the silk back |
+| **G** | wire one web to another — press on each end |
 | **H** | toggle the help overlay |
 | **R** | free-fly (from the movement template, handy for scouting) |
 | **T** | release the mouse · **Esc** quit |
@@ -67,6 +68,16 @@ in mid-air the spider grabs the first thing it touches. Put a collider in the
 From a wall or ceiling, **Ctrl** drops you onto a dragline. It costs silk by
 the metre (half back when you reel in), it's a real pendulum so you can swing
 onto things, and right mouse lets go.
+
+## Wiring traps together
+
+**G** on one web, then **G** on another, runs a signal line between them: when
+the first goes off, the second reacts. A snare that gets a signal whips out and
+drags in prey within about three times its radius — so a tripline across a
+doorway can spring a snare on the far side of the room and catch something that
+never touched the silk. Any other web tenses instead, holding roughly twice as
+well for a few seconds. Signals chain, and the dashed cold-blue lines show you
+your own machine.
 
 ## Adding a new kind of web
 

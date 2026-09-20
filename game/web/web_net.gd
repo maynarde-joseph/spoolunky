@@ -49,6 +49,38 @@ static func spin(pattern: WebPattern, world_points: PackedVector3Array, quality:
 
 
 
+## Signal lines attach at the middle of the web, not its node origin.
+func signal_point() -> Vector3:
+	return to_global(centre_local)
+
+
+## A wired snare whips out when the signal reaches it and drags in whatever is
+## close enough. That reach is the entire reason to wire one up — left alone, a
+## snare only ever catches what happens to walk into it.
+func _react_to_signal(_source: WebStructure) -> bool:
+	if pattern.trigger != WebPattern.Trigger.SNARE or not armed:
+		return false
+	armed = false
+	var centre := to_global(centre_local)
+	var reach: float = maxf(radius, 0.1) * pattern.signal_strike_factor
+	var target: Node3D = null
+	var closest := INF
+	for node in get_tree().get_nodes_in_group("prey"):
+		var prey := node as Node3D
+		if prey == null or not is_instance_valid(prey):
+			continue
+		var distance := prey.global_position.distance_to(centre)
+		if distance > reach or distance >= closest:
+			continue
+		if prey.has_method("can_be_snared") and not prey.can_be_snared():
+			continue
+		closest = distance
+		target = prey
+	if target != null:
+		_capture(target, pattern.snap_hold_time, centre)
+	return true
+
+
 ## Prey sticks where it hit the plane, dragged a little toward the middle.
 func _catch_point(body: Node3D) -> Vector3:
 	var centre := to_global(centre_local)

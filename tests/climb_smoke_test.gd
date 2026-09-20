@@ -44,6 +44,8 @@ func _run() -> void:
 	_spider = null
 	_room.free()
 	_room = null
+	# Let the freed nodes release what they were holding before we pull the plug.
+	await process_frame
 	print("")
 	if _failures == 0:
 		print("%d checks passed" % _checks)

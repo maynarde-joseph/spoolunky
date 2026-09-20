@@ -27,6 +27,7 @@ signal respawned()
 @export var input_next_pattern := "web_next_pattern"
 @export var input_prev_pattern := "web_prev_pattern"
 @export var input_remove_web := "web_remove"
+@export var input_link_web := "web_link"
 @export var input_interact := "interact"
 
 ## Falling below this puts the spider back where it started.
@@ -148,6 +149,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_interact()
 	elif event.is_action_pressed(input_remove_web):
 		web_builder.demolish_aimed()
+	elif event.is_action_pressed(input_link_web):
+		web_builder.toggle_link()
 	elif web_builder.building and event.is_action_pressed(input_place_anchor):
 		web_builder.place()
 	elif web_builder.building and event.is_action_pressed(input_cancel_anchor):

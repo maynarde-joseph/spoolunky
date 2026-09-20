@@ -26,3 +26,4 @@ durability = 40.0
 walkable = true
 walk_width = 0.16
 catches_prey = false
+can_signal = false
