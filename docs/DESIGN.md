@@ -228,10 +228,25 @@ This is the traversal answer to a world built vertically: you get *down* fast
 and precisely, and back up at the cost of silk. It is also the best place in
 the game to build from — hanging under a doorway, spinning a web across it.
 
+### The camera stays welded to the spider
+**Decided: first person, always, rolling with the body.** No third-person
+option, and no comfort mode that keeps the horizon upright on a ceiling.
+
+The whole point of the game is that you stop reading the world the way a person
+does. If the camera quietly stays upright while you walk across a ceiling, the
+ceiling is just a differently-textured floor and the fantasy evaporates. The
+disorientation *is* the feature — it is the moment the player stops being a
+tourist in the room.
+
+It also settles a lot of downstream questions cheaply: no third-person rig, no
+second set of animations to read at distance, no camera collision, and the
+spider's body only ever has to look right from the inside.
+
 ### Still to come
 The body itself is the missing half: eight legs with IK that actually reach for
-the surface, a third-person option to see it, and a comfort option that keeps
-the camera upright on ceilings for players who don't want the world to flip.
+the surface and take its angle. From first person that means legs working at
+the edges of your vision — the Mirror's Edge trick — which sells the climb far
+better than a third-person view of a model would.
 
 ---
 
@@ -285,8 +300,9 @@ Playable in the character-controller example level as a sandbox.
 **Milestone 2 — Being a spider** *(half done)*
 Done: wall and ceiling climbing with surface-aligned movement and camera, and
 the dragline — drop, pay out, reel in, swing, let go.
-Left: eight-legged procedural body with IK, a third-person option to see it,
-and an upright-camera comfort setting for ceilings.
+Left: eight-legged procedural body with IK, seen from inside — legs reaching
+for the surface at the edges of the frame. The camera stays first person and
+rolls with the body; that is settled, see section 7.
 
 **Milestone 3 — The Room**
 A purpose-built tier-1/2 room at spider scale, real prey lanes, the vent exit,
