@@ -34,6 +34,7 @@ signal respawned()
 @export var input_dial_down := "web_dial_down"
 @export var input_dial_up := "web_dial_up"
 @export var input_dial_reset := "web_dial_reset"
+@export var input_weave_toggle := "web_weave_toggle"
 @export var input_interact := "interact"
 
 ## Falling below this puts the spider back where it started.
@@ -175,6 +176,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.adjust_dial(1)
 	elif event.is_action_pressed(input_dial_reset):
 		web_builder.reset_dials()
+	elif event.is_action_pressed(input_weave_toggle):
+		web_builder.toggle_weave()
 	elif _web_tool_active() and event.is_action_pressed(input_place_anchor):
 		web_builder.place()
 	elif _web_tool_active() and event.is_action_pressed(input_cancel_anchor):

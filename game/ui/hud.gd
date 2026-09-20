@@ -21,6 +21,7 @@ G                      wire one web to another — press on each end
 B                      keep the rig you're looking at as a design
 V                      place a saved design (wheel to pick, LMB to spin)
 ; and [ ]              pick a tuning dial, then turn it   ('  resets)
+K                      switch weave: stretched / inscribed
 R                      free-fly (debug)   T  free the mouse   Esc  quit
 H                      hide this"""
 
@@ -177,7 +178,7 @@ func _refresh_build_panel() -> void:
 		"" if builder.anchors.size() == 1 else "s"]
 	hint_label.text = builder.hint_text()
 	problem_label.text = builder.problem_text()
-	dial_label.text = _dial_readout(builder)
+	dial_label.text = "%s      %s" % [_dial_readout(builder), _weave_readout(builder)]
 
 
 ## The three dials, with a marker on whichever one the keys are pointed at.
@@ -188,3 +189,11 @@ func _dial_readout(builder: WebBuilder) -> String:
 		var text := tuning.bar(dial)
 		parts.append("[%s]" % text if dial == builder.selected_dial else " %s " % text)
 	return "   ".join(parts)
+
+
+## Which way webs are being woven right now — a test switch, so it is always on
+## screen while building rather than hidden in a menu.
+func _weave_readout(builder: WebBuilder) -> String:
+	if builder.weave == WebGeometry.Weave.INSCRIBED:
+		return "[K] weave: inscribed — even spiral inside the frame"
+	return "[K] weave: stretched — the web is the shape you drew"

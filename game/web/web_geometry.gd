@@ -14,6 +14,22 @@ extends RefCounted
 
 const MIN_AREA := 0.0001
 
+## How the inside of a closed web is woven.
+enum Weave {
+	## The web is the shape you drew: the spiral runs all the way out to the
+	## anchors, so the silk takes the outline of whatever gap you strung it
+	## across, however odd that outline is.
+	STRETCHED,
+	## The web a real spider would build: an even round capture spiral sitting
+	## inside the frame, as big as will fit, with the spokes carrying on past it
+	## to the anchors. Nothing is ever stretched out of shape.
+	INSCRIBED,
+}
+
+## How much of the largest circle that fits inside the frame the capture spiral
+## actually uses. Real webs leave a gap between spiral and frame.
+const INSCRIBED_FILL := 0.9
+
 
 ## A bundle of silk lines waiting to be turned into a mesh.
 class StrandSet extends RefCounted:
@@ -39,84 +55,110 @@ class StrandSet extends RefCounted:
 ## the game needs (cost, collision hull, where the middle is).
 class NetLayout extends RefCounted:
 	var strands: StrandSet
-	var rim: PackedVector3Array      ## ordered boundary, local space
-	var centre := Vector3.ZERO       ## local-space middle of the web
+	var rim: PackedVector3Array      ## ordered boundary at the real anchors, local space
+	var centre := Vector3.ZERO       ## local-space hub of the web
 	var normal := Vector3.UP         ## plane normal, world-aligned
-	var area := 0.0                  ## enclosed area in square metres
-	var radius := 0.0                ## furthest rim point from the centre
+	var area := 0.0                  ## catching area in square metres
+	var radius := 0.0                ## furthest rim point from the hub
+	var weave: Weave = Weave.STRETCHED
+	var spiral_radius := 0.0         ## INSCRIBED only: radius of the sticky disc
+	var plane_u := Vector3.RIGHT     ## in-plane axes, for orienting the catch volume
+	var plane_v := Vector3.BACK
 	var valid := false
 
 
 ## Builds the silk layout for a closed web from anchors given in world space.
 ## [param origin] is the node origin the returned points are relative to.
+##
+## The rim always sits on the real anchors — never on a flattened copy of them —
+## so a web strung across a corner stays attached to all three surfaces and
+## tents through the fold instead of slicing across it. Only the capture spiral
+## cares about the fitted plane, and only in [constant Weave.INSCRIBED].
 static func layout_net(world_points: PackedVector3Array, pattern: WebPattern,
-		origin: Vector3, quality: float) -> NetLayout:
+		origin: Vector3, quality: float, weave: Weave = Weave.STRETCHED) -> NetLayout:
 	var layout := NetLayout.new()
 	layout.strands = StrandSet.new()
+	layout.weave = weave
 	if world_points.size() < 3:
 		return layout
 
 	var normal := plane_normal(world_points)
 	var basis_u := _perpendicular(normal)
 	var basis_v := normal.cross(basis_u).normalized()
-
 	var rough_centre := _average(world_points)
 
-	# Flatten onto the plane and order the anchors around the middle so the rim
-	# never crosses itself, whatever order the player placed them in.
+	# Flatten onto the plane only to work out what order the anchors go round
+	# in. The indices come along so the rim can use the real positions.
 	var flat: Array[Vector2] = []
 	for p in world_points:
-		var d := p - rough_centre
-		flat.append(Vector2(d.dot(basis_u), d.dot(basis_v)))
-	flat.sort_custom(func(a: Vector2, b: Vector2) -> bool:
-		return a.angle() < b.angle())
+		var offset := p - rough_centre
+		flat.append(Vector2(offset.dot(basis_u), offset.dot(basis_v)))
+	var order: Array[int] = []
+	for i in flat.size():
+		order.append(i)
+	order.sort_custom(func(a: int, b: int) -> bool:
+		return flat[a].angle() < flat[b].angle())
 
-	layout.area = _polygon_area(flat)
-	if layout.area < MIN_AREA:
+	var rim_2d: Array[Vector2] = []
+	for index in order:
+		rim_2d.append(flat[index])
+		layout.rim.append(world_points[index] - origin)
+
+	var frame_area := _polygon_area(rim_2d)
+	if frame_area < MIN_AREA:
 		return layout
 
-	var centre_2d := _polygon_centroid(flat, layout.area)
-	var centre_world := rough_centre + basis_u * centre_2d.x + basis_v * centre_2d.y
+	# Where the hub goes, and how far the sticky part reaches.
+	var hub_2d := _polygon_centroid(rim_2d)
+	if weave == Weave.INSCRIBED:
+		var circle := _largest_inscribed_circle(rim_2d)
+		hub_2d = circle["centre"]
+		layout.spiral_radius = float(circle["radius"]) * INSCRIBED_FILL
+		if layout.spiral_radius < 0.005:
+			return layout
+		layout.area = PI * layout.spiral_radius * layout.spiral_radius
+	else:
+		layout.area = frame_area
 
-	# Re-centre everything on the true polygon centroid.
-	var rim_2d: Array[Vector2] = []
-	for f in flat:
-		rim_2d.append(f - centre_2d)
+	var hub := rough_centre + basis_u * hub_2d.x + basis_v * hub_2d.y - origin
+	layout.centre = hub
+	layout.normal = normal
+	layout.plane_u = basis_u
+	layout.plane_v = basis_v
 
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash(Vector3i(centre_world * 97.0)) ^ hash(pattern.id)
-
+	rng.seed = hash(Vector3i((rough_centre + hub) * 97.0)) ^ hash(pattern.id)
 	var thickness: float = pattern.strand_thickness * sqrt(quality)
-	var to_local := func(p: Vector2) -> Vector3:
-		return centre_world + basis_u * p.x + basis_v * p.y - origin
 
-	# Rim: the frame the whole web hangs from, the thickest silk in it.
-	for i in rim_2d.size():
-		var a: Vector2 = rim_2d[i]
-		var b: Vector2 = rim_2d[(i + 1) % rim_2d.size()]
-		layout.strands.add(to_local.call(a), to_local.call(b), thickness * 1.5)
-		layout.rim.append(to_local.call(a))
-		layout.radius = maxf(layout.radius, a.length())
+	# Frame: the heaviest silk, run anchor to anchor exactly where they are.
+	for i in layout.rim.size():
+		var a := layout.rim[i]
+		var b := layout.rim[(i + 1) % layout.rim.size()]
+		layout.strands.add(a, b, thickness * 1.5)
+		layout.radius = maxf(layout.radius, hub.distance_to(a))
 
-	layout.centre = to_local.call(Vector2.ZERO)
-	layout.normal = normal
-
-	# Spokes out to wherever the rim happens to be in that direction.
+	# Spokes, from the hub out to wherever the frame happens to be in that
+	# direction. Straight lines, so a folded frame costs them nothing.
 	var radials: int = pattern.radial_count
-	var spoke_reach := PackedFloat32Array()
+	var spoke_end := PackedVector3Array()
 	var spoke_dir: Array[Vector2] = []
 	if radials >= 3:
 		for i in radials:
 			var angle := TAU * float(i) / float(radials)
 			angle += rng.randf_range(-1.0, 1.0) * pattern.jitter * TAU / float(radials) * 0.5
 			var dir := Vector2(cos(angle), sin(angle))
-			var reach := _ray_to_polygon(dir, rim_2d)
+			var hit := _ray_to_polygon(hub_2d, dir, rim_2d)
 			spoke_dir.append(dir)
-			spoke_reach.append(reach)
-			if reach > 0.0:
-				layout.strands.add(layout.centre, to_local.call(dir * reach), thickness)
+			if hit.is_empty():
+				spoke_end.append(hub)
+				continue
+			var edge: int = hit["edge"]
+			var along: float = hit["edge_t"]
+			var end := layout.rim[edge].lerp(layout.rim[(edge + 1) % layout.rim.size()], along)
+			spoke_end.append(end)
+			layout.strands.add(hub, end, thickness)
 
-	# Capture spiral, wound from the middle outward between the spokes.
+	# Capture spiral.
 	if radials >= 3 and pattern.ring_count > 0:
 		var steps: int = pattern.ring_count * radials
 		var rings_plus := float(pattern.ring_count + 1)
@@ -129,15 +171,31 @@ static func layout_net(world_points: PackedVector3Array, pattern: WebPattern,
 				continue
 			var jitter_a := 1.0 + rng.randf_range(-1.0, 1.0) * pattern.jitter * 0.25
 			var jitter_b := 1.0 + rng.randf_range(-1.0, 1.0) * pattern.jitter * 0.25
-			var ra: float = spoke_reach[i] * f_a * jitter_a
-			var rb: float = spoke_reach[j] * f_b * jitter_b
-			if ra <= 0.0 or rb <= 0.0:
+			var point_a := _spiral_point(layout, hub, spoke_end, spoke_dir, i, f_a * jitter_a,
+				basis_u, basis_v)
+			var point_b := _spiral_point(layout, hub, spoke_end, spoke_dir, j, f_b * jitter_b,
+				basis_u, basis_v)
+			if point_a == hub or point_b == hub:
 				continue
-			layout.strands.add(to_local.call(spoke_dir[i] * ra),
-				to_local.call(spoke_dir[j] * rb), thickness * 0.75)
+			layout.strands.add(point_a, point_b, thickness * 0.75)
 
 	layout.valid = layout.strands.size() > 0
 	return layout
+
+
+## A point on the capture spiral. Stretched webs follow the spokes out to the
+## frame; inscribed webs stay on an even circle around the hub.
+static func _spiral_point(layout: NetLayout, hub: Vector3, spoke_end: PackedVector3Array,
+		spoke_dir: Array[Vector2], index: int, fraction: float,
+		basis_u: Vector3, basis_v: Vector3) -> Vector3:
+	if layout.weave == Weave.INSCRIBED:
+		var dir: Vector2 = spoke_dir[index]
+		var reach := layout.spiral_radius * clampf(fraction, 0.0, 1.0)
+		return hub + (basis_u * dir.x + basis_v * dir.y) * reach
+	var end := spoke_end[index]
+	if end == hub:
+		return hub
+	return hub.lerp(end, clampf(fraction, 0.0, 1.0))
 
 
 ## Silk lines for a simple two-point strand, in local space around [param origin].
@@ -299,9 +357,7 @@ static func _polygon_area(points: Array[Vector2]) -> float:
 	return absf(total) * 0.5
 
 
-static func _polygon_centroid(points: Array[Vector2], area: float) -> Vector2:
-	if area < MIN_AREA:
-		return Vector2.ZERO
+static func _polygon_centroid(points: Array[Vector2]) -> Vector2:
 	var centroid := Vector2.ZERO
 	var signed := 0.0
 	for i in points.size():
@@ -311,23 +367,97 @@ static func _polygon_centroid(points: Array[Vector2], area: float) -> Vector2:
 		signed += cross
 		centroid += (a + b) * cross
 	if absf(signed) < 0.000001:
-		return Vector2.ZERO
+		var mean := Vector2.ZERO
+		for p in points:
+			mean += p
+		return mean / maxf(float(points.size()), 1.0)
 	return centroid / (3.0 * signed)
 
 
-## Distance from the origin out to the polygon rim along [param dir].
-static func _ray_to_polygon(dir: Vector2, polygon: Array[Vector2]) -> float:
-	var best := -1.0
+## Where a ray from [param from] along [param dir] leaves the polygon: which
+## edge it crossed and how far along that edge, so the caller can look the point
+## up on the real three-dimensional rim. Empty if it never crosses.
+static func _ray_to_polygon(from: Vector2, dir: Vector2, polygon: Array[Vector2]) -> Dictionary:
+	var best := {}
+	var best_distance := INF
 	for i in polygon.size():
 		var a: Vector2 = polygon[i]
 		var edge: Vector2 = polygon[(i + 1) % polygon.size()] - a
 		var denom := dir.cross(edge)
 		if absf(denom) < 0.000001:
 			continue
-		var along_ray := a.cross(edge) / denom
-		var along_edge := a.cross(dir) / denom
+		var offset := a - from
+		var along_ray := offset.cross(edge) / denom
+		var along_edge := offset.cross(dir) / denom
 		if along_ray <= 0.0 or along_edge < 0.0 or along_edge > 1.0:
 			continue
-		if best < 0.0 or along_ray < best:
-			best = along_ray
+		if along_ray < best_distance:
+			best_distance = along_ray
+			best = {"distance": along_ray, "edge": i, "edge_t": along_edge}
 	return best
+
+
+## Centre and radius of the largest circle that fits inside a polygon, found by
+## narrowing a search window rather than solving it exactly — plenty for ten
+## anchors, and it copes with awkward concave shapes.
+static func _largest_inscribed_circle(polygon: Array[Vector2]) -> Dictionary:
+	var lowest := Vector2(INF, INF)
+	var highest := Vector2(-INF, -INF)
+	for p in polygon:
+		lowest = Vector2(minf(lowest.x, p.x), minf(lowest.y, p.y))
+		highest = Vector2(maxf(highest.x, p.x), maxf(highest.y, p.y))
+
+	var centre := _polygon_centroid(polygon)
+	var best := _clearance(centre, polygon)
+	var window: float = maxf(highest.x - lowest.x, highest.y - lowest.y) * 0.5
+
+	for pass_index in 7:
+		var step := window * 0.25
+		var improved_centre := centre
+		for gx in range(-2, 3):
+			for gy in range(-2, 3):
+				var candidate := centre + Vector2(float(gx), float(gy)) * step
+				var clearance := _clearance(candidate, polygon)
+				if clearance > best:
+					best = clearance
+					improved_centre = candidate
+		centre = improved_centre
+		window *= 0.5
+
+	return {"centre": centre, "radius": maxf(best, 0.0)}
+
+
+## Distance from a point to the nearest polygon edge, or zero if it is outside.
+static func _clearance(point: Vector2, polygon: Array[Vector2]) -> float:
+	if not _inside_polygon(point, polygon):
+		return 0.0
+	var nearest := INF
+	for i in polygon.size():
+		var a: Vector2 = polygon[i]
+		var b: Vector2 = polygon[(i + 1) % polygon.size()]
+		nearest = minf(nearest, _distance_to_segment(point, a, b))
+	return nearest
+
+
+static func _distance_to_segment(point: Vector2, a: Vector2, b: Vector2) -> float:
+	var edge := b - a
+	var length_squared := edge.length_squared()
+	if length_squared < 0.000001:
+		return point.distance_to(a)
+	var t := clampf((point - a).dot(edge) / length_squared, 0.0, 1.0)
+	return point.distance_to(a + edge * t)
+
+
+static func _inside_polygon(point: Vector2, polygon: Array[Vector2]) -> bool:
+	var inside := false
+	var count := polygon.size()
+	var j := count - 1
+	for i in count:
+		var a: Vector2 = polygon[i]
+		var b: Vector2 = polygon[j]
+		if (a.y > point.y) != (b.y > point.y):
+			var crossing := (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x
+			if point.x < crossing:
+				inside = not inside
+		j = i
+	return inside

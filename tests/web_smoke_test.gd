@@ -51,6 +51,7 @@ func _run() -> void:
 	await _test_tripline_alert(spider, builder, webs, level)
 	await _test_pressure_snare(spider, builder, webs, silk, level)
 	await _test_trigger_links(spider, builder, webs, silk, level)
+	await _test_weave_modes(spider, builder, webs, silk)
 	await _test_tuning_dials(spider, builder, webs, silk, level)
 	await _test_saved_designs(spider, builder, webs, silk)
 	await _test_sandbox_wiring(level, spider)
@@ -415,6 +416,102 @@ func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 ## Keeping a rig and putting it down again somewhere else, wiring and all.
 ## Every dial has to cost something. A setting that is simply better is not a
 ## decision, so these checks are really checks on the design.
+## Anchors in a room corner do not share a plane. Whichever way a web is woven,
+## its frame has to stay on them — a web that floats off the wall it was
+## anchored to is the bug this guards.
+func _corner_anchors() -> PackedVector3Array:
+	return PackedVector3Array([
+		Vector3(0.0, 0.2, 0.2), Vector3(0.0, 0.2, 0.9),
+		Vector3(0.0, 0.9, 0.55), Vector3(0.7, 0.55, 0.0)])
+
+
+func _worst_anchor_drift(points: PackedVector3Array, layout) -> float:
+	var origin := Vector3.ZERO
+	for p in points:
+		origin += p
+	origin /= float(points.size())
+	var worst := 0.0
+	for anchor in points:
+		var nearest := INF
+		for rim_point in layout.rim:
+			nearest = minf(nearest, anchor.distance_to(origin + rim_point))
+		worst = maxf(worst, nearest)
+	return worst
+
+
+func _test_weave_modes(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
+		silk: SilkPool) -> void:
+	_select_pattern(builder, "orb_web")
+	var pattern := builder.current_pattern()
+	var corner := _corner_anchors()
+	var centre := Vector3.ZERO
+	for p in corner:
+		centre += p
+	centre /= float(corner.size())
+
+	# How far off a single plane those anchors really are.
+	var normal := WebGeometry.plane_normal(corner)
+	var off_plane := 0.0
+	for anchor in corner:
+		off_plane = maxf(off_plane, absf((anchor - centre).dot(normal)))
+	_check(off_plane > 0.1, "the test anchors genuinely do not lie flat (%.2fm)" % off_plane)
+
+	for mode in [WebGeometry.Weave.STRETCHED, WebGeometry.Weave.INSCRIBED]:
+		var label := "stretched" if mode == WebGeometry.Weave.STRETCHED else "inscribed"
+		var layout = WebGeometry.layout_net(corner, pattern, centre, 1.0, mode)
+		_check(layout.valid, "%s: the corner web holds together" % label)
+		_check(layout.rim.size() == corner.size(), "%s: every anchor is on the frame" % label)
+		var drift := _worst_anchor_drift(corner, layout)
+		_check(drift < 0.001, "%s: the frame stays on the anchors (%.4fm drift)" % [label, drift])
+
+	# Stretched fills the whole outline; inscribed keeps a round spiral inside it.
+	var stretched = WebGeometry.layout_net(corner, pattern, centre, 1.0,
+		WebGeometry.Weave.STRETCHED)
+	var inscribed = WebGeometry.layout_net(corner, pattern, centre, 1.0,
+		WebGeometry.Weave.INSCRIBED)
+	_check(inscribed.spiral_radius > 0.0, "inscribed: there is a sticky disc (%.2fm across)"
+		% (inscribed.spiral_radius * 2.0))
+	_check(inscribed.area < stretched.area,
+		"inscribed: it catches over less than the whole outline (%.2f vs %.2f m2)"
+		% [inscribed.area, stretched.area])
+	_check(stretched.spiral_radius == 0.0, "stretched: sticky all the way to the frame")
+
+	# The shape of the outline pays: a fat one fits a far bigger spiral than a
+	# sliver of the same span.
+	var fat := PackedVector3Array([Vector3(0, 0, 0), Vector3(1.2, 0, 0),
+		Vector3(1.2, 1.2, 0), Vector3(0, 1.2, 0)])
+	var sliver := PackedVector3Array([Vector3(0, 0, 0), Vector3(1.2, 0, 0),
+		Vector3(1.2, 0.12, 0), Vector3(0, 0.12, 0)])
+	var fat_disc = WebGeometry.layout_net(fat, pattern, Vector3(0.6, 0.6, 0), 1.0,
+		WebGeometry.Weave.INSCRIBED)
+	var sliver_disc = WebGeometry.layout_net(sliver, pattern, Vector3(0.6, 0.06, 0), 1.0,
+		WebGeometry.Weave.INSCRIBED)
+	_check(fat_disc.spiral_radius > sliver_disc.spiral_radius * 4.0,
+		"a fat outline is worth far more web than a sliver (%.2fm vs %.2fm radius)"
+		% [fat_disc.spiral_radius, sliver_disc.spiral_radius])
+
+	# The switch reaches the webs that actually get spun.
+	silk.refill(silk.maximum)
+	var base := spider.global_position + Vector3(6.0, 0.4, 0.0)
+	builder.weave = WebGeometry.Weave.INSCRIBED
+	builder.start()
+	for point in _square(base, 0.7):
+		builder.add_anchor(point)
+	builder.finish()
+	builder.stop()
+	await physics_frame
+	var spun := _newest_web(webs, "orb_web") as WebNet
+	if _check(spun != null, "an inscribed web was spun"):
+		_check(spun.weave == WebGeometry.Weave.INSCRIBED, "and it remembers how")
+		_check(spun.spiral_radius > 0.0, "with a sticky disc")
+		var collider := spun.catch_area.get_child(0) as CollisionShape3D
+		_check(collider.shape is CylinderShape3D, "and only that disc catches")
+		spun.demolish()
+	builder.toggle_weave()
+	_check(builder.weave == WebGeometry.Weave.STRETCHED, "K switches the weave back")
+	await physics_frame
+
+
 func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 		silk: SilkPool, level: Node) -> void:
 	_select_pattern(builder, "orb_web")

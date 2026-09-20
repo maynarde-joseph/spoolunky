@@ -51,6 +51,9 @@ var quality := 1.0
 ## Dial settings this web was spun with, kept so it can be saved into a design.
 var tuning: WebTuning = null
 
+## How the inside of this web was woven.
+var weave: WebGeometry.Weave = WebGeometry.Weave.STRETCHED
+
 var durability := 1.0
 var max_durability := 1.0
 

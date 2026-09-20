@@ -8,10 +8,15 @@ var centre_local := Vector3.ZERO
 var plane_normal := Vector3.UP
 var radius := 0.0
 
+## Radius of the sticky disc, for inscribed webs. Zero for stretched ones,
+## which are sticky all the way out to the frame.
+var spiral_radius := 0.0
+
 
 ## Spins a net across the given world-space anchors. Returns null if the
 ## anchors are too close to a straight line to enclose anything.
-static func spin(pattern: WebPattern, world_points: PackedVector3Array, quality: float) -> WebNet:
+static func spin(pattern: WebPattern, world_points: PackedVector3Array, quality: float,
+		weave: WebGeometry.Weave = WebGeometry.Weave.STRETCHED) -> WebNet:
 	if world_points.size() < 3:
 		return null
 
@@ -20,7 +25,7 @@ static func spin(pattern: WebPattern, world_points: PackedVector3Array, quality:
 		origin += p
 	origin /= float(world_points.size())
 
-	var layout := WebGeometry.layout_net(world_points, pattern, origin, quality)
+	var layout := WebGeometry.layout_net(world_points, pattern, origin, quality, weave)
 	if not layout.valid:
 		return null
 
@@ -32,6 +37,8 @@ static func spin(pattern: WebPattern, world_points: PackedVector3Array, quality:
 	net.centre_local = layout.centre
 	net.plane_normal = layout.normal
 	net.radius = layout.radius
+	net.spiral_radius = layout.spiral_radius
+	net.weave = weave
 	net._origin = origin
 	net.anchors = world_points.duplicate()
 	net.max_durability = pattern.durability * quality
@@ -42,9 +49,18 @@ static func spin(pattern: WebPattern, world_points: PackedVector3Array, quality:
 
 	if pattern.catches_prey or pattern.trigger == WebPattern.Trigger.ALERT:
 		var depth := clampf(layout.radius * 0.35, 0.03, 1.2)
-		var hull := ConvexPolygonShape3D.new()
-		hull.points = WebGeometry.catch_hull(layout.rim, layout.normal, depth)
-		net._make_catch_area(hull)
+		if weave == WebGeometry.Weave.INSCRIBED:
+			# Only the disc is sticky, so only the disc catches.
+			var disc := CylinderShape3D.new()
+			disc.radius = layout.spiral_radius
+			disc.height = maxf(depth, 0.02)
+			var sideways := layout.plane_u.cross(layout.normal).normalized()
+			var frame := Basis(layout.plane_u, layout.normal, sideways)
+			net._make_catch_area(disc, Transform3D(frame, layout.centre))
+		else:
+			var hull := ConvexPolygonShape3D.new()
+			hull.points = WebGeometry.catch_hull(layout.rim, layout.normal, depth)
+			net._make_catch_area(hull)
 
 	return net
 

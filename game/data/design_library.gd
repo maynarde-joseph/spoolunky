@@ -80,6 +80,7 @@ static func capture(root: WebStructure, facing: Vector3, stage_index := 0) -> We
 		design.tuning_tension.append(dials.tension)
 		design.tuning_weight.append(dials.weight)
 		design.tuning_mesh.append(dials.mesh)
+		design.weaves.append(web.weave)
 		for anchor in web.anchors:
 			design.anchors.append(inverse * (anchor - centre))
 

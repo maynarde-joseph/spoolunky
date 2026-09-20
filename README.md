@@ -44,6 +44,7 @@ dropped into it.
 | **G** | wire one web to another — press on each end |
 | **B** | keep the rig you're looking at as a design |
 | **V** | place a saved design — wheel to pick, left mouse to spin it |
+| **K** | switch weave: stretched or inscribed |
 | **;** | pick a tuning dial |
 | **[** / **]** | turn that dial down / up |
 | **'** | put the dials back to standard |
@@ -83,6 +84,21 @@ doorway can spring a snare on the far side of the room and catch something that
 never touched the silk. Any other web tenses instead, holding roughly twice as
 well for a few seconds. Signals chain, and the dashed cold-blue lines show you
 your own machine.
+
+## Two ways to weave a web
+
+**K** switches between them, and it applies to webs spun from then on:
+
+* **Stretched** (default) — the web is the shape you drew. The spiral runs out
+  to the anchors, so an odd outline makes an odd web.
+* **Inscribed** — what a real orb weaver builds: an even round spiral as big as
+  fits inside the frame, spokes carrying on past it to the anchors. Here the
+  shape of your outline matters, because the catching area is the biggest
+  circle that fits — a fat outline beats a long sliver by a mile.
+
+Either way the frame sits on the anchors exactly where you put them, in 3D, so
+a web across a room corner tents through the fold instead of floating off the
+wall.
 
 ## Tuning a web
 
@@ -147,4 +163,6 @@ xvfb-run -a godot --rendering-driver opengl3 --resolution 1280x720 \
     --script res://tests/screenshot_webs.gd
 xvfb-run -a godot --rendering-driver opengl3 --resolution 1280x720 \
     --script res://tests/screenshot_climb.gd
+xvfb-run -a godot --rendering-driver opengl3 --resolution 1100x740 \
+    --script res://tests/screenshot_weave.gd
 ```

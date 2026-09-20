@@ -39,6 +39,10 @@ var building := false
 ## way when you come back to it.
 var tunings := {}
 
+## How new webs are woven. A test switch: stretched webs take the shape you
+## drew, inscribed ones keep an even spiral inside the frame.
+var weave: WebGeometry.Weave = WebGeometry.Weave.STRETCHED
+
 ## Which dial the tuning keys are pointed at.
 var selected_dial: WebTuning.Dial = WebTuning.Dial.TENSION
 
@@ -194,7 +198,7 @@ func finish() -> void:
 	if spun.shape == WebPattern.Shape.STRAND:
 		web = WebStrand.spin(spun, anchors[0], anchors[1], quality)
 	else:
-		web = WebNet.spin(spun, anchors, quality)
+		web = WebNet.spin(spun, anchors, quality, weave)
 
 	if web == null:
 		notice.emit("Those anchors won't hold a web")
@@ -242,6 +246,20 @@ func tuning_for(pattern: WebPattern) -> WebTuning:
 ## Dials for the pattern on the end of the cursor.
 func current_tuning() -> WebTuning:
 	return tuning_for(current_pattern())
+
+
+## Flips between the two ways of weaving the inside of a web.
+func toggle_weave() -> void:
+	weave = WebGeometry.Weave.INSCRIBED if weave == WebGeometry.Weave.STRETCHED \
+		else WebGeometry.Weave.STRETCHED
+	state_changed.emit()
+	notice.emit("Weave: %s" % weave_name())
+
+
+func weave_name() -> String:
+	if weave == WebGeometry.Weave.INSCRIBED:
+		return "inscribed — even spiral inside the frame"
+	return "stretched — the web is the shape you drew"
 
 
 ## Points the tuning keys at the next dial along.
@@ -402,7 +420,7 @@ func place_design() -> bool:
 		if tuned.shape == WebPattern.Shape.STRAND:
 			web = WebStrand.spin(tuned, points[0], points[1], quality)
 		else:
-			web = WebNet.spin(tuned, points, quality)
+			web = WebNet.spin(tuned, points, quality, design.weave_for(piece))
 		if web == null:
 			return _abandon(spun, "That design won't hold together there")
 		web.tuning = dials

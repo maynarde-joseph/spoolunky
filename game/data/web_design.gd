@@ -31,6 +31,9 @@ extends Resource
 @export var tuning_weight: PackedInt32Array = PackedInt32Array()
 @export var tuning_mesh: PackedInt32Array = PackedInt32Array()
 
+## How each piece was woven, so a kept rig comes back looking the same.
+@export var weaves: PackedInt32Array = PackedInt32Array()
+
 ## Signal lines, as piece indices: link_from[i] sets off link_to[i].
 @export var link_from: PackedInt32Array = PackedInt32Array()
 @export var link_to: PackedInt32Array = PackedInt32Array()
@@ -69,6 +72,13 @@ func tuning_for(piece: int) -> WebTuning:
 	tuning.weight = tuning_weight[piece]
 	tuning.mesh = tuning_mesh[piece]
 	return tuning
+
+
+## How one piece was woven, defaulting to stretched for older designs.
+func weave_for(piece: int) -> WebGeometry.Weave:
+	if piece < 0 or piece >= weaves.size():
+		return WebGeometry.Weave.STRETCHED
+	return weaves[piece] as WebGeometry.Weave
 
 
 ## Anchors for one piece, still in the rig's own space.

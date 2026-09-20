@@ -176,8 +176,21 @@ three or more closed anchors make a *net*.
 1. **Shape — complete freedom.** You choose every anchor: where the web hangs,
    how big it is, what angle it sits at, what gap it spans. This is where the
    skill is, because it is really the skill of reading a room.
-2. **Weave — preset.** The pattern decides how the inside is filled and how it
-   behaves. Patterns are *techniques*, not blueprints.
+2. **Weave — preset, in one of two styles.** The pattern decides how the inside
+   is filled and how it behaves. Patterns are *techniques*, not blueprints. The
+   two styles are a live switch (**K**) while we work out which the game wants:
+
+   * **Stretched** — the web is the shape you drew. The capture spiral runs all
+     the way out to the anchors, so a five-sided web across an awkward gap is a
+     genuinely five-sided web. Wonky, characterful, and the current default.
+   * **Inscribed** — what a real orb weaver builds: an even round spiral as big
+     as will fit inside the frame, with the spokes carrying on past it out to
+     the anchors. Nothing is ever stretched out of shape.
+
+   Inscribed adds a skill that stretched does not have: the catching area is
+   the biggest circle that fits, so a fat outline is worth far more web than a
+   long sliver of the same span — about ten times more in a straight test.
+   Stretched has the personality; inscribed has the craft.
 3. **Combination — where "designing a trap" actually lives.** See below.
 
 Thread-by-thread control over the inside of a web is deliberately **not** on the
@@ -275,7 +288,10 @@ design's anchors to local geometry.
 
 ### Web physics rules
 * **Anchors must be on real surfaces**, and a strand cannot exceed your
-  tier's span limit.
+  tier's span limit. The frame is built on the anchors exactly where they are,
+  in three dimensions — a web strung across a room corner tents through the
+  fold and stays stuck to all three surfaces rather than slicing flat across
+  it. Only the inscribed spiral cares about a flat plane.
 * **Sag**: a strand near its max length hangs, loses tension and holds worse.
 * **Damage**: struggling prey drains durability. Rain, wind, fire and brooms
   destroy webs outright.
@@ -382,6 +398,7 @@ is: each new zone opens with you as the smallest thing in it.
 | **G** | Wire one web to another — press on each end |
 | **B** | Keep the rig you are looking at as a design |
 | **V** | Place a saved design — wheel to pick, left mouse to spin it |
+| **K** | Switch weave: stretched or inscribed |
 | **;** | Pick which tuning dial the keys point at |
 | **[** / **]** | Turn that dial down / up |
 | **'** | Put a pattern's dials back to standard |
