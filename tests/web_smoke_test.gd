@@ -51,6 +51,7 @@ func _run() -> void:
 	await _test_tripline_alert(spider, builder, webs, level)
 	await _test_pressure_snare(spider, builder, webs, silk, level)
 	await _test_trigger_links(spider, builder, webs, silk, level)
+	await _test_tuning_dials(spider, builder, webs, silk, level)
 	await _test_saved_designs(spider, builder, webs, silk)
 	await _test_sandbox_wiring(level, spider)
 	await _test_demolish(builder, webs, silk)
@@ -412,6 +413,98 @@ func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 
 
 ## Keeping a rig and putting it down again somewhere else, wiring and all.
+## Every dial has to cost something. A setting that is simply better is not a
+## decision, so these checks are really checks on the design.
+func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
+		silk: SilkPool, level: Node) -> void:
+	_select_pattern(builder, "orb_web")
+	var pattern := builder.current_pattern()
+	var tuning := builder.tuning_for(pattern)
+	_check(tuning.is_default(), "a pattern starts on standard settings")
+
+	# Tension: holding power against durability.
+	tuning.tension = WebTuning.STEPS - 1
+	var tight := tuning.apply_to(pattern)
+	tuning.tension = 0
+	var slack := tuning.apply_to(pattern)
+	_check(tight.hold_strength > pattern.hold_strength, "spun tight, a web holds harder")
+	_check(tight.durability < pattern.durability, "and tears sooner")
+	_check(slack.hold_strength < pattern.hold_strength, "spun slack, it holds less")
+	_check(slack.durability > pattern.durability, "and lasts longer")
+	_check(is_equal_approx(tight.silk_per_metre, slack.silk_per_metre),
+		"tension is free either way — it is purely a trade")
+	tuning.tension = WebTuning.NEUTRAL
+
+	# Weight: everything against silk.
+	tuning.weight = WebTuning.STEPS - 1
+	var heavy := tuning.apply_to(pattern)
+	_check(heavy.hold_strength > pattern.hold_strength
+		and heavy.durability > pattern.durability, "heavy silk is better in every way")
+	_check(heavy.silk_per_metre > pattern.silk_per_metre, "and that is what you pay for")
+	_check(heavy.strand_thickness > pattern.strand_thickness, "you can see the difference")
+	tuning.weight = WebTuning.NEUTRAL
+
+	# Mesh: what you catch against what you spend.
+	tuning.mesh = WebTuning.STEPS - 1
+	var open_mesh := tuning.apply_to(pattern)
+	tuning.mesh = 0
+	var close_mesh := tuning.apply_to(pattern)
+	_check(open_mesh.radial_count < close_mesh.radial_count
+		and open_mesh.ring_count < close_mesh.ring_count,
+		"an open mesh is fewer threads (%d vs %d spokes)"
+		% [open_mesh.radial_count, close_mesh.radial_count])
+	_check(open_mesh.min_catch_size > close_mesh.min_catch_size,
+		"so small prey walks through it")
+	tuning.mesh = WebTuning.NEUTRAL
+
+	# Fewer threads really does mean less silk, measured off the real geometry.
+	silk.refill(silk.maximum)
+	var base := spider.global_position + Vector3(3.0, 0.4, -4.0)
+	var costs := {}
+	for setting in [0, WebTuning.STEPS - 1]:
+		tuning.mesh = setting
+		builder.start()
+		for point in _square(base, 0.6):
+			builder.add_anchor(point)
+		builder.finish()
+		builder.stop()
+		await physics_frame
+		var web := _newest_web(webs, "orb_web")
+		costs[setting] = web.silk_cost if web != null else 0.0
+		if web != null:
+			_check(web.tuning != null and web.tuning.mesh == setting,
+				"the web remembers the dials it was spun with")
+			web.demolish()
+		await physics_frame
+	var fine: float = costs[0]
+	var coarse: float = costs[WebTuning.STEPS - 1]
+	_check(coarse < fine, "an open mesh really is cheaper to spin (%.1f vs %.1f)"
+		% [coarse, fine])
+	tuning.mesh = WebTuning.NEUTRAL
+
+	# And the size gate has teeth: a fly ignores a web meshed for bigger things.
+	silk.refill(silk.maximum)
+	tuning.mesh = WebTuning.STEPS - 1
+	builder.start()
+	for point in _square(base, 0.6):
+		builder.add_anchor(point)
+	builder.finish()
+	builder.stop()
+	await physics_frame
+	var coarse_web := _newest_web(webs, "orb_web") as WebNet
+	if _check(coarse_web != null, "a coarse web to test the gate on"):
+		_check(coarse_web.pattern.min_catch_size > 1, "it is meshed for bigger prey")
+		var fly := _spawn_fly(level, coarse_web.to_global(coarse_web.centre_local))
+		await physics_frame
+		await physics_frame
+		_check(not fly.is_stuck(), "and a fly goes straight through it")
+		fly.queue_free()
+		coarse_web.demolish()
+	builder.reset_dials()
+	_check(builder.current_tuning().is_default(), "the dials can be put back to standard")
+	await physics_frame
+
+
 func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 		silk: SilkPool) -> void:
 	silk.refill(silk.maximum)

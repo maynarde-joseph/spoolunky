@@ -30,6 +30,10 @@ signal respawned()
 @export var input_link_web := "web_link"
 @export var input_save_design := "web_save_design"
 @export var input_design_mode := "web_design_mode"
+@export var input_dial_select := "web_dial_select"
+@export var input_dial_down := "web_dial_down"
+@export var input_dial_up := "web_dial_up"
+@export var input_dial_reset := "web_dial_reset"
 @export var input_interact := "interact"
 
 ## Falling below this puts the spider back where it started.
@@ -163,6 +167,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.save_aimed_design()
 	elif event.is_action_pressed(input_design_mode):
 		web_builder.toggle_design_mode()
+	elif event.is_action_pressed(input_dial_select):
+		web_builder.cycle_dial(1)
+	elif event.is_action_pressed(input_dial_down):
+		web_builder.adjust_dial(-1)
+	elif event.is_action_pressed(input_dial_up):
+		web_builder.adjust_dial(1)
+	elif event.is_action_pressed(input_dial_reset):
+		web_builder.reset_dials()
 	elif _web_tool_active() and event.is_action_pressed(input_place_anchor):
 		web_builder.place()
 	elif _web_tool_active() and event.is_action_pressed(input_cancel_anchor):

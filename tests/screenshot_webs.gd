@@ -98,7 +98,36 @@ func _run() -> void:
 	root.get_texture().get_image().save_png("user://webs_trigger_link.png")
 	print("saved ", ProjectSettings.globalize_path("user://webs_trigger_link.png"))
 
-	# Fourth shot: that rig kept as a design, ghosted where it would go next.
+	# Fourth shot: the same pattern spun on three different mesh settings, with
+	# the dials showing in the HUD.
+	builder.stop()
+	spider.silk.refill(9000.0)
+	var orb := builder.patterns[0]
+	for pattern in builder.patterns:
+		if pattern.id == "orb_web":
+			orb = pattern
+	var dials := builder.tuning_for(orb)
+	var spots := [Vector3(-13.0, 1.2, 4.0), Vector3(-11.0, 1.2, 4.0), Vector3(-9.0, 1.2, 4.0)]
+	for i in 3:
+		dials.mesh = [0, 2, 4][i]
+		dials.weight = [4, 2, 0][i]
+		_spin(builder, "orb_web", spots[i], 0.7)
+	builder.selected_dial = WebTuning.Dial.MESH
+	builder.start()
+	await physics_frame
+	camera.global_position = Vector3(-11.0, 1.5, 8.2)
+	camera.look_at(Vector3(-11.0, 1.1, 4.0), Vector3.UP)
+	for i in 10:
+		await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("user://webs_tuning.png")
+	print("saved ", ProjectSettings.globalize_path("user://webs_tuning.png"),
+		"  — mesh close / standard / open, left to right")
+	builder.stop()
+	dials.mesh = WebTuning.NEUTRAL
+	dials.weight = WebTuning.NEUTRAL
+
+	# Fifth shot: that rig kept as a design, ghosted where it would go next.
 	if trip != null:
 		var design := DesignLibrary.capture(trip, Vector3.FORWARD, spider.growth.stage_index)
 		if design != null:

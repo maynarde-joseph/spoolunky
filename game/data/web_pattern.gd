@@ -96,6 +96,10 @@ enum Trigger {
 ## How much struggling the web survives before it tears apart.
 @export var durability := 12.0
 
+## Smallest prey this web will hold. Raised by opening the mesh out, so a web
+## meant for rats isn't clogged and torn by gnats.
+@export var min_catch_size := 1
+
 ## SNARE only: how long prey is held completely rigid when the trap springs.
 @export var snap_hold_time := 4.0
 

@@ -44,6 +44,9 @@ dropped into it.
 | **G** | wire one web to another — press on each end |
 | **B** | keep the rig you're looking at as a design |
 | **V** | place a saved design — wheel to pick, left mouse to spin it |
+| **;** | pick a tuning dial |
+| **[** / **]** | turn that dial down / up |
+| **'** | put the dials back to standard |
 | **H** | toggle the help overlay |
 | **R** | free-fly (from the movement template, handy for scouting) |
 | **T** | release the mouse · **Esc** quit |
@@ -80,6 +83,20 @@ doorway can spring a snare on the far side of the room and catch something that
 never touched the silk. Any other web tenses instead, holding roughly twice as
 well for a few seconds. Signals chain, and the dashed cold-blue lines show you
 your own machine.
+
+## Tuning a web
+
+Three dials, set before you spin, each one a trade rather than an upgrade:
+
+| Dial | Up | Costs you |
+|------|----|-----------|
+| **Tension** | holds harder | tears sooner |
+| **Weight** | stronger all round | more silk per metre |
+| **Mesh** (opened out) | cheaper — fewer threads | small prey walks through |
+
+`;` picks a dial, `[` and `]` turn it, `'` resets. Settings are remembered per
+pattern and travel inside saved designs. Weight and mesh change the weave
+itself, so a tuned web looks different as well as behaving differently.
 
 ## Saving a rig as a design
 

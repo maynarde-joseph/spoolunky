@@ -239,10 +239,39 @@ game ships with, which is what made this cheap to build.
 * Designs are auto-named from their patterns ("Trip Line + Pressure Snare").
   Renaming needs a text field over a captured mouse, which is real UI work.
 
+### Tuning dials
+
+Three dials, set before you spin. **Every one of them is a trade** — that is
+the whole rule. A dial that only makes a web better is not a decision, it is an
+upgrade button, and the player would just max it and stop thinking.
+
+| Dial | Turn it up | What it costs you |
+|------|-----------|-------------------|
+| **Tension** | holds harder | tears sooner — a tight web grabs a rat and shreds |
+| **Weight** | stronger in every way | more silk per metre, every time |
+| **Mesh** *(opening it out)* | cheaper: fewer threads | small prey walks straight through |
+
+Mesh is the one with teeth. An open mesh is *literally fewer threads*, so it
+costs less silk without needing a price multiplier — the geometry does the
+pricing — and it raises the smallest thing the web will hold. That protects an
+expensive snare from being sprung and shredded by gnats before the rat arrives.
+A close mesh catches everything, which is a blessing and a curse.
+
+Two of the three change how the web is woven rather than just what it does, so
+a tuned web **looks** different: heavy silk is visibly thicker, an open mesh is
+visibly sparser. A dial you can see is a dial the player will actually use.
+
+Dials are remembered per pattern, so an orb web you like spun tight stays that
+way, and they travel inside saved designs — a kept rig is spun again exactly as
+tuned.
+
+**Under-exercised for now:** the mesh dial only really pays off once there is
+prey of several sizes to filter between. With only flies in the sandbox it is a
+correct mechanic waiting for the world to catch up with it.
+
 ### Next for trap design
-**Tuning dials** — two or three per web (tension, tackiness, spoke-vs-sheet
-bias) that trade off against each other rather than only going up. Designs
-already carry whatever a web is made of, so dials will ride along for free.
+Repair, tension silk as a separate unlock, web sacks, and re-fitting a placed
+design's anchors to local geometry.
 
 ### Web physics rules
 * **Anchors must be on real surfaces**, and a strand cannot exceed your
@@ -353,6 +382,9 @@ is: each new zone opens with you as the smallest thing in it.
 | **G** | Wire one web to another — press on each end |
 | **B** | Keep the rig you are looking at as a design |
 | **V** | Place a saved design — wheel to pick, left mouse to spin it |
+| **;** | Pick which tuning dial the keys point at |
+| **[** / **]** | Turn that dial down / up |
+| **'** | Put a pattern's dials back to standard |
 | **H** | Toggle help |
 | **R** | Free-fly (debug, from the character template) |
 | **T** | Release mouse · **Esc** Quit |
@@ -381,9 +413,10 @@ the first "you are too big for this" moment.
 Done: trigger links — wire any web to any other, snares strike at range when
 signalled, everything else tenses, signals chain. Saved designs — keep a whole
 wired rig and re-place it anywhere.
-Left: tuning dials, re-fitting a placed design's anchors to local geometry,
-renaming designs, tension silk, repair, web sacks, and saving built webs with
-the world.
+Also done: tuning dials — tension, weight and mesh, each a trade rather than
+an upgrade, remembered per pattern and carried inside saved designs.
+Left: re-fitting a placed design's anchors to local geometry, renaming designs,
+tension silk, repair, web sacks, and saving built webs with the world.
 
 **Milestone 5 — Zone two and the loop at scale**
 Crawlspace zone, wasps as a predator, verticality, streaming between zones.

@@ -76,6 +76,10 @@ static func capture(root: WebStructure, facing: Vector3, stage_index := 0) -> We
 		design.pattern_ids.append(web.pattern.id)
 		design.anchor_counts.append(web.anchors.size())
 		design.recorded_silk += web.silk_cost
+		var dials: WebTuning = web.tuning if web.tuning != null else WebTuning.new()
+		design.tuning_tension.append(dials.tension)
+		design.tuning_weight.append(dials.weight)
+		design.tuning_mesh.append(dials.mesh)
 		for anchor in web.anchors:
 			design.anchors.append(inverse * (anchor - centre))
 

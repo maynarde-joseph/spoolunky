@@ -30,6 +30,11 @@ func _run() -> void:
 	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
 	await physics_frame
 	_spider.require_captured_mouse = false
+	# Footsteps are not what this test is about, and a sound still being mixed
+	# when the tree is torn down shows up as a leak at exit.
+	var audio := _spider.get_node_or_null("Player Audios")
+	if audio != null:
+		audio.free()
 	_spider.climb.notice.connect(func(text: String) -> void: print("        (%s)" % text))
 
 	await _test_floor()
@@ -40,7 +45,6 @@ func _run() -> void:
 	await _test_leaping_off_a_wall()
 
 	_release_all()
-	_silence(_spider)
 	current_scene = null
 	_spider = null
 	_room.free()
@@ -199,18 +203,6 @@ func _add_slab(room: Node3D, centre: Vector3, half_extents: Vector3) -> void:
 func _run_frames(count: int) -> void:
 	for i in count:
 		await physics_frame
-
-
-## A footstep still playing when the tree is torn down shows up as a leaked
-## audio stream at exit, which is just noise in the test output.
-func _silence(node: Node) -> void:
-	if node == null or not is_instance_valid(node):
-		return
-	var player := node as AudioStreamPlayer3D
-	if player != null:
-		player.stop()
-	for child in node.get_children():
-		_silence(child)
 
 
 func _release_all() -> void:

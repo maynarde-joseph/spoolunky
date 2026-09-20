@@ -25,6 +25,12 @@ extends Resource
 ## Every piece's anchors, concatenated, in the rig's own space.
 @export var anchors: PackedVector3Array = PackedVector3Array()
 
+## Each piece's dial settings, so a design remembers how it was spun and not
+## just what it was made of.
+@export var tuning_tension: PackedInt32Array = PackedInt32Array()
+@export var tuning_weight: PackedInt32Array = PackedInt32Array()
+@export var tuning_mesh: PackedInt32Array = PackedInt32Array()
+
 ## Signal lines, as piece indices: link_from[i] sets off link_to[i].
 @export var link_from: PackedInt32Array = PackedInt32Array()
 @export var link_to: PackedInt32Array = PackedInt32Array()
@@ -52,6 +58,17 @@ func piece_count() -> int:
 
 func link_count() -> int:
 	return link_from.size()
+
+
+## Dials recorded for one piece, or standard ones if the design predates them.
+func tuning_for(piece: int) -> WebTuning:
+	var tuning := WebTuning.new()
+	if piece < 0 or piece >= tuning_tension.size():
+		return tuning
+	tuning.tension = tuning_tension[piece]
+	tuning.weight = tuning_weight[piece]
+	tuning.mesh = tuning_mesh[piece]
+	return tuning
 
 
 ## Anchors for one piece, still in the rig's own space.

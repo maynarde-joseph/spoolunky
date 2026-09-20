@@ -20,6 +20,7 @@ X                      pull down the web you're looking at
 G                      wire one web to another — press on each end
 B                      keep the rig you're looking at as a design
 V                      place a saved design (wheel to pick, LMB to spin)
+; and [ ]              pick a tuning dial, then turn it   ('  resets)
 R                      free-fly (debug)   T  free the mouse   Esc  quit
 H                      hide this"""
 
@@ -35,6 +36,7 @@ H                      hide this"""
 @onready var pattern_label: Label = $Build/PatternLabel
 @onready var hint_label: Label = $Build/HintLabel
 @onready var problem_label: Label = $Build/ProblemLabel
+@onready var dial_label: Label = $Build/DialLabel
 @onready var toast_label: Label = $Toast
 @onready var help_label: Label = $Help
 
@@ -46,6 +48,7 @@ func _ready() -> void:
 	help_label.text = HELP_TEXT
 	toast_label.modulate.a = 0.0
 	problem_label.text = ""
+	dial_label.text = ""
 	_bind.call_deferred()
 
 
@@ -135,6 +138,7 @@ func _refresh_build_panel() -> void:
 	if builder == null:
 		return
 
+	dial_label.text = ""
 	if builder.placing_design:
 		var design := builder.current_design()
 		if design != null:
@@ -173,3 +177,14 @@ func _refresh_build_panel() -> void:
 		"" if builder.anchors.size() == 1 else "s"]
 	hint_label.text = builder.hint_text()
 	problem_label.text = builder.problem_text()
+	dial_label.text = _dial_readout(builder)
+
+
+## The three dials, with a marker on whichever one the keys are pointed at.
+func _dial_readout(builder: WebBuilder) -> String:
+	var tuning := builder.current_tuning()
+	var parts := PackedStringArray()
+	for dial in WebTuning.DIAL_NAMES.size():
+		var text := tuning.bar(dial)
+		parts.append("[%s]" % text if dial == builder.selected_dial else " %s " % text)
+	return "   ".join(parts)

@@ -35,6 +35,13 @@ var patterns: Array[WebPattern] = []
 var pattern_index := 0
 var building := false
 
+## Dial settings, kept per pattern so an orb web you like spun tight stays that
+## way when you come back to it.
+var tunings := {}
+
+## Which dial the tuning keys are pointed at.
+var selected_dial: WebTuning.Dial = WebTuning.Dial.TENSION
+
 ## Rigs the player has saved, and which one is on the end of the cursor.
 var designs: Array[WebDesign] = []
 var design_index := 0
@@ -181,11 +188,13 @@ func finish() -> void:
 		return
 
 	var quality := _quality()
+	var tuning := tuning_for(pattern)
+	var spun := tuning.apply_to(pattern)
 	var web: WebStructure = null
-	if pattern.shape == WebPattern.Shape.STRAND:
-		web = WebStrand.spin(pattern, anchors[0], anchors[1], quality)
+	if spun.shape == WebPattern.Shape.STRAND:
+		web = WebStrand.spin(spun, anchors[0], anchors[1], quality)
 	else:
-		web = WebNet.spin(pattern, anchors, quality)
+		web = WebNet.spin(spun, anchors, quality)
 
 	if web == null:
 		notice.emit("Those anchors won't hold a web")
@@ -196,6 +205,7 @@ func finish() -> void:
 		web.free()
 		return
 
+	web.tuning = tuning.copy()
 	_silk.spend(web.silk_cost)
 	web.place_in(_resolve_container())
 	anchors.clear()
@@ -218,6 +228,60 @@ func cycle(step: int) -> void:
 	anchors.clear()
 	state_changed.emit()
 	notice.emit(_pattern_name())
+
+
+## Dials for a pattern, made on demand the first time it is asked for.
+func tuning_for(pattern: WebPattern) -> WebTuning:
+	if pattern == null:
+		return WebTuning.new()
+	if not tunings.has(pattern.id):
+		tunings[pattern.id] = WebTuning.new()
+	return tunings[pattern.id]
+
+
+## Dials for the pattern on the end of the cursor.
+func current_tuning() -> WebTuning:
+	return tuning_for(current_pattern())
+
+
+## Points the tuning keys at the next dial along.
+func cycle_dial(step: int) -> void:
+	var count := WebTuning.DIAL_NAMES.size()
+	selected_dial = wrapi(selected_dial + step, 0, count) as WebTuning.Dial
+	state_changed.emit()
+	notice.emit(WebTuning.DIAL_HINTS[selected_dial])
+
+
+## Turns the selected dial. Every one of them costs something to gain
+## something, so there is no setting that is simply better.
+func adjust_dial(step: int) -> void:
+	var pattern := current_pattern()
+	if pattern == null:
+		return
+	var tuning := tuning_for(pattern)
+	if not tuning.nudge(selected_dial, step):
+		notice.emit("%s is as far as it goes" % WebTuning.DIAL_NAMES[selected_dial])
+		return
+	state_changed.emit()
+	notice.emit("%s   %s" % [tuning.bar(selected_dial), tuning.hint(selected_dial)])
+
+
+## Puts every dial on this pattern back to the middle.
+func reset_dials() -> void:
+	var pattern := current_pattern()
+	if pattern == null:
+		return
+	tunings[pattern.id] = WebTuning.new()
+	state_changed.emit()
+	notice.emit("%s dials back to standard" % pattern.display_name)
+
+
+## The pattern as it would actually be spun right now, dials included.
+func tuned_pattern() -> WebPattern:
+	var pattern := current_pattern()
+	if pattern == null:
+		return null
+	return tuning_for(pattern).apply_to(pattern)
 
 
 func current_pattern() -> WebPattern:
@@ -332,13 +396,16 @@ func place_design() -> bool:
 			return _abandon(spun, "That design is missing anchors")
 		centres.append(centre / float(points.size()))
 
+		var dials := design.tuning_for(piece)
+		var tuned := dials.apply_to(pattern)
 		var web: WebStructure = null
-		if pattern.shape == WebPattern.Shape.STRAND:
-			web = WebStrand.spin(pattern, points[0], points[1], quality)
+		if tuned.shape == WebPattern.Shape.STRAND:
+			web = WebStrand.spin(tuned, points[0], points[1], quality)
 		else:
-			web = WebNet.spin(pattern, points, quality)
+			web = WebNet.spin(tuned, points, quality)
 		if web == null:
 			return _abandon(spun, "That design won't hold together there")
+		web.tuning = dials
 		spun.append(web)
 		total += web.silk_cost
 
@@ -565,7 +632,7 @@ func _update_aim() -> void:
 
 	var provisional := anchors.duplicate()
 	provisional.append(aim_point)
-	estimated_cost = _estimate_cost(pattern, provisional)
+	estimated_cost = _estimate_cost(tuned_pattern(), provisional)
 	if estimated_cost > _silk.current and provisional.size() >= pattern.min_anchors:
 		problem = Problem.NO_SILK
 

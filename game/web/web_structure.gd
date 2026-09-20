@@ -48,6 +48,9 @@ var silk_cost := 0.0
 ## The builder's silk quality at the time of spinning. Bigger spider, better web.
 var quality := 1.0
 
+## Dial settings this web was spun with, kept so it can be saved into a design.
+var tuning: WebTuning = null
+
 var durability := 1.0
 var max_durability := 1.0
 
@@ -377,6 +380,9 @@ func _capture(body: Node3D, snap_time: float, point: Vector3) -> bool:
 	if not body.has_method("on_snared") or _snared.has(body):
 		return false
 	if body.has_method("can_be_snared") and not body.can_be_snared():
+		return false
+	# An open mesh lets the small stuff walk straight through.
+	if "size_class" in body and body.size_class < pattern.min_catch_size:
 		return false
 	_snared.append(body)
 	body.on_snared(self, point, snap_time)
