@@ -48,6 +48,7 @@ func _run() -> void:
 	camera.look_at(Vector3(0.25, 0.5, 0.45), Vector3.UP)
 	camera.make_current()
 
+	await _shot_frame()
 	await _shot(WebGeometry.Weave.STRETCHED, "weave_stretched")
 	await _shot(WebGeometry.Weave.INSCRIBED, "weave_inscribed")
 
@@ -57,11 +58,44 @@ func _run() -> void:
 	quit(0)
 
 
-func _shot(weave: WebGeometry.Weave, name: String) -> void:
+## Walking a triangle into the corner, then weaving inside it. The frame is
+## real silk standing in the world before any web exists.
+func _shot_frame() -> void:
+	_clear()
+	_spider.silk.refill(9000.0)
+	_spider.view.third_person = true
+	_spider.view.distance = 11.0
+	_spider.global_position = Vector3(1.15, 0.55, 1.15)
+	_spider.view.face(Vector3(-1, 0, -1))
+	_spider.view.pitch = deg_to_rad(-10.0)
+	await _frames(4)
+
+	var builder := _spider.web_builder
+	for i in builder.patterns.size():
+		if builder.patterns[i].id == "sheet_web":
+			builder.pattern_index = i
+	builder.start()
+	for point in [Vector3(0.55, 0.02, 0.55), Vector3(0.02, 0.62, 0.55),
+			Vector3(0.55, 0.62, 0.02)]:
+		builder.add_anchor(point)
+	await _frames(4)
+	await _save("frame_walked", "frame up, %.2f m2 enclosed" % builder.enclosed_area())
+
+	builder.finish()
+	builder.stop()
+	await _frames(4)
+	await _save("frame_woven", "woven inside the frame")
+
+
+func _clear() -> void:
 	var container := _room.get_node_or_null("Webs")
 	if container != null:
 		for child in container.get_children():
 			child.free()
+
+
+func _shot(weave: WebGeometry.Weave, name: String) -> void:
+	_clear()
 	_spider.silk.refill(9000.0)
 	var builder := _spider.web_builder
 	builder.weave = weave
@@ -80,6 +114,20 @@ func _shot(weave: WebGeometry.Weave, name: String) -> void:
 	var path := "user://%s.png" % name
 	root.get_texture().get_image().save_png(path)
 	print("saved ", ProjectSettings.globalize_path(path), "  — ", builder.weave_name())
+
+
+func _save(name: String, note: String) -> void:
+	for i in 10:
+		await process_frame
+	await RenderingServer.frame_post_draw
+	var path := "user://%s.png" % name
+	root.get_texture().get_image().save_png(path)
+	print("saved ", ProjectSettings.globalize_path(path), "  — ", note)
+
+
+func _frames(count: int) -> void:
+	for i in count:
+		await physics_frame
 
 
 func _slab(centre: Vector3, half: Vector3, material_path: String) -> void:

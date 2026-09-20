@@ -74,8 +74,11 @@ class NetLayout extends RefCounted:
 ## so a web strung across a corner stays attached to all three surfaces and
 ## tents through the fold instead of slicing across it. Only the capture spiral
 ## cares about the fitted plane, and only in [constant Weave.INSCRIBED].
+## [param include_frame] draws the rim as part of the web. Turn it off when the
+## frame is already standing in the world as strands the spider walked.
 static func layout_net(world_points: PackedVector3Array, pattern: WebPattern,
-		origin: Vector3, quality: float, weave: Weave = Weave.STRETCHED) -> NetLayout:
+		origin: Vector3, quality: float, weave: Weave = Weave.STRETCHED,
+		include_frame := true) -> NetLayout:
 	var layout := NetLayout.new()
 	layout.strands = StrandSet.new()
 	layout.weave = weave
@@ -134,7 +137,8 @@ static func layout_net(world_points: PackedVector3Array, pattern: WebPattern,
 	for i in layout.rim.size():
 		var a := layout.rim[i]
 		var b := layout.rim[(i + 1) % layout.rim.size()]
-		layout.strands.add(a, b, thickness * 1.5)
+		if include_frame:
+			layout.strands.add(a, b, thickness * 1.5)
 		layout.radius = maxf(layout.radius, hub.distance_to(a))
 
 	# Spokes, from the hub out to wherever the frame happens to be in that

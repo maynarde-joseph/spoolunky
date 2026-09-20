@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="WebPattern" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/web_pattern.gd" id="1_pattern"]
+
+[resource]
+script = ExtResource("1_pattern")
+id = "frame_line"
+display_name = "Frame Line"
+description = "The silk you drag behind you. Not sticky, not a trap — just a thread between two places, which happens to be a road."
+unlock_stage = 0
+sort_order = -1
+color = Color(0.9, 0.92, 0.95, 0.85)
+shape = 0
+min_anchors = 2
+max_anchors = 2
+radial_count = 0
+ring_count = 0
+jitter = 0.0
+strand_thickness = 0.01
+silk_base_cost = 0.5
+silk_per_metre = 0.9
+silk_per_square_metre = 0.0
+trigger = 0
+hold_strength = 0.0
+durability = 30.0
+walkable = false
+ridable = true
+catches_prey = false
+can_signal = false

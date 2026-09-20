@@ -79,10 +79,9 @@ func _ready() -> void:
 
 	view.setup(self, get_node_or_null("Head/FirstPersonCameraReference"))
 	view.face(-global_basis.z)
-	web_builder.setup(self, silk, growth, view)
-	web_builder.notice.connect(_on_notice)
-
 	climb.setup(self, silk, growth, view)
+	web_builder.setup(self, silk, growth, view, climb)
+	web_builder.notice.connect(_on_notice)
 	climb.notice.connect(_on_notice)
 	climb.jumped.connect(_on_jumped)
 	climb.line_dropped.connect(_on_line_dropped)

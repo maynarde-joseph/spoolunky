@@ -11,6 +11,7 @@ extends RefCounted
 const PATTERN_DIR := "res://game/data/patterns"
 
 const BUILTIN_PATTERNS: Array[String] = [
+	"res://game/data/patterns/frame_line.tres",
 	"res://game/data/patterns/trip_line.tres",
 	"res://game/data/patterns/sheet_web.tres",
 	"res://game/data/patterns/orb_web.tres",

@@ -36,9 +36,9 @@ dropped into it.
 | **Ctrl** / **Space** | lower / raise yourself on the line |
 | **Right Mouse** | let go of the line |
 | **Q** | web build mode |
-| **Left Mouse** | place an anchor |
+| **Left Mouse** | grapple to the next anchor, dragging silk behind you |
 | **Right Mouse** | undo the last anchor, or leave build mode |
-| **F** | spin the web |
+| **F** | weave the inside of the loop you walked |
 | **Wheel** or **Z** / **C** | change web pattern |
 | **E** | wrap caught prey, then drain it (also re-arms a sprung snare) |
 | **X** | pull down the web you're looking at, for half the silk back |
@@ -56,13 +56,18 @@ dropped into it.
 
 ## Building a web
 
-Anchors are shot at real surfaces, so webs take the shape of the gap you string
-them across. Two anchors make a strand (tripline, bridge); three or more make a
-net, which is filled in with spokes and a spiral and will catch things.
+Placing an anchor **grapples you to it**, dragging a frame line behind you. So
+the frame of a web is the route you took around it, not an outline you drew from
+across the room.
 
-You are charged silk only when the web actually goes up, and the HUD shows a
-running estimate plus the reason a spot won't take an anchor — out of reach, too
-far to span, not enough silk, or a pattern your size can't spin yet.
+Frame lines are real silk that stands on its own, and they're ridable — walk a
+triangle into a corner and you've built three ziplines whether or not you ever
+weave anything into them. Once the run closes a loop, **F** weaves the enclosed
+area in one go, charging only for the silk inside; the frame was paid for as you
+dragged it. Pulling a web down later leaves the frame standing.
+
+If the selected pattern is a strand (tripline, bridge), that's what gets dragged
+instead of plain frame line, so you can lay a run of triplines the same way.
 
 ## Riding your own silk
 

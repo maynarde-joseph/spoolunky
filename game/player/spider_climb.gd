@@ -21,11 +21,14 @@ enum Mode {
 	HANGING,
 	## Clipped onto a strand and sliding along it.
 	RIDING,
+	## Hauling itself to a point it is about to anchor silk to.
+	GRAPPLING,
 }
 
 signal mode_changed(mode: Mode)
 signal surface_changed(normal: Vector3)
 signal jumped()
+signal grappled(point: Vector3, normal: Vector3)
 signal line_dropped(anchor: Vector3)
 signal line_cut()
 signal notice(text: String)
@@ -100,6 +103,13 @@ signal notice(text: String)
 ## Upward kick when letting go, so launching off a line clears the edge.
 @export var launch_lift := 2.5
 
+## How fast the spider hauls itself to an anchor point, in body heights per
+## second. Building a web is walking the frame, so this wants to be brisk.
+@export var grapple_speed := 26.0
+
+## Give up on a grapple after this long, so a blocked one cannot hang.
+@export var grapple_timeout := 2.5
+
 
 var mode: Mode = Mode.AIRBORNE
 var surface_normal := Vector3.UP
@@ -110,6 +120,10 @@ var line_length := 0.0
 var ride_web: WebStrand = null
 var ride_distance := 0.0
 var ride_speed := 0.0
+
+## Where a grapple is heading, and the surface waiting at the other end.
+var grapple_target := Vector3.ZERO
+var grapple_normal := Vector3.UP
 
 ## Speed along the surface, for head bob and footsteps.
 var tangent_velocity := Vector3.ZERO
@@ -123,6 +137,7 @@ var _current_up := Vector3.UP
 var _grace := 0.0
 var _previous_up := Vector3.ZERO
 var _swap_cooldown := 0.0
+var _grapple_time := 0.0
 var _silk_warning := 0.0
 var _line_mesh: ImmediateMesh
 var _line_instance: MeshInstance3D
@@ -157,6 +172,10 @@ func is_hanging() -> bool:
 
 func is_riding() -> bool:
 	return mode == Mode.RIDING
+
+
+func is_grappling() -> bool:
+	return mode == Mode.GRAPPLING
 
 
 ## Ground speed along the line, for the HUD and the speed rush on the camera.
@@ -212,7 +231,10 @@ func update_orientation(delta: float) -> void:
 		return
 	# The body turns to follow the camera; the camera never follows the body.
 	_facing = _surface_forward(_current_up)
-	if mode == Mode.AIRBORNE or mode == Mode.RIDING:
+	if mode == Mode.GRAPPLING:
+		# Roll onto the surface on the way in, so arrival is not a snap.
+		_blend_up(grapple_normal, delta)
+	elif mode == Mode.AIRBORNE or mode == Mode.RIDING:
 		_blend_up(Vector3.UP, delta)
 	elif mode == Mode.HANGING:
 		var to_anchor := line_anchor - _spider.global_position
@@ -233,7 +255,9 @@ func step(delta: float, input_axis: Vector2, want_jump: bool, want_sprint: bool,
 	_grace = maxf(0.0, _grace - delta)
 	_swap_cooldown = maxf(0.0, _swap_cooldown - delta)
 	_silk_warning = maxf(0.0, _silk_warning - delta)
-	if mode == Mode.RIDING:
+	if mode == Mode.GRAPPLING:
+		_step_grappling(delta)
+	elif mode == Mode.RIDING:
 		_step_riding(delta, input_axis, want_jump, want_release)
 	elif mode == Mode.HANGING:
 		_step_hanging(delta, input_axis, want_line_out, want_line_in, want_release)
@@ -524,6 +548,50 @@ func _warn(text: String) -> void:
 		return
 	_silk_warning = 2.0
 	notice.emit(text)
+
+
+# --- grappling ----------------------------------------------------------
+
+## Hauls the spider to a point it is going to anchor silk to. Building a web is
+## a journey around its frame rather than a thing done at arm's length, so every
+## anchor is somewhere the spider actually went.
+func grapple_to(point: Vector3, normal: Vector3) -> bool:
+	if mode == Mode.GRAPPLING or _spider == null:
+		return false
+	grapple_target = point
+	grapple_normal = normal
+	_grapple_time = 0.0
+	_set_mode(Mode.GRAPPLING)
+	return true
+
+
+func _step_grappling(delta: float) -> void:
+	var height := _body_height()
+	_grapple_time += delta
+	var offset := grapple_target - _spider.global_position
+	var distance := offset.length()
+	if distance <= maxf(height * 0.5, 0.02) or _grapple_time > grapple_timeout:
+		_arrive()
+		return
+
+	var speed := grapple_speed * height
+	_spider.velocity = offset / distance * speed
+	_spider.up_direction = Vector3.UP
+	var before := _spider.global_position
+	_spider.move_and_slide()
+	tangent_velocity = _spider.velocity
+	# Jammed on geometry short of the target: near enough, stop there.
+	if _spider.global_position.distance_to(before) < speed * delta * 0.25:
+		_arrive()
+
+
+func _arrive() -> void:
+	var point := grapple_target
+	var normal := grapple_normal
+	_spider.velocity = Vector3.ZERO
+	_adopt_surface(normal)
+	_set_mode(Mode.ATTACHED)
+	grappled.emit(point, normal)
 
 
 # --- ziplines -----------------------------------------------------------

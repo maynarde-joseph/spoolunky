@@ -69,8 +69,9 @@ func _test_starting_state(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	_check(is_equal_approx(spider.head.position.y, stage.body_height * 0.32),
 		"eye height scaled to the body")
 	_check(builder.patterns.size() >= 6, "loaded %d web patterns" % builder.patterns.size())
-	_check(builder.unlocked_patterns().size() == 2,
-		"only the two starter patterns are unlocked (%d)" % builder.unlocked_patterns().size())
+	_check(builder.unlocked_patterns().size() == 3,
+		"frame line, tripline and sheet web to start with (%d)"
+		% builder.unlocked_patterns().size())
 	_check(spider.silk.maximum == stage.silk_capacity, "silk capacity comes from the tier")
 
 
@@ -131,8 +132,17 @@ func _test_building_a_net(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 	_select_pattern(builder, "sheet_web")
 	builder.start()
 	var centre := spider.global_position + Vector3(0, 0.4, -1.0)
-	for point in _square(centre, 0.6):
+
+	# Walking the frame is what costs silk, one line at a time.
+	var before_frame := silk.current
+	var corners := _square(centre, 0.6)
+	for point in corners:
 		builder.add_anchor(point)
+	var frame_spent := before_frame - silk.current
+	_check(frame_spent > 0.0, "laying the frame costs silk (%.1f)" % frame_spent)
+	_check(_web_count(webs) == 3, "three lines behind four anchors (%d)" % _web_count(webs))
+	_check(builder.enclosed_area() > 0.0,
+		"the run encloses %.2f m2" % builder.enclosed_area())
 
 	var before := silk.current
 	builder.finish()
@@ -140,29 +150,50 @@ func _test_building_a_net(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 	var spent := before - silk.current
 	await physics_frame
 
-	var net := _first_web(webs) as WebNet
-	if not _check(net != null, "a sheet web was spun"):
+	var net := _newest_web(webs, "sheet_web") as WebNet
+	if not _check(net != null, "a sheet web was woven inside it"):
 		return
-	_check(spent > 0.0, "silk was spent (%.1f -> %.1f)" % [before, before - spent])
-	_check(is_equal_approx(spent, net.silk_cost), "the charge matches the web's cost")
+	_check(spent > 0.0, "weaving costs silk (%.1f)" % spent)
+	_check(is_equal_approx(spent - net.silk_cost, _closing_line_cost(webs)),
+		"the charge is the weave plus the one line that closed the ring")
 	_check(net.mesh_instance != null and net.mesh_instance.mesh.get_surface_count() > 0,
 		"the web has a mesh")
 	_check(net.catch_area != null, "the web has a catch volume")
 	_check(net.area > 0.0, "the web encloses %.2f m2" % net.area)
 	_check(net.global_position.distance_to(centre) < 0.5, "the web sits where it was strung")
 	_check(net.durability > 0.0 and net.durability == net.max_durability, "it starts intact")
-	_check(builder.anchors.is_empty(), "anchors reset after spinning")
-	_check(builder.building, "build mode stays on for the next web")
+	_check(builder.anchors.is_empty(), "the run resets after weaving")
+	_check(builder.building, "build mode stays on for the next one")
+
+	# The frame outlives the web: roads are not traps.
+	var lines_before := _count_pattern(webs, "frame_line")
+	_check(lines_before == 4, "the ring left four lines standing (%d)" % lines_before)
 	builder.stop()
 
-	# Too few anchors must not build anything or charge for it.
+	# Too few anchors must not weave anything.
 	builder.start()
-	builder.add_anchor(centre)
+	builder.add_anchor(centre + Vector3(0, 1.5, 0))
 	var silk_before := silk.current
+	var webs_before := _web_count(webs)
 	builder.finish()
-	_check(is_equal_approx(silk.current, silk_before), "an unfinishable web costs nothing")
-	_check(_web_count(webs) == 1, "and spawns nothing")
+	_check(is_equal_approx(silk.current, silk_before), "a lone anchor weaves nothing")
+	_check(_web_count(webs) == webs_before, "and spawns nothing")
 	builder.stop()
+
+
+## Cost of the last frame line laid, the one that closed the ring.
+func _closing_line_cost(webs: Node3D) -> float:
+	var newest := _newest_web(webs, "frame_line")
+	return newest.silk_cost if newest != null else 0.0
+
+
+func _count_pattern(webs: Node3D, pattern_id: String) -> int:
+	var total := 0
+	for child in webs.get_children():
+		var web := child as WebStructure
+		if web != null and not web.is_queued_for_deletion() and web.pattern.id == pattern_id:
+			total += 1
+	return total
 
 
 func _test_catching(spider: SpiderPlayer, level: Node, webs: Node3D) -> void:

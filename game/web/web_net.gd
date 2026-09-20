@@ -16,7 +16,8 @@ var spiral_radius := 0.0
 ## Spins a net across the given world-space anchors. Returns null if the
 ## anchors are too close to a straight line to enclose anything.
 static func spin(pattern: WebPattern, world_points: PackedVector3Array, quality: float,
-		weave: WebGeometry.Weave = WebGeometry.Weave.STRETCHED) -> WebNet:
+		weave: WebGeometry.Weave = WebGeometry.Weave.STRETCHED,
+		include_frame := true) -> WebNet:
 	if world_points.size() < 3:
 		return null
 
@@ -25,7 +26,8 @@ static func spin(pattern: WebPattern, world_points: PackedVector3Array, quality:
 		origin += p
 	origin /= float(world_points.size())
 
-	var layout := WebGeometry.layout_net(world_points, pattern, origin, quality, weave)
+	var layout := WebGeometry.layout_net(world_points, pattern, origin, quality, weave,
+		include_frame)
 	if not layout.valid:
 		return null
 

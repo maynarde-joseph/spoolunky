@@ -140,7 +140,9 @@ Silk is the only currency and the only meaningful constraint.
   eventually rebuild — never softlocked, just slowed.
 * **Feeding** is the real source: draining prey returns silk proportional to
   its biomass.
-* **Demolishing** your own web refunds ~50%, so experimenting is cheap.
+* **Demolishing** your own web refunds ~50%, so experimenting is cheap. Pulling
+  a web down leaves its frame lines standing — you only get back what you spent
+  on the weave.
 * **Repairing** a damaged web costs a fraction of the original.
 
 Every buildable thing has a cost in metres of strand and square metres of
@@ -181,9 +183,11 @@ three or more closed anchors make a *net*.
 
 **Decided, and it is a three-layer split:**
 
-1. **Shape — complete freedom.** You choose every anchor: where the web hangs,
-   how big it is, what angle it sits at, what gap it spans. This is where the
-   skill is, because it is really the skill of reading a room.
+1. **Shape — complete freedom, and you have to go there.** You choose every
+   anchor, and placing one means **grappling to it**, dragging silk behind you.
+   The frame of a web is not an outline you drew at arm's length; it is the
+   route you took. This is where the skill is, because it is really the skill
+   of reading a room and then getting around it.
 2. **Weave — preset, in one of two styles.** The pattern decides how the inside
    is filled and how it behaves. Patterns are *techniques*, not blueprints. The
    two styles are a live switch (**K**) while we work out which the game wants:
@@ -209,6 +213,29 @@ prey AI need most: being able to glance at a web and know what it does.
 The exception is single strands — triplines, draglines, bridges. One line *is*
 legible, so those stay fully manual. The rule of thumb: **manual at the thread
 level for lines, pattern-driven for areas.**
+
+### Building is travelling
+
+Clicking an anchor hauls the spider to it and leaves a **frame line** behind —
+real silk, standing in the world, that exists whether or not a web ever gets
+woven into it. Three consequences, all of them good:
+
+* **The frame is a road.** Frame lines are ridable, so walking a triangle into a
+  corner leaves you three ziplines whether or not you weave anything. Building
+  and traversal stop being separate systems and become the same act.
+* **Silk prices itself.** You pay per metre for the line you dragged, which is
+  the most intuitive rule the game could have, and weaving the inside is a
+  separate charge. That settles a question we had open for a while: the frame
+  costs because you walked it, the fill costs by the thread.
+* **The web outlives nothing; the roads outlive everything.** Tearing a web down
+  leaves its frame standing. Traps are temporary, the network is not.
+
+Once a run of anchors closes a loop — walk back to where you started, or press
+**F** — the enclosed area can be woven in one go. The frame is already up, so
+weaving only spins and charges for the silk inside it.
+
+You can only build where you can physically get to. With climbing that is
+almost everywhere, and it is a far better constraint than an arbitrary reach.
 
 ### Trigger links
 
@@ -426,9 +453,9 @@ is: each new zone opens with you as the smallest thing in it.
 | **Ctrl / Space** | Lower / raise yourself on the line |
 | **Right Mouse** | Let go of the line |
 | **Q** | Toggle web build mode |
-| **Left Mouse** | Place anchor |
+| **Left Mouse** | Grapple to the next anchor, dragging silk behind you |
 | **Right Mouse** | Undo last anchor (or leave build mode) |
-| **F** | Finish and spin the web |
+| **F** | Weave the inside of the loop you walked |
 | **Mouse Wheel / Z / C** | Cycle web pattern |
 | **E** | Interact — wrap prey, then drain it; re-arm a sprung snare |
 | **X** | Demolish the web you are looking at (50% silk back) |

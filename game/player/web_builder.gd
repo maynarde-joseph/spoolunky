@@ -31,6 +31,12 @@ enum Problem {
 ## Silk per metre of signal line.
 @export var link_silk_per_metre := 0.5
 
+## Most anchors one run round a frame may have.
+@export var max_chain := 12
+
+## Pattern dragged between anchors when the chosen one is a net.
+const FRAME_PATTERN := "frame_line"
+
 var patterns: Array[WebPattern] = []
 var pattern_index := 0
 var building := false
@@ -65,6 +71,12 @@ var _spider: CharacterBody3D
 var _silk: SilkPool
 var _growth: SpiderGrowth
 var _view: SpiderCamera
+var _climb: SpiderClimb
+
+## Frame strands laid on the way round the current chain.
+var _chain: Array[WebStrand] = []
+var _pending_anchor := Vector3.ZERO
+var _awaiting_grapple := false
 var _preview: MeshInstance3D
 var _preview_mesh: ImmediateMesh
 var _preview_material: StandardMaterial3D
@@ -82,11 +94,14 @@ func _ready() -> void:
 
 ## Wires the builder to the spider that owns it.
 func setup(spider: CharacterBody3D, silk: SilkPool, growth: SpiderGrowth,
-		view: SpiderCamera) -> void:
+		view: SpiderCamera, climb: SpiderClimb = null) -> void:
 	_spider = spider
 	_silk = silk
 	_growth = growth
 	_view = view
+	_climb = climb
+	if _climb != null:
+		_climb.grappled.connect(_on_grappled)
 
 
 func _process(_delta: float) -> void:
@@ -110,7 +125,7 @@ func start() -> void:
 	if building:
 		return
 	building = true
-	anchors.clear()
+	_end_chain()
 	if not _is_unlocked(current_pattern()):
 		_select_first_unlocked()
 	notice.emit("Build mode: %s" % _pattern_name())
@@ -121,7 +136,7 @@ func stop() -> void:
 	if not building:
 		return
 	building = false
-	anchors.clear()
+	_end_chain()
 	problem = Problem.NONE
 	estimated_cost = 0.0
 	state_changed.emit()
@@ -133,41 +148,88 @@ func place() -> void:
 	if placing_design:
 		place_design()
 		return
-	if not building:
+	if not building or _awaiting_grapple:
 		return
 	var pattern := current_pattern()
 	if pattern == null:
 		return
 	_update_aim()
 
-	if anchors.size() >= pattern.min_anchors and pattern.shape == WebPattern.Shape.NET \
-			and aim_valid and aim_point.distance_to(anchors[0]) <= _snap_radius():
-		finish()
-		return
-
 	if problem != Problem.NONE:
 		notice.emit(problem_text())
 		return
 
+	# Going there is the point: an anchor is somewhere the spider has been, and
+	# the line behind it is silk it dragged on the way.
+	if _climb != null and _climb.grapple_to(aim_point, aim_normal):
+		_pending_anchor = aim_point
+		_awaiting_grapple = true
+		return
 	add_anchor(aim_point)
 
 
-## Drops an anchor at an explicit world point, skipping the aim checks.
-## Spins the web automatically once the pattern has all the anchors it takes.
+func _on_grappled(_point: Vector3, _normal: Vector3) -> void:
+	if not _awaiting_grapple:
+		return
+	_awaiting_grapple = false
+	add_anchor(_pending_anchor)
+
+
+## Drops an anchor at an explicit world point, laying silk from the last one.
+## Grappling calls this on arrival; tests and scripted builds can call it
+## directly to skip the journey.
 func add_anchor(point: Vector3) -> bool:
 	var pattern := current_pattern()
 	if not building or pattern == null:
 		return false
-	if anchors.size() >= pattern.max_anchors:
+	if anchors.size() >= max_chain:
+		notice.emit("That is as long a run as this silk will take")
 		return false
+	if anchors.size() > 0:
+		if _lay_line(anchors[anchors.size() - 1], point) == null:
+			return false
 	anchors.append(point)
 	state_changed.emit()
-	if anchors.size() >= pattern.max_anchors:
+	# Came back round to where it started: that encloses something.
+	if anchors.size() >= 3 and pattern.shape == WebPattern.Shape.NET \
+			and point.distance_to(anchors[0]) <= _snap_radius():
 		finish()
 	return true
 
 
-## Takes the last anchor back, or leaves build mode if there are none.
+## Strings one frame line and charges for it. This is what walking the frame
+## costs — the inside of a web is priced separately, when it is woven.
+func _lay_line(from: Vector3, to: Vector3) -> WebStrand:
+	var pattern := drag_pattern()
+	if pattern == null:
+		return null
+	var dials := tuning_for(pattern)
+	var strand := WebStrand.spin(dials.apply_to(pattern), from, to, _quality())
+	if strand == null:
+		notice.emit("That line has nowhere to go")
+		return null
+	if not _silk.can_afford(strand.silk_cost):
+		notice.emit("Not enough silk for that line — %d needed" % ceili(strand.silk_cost))
+		strand.free()
+		return null
+	_silk.spend(strand.silk_cost)
+	strand.tuning = dials.copy()
+	strand.place_in(_resolve_container())
+	_chain.append(strand)
+	web_built.emit(strand)
+	return strand
+
+
+## What gets dragged between anchors: the chosen pattern if it is a strand,
+## otherwise plain frame line waiting to be woven into.
+func drag_pattern() -> WebPattern:
+	var pattern := current_pattern()
+	if pattern != null and pattern.shape == WebPattern.Shape.STRAND:
+		return pattern
+	return _pattern_by_id(FRAME_PATTERN)
+
+
+## Takes the last anchor back, pulling its line down, or leaves build mode.
 func undo() -> void:
 	if placing_design:
 		toggle_design_mode()
@@ -178,47 +240,74 @@ func undo() -> void:
 		stop()
 		notice.emit("Build mode off")
 		return
+	if not _chain.is_empty():
+		var strand: WebStrand = _chain.pop_back()
+		if is_instance_valid(strand):
+			_silk.refill(strand.demolish())
 	anchors.remove_at(anchors.size() - 1)
 	state_changed.emit()
 
 
-## Spins the web. Silk is only spent once the real layout is known, so the
-## player is never charged for a web that turned out to be impossible.
+## Closes the loop and weaves the inside of it. The frame is already up — the
+## spider walked it — so only the silk inside is spun and paid for here.
 func finish() -> void:
 	if not building:
 		return
 	var pattern := current_pattern()
 	if pattern == null:
 		return
-	if anchors.size() < pattern.min_anchors:
-		notice.emit("%s needs %d anchors" % [pattern.display_name, pattern.min_anchors])
+
+	if pattern.shape == WebPattern.Shape.STRAND:
+		var laid := _chain.size()
+		_end_chain()
+		notice.emit("%d line%s laid" % [laid, "" if laid == 1 else "s"])
 		return
 
-	var quality := _quality()
-	var tuning := tuning_for(pattern)
-	var spun := tuning.apply_to(pattern)
-	var web: WebStructure = null
-	if spun.shape == WebPattern.Shape.STRAND:
-		web = WebStrand.spin(spun, anchors[0], anchors[1], quality)
-	else:
-		web = WebNet.spin(spun, anchors, quality, weave)
+	if anchors.size() < 3:
+		notice.emit("Three anchors at least, to enclose anything")
+		return
 
+	# Close the ring if the spider has not already walked back to the start.
+	var last := anchors[anchors.size() - 1]
+	if last.distance_to(anchors[0]) > _snap_radius():
+		if _lay_line(last, anchors[0]) == null:
+			return
+
+	var dials := tuning_for(pattern)
+	var web := WebNet.spin(dials.apply_to(pattern), anchors, _quality(), weave, false)
 	if web == null:
-		notice.emit("Those anchors won't hold a web")
+		notice.emit("Nothing to weave in there")
+		_end_chain()
 		return
-
 	if not _silk.can_afford(web.silk_cost):
-		notice.emit("Not enough silk — %d needed" % ceili(web.silk_cost))
+		notice.emit("Not enough silk to weave it — %d needed" % ceili(web.silk_cost))
 		web.free()
 		return
 
-	web.tuning = tuning.copy()
+	web.tuning = dials.copy()
 	_silk.spend(web.silk_cost)
 	web.place_in(_resolve_container())
-	anchors.clear()
+	_end_chain()
 	state_changed.emit()
 	web_built.emit(web)
-	notice.emit("%s spun (%d silk)" % [pattern.display_name, roundi(web.silk_cost)])
+	notice.emit("%s woven (%d silk)" % [pattern.display_name, roundi(web.silk_cost)])
+
+
+## Area the current chain encloses, or zero if it does not enclose anything.
+func enclosed_area() -> float:
+	if anchors.size() < 3:
+		return 0.0
+	var normal := WebGeometry.plane_normal(anchors)
+	var total := Vector3.ZERO
+	for i in anchors.size():
+		total += anchors[i].cross(anchors[(i + 1) % anchors.size()])
+	return absf(total.dot(normal)) * 0.5
+
+
+func _end_chain() -> void:
+	anchors.clear()
+	_chain.clear()
+	_awaiting_grapple = false
 
 
 func cycle(step: int) -> void:
@@ -647,11 +736,13 @@ func _update_aim() -> void:
 			problem = Problem.TOO_CLOSE
 			return
 
-	var provisional := anchors.duplicate()
-	provisional.append(aim_point)
-	estimated_cost = _estimate_cost(tuned_pattern(), provisional)
-	if estimated_cost > _silk.current and provisional.size() >= pattern.min_anchors:
-		problem = Problem.NO_SILK
+	if anchors.size() > 0:
+		var dragged := drag_pattern()
+		if dragged != null:
+			estimated_cost = dragged.cost_for(
+				anchors[anchors.size() - 1].distance_to(aim_point), 0.0)
+			if estimated_cost > _silk.current:
+				problem = Problem.NO_SILK
 
 
 ## Design placement only needs somewhere solid to sit against, not the anchor
@@ -746,16 +837,18 @@ func problem_text() -> String:
 func hint_text() -> String:
 	if placing_design:
 		return "Left mouse to spin it here, wheel to change design, right mouse to put it away"
+	if not building:
+		return ""
 	var pattern := current_pattern()
 	if pattern == null:
 		return ""
-	if not building:
-		return ""
-	if anchors.size() < pattern.min_anchors:
-		return "Anchor %d of %d" % [anchors.size(), pattern.min_anchors]
-	if pattern.shape == WebPattern.Shape.NET:
-		return "F to spin, or click the first anchor to close"
-	return "F to spin"
+	if pattern.shape == WebPattern.Shape.STRAND:
+		return "Click to grapple across, dragging %s   ·   F to stop" % pattern.display_name
+	if anchors.size() < 3:
+		return "Click to grapple — %d anchor%s of 3" % [anchors.size(),
+			"" if anchors.size() == 1 else "s"]
+	return "Encloses %.2f m² — F to weave, or grapple back to the first anchor" \
+		% enclosed_area()
 
 
 # --- internals ----------------------------------------------------------

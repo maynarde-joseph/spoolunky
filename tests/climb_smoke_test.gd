@@ -44,6 +44,7 @@ func _run() -> void:
 	await _test_letting_go()
 	await _test_leaping_off_a_wall()
 	await _test_ziplining()
+	await _test_grappling()
 
 	_release_all()
 	current_scene = null
@@ -252,6 +253,61 @@ func _test_ziplining() -> void:
 	_spider.view.toggle_mode()
 	_check(not _spider.view.third_person, "and can be brought inside its head")
 	_spider.view.toggle_mode()
+
+
+## Placing an anchor is a journey: the spider hauls itself to the spot and
+## leaves silk behind it, rather than pointing at it from across the room.
+func _test_grappling() -> void:
+	_spider.climb.release()
+	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
+	_spider.velocity = Vector3.ZERO
+	_spider.silk.refill(_spider.silk.maximum)
+	await _run_frames(20)
+
+	var builder := _spider.web_builder
+	for i in builder.patterns.size():
+		if builder.patterns[i].id == "sheet_web":
+			builder.pattern_index = i
+	builder.start()
+
+	# Look at the far wall and grapple to it.
+	_spider.view.face(Vector3.RIGHT)
+	_spider.view.pitch = 0.0
+	await _run_frames(2)
+	var started_at := _spider.global_position
+	builder.place()
+	_check(_spider.climb.is_grappling(), "clicking an anchor starts a grapple")
+
+	for i in 120:
+		if not _spider.climb.is_grappling():
+			break
+		await physics_frame
+	_check(not _spider.climb.is_grappling(), "the grapple finishes")
+	_check(_spider.global_position.distance_to(started_at) > 0.5,
+		"the spider travelled to its anchor (%.2fm)"
+		% _spider.global_position.distance_to(started_at))
+	_check(builder.anchors.size() == 1, "and the anchor landed there")
+
+	# A second anchor should leave a line between the two.
+	var webs_before := 0
+	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
+		webs_before += 1
+	var silk_before := _spider.silk.current
+	_spider.view.face(Vector3.FORWARD)
+	await _run_frames(2)
+	builder.place()
+	for i in 120:
+		if not _spider.climb.is_grappling():
+			break
+		await physics_frame
+	await _run_frames(2)
+	var webs_after := 0
+	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
+		webs_after += 1
+	_check(builder.anchors.size() == 2, "a second anchor lands too")
+	_check(webs_after > webs_before, "with a line dragged between them")
+	_check(_spider.silk.current < silk_before, "which is what the silk went on")
+	builder.stop()
 
 
 # --- scaffolding --------------------------------------------------------

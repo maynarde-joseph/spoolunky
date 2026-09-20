@@ -12,9 +12,9 @@ Ctrl                   drop onto a dragline (from a wall or ceiling)
   Ctrl / Space           lower / raise yourself on the line
   Right Mouse            let go
 Q                      web build mode
-Left Mouse             place anchor
+Left Mouse             grapple to the next anchor, dragging silk behind you
 Right Mouse            undo anchor / leave build mode
-F                      spin the web
+F                      weave the inside of the loop you walked
 Wheel or Z / C         change web pattern
 E                      wrap prey, then drain it (also re-arms a snare)
 X                      pull down the web you're looking at
@@ -175,11 +175,13 @@ func _refresh_build_panel() -> void:
 	if pattern == null:
 		return
 
-	pattern_label.text = "%s     ~%d silk     %d anchor%s" % [
-		pattern.display_name,
-		ceili(builder.estimated_cost),
-		builder.anchors.size(),
-		"" if builder.anchors.size() == 1 else "s"]
+	var dragged := builder.drag_pattern()
+	var label := pattern.display_name
+	if dragged != null and dragged != pattern:
+		label += "  ·  dragging %s" % dragged.display_name
+	if builder.estimated_cost > 0.0:
+		label += "     next line ~%d silk" % ceili(builder.estimated_cost)
+	pattern_label.text = label
 	hint_label.text = builder.hint_text()
 	problem_label.text = builder.problem_text()
 	dial_label.text = "%s      %s" % [_dial_readout(builder), _weave_readout(builder)]
