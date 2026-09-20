@@ -33,6 +33,7 @@ static func spin(pattern: WebPattern, world_points: PackedVector3Array, quality:
 	net.plane_normal = layout.normal
 	net.radius = layout.radius
 	net._origin = origin
+	net.anchors = world_points.duplicate()
 	net.max_durability = pattern.durability * quality
 	net.durability = net.max_durability
 	net.silk_cost = pattern.cost_for(layout.strands.length, layout.area)

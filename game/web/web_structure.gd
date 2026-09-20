@@ -64,6 +64,10 @@ var mesh_instance: MeshInstance3D
 var catch_area: Area3D
 var material: StandardMaterial3D
 
+## The anchor points this web was spun across, in world space. Kept so a web
+## can be captured into a reusable design.
+var anchors := PackedVector3Array()
+
 ## Webs this one sets off when it fires.
 var links: Array[WebStructure] = []
 
@@ -134,6 +138,11 @@ func lure_radius() -> float:
 
 
 ## Can this web be the source of a signal — does anything ever happen to it?
+## Webs that set this one off.
+func linked_sources() -> Array[WebStructure]:
+	return _linked_by.duplicate()
+
+
 func can_signal() -> bool:
 	return pattern != null and pattern.can_signal
 

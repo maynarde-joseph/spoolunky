@@ -28,6 +28,8 @@ signal respawned()
 @export var input_prev_pattern := "web_prev_pattern"
 @export var input_remove_web := "web_remove"
 @export var input_link_web := "web_link"
+@export var input_save_design := "web_save_design"
+@export var input_design_mode := "web_design_mode"
 @export var input_interact := "interact"
 
 ## Falling below this puts the spider back where it started.
@@ -90,7 +92,7 @@ func _physics_process(delta: float) -> void:
 		sprint = Input.is_action_pressed(input_sprint_action_name)
 		down = Input.is_action_pressed(input_crouch_action_name)
 		# Right mouse means "undo anchor" while building, "let go" while hanging.
-		release_line = not web_builder.building \
+		release_line = not _web_tool_active() \
 			and Input.is_action_just_pressed(input_cancel_anchor)
 		if Input.is_action_just_pressed(input_fly_mode_action_name):
 			fly_ability.set_active(not fly_ability.is_actived())
@@ -131,6 +133,12 @@ func rotate_head(mouse_axis: Vector2) -> void:
 	climb.add_yaw(-mouse_axis.x * sensitivity)
 
 
+## True while the web builder owns the mouse buttons — spinning a web by hand
+## or lining up a saved design.
+func _web_tool_active() -> bool:
+	return web_builder.building or web_builder.placing_design
+
+
 func _accepts_input() -> bool:
 	return not require_captured_mouse or Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED
 
@@ -151,9 +159,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.demolish_aimed()
 	elif event.is_action_pressed(input_link_web):
 		web_builder.toggle_link()
-	elif web_builder.building and event.is_action_pressed(input_place_anchor):
+	elif event.is_action_pressed(input_save_design):
+		web_builder.save_aimed_design()
+	elif event.is_action_pressed(input_design_mode):
+		web_builder.toggle_design_mode()
+	elif _web_tool_active() and event.is_action_pressed(input_place_anchor):
 		web_builder.place()
-	elif web_builder.building and event.is_action_pressed(input_cancel_anchor):
+	elif _web_tool_active() and event.is_action_pressed(input_cancel_anchor):
 		web_builder.undo()
 	elif web_builder.building and event.is_action_pressed(input_finish_web):
 		web_builder.finish()

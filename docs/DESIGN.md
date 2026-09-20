@@ -215,16 +215,34 @@ So a build looks like: tripline across the vent → wired to a snare over the
 drain → funnel lure at the far end to steer things in. That chain is the game's
 version of a loadout.
 
-### Next for trap design
-**Saved designs.** Let the player name a web they have tuned and re-place it in
-one click — the pattern plus its wiring and settings, not the exact anchors. The
-catalogue stops being only what we shipped and becomes partly theirs. Cheap to
-build, because patterns are already plain resources: a player's design is the
-same data written to `user://`.
+### Saved designs
 
-After that, **tuning dials** — two or three per web (tension, tackiness,
-spoke-vs-sheet bias) that trade off against each other rather than only going
-up.
+Point at any web and keep it. The whole rig it belongs to goes with it — every
+web wired to it, however many hops away — recorded as the shape they sit in
+*relative to each other*, not where they happened to be. Put it down again
+anywhere and the rig re-spins facing the way you are looking, wiring included,
+charged at today's silk prices rather than what it cost the first time.
+
+That is the half of "design your own traps" that the catalogue cannot give you:
+the shipped patterns are techniques, but a *rig* — tripline into a snare over
+the drain — is the player's, and now they can keep it and use it again.
+
+Designs are plain resources in the user folder, the same as the patterns the
+game ships with, which is what made this cheap to build.
+
+**Known limits, both worth fixing:**
+* Anchors are replayed exactly as recorded rather than re-fitted, so a rig
+  placed in a differently-shaped corner keeps its original shape and can end up
+  with anchors in mid-air. The fix is to save each anchor's surface normal too
+  and snap it to nearby geometry on placement, falling back to the recorded
+  point. The ghost preview means the player can at least see this coming.
+* Designs are auto-named from their patterns ("Trip Line + Pressure Snare").
+  Renaming needs a text field over a captured mouse, which is real UI work.
+
+### Next for trap design
+**Tuning dials** — two or three per web (tension, tackiness, spoke-vs-sheet
+bias) that trade off against each other rather than only going up. Designs
+already carry whatever a web is made of, so dials will ride along for free.
 
 ### Web physics rules
 * **Anchors must be on real surfaces**, and a strand cannot exceed your
@@ -333,6 +351,8 @@ is: each new zone opens with you as the smallest thing in it.
 | **E** | Interact — wrap prey, then drain it; re-arm a sprung snare |
 | **X** | Demolish the web you are looking at (50% silk back) |
 | **G** | Wire one web to another — press on each end |
+| **B** | Keep the rig you are looking at as a design |
+| **V** | Place a saved design — wheel to pick, left mouse to spin it |
 | **H** | Toggle help |
 | **R** | Free-fly (debug, from the character template) |
 | **T** | Release mouse · **Esc** Quit |
@@ -359,9 +379,11 @@ the first "you are too big for this" moment.
 
 **Milestone 4 — Trap chains** *(started)*
 Done: trigger links — wire any web to any other, snares strike at range when
-signalled, everything else tenses, signals chain.
-Left: saved designs, tuning dials, tension silk, repair, web sacks, and saving
-built webs with the world.
+signalled, everything else tenses, signals chain. Saved designs — keep a whole
+wired rig and re-place it anywhere.
+Left: tuning dials, re-fitting a placed design's anchors to local geometry,
+renaming designs, tension silk, repair, web sacks, and saving built webs with
+the world.
 
 **Milestone 5 — Zone two and the loop at scale**
 Crawlspace zone, wasps as a predator, verticality, streaming between zones.

@@ -40,11 +40,14 @@ func _run() -> void:
 	await _test_leaping_off_a_wall()
 
 	_release_all()
+	_silence(_spider)
 	current_scene = null
 	_spider = null
 	_room.free()
 	_room = null
-	# Let the freed nodes release what they were holding before we pull the plug.
+	# Let the freed nodes release what they were holding — including any audio
+	# still being mixed — before we pull the plug.
+	await process_frame
 	await process_frame
 	print("")
 	if _failures == 0:
@@ -196,6 +199,18 @@ func _add_slab(room: Node3D, centre: Vector3, half_extents: Vector3) -> void:
 func _run_frames(count: int) -> void:
 	for i in count:
 		await physics_frame
+
+
+## A footstep still playing when the tree is torn down shows up as a leaked
+## audio stream at exit, which is just noise in the test output.
+func _silence(node: Node) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	var player := node as AudioStreamPlayer3D
+	if player != null:
+		player.stop()
+	for child in node.get_children():
+		_silence(child)
 
 
 func _release_all() -> void:

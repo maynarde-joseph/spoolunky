@@ -18,6 +18,8 @@ Wheel or Z / C         change web pattern
 E                      wrap prey, then drain it (also re-arms a snare)
 X                      pull down the web you're looking at
 G                      wire one web to another — press on each end
+B                      keep the rig you're looking at as a design
+V                      place a saved design (wheel to pick, LMB to spin)
 R                      free-fly (debug)   T  free the mouse   Esc  quit
 H                      hide this"""
 
@@ -131,6 +133,14 @@ func _refresh_state() -> void:
 func _refresh_build_panel() -> void:
 	var builder := _spider.web_builder
 	if builder == null:
+		return
+
+	if builder.placing_design:
+		var design := builder.current_design()
+		if design != null:
+			pattern_label.text = "%s     ~%d silk" % [design.summary(), ceili(builder.estimated_cost)]
+			hint_label.text = builder.hint_text()
+			problem_label.text = builder.problem_text()
 		return
 
 	if builder.is_linking():

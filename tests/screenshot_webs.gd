@@ -98,6 +98,23 @@ func _run() -> void:
 	root.get_texture().get_image().save_png("user://webs_trigger_link.png")
 	print("saved ", ProjectSettings.globalize_path("user://webs_trigger_link.png"))
 
+	# Fourth shot: that rig kept as a design, ghosted where it would go next.
+	if trip != null:
+		var design := DesignLibrary.capture(trip, Vector3.FORWARD, spider.growth.stage_index)
+		if design != null:
+			builder.designs = [design]
+			builder.design_index = 0
+			builder.placing_design = true
+			spider.silk.refill(9000.0)
+			camera.global_position = Vector3(-6.0, 2.4, 6.5)
+			camera.look_at(Vector3(-10.5, 0.2, 2.0), Vector3.UP)
+			for i in 10:
+				await process_frame
+			await RenderingServer.frame_post_draw
+			root.get_texture().get_image().save_png("user://webs_design_ghost.png")
+			print("saved ", ProjectSettings.globalize_path("user://webs_design_ghost.png"),
+				"  — ghost of \"", design.display_name, "\", aim ", builder.aim_valid)
+
 	current_scene = null
 	level.free()
 	await process_frame

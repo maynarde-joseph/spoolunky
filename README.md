@@ -42,6 +42,8 @@ dropped into it.
 | **E** | wrap caught prey, then drain it (also re-arms a sprung snare) |
 | **X** | pull down the web you're looking at, for half the silk back |
 | **G** | wire one web to another — press on each end |
+| **B** | keep the rig you're looking at as a design |
+| **V** | place a saved design — wheel to pick, left mouse to spin it |
 | **H** | toggle the help overlay |
 | **R** | free-fly (from the movement template, handy for scouting) |
 | **T** | release the mouse · **Esc** quit |
@@ -78,6 +80,22 @@ doorway can spring a snare on the far side of the room and catch something that
 never touched the silk. Any other web tenses instead, holding roughly twice as
 well for a few seconds. Signals chain, and the dashed cold-blue lines show you
 your own machine.
+
+## Saving a rig as a design
+
+**B** while looking at a web keeps it — and everything wired to it — as a
+design. **V** brings your designs up: the wheel picks one, a ghost shows where
+it would land, and left mouse spins the whole rig, wiring and all, turned to
+face the way you're looking. You're charged at today's silk prices, and nothing
+is built or charged unless all of it can be.
+
+Designs are written to `user://designs/*.tres`, which is
+`~/.local/share/godot/app_userdata/spoolunky/designs` on Linux. They're plain
+resources, so renaming one is a matter of editing `display_name` in the file.
+
+Anchors are replayed exactly as recorded rather than re-fitted to whatever is
+under them, so a rig placed in a differently-shaped spot keeps its shape — the
+ghost preview is there so you can see that before committing.
 
 ## Adding a new kind of web
 

@@ -51,6 +51,7 @@ func _run() -> void:
 	await _test_tripline_alert(spider, builder, webs, level)
 	await _test_pressure_snare(spider, builder, webs, silk, level)
 	await _test_trigger_links(spider, builder, webs, silk, level)
+	await _test_saved_designs(spider, builder, webs, silk)
 	await _test_sandbox_wiring(level, spider)
 	await _test_demolish(builder, webs, silk)
 
@@ -410,6 +411,102 @@ func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	_check(trip.link_mesh.mesh == null, "and its signal line stops being drawn")
 
 
+## Keeping a rig and putting it down again somewhere else, wiring and all.
+func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
+		silk: SilkPool) -> void:
+	silk.refill(silk.maximum)
+	var base := spider.global_position + Vector3(-5.0, 0.4, 0.0)
+
+	# A two-piece rig: snare plus a tripline wired to it.
+	_select_pattern(builder, "pressure_snare")
+	builder.start()
+	for point in _square(base, 0.6):
+		builder.add_anchor(point)
+	builder.finish()
+	builder.stop()
+	_select_pattern(builder, "trip_line")
+	builder.start()
+	builder.add_anchor(base + Vector3(1.6, -0.4, -0.5))
+	builder.add_anchor(base + Vector3(1.6, -0.4, 0.5))
+	builder.stop()
+	await physics_frame
+
+	var snare := _newest_web(webs, "pressure_snare") as WebNet
+	var trip := _newest_web(webs, "trip_line") as WebStrand
+	if not _check(snare != null and trip != null, "a rig to keep"):
+		return
+	_check(snare.anchors.size() == 4, "a spun web remembers its anchors")
+	_check(builder.link_webs(trip, snare), "wired the rig together")
+
+	# Keep it.
+	var design := DesignLibrary.capture(trip, Vector3.FORWARD, spider.growth.stage_index)
+	if not _check(design != null, "the rig can be captured as a design"):
+		return
+	_check(design.piece_count() == 2, "both webs came along (%d)" % design.piece_count())
+	_check(design.link_count() == 1, "and so did the wiring")
+	_check(design.recorded_silk > 0.0, "it remembers what it cost")
+	_check(design.anchors.size() == 6, "every anchor was recorded (%d)" % design.anchors.size())
+
+	_check(DesignLibrary.store(design), "the design saves to disk")
+	var reloaded := DesignLibrary.load_all()
+	var found: WebDesign = null
+	for candidate in reloaded:
+		if candidate.id == design.id:
+			found = candidate
+	_check(found != null, "and loads back again")
+	if found != null:
+		_check(found.piece_count() == design.piece_count(), "with its pieces intact")
+		_check(found.link_count() == design.link_count(), "and its wiring intact")
+
+	# Put it down somewhere else.
+	builder.designs = reloaded
+	for i in builder.designs.size():
+		if builder.designs[i].id == design.id:
+			builder.design_index = i
+	builder.placing_design = true
+	builder.aim_valid = true
+	builder.aim_point = spider.global_position + Vector3(0, 0.5, -7.0)
+	builder.aim_normal = Vector3.UP
+
+	var before_webs := _web_count(webs)
+	var before_silk := silk.current
+	_check(builder.place_design(), "the design can be spun somewhere new")
+	var spent := before_silk - silk.current
+	await physics_frame
+	_check(_web_count(webs) == before_webs + 2, "both webs went up")
+	_check(spent > 0.0, "placing it costs silk (%.1f)" % spent)
+
+	# The copies must be wired to each other, not back to the original.
+	var copies: Array[WebStructure] = []
+	for child in webs.get_children():
+		var web := child as WebStructure
+		if web != null and not web.is_queued_for_deletion() and web != trip and web != snare \
+				and web.global_position.distance_to(builder.aim_point) < 6.0:
+			copies.append(web)
+	var wired_copies := 0
+	for web in copies:
+		for target in web.links:
+			if copies.has(target):
+				wired_copies += 1
+	_check(wired_copies == 1, "the copy is wired to itself, not the original (%d)" % wired_copies)
+	_check(trip.links.has(snare), "the original rig is untouched")
+
+	# Too poor to afford it: nothing appears and nothing is charged.
+	var broke_webs := _web_count(webs)
+	silk.spend(silk.current)
+	builder.aim_valid = true
+	builder.aim_point = spider.global_position + Vector3(0, 0.5, -11.0)
+	builder.aim_normal = Vector3.UP
+	_check(builder.aim_valid, "aiming somewhere valid for the broke attempt")
+	_check(not builder.place_design(), "a design you cannot afford is refused")
+	_check(_web_count(webs) == broke_webs, "and leaves no half-built rig behind")
+	_check(silk.current <= 0.01, "and charges nothing")
+
+	builder.placing_design = false
+	silk.refill(silk.maximum)
+	DesignLibrary.forget(design)
+
+
 func _test_sandbox_wiring(level: Node, spider: SpiderPlayer) -> void:
 	var spawner := level.get_node_or_null("PreySpawner") as PreySpawner
 	if _check(spawner != null, "the level has a prey spawner"):
@@ -422,6 +519,8 @@ func _test_sandbox_wiring(level: Node, spider: SpiderPlayer) -> void:
 
 
 func _test_demolish(builder: WebBuilder, webs: Node3D, silk: SilkPool) -> void:
+	# Leave room in the pool, or a refund has nowhere to land.
+	silk.spend(silk.current * 0.5)
 	var count := _web_count(webs)
 	var web := _first_web(webs)
 	if not _check(web != null, "there is a web to pull down"):

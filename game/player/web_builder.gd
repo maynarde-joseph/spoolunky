@@ -34,6 +34,11 @@ enum Problem {
 var patterns: Array[WebPattern] = []
 var pattern_index := 0
 var building := false
+
+## Rigs the player has saved, and which one is on the end of the cursor.
+var designs: Array[WebDesign] = []
+var design_index := 0
+var placing_design := false
 var anchors := PackedVector3Array()
 
 ## Web waiting to be wired to something, while the player picks the other end.
@@ -58,6 +63,7 @@ var _cursor_material: StandardMaterial3D
 
 func _ready() -> void:
 	patterns = WebLibrary.load_patterns()
+	designs = DesignLibrary.load_all()
 	_build_preview_nodes()
 	set_process(true)
 
@@ -70,7 +76,9 @@ func setup(spider: CharacterBody3D, silk: SilkPool, growth: SpiderGrowth) -> voi
 
 
 func _process(_delta: float) -> void:
-	if building:
+	if placing_design:
+		_update_design_aim()
+	elif building:
 		_update_aim()
 	_draw_preview()
 
@@ -108,6 +116,9 @@ func stop() -> void:
 ## Drops an anchor at the aim point, or closes the web if the player clicked
 ## back on the first anchor.
 func place() -> void:
+	if placing_design:
+		place_design()
+		return
 	if not building:
 		return
 	var pattern := current_pattern()
@@ -144,6 +155,9 @@ func add_anchor(point: Vector3) -> bool:
 
 ## Takes the last anchor back, or leaves build mode if there are none.
 func undo() -> void:
+	if placing_design:
+		toggle_design_mode()
+		return
 	if not building:
 		return
 	if anchors.is_empty():
@@ -191,6 +205,9 @@ func finish() -> void:
 
 
 func cycle(step: int) -> void:
+	if placing_design:
+		cycle_design(step)
+		return
 	var available := unlocked_patterns()
 	if available.size() <= 1:
 		return
@@ -215,6 +232,169 @@ func unlocked_patterns() -> Array[WebPattern]:
 		if _is_unlocked(pattern):
 			available.append(pattern)
 	return available
+
+
+# --- saved designs ------------------------------------------------------
+
+func current_design() -> WebDesign:
+	if designs.is_empty():
+		return null
+	return designs[clampi(design_index, 0, designs.size() - 1)]
+
+
+## Records the rig under the crosshair — the web plus everything wired to it —
+## as a design that can be put down again anywhere.
+func save_aimed_design() -> WebDesign:
+	var web := aimed_web()
+	if web == null:
+		notice.emit("Look at a web to keep it as a design")
+		return null
+	var design := DesignLibrary.capture(web, _facing(), _growth.stage_index)
+	if design == null:
+		notice.emit("Nothing there worth keeping")
+		return null
+	design.display_name = _unique_design_name(design.display_name)
+	if not DesignLibrary.store(design):
+		notice.emit("Could not save that design")
+		return null
+	designs.append(design)
+	design_index = designs.size() - 1
+	state_changed.emit()
+	notice.emit("Kept \"%s\" — %d web%s" % [design.display_name, design.piece_count(),
+		"" if design.piece_count() == 1 else "s"])
+	return design
+
+
+func toggle_design_mode() -> void:
+	if placing_design:
+		placing_design = false
+		state_changed.emit()
+		notice.emit("Designs away")
+		return
+	if designs.is_empty():
+		notice.emit("No saved designs yet — look at a web and press B to keep one")
+		return
+	stop()
+	placing_design = true
+	state_changed.emit()
+	notice.emit(current_design().summary())
+
+
+func cycle_design(step: int) -> void:
+	if designs.size() <= 1:
+		return
+	design_index = wrapi(design_index + step, 0, designs.size())
+	state_changed.emit()
+	notice.emit(current_design().summary())
+
+
+## Where the selected design would land right now: turned to face the way the
+## player is looking, and pushed clear of the surface rather than half inside it.
+func design_transform() -> Transform3D:
+	var design := current_design()
+	var frame := DesignLibrary.yaw_basis(_facing())
+	if design == null:
+		return Transform3D(frame, aim_point)
+	var local_normal := frame.transposed() * aim_normal
+	var origin := aim_point + aim_normal * design.extent_along(local_normal)
+	return Transform3D(frame, origin)
+
+
+## Spins a whole saved rig where the player is looking, wiring included.
+## Nothing is charged, and nothing is placed, unless all of it can be built.
+func place_design() -> bool:
+	var design := current_design()
+	if design == null:
+		return false
+	if not aim_valid:
+		notice.emit("Nowhere to put that")
+		return false
+
+	var placement := design_transform()
+	var quality := _quality()
+	var spun: Array[WebStructure] = []
+	var centres := PackedVector3Array()
+	var total := 0.0
+
+	for piece in design.piece_count():
+		var pattern := _pattern_by_id(design.pattern_ids[piece])
+		if pattern == null:
+			return _abandon(spun, "That design uses silk you no longer have a recipe for")
+		if not _is_unlocked(pattern):
+			return _abandon(spun, "%s needs a bigger spider" % pattern.display_name)
+		var points := PackedVector3Array()
+		var centre := Vector3.ZERO
+		for local in design.anchors_for(piece):
+			var world: Vector3 = placement * local
+			points.append(world)
+			centre += world
+		if points.size() < pattern.min_anchors:
+			return _abandon(spun, "That design is missing anchors")
+		centres.append(centre / float(points.size()))
+
+		var web: WebStructure = null
+		if pattern.shape == WebPattern.Shape.STRAND:
+			web = WebStrand.spin(pattern, points[0], points[1], quality)
+		else:
+			web = WebNet.spin(pattern, points, quality)
+		if web == null:
+			return _abandon(spun, "That design won't hold together there")
+		spun.append(web)
+		total += web.silk_cost
+
+	for i in design.link_count():
+		var span: float = centres[design.link_from[i]].distance_to(centres[design.link_to[i]])
+		total += link_base_cost + span * link_silk_per_metre * quality
+
+	if not _silk.can_afford(total):
+		return _abandon(spun, "Not enough silk for %s — %d needed"
+			% [design.display_name, ceili(total)])
+
+	_silk.spend(total)
+	var container := _resolve_container()
+	for web in spun:
+		web.place_in(container)
+	for i in design.link_count():
+		spun[design.link_from[i]].link_to(spun[design.link_to[i]])
+
+	notice.emit("%s spun (%d silk)" % [design.display_name, roundi(total)])
+	web_built.emit(spun[0])
+	return true
+
+
+## Throws away a half-built rig without charging for it.
+func _abandon(spun: Array[WebStructure], reason: String) -> bool:
+	for web in spun:
+		web.free()
+	notice.emit(reason)
+	return false
+
+
+func _pattern_by_id(id: String) -> WebPattern:
+	for pattern in patterns:
+		if pattern.id == id:
+			return pattern
+	return null
+
+
+func _unique_design_name(base: String) -> String:
+	var taken := PackedStringArray()
+	for design in designs:
+		taken.append(design.display_name)
+	if not taken.has(base):
+		return base
+	var suffix := 2
+	while taken.has("%s %d" % [base, suffix]):
+		suffix += 1
+	return "%s %d" % [base, suffix]
+
+
+## Direction the player is looking, flattened later into the design's forward.
+func _facing() -> Vector3:
+	var camera := get_viewport().get_camera_3d()
+	if camera == null:
+		return Vector3.FORWARD
+	return -camera.global_basis.z
 
 
 # --- trigger links ------------------------------------------------------
@@ -364,24 +544,9 @@ func _update_aim() -> void:
 		problem = Problem.LOCKED
 		return
 
-	var camera := get_viewport().get_camera_3d()
-	if camera == null:
-		return
-
 	var stage := _stage()
-	var from := camera.global_position
-	var to := from - camera.global_basis.z * stage.anchor_range
-	var space := get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(from, to, GameLayers.WORLD, _exclusions())
-	var hit := space.intersect_ray(query)
-	if hit.is_empty():
+	if not _cast_surface(stage.anchor_range):
 		return
-
-	aim_point = hit["position"]
-	aim_normal = hit.get("normal", Vector3.UP)
-	# Lift the anchor off the surface a touch so silk doesn't z-fight the wall.
-	aim_point += aim_normal * stage.body_height * 0.08
-	aim_valid = true
 	problem = Problem.NONE
 
 	if anchors.size() >= pattern.max_anchors:
@@ -403,6 +568,43 @@ func _update_aim() -> void:
 	estimated_cost = _estimate_cost(pattern, provisional)
 	if estimated_cost > _silk.current and provisional.size() >= pattern.min_anchors:
 		problem = Problem.NO_SILK
+
+
+## Design placement only needs somewhere solid to sit against, not the anchor
+## rules that govern spinning a web by hand.
+func _update_design_aim() -> void:
+	aim_valid = false
+	problem = Problem.NO_SURFACE
+	estimated_cost = 0.0
+	var design := current_design()
+	if design == null:
+		return
+	if not _cast_surface(_stage().anchor_range):
+		return
+	problem = Problem.NONE
+	estimated_cost = design.cost_at(_quality())
+	if estimated_cost > _silk.current:
+		problem = Problem.NO_SILK
+
+
+## Raycast down the crosshair for a surface. Fills in the aim fields.
+func _cast_surface(reach: float) -> bool:
+	var camera := get_viewport().get_camera_3d()
+	if camera == null:
+		return false
+	var from := camera.global_position
+	var to := from - camera.global_basis.z * reach
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(from, to, GameLayers.WORLD, _exclusions())
+	var hit := space.intersect_ray(query)
+	if hit.is_empty():
+		return false
+	aim_point = hit["position"]
+	aim_normal = hit.get("normal", Vector3.UP)
+	# Lift off the surface a touch so silk doesn't z-fight the wall.
+	aim_point += aim_normal * _stage().body_height * 0.08
+	aim_valid = true
+	return true
 
 
 ## Rough silk figure for the HUD. The real cost is measured off the finished
@@ -459,6 +661,8 @@ func problem_text() -> String:
 
 
 func hint_text() -> String:
+	if placing_design:
+		return "Left mouse to spin it here, wheel to change design, right mouse to put it away"
 	var pattern := current_pattern()
 	if pattern == null:
 		return ""
@@ -582,6 +786,9 @@ func _build_preview_nodes() -> void:
 
 func _draw_preview() -> void:
 	_preview_mesh.clear_surfaces()
+	if placing_design:
+		_draw_design_ghost()
+		return
 	if not building:
 		_cursor.visible = false
 		return
@@ -621,6 +828,52 @@ func _draw_preview() -> void:
 		_cursor_mesh.height = tick
 		_cursor_material.albedo_color = Color(line_color.r, line_color.g, line_color.b, 0.7)
 		_cursor.global_position = aim_point
+
+
+## Ghost of a saved rig where it would land, so the player can line it up
+## before spending anything.
+func _draw_design_ghost() -> void:
+	var design := current_design()
+	_cursor.visible = aim_valid and design != null
+	if design == null or not aim_valid:
+		return
+
+	var placement := design_transform()
+	var color := Color(0.85, 0.95, 1.0, 1.0)
+	if problem != Problem.NONE:
+		color = Color(1.0, 0.35, 0.3, 1.0)
+	var faint := Color(color.r, color.g, color.b, 0.3)
+
+	var centres := PackedVector3Array()
+	_preview_mesh.surface_begin(Mesh.PRIMITIVE_LINES, _preview_material)
+	for piece in design.piece_count():
+		var world := PackedVector3Array()
+		var centre := Vector3.ZERO
+		for local in design.anchors_for(piece):
+			var point: Vector3 = placement * local
+			world.append(point)
+			centre += point
+		if world.is_empty():
+			centres.append(placement.origin)
+			continue
+		centre /= float(world.size())
+		centres.append(centre)
+		if world.size() == 2:
+			_line(world[0], world[1], color)
+			continue
+		for i in world.size():
+			_line(world[i], world[(i + 1) % world.size()], color)
+			_line(centre, world[i], faint)
+	for i in design.link_count():
+		_line(centres[design.link_from[i]], centres[design.link_to[i]],
+			Color(0.5, 0.8, 1.0, 0.7))
+	_preview_mesh.surface_end()
+
+	var tick: float = maxf(_stage().body_height * 0.35, 0.03)
+	_cursor_mesh.radius = tick * 0.5
+	_cursor_mesh.height = tick
+	_cursor_material.albedo_color = Color(color.r, color.g, color.b, 0.7)
+	_cursor.global_position = aim_point
 
 
 func _line(a: Vector3, b: Vector3, color: Color) -> void:
