@@ -6,6 +6,10 @@ extends CanvasLayer
 
 const HELP_TEXT := """[ Spoolunky — sandbox ]
 WASD / Space / Shift   move, jump, sprint
+walk into a wall       climb it — walls and ceilings are floors to you
+Ctrl                   drop onto a dragline (from a wall or ceiling)
+  Ctrl / Space           lower / raise yourself on the line
+  Right Mouse            let go
 Q                      web build mode
 Left Mouse             place anchor
 Right Mouse            undo anchor / leave build mode
@@ -20,6 +24,7 @@ H                      hide this"""
 @export var spider_path: NodePath
 
 @onready var stage_label: Label = $Stats/StageLabel
+@onready var state_label: Label = $Stats/StateLabel
 @onready var silk_label: Label = $Stats/SilkLabel
 @onready var silk_bar: ProgressBar = $Stats/SilkBar
 @onready var biomass_label: Label = $Stats/BiomassLabel
@@ -47,6 +52,7 @@ func _process(delta: float) -> void:
 		toast_label.modulate.a = clampf(_toast_timer, 0.0, 1.0)
 	if _spider == null:
 		return
+	_refresh_state()
 	_refresh_build_panel()
 
 
@@ -102,6 +108,23 @@ func _on_grew(stage: GrowthStage, index: int) -> void:
 	stage_label.text = "Stage %d — %s" % [index + 1, stage.display_name]
 	if _spider != null:
 		_on_biomass_changed(_spider.growth.biomass, _spider.growth.progress())
+
+
+## One line saying what the spider is standing on, or hanging from.
+func _refresh_state() -> void:
+	var climb := _spider.climb
+	if climb == null:
+		return
+	if climb.is_hanging():
+		state_label.text = "On a line — %.1fm   [Ctrl] down  [Space] up  [RMB] let go" % climb.line_length
+	elif not climb.is_attached():
+		state_label.text = "Falling"
+	elif climb.surface_normal.dot(Vector3.UP) < -0.5:
+		state_label.text = "On the ceiling   [Ctrl] drop on a line"
+	elif climb.on_steep_surface():
+		state_label.text = "Climbing   [Ctrl] drop on a line"
+	else:
+		state_label.text = "On the ground"
 
 
 func _refresh_build_panel() -> void:

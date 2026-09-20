@@ -41,7 +41,7 @@ color = Color(1, 1, 1, 0.65)
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 24.0
-offset_top = -136.0
+offset_top = -162.0
 offset_right = 348.0
 offset_bottom = -24.0
 theme_override_constants/separation = 4
@@ -53,6 +53,14 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 19
 text = "Stage 1 — Spiderling"
+
+[node name="StateLabel" type="Label" parent="Stats"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.86, 0.78, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 15
+text = "On the ground"
 
 [node name="SilkLabel" type="Label" parent="Stats"]
 layout_mode = 2

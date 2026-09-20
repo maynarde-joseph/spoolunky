@@ -3,9 +3,9 @@ extends Player
 
 ## The spider.
 ##
-## Extends the character-controller template's player with the three things
+## Extends the character-controller template's player with the four things
 ## that make this game a spider game: a silk supply, a body that grows when it
-## eats, and build mode.
+## eats, build mode, and the ability to walk up a wall as if it were the floor.
 ##
 ## Growth is applied physically rather than as a stat line — the collider, the
 ## eye height, the stride and the camera's near plane all move with the size
@@ -40,9 +40,11 @@ signal respawned()
 @onready var silk: SilkPool = $Silk
 @onready var growth: SpiderGrowth = $Growth
 @onready var web_builder: WebBuilder = $WebBuilder
+@onready var climb: SpiderClimb = $Climb
 
 var _spawn_transform: Transform3D
 var _stage: GrowthStage
+var _pitch := 0.0
 
 
 func _ready() -> void:
@@ -60,21 +62,80 @@ func _ready() -> void:
 
 	web_builder.setup(self, silk, growth)
 	web_builder.notice.connect(_on_notice)
+
+	climb.setup(self, silk, growth)
+	climb.notice.connect(_on_notice)
+	climb.jumped.connect(_on_jumped)
+	climb.line_dropped.connect(_on_line_dropped)
+	climb.line_cut.connect(_on_line_cut)
 	growth.stage_changed.connect(_on_stage_changed)
 	growth.apply_initial()
 
 
 func _physics_process(delta: float) -> void:
-	super(delta)
+	var active := _accepts_input()
+	var input_axis := Vector2.ZERO
+	var jump_tapped := false
+	var jump_held := false
+	var sprint := false
+	var down := false
+	var release_line := false
+
+	if active:
+		input_axis = Input.get_vector(input_left_action_name, input_right_action_name,
+			input_back_action_name, input_forward_action_name)
+		jump_tapped = Input.is_action_just_pressed(input_jump_action_name)
+		jump_held = Input.is_action_pressed(input_jump_action_name)
+		sprint = Input.is_action_pressed(input_sprint_action_name)
+		down = Input.is_action_pressed(input_crouch_action_name)
+		# Right mouse means "undo anchor" while building, "let go" while hanging.
+		release_line = not web_builder.building \
+			and Input.is_action_just_pressed(input_cancel_anchor)
+		if Input.is_action_just_pressed(input_fly_mode_action_name):
+			fly_ability.set_active(not fly_ability.is_actived())
+
+	climb.update_orientation(delta)
+
+	if climb.handles_movement():
+		# Spiders don't obey the floor, so the climb component drives the body
+		# and we feed the template's bob and footstep bookkeeping by hand.
+		sprint_ability.set_active(sprint and climb.is_attached() and input_axis.y >= 0.5)
+		climb.step(delta, input_axis, jump_tapped, sprint, down, jump_held, release_line)
+		_horizontal_velocity = climb.tangent_velocity
+		_check_landed()
+		if climb.is_attached():
+			_check_step(delta)
+		_check_head_bob(delta, input_axis)
+	else:
+		# Swimming and free-fly stay with the character controller.
+		climb.release()
+		move(delta, input_axis, jump_tapped, down, sprint, down, jump_held)
+
 	if global_position.y < kill_plane:
 		global_transform = _spawn_transform
 		velocity = Vector3.ZERO
+		climb.release()
 		respawned.emit()
 		notice.emit("Fell out of the world — put you back")
 
 
+## Mouse look. Yaw turns the body around whatever it is standing on rather than
+## around world up, so looking around on a ceiling behaves like looking around
+## on the floor. Pitch stays on the head.
+func rotate_head(mouse_axis: Vector2) -> void:
+	var sensitivity: float = head.mouse_sensitivity / 1000.0
+	var limit: float = head.vertical_angle_limit
+	_pitch = clampf(_pitch - mouse_axis.y * sensitivity, -limit, limit)
+	head.rotation.x = _pitch
+	climb.add_yaw(-mouse_axis.x * sensitivity)
+
+
+func _accepts_input() -> bool:
+	return not require_captured_mouse or Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if require_captured_mouse and Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED:
+	if not _accepts_input():
 		return
 
 	if event.is_action_pressed(input_build_mode):
@@ -178,7 +239,9 @@ func _apply_stage(new_stage: GrowthStage, previous_height: float) -> void:
 
 	var capsule := collision.shape as CapsuleShape3D
 	if capsule != null:
-		capsule.radius = height * 0.2
+		# Squat and wide, like a spider — and short enough end to end that
+		# rolling onto a wall doesn't sweep the collider through it.
+		capsule.radius = height * 0.35
 		capsule.height = height
 
 	var head_sphere := head_check.shape as SphereShape3D
@@ -191,7 +254,7 @@ func _apply_stage(new_stage: GrowthStage, previous_height: float) -> void:
 	head_bob.bob_range = Vector2(0.07, 0.07) * (height / 2.0)
 
 	_default_height = height
-	height_in_crouch = height * 0.5
+	height_in_crouch = height * 0.8
 	crouch_ability.default_height = height
 	crouch_ability.height_in_crouch = height_in_crouch
 
@@ -201,6 +264,14 @@ func _apply_stage(new_stage: GrowthStage, previous_height: float) -> void:
 	jump_ability.height = new_stage.jump_velocity
 	floor_snap_length = height * 0.25
 	step_interval = maxf(height * 3.0, 1.0)
+
+	# The template's water probe is a fixed two metres long, which for a
+	# coin-sized spider means "in water" a metre above the pond. Scale it with
+	# the body like everything else.
+	var water_probe := swim_ability.get_node_or_null("RayCast3D") as RayCast3D
+	if water_probe != null:
+		water_probe.position = Vector3(0, height * 0.5, 0)
+		water_probe.target_position = Vector3(0, -height, 0)
 
 	silk.set_capacity(new_stage.silk_capacity)
 	silk.regen_per_second = new_stage.silk_regen
@@ -241,6 +312,14 @@ func _aimed_prey() -> Prey:
 			best_dot = alignment
 			best = prey
 	return best
+
+
+func _on_line_dropped(_anchor: Vector3) -> void:
+	notice.emit("On a line — Ctrl down, Space up, right mouse to let go")
+
+
+func _on_line_cut() -> void:
+	notice.emit("Let go of the line")
 
 
 func _on_notice(text: String) -> void:

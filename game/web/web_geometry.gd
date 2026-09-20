@@ -183,6 +183,33 @@ static func build_mesh(strands: StrandSet, color: Color) -> ArrayMesh:
 	return tool.commit()
 
 
+## Draws a single silk line straight into an [ImmediateMesh], for lines that
+## move every frame — a dragline, a tether — where rebuilding an [ArrayMesh]
+## would be wasteful. Same crossed-quad trick as [method build_mesh].
+static func draw_line_into(mesh: ImmediateMesh, material: Material, a: Vector3,
+		b: Vector3, width: float, color: Color) -> void:
+	if a.distance_squared_to(b) < 0.000001:
+		return
+	var axis := (b - a).normalized()
+	var side_a := _perpendicular(axis) * width * 0.5
+	var side_b := axis.cross(side_a).normalized() * width * 0.5
+	mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, material)
+	_write_quad(mesh, a, b, side_a, color)
+	_write_quad(mesh, a, b, side_b, color)
+	mesh.surface_end()
+
+
+static func _write_quad(mesh: ImmediateMesh, a: Vector3, b: Vector3, offset: Vector3,
+		color: Color) -> void:
+	var p0 := a - offset
+	var p1 := a + offset
+	var p2 := b + offset
+	var p3 := b - offset
+	for point in [p0, p1, p2, p0, p2, p3]:
+		mesh.surface_set_color(color)
+		mesh.surface_add_vertex(point)
+
+
 ## The one material every web shares. Unshaded so silk stays bright in a dark
 ## corner, double sided so it reads from behind, vertex coloured so each
 ## pattern can tint itself without a material per web.

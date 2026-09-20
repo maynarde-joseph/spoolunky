@@ -190,7 +190,52 @@ so the trap arms and fires without you in the room.
 
 ---
 
-## 7. Prey and threats
+## 7. Climbing and the dragline
+
+A spider that obeys the floor is just a short person. So the spider doesn't
+have a floor — it has **whatever it is touching**.
+
+### Sticking
+Walls and ceilings are the same surface as the ground: the body's up axis
+becomes the surface normal, gravity is replaced by a pull into the surface, and
+the camera rolls with it. Walk into a wall and you walk *up* it. Keep going and
+you carry on across the ceiling, upside down.
+
+Two rules keep that from being annoying:
+
+* **You have to mean it.** While you are already on a surface, the spider only
+  changes allegiance to a new one if you are pushing into it — so you can walk
+  along a skirting board without being flung onto the wall.
+* **In the air, anything will do.** Falling or jumping, the spider grabs the
+  first thing it touches. That is what a spider does, and it makes vertical
+  space feel safe to explore.
+
+Surfaces can opt out (`no_climb` group) — glass, grease, a hot pipe — which is
+the hook for later puzzle geometry.
+
+### The dragline
+From a wall or a ceiling, the spider can drop onto a thread and dangle.
+
+* Paying line out costs silk by the metre; reeling it back in recovers half of
+  it, so a dragline is a real decision when you are poor, and free movement
+  when you are rich.
+* Hanging is a proper pendulum — the line is a hard constraint, and you can
+  swing yourself sideways onto something you couldn't reach.
+* Swing into a wall while pushing towards it and you grab it, line cut. Reel to
+  the top and you're back on the ceiling. Or just let go.
+
+This is the traversal answer to a world built vertically: you get *down* fast
+and precisely, and back up at the cost of silk. It is also the best place in
+the game to build from — hanging under a doorway, spinning a web across it.
+
+### Still to come
+The body itself is the missing half: eight legs with IK that actually reach for
+the surface, a third-person option to see it, and a comfort option that keeps
+the camera upright on ceilings for players who don't want the world to flip.
+
+---
+
+## 8. Prey and threats
 
 | Class | Examples | Behaviour |
 |-------|----------|-----------|
@@ -205,14 +250,18 @@ is: each new zone opens with you as the smallest thing in it.
 
 ---
 
-## 8. Controls (current build)
+## 9. Controls (current build)
 
 | Input | Action |
 |-------|--------|
-| **WASD** | Move |
+| **WASD** | Move — on whatever surface you are stuck to |
 | **Mouse** | Look |
-| **Space** | Jump |
-| **Shift / Ctrl** | Sprint / crouch |
+| **Space** | Jump off the surface |
+| **Shift** | Sprint |
+| *walk into a wall* | Climb it. Keep going for the ceiling. |
+| **Ctrl** | Drop onto a dragline (from a wall or ceiling) |
+| **Ctrl / Space** | Lower / raise yourself on the line |
+| **Right Mouse** | Let go of the line |
 | **Q** | Toggle web build mode |
 | **Left Mouse** | Place anchor |
 | **Right Mouse** | Undo last anchor (or leave build mode) |
@@ -226,16 +275,18 @@ is: each new zone opens with you as the smallest thing in it.
 
 ---
 
-## 9. Build order
+## 10. Build order
 
 **Milestone 1 — Web building** ✅ *(this commit)*
 Anchor-based web construction, procedural web meshes, silk economy, size
 tiers that rescale the player, snaring prey, wrap/drain feeding, HUD.
 Playable in the character-controller example level as a sandbox.
 
-**Milestone 2 — Being a spider**
-Wall and ceiling climbing (surface-aligned movement), eight-legged procedural
-body with IK, third-person option, dropping on a dragline.
+**Milestone 2 — Being a spider** *(half done)*
+Done: wall and ceiling climbing with surface-aligned movement and camera, and
+the dragline — drop, pay out, reel in, swing, let go.
+Left: eight-legged procedural body with IK, a third-person option to see it,
+and an upright-camera comfort setting for ceilings.
 
 **Milestone 3 — The Room**
 A purpose-built tier-1/2 room at spider scale, real prey lanes, the vent exit,
@@ -250,7 +301,7 @@ Crawlspace zone, wasps as a predator, verticality, streaming between zones.
 
 ---
 
-## 10. Design guardrails
+## 11. Design guardrails
 
 * **The web is the gameplay.** If a feature does not make building, placing or
   maintaining webs more interesting, it is a later problem.
