@@ -1,7 +1,10 @@
-[gd_scene load_steps=32 format=3 uid="uid://c2t6smyr8xtty"]
+[gd_scene load_steps=35 format=3 uid="uid://c2t6smyr8xtty"]
 
 [ext_resource type="Script" uid="uid://bmy13ib0322y" path="res://addons/character-controller/example/main/level.gd" id="1_cikgd"]
-[ext_resource type="PackedScene" uid="uid://2oxdgu03lnbk" path="res://addons/character-controller/example/main/player.tscn" id="2_nvo2f"]
+[ext_resource type="PackedScene" path="res://game/player/spider.tscn" id="2_spider"]
+[ext_resource type="PackedScene" path="res://game/ui/hud.tscn" id="13_hud"]
+[ext_resource type="PackedScene" path="res://game/prey/fly.tscn" id="14_fly"]
+[ext_resource type="Script" path="res://game/prey/prey_spawner.gd" id="15_spawner"]
 [ext_resource type="Material" uid="uid://2ciy11rdndma" path="res://addons/character-controller/example/main/materials/grass.tres" id="3_7vb8p"]
 [ext_resource type="PackedScene" uid="uid://b3wdcta6c4k4t" path="res://addons/character-controller/example/main/geometry/floor.tscn" id="3_80rlo"]
 [ext_resource type="PackedScene" uid="uid://dh7wg5y8ky5d8" path="res://addons/character-controller/example/main/water_area_3d.tscn" id="3_ebamq"]
@@ -116,7 +119,7 @@ material_override = ExtResource("7_ngjv3")
 transform = Transform3D(-2.98942e-07, 0, -10, 0, 1, 0, 6.839, 0, -4.37114e-07, 0, -0.5, -16.512)
 material_override = ExtResource("3_7vb8p")
 
-[node name="Player" parent="." instance=ExtResource("2_nvo2f")]
+[node name="Player" parent="." instance=ExtResource("2_spider")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.62268e-06, 6, 13)
 
 [node name="Camera3D" type="Camera3D" parent="Player/Head/FirstPersonCameraReference" index="0"]
@@ -465,5 +468,19 @@ environment = SubResource("Environment_7ofk6")
 transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866026, -0.5, 0.75, -0.433013, 0, 5, 0)
 shadow_enabled = true
 directional_shadow_max_distance = 250.0
+
+[node name="Webs" type="Node3D" parent="."]
+
+[node name="PreySpawner" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 6)
+script = ExtResource("15_spawner")
+prey_scene = ExtResource("14_fly")
+population = 12
+spawn_extents = Vector3(26, 5, 26)
+respawn_delay = 5.0
+snap_to_ground = true
+hover_height = Vector2(0.35, 2.4)
+
+[node name="HUD" parent="." instance=ExtResource("13_hud")]
 
 [editable path="Player"]

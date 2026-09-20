@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="WebPattern" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/web_pattern.gd" id="1_pattern"]
+
+[resource]
+script = ExtResource("1_pattern")
+id = "sheet_web"
+display_name = "Sheet Web"
+description = "Cheap tangle of silk across a gap. Weak, tears quickly, but you can afford to be wrong about where the prey goes."
+unlock_stage = 0
+sort_order = 1
+color = Color(0.95, 0.95, 0.93, 0.62)
+shape = 1
+min_anchors = 3
+max_anchors = 10
+radial_count = 7
+ring_count = 7
+jitter = 0.35
+strand_thickness = 0.006
+silk_base_cost = 2.0
+silk_per_metre = 0.8
+silk_per_square_metre = 1.6
+trigger = 0
+hold_strength = 1.0
+durability = 10.0

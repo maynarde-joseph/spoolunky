@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="WebPattern" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/web_pattern.gd" id="1_pattern"]
+
+[resource]
+script = ExtResource("1_pattern")
+id = "funnel_lure"
+display_name = "Funnel Lure"
+description = "A throat of silk that carries your scent on the air. Wandering prey drifts toward it instead of past it — turns a dead corner into a lane."
+unlock_stage = 3
+sort_order = 4
+color = Color(0.85, 1, 0.88, 0.7)
+shape = 1
+min_anchors = 3
+max_anchors = 8
+radial_count = 9
+ring_count = 8
+jitter = 0.5
+strand_thickness = 0.008
+silk_base_cost = 7.0
+silk_per_metre = 1.2
+silk_per_square_metre = 2.6
+trigger = 3
+hold_strength = 1.8
+durability = 18.0
+lure_radius = 9.0

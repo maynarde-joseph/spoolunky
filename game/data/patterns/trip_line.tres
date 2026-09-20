@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="WebPattern" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/web_pattern.gd" id="1_pattern"]
+
+[resource]
+script = ExtResource("1_pattern")
+id = "trip_line"
+display_name = "Trip Line"
+description = "Two anchors, one thread. Won't hold anything, but it tells you the moment something walks through it."
+unlock_stage = 0
+sort_order = 0
+color = Color(0.72, 0.86, 1, 0.55)
+shape = 0
+min_anchors = 2
+max_anchors = 2
+radial_count = 0
+ring_count = 0
+jitter = 0.0
+strand_thickness = 0.005
+silk_base_cost = 1.0
+silk_per_metre = 0.6
+silk_per_square_metre = 0.0
+trigger = 1
+hold_strength = 0.0
+durability = 6.0
+mark_time = 8.0
+catches_prey = false

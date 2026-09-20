@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="WebPattern" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/web_pattern.gd" id="1_pattern"]
+
+[resource]
+script = ExtResource("1_pattern")
+id = "silk_bridge"
+display_name = "Silk Bridge"
+description = "Dragline, not capture silk. Doesn't catch a thing — you walk on it. Anchor high, cross a gap, drop on something."
+unlock_stage = 1
+sort_order = 5
+color = Color(0.88, 0.9, 0.86, 0.9)
+shape = 0
+min_anchors = 2
+max_anchors = 2
+radial_count = 0
+ring_count = 0
+jitter = 0.0
+strand_thickness = 0.014
+silk_base_cost = 2.0
+silk_per_metre = 1.1
+silk_per_square_metre = 0.0
+trigger = 0
+hold_strength = 0.0
+durability = 40.0
+walkable = true
+walk_width = 0.16
+catches_prey = false

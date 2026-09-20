@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="WebPattern" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/web_pattern.gd" id="1_pattern"]
+
+[resource]
+script = ExtResource("1_pattern")
+id = "orb_web"
+display_name = "Orb Web"
+description = "The proper thing: spokes and spiral. Costs real silk, holds real prey, and catches fliers a sheet would let through."
+unlock_stage = 1
+sort_order = 2
+color = Color(1, 1, 1, 0.8)
+shape = 1
+min_anchors = 3
+max_anchors = 10
+radial_count = 14
+ring_count = 6
+jitter = 0.03
+strand_thickness = 0.009
+silk_base_cost = 4.0
+silk_per_metre = 1.4
+silk_per_square_metre = 3.2
+trigger = 0
+hold_strength = 2.4
+durability = 26.0

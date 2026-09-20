@@ -1,0 +1,264 @@
+# Spoolunky — Design Document
+
+> You are a spider. You start the size of a coin in the corner of somebody's
+> bedroom. You end the size of a car, hanging a web between two skyscrapers.
+> The only way up is to eat.
+
+---
+
+## 1. The pitch
+
+A first-person predator sim about **building traps, not chasing prey**.
+
+You do not fight. You engineer. Your one verb is *silk*: you spend it to build
+webs, bridges, triplines and snares, and you get it back by eating whatever
+those webs catch. Every meal makes you bigger. Every size makes you a worse fit
+for the room you are in — which is exactly how you get out of it.
+
+The fantasy is **scale creep**. The crack under the bedroom door is an exit at
+size 1 and a wall at size 4. The rat that was a boss at size 3 is food at
+size 5. The world never changes; you do.
+
+---
+
+## 2. The core loop
+
+```
+   SCOUT            BUILD             WAIT              FEED             GROW
+ read a space →  spend silk on  →  prey blunders  →  wrap it, drain  →  biomass →
+ find the traffic   a web that      into the web      it, refill silk    next size
+ lane (vent,        fits that       (or you herd it                      tier
+ gutter, doorway)   lane            into it)
+        ↑                                                                  │
+        └──────────── bigger body = bigger webs = bigger prey ←────────────┘
+```
+
+**Scout.** Prey moves along readable lanes: flies circle a lightbulb, ants walk
+a skirting board, rats hug walls, pigeons land on the same three ledges.
+Learning the lane is the puzzle.
+
+**Build.** Webs are placed by anchoring silk to real surfaces. A web is only as
+good as its anchors — span too far for your size and it sags, tears and drops
+your dinner.
+
+**Wait.** Dead time is designed out: while a web works you are building the
+next one, repairing, or laying a lure. You can also actively herd prey by
+dropping on it, so patient play and aggressive play both work.
+
+**Feed.** Caught prey struggles and damages the web. You have a window to get
+there, **wrap** it (cheap silk, stops the struggling, preserves the web) and
+then **drain** it (turns it into biomass + silk). Leave it too long and it
+tears free and the web with it.
+
+**Grow.** Biomass raises your size tier. Size is the single stat that gates
+everything: silk capacity, span length, what you can bite, what you can lift,
+what gaps you fit through.
+
+---
+
+## 3. Size tiers
+
+Size is the progression system, the difficulty curve and the map key all at
+once. Eight tiers, each roughly doubling body length.
+
+| # | Name | Body | Eats | Silk | New capability |
+|---|------|------|------|------|----------------|
+| 1 | Spiderling | 8 mm | gnats, aphids | tiny | single strands, tripline |
+| 2 | House Spider | 2 cm | flies, moths | small | sheet web, wall climbing |
+| 3 | Huntsman | 6 cm | roaches, beetles | medium | orb web, silk bridge, pressure snare |
+| 4 | Gutter Spider | 18 cm | mice, sparrows | large | funnel lure, silk winch (drag prey) |
+| 5 | Sewer Widow | 50 cm | rats, cats, pigeons | big | venom sacs, web tunnels, trapdoors |
+| 6 | Park Recluse | 1.5 m | dogs, deer, people | huge | anchored canopy webs, ambush burrows |
+| 7 | City Weaver | 4 m | cars, crowds | vast | structural webs across streets |
+| 8 | The Architect | 12 m | whatever it wants | — | permanent territory webs |
+
+Growth is **visible and physical**: the camera rises, your stride lengthens,
+your webs get coarser and stronger, the level geometry shrinks around you. The
+same bedroom you started in becomes a dollhouse.
+
+### Growth is also a lock
+
+Some gates want you **small**, not big — the drain pipe, the vent grille, the
+gap under the door. So the player sometimes has to *stop eating*, or find the
+big route. Later tiers get a "squeeze" ability that lets a big spider compress
+through a gap at the cost of most of its silk, which turns old routes back on.
+
+---
+
+## 4. The world
+
+Five zones, each a handful of hand-built rooms plus connective crawlspace.
+It is open-world in the sense that a zone is fully explorable and you choose
+your own route through it — but zones unlock in order, by size.
+
+### 4.1 The Room (tier 1–2) — *tutorial*
+A child's bedroom, seen from skirting-board height. Dust, a radiator, a
+lightbulb with a moth orbiting it, a spilled juice box drawing ants.
+Teaches: anchors, strands, first sheet web, feeding.
+**Exit:** the wall vent, once you can climb (tier 2).
+
+### 4.2 The Walls & Crawlspace (tier 2–3)
+Inside the house's skeleton: joists, pipe runs, insulation, a wasp nest as a
+mid-zone threat. Vertical, dark, made for orb webs across pipe gaps.
+Teaches: 3D web building, verticality, avoiding a predator (the wasps).
+**Exit:** the downpipe into the drain.
+
+### 4.3 The Gutter & Sewer (tier 3–4)
+Wet, flowing, hostile. Running water destroys webs, so you build high and dry.
+Rats travel in packs — your first prey that fights back and your first real
+use of the pressure snare.
+**Exit:** a storm grate into daylight.
+
+### 4.4 The Park (tier 4–6)
+The first open space. Trees, a pond, bins, a playground, dog walkers at dawn
+and dusk. Wind now matters: webs sway and long spans need more anchors.
+Day/night cycle begins — birds by day, bats and moths by night.
+**Exit:** the storm drain under the road, or simply walking into the street.
+
+### 4.5 The City (tier 6–8) — *endgame*
+Alleys, fire escapes, scaffolding, the underground station, and eventually
+rooftops. People notice you. Pest control, then police, then something worse.
+Territory webs: permanent installations that passively harvest prey while you
+are elsewhere.
+
+---
+
+## 5. Silk — the economy
+
+Silk is the only currency and the only meaningful constraint.
+
+* **Capacity** scales with size tier.
+* **Regeneration** is slow and passive (a trickle), so you can always
+  eventually rebuild — never softlocked, just slowed.
+* **Feeding** is the real source: draining prey returns silk proportional to
+  its biomass.
+* **Demolishing** your own web refunds ~50%, so experimenting is cheap.
+* **Repairing** a damaged web costs a fraction of the original.
+
+Every buildable thing has a cost in metres of strand and square metres of
+sheet, so a big web is expensive both to build and to hold in your head. The
+interesting decision is always *"one good web or three cheap ones?"*
+
+### Silk types (unlocked by tier)
+| Type | Unlock | Property |
+|------|--------|----------|
+| Dragline | 1 | structural, non-sticky — bridges, safety lines |
+| Capture silk | 1 | sticky, holds prey |
+| Sheet silk | 2 | cheap area coverage, weak hold |
+| Tension silk | 3 | stores energy — powers snares and trapdoors |
+| Cable silk | 5 | heavy structural, long spans, needs deep anchors |
+
+---
+
+## 6. Webs and traps
+
+Webs are **built, not placed**: you anchor silk to surfaces point by point, so
+every web is shaped by the room it is in. Two or more anchors make a *strand*,
+three or more closed anchors make a *net*.
+
+### The catalogue
+
+| Web | Shape | Unlock | What it does |
+|-----|-------|--------|--------------|
+| **Trip Line** | 2 anchors | 1 | Doesn't hold. Pings you when something crosses it and briefly slows it. Dirt cheap — the scouting tool. |
+| **Sheet Web** | 3+ anchors | 1 | Basic catcher. Cheap per area, weak hold, tears fast. The bread-and-butter web. |
+| **Orb Web** | 3+ anchors | 2 | The classic. Expensive, strong hold, high durability, catches fliers well. |
+| **Pressure Snare** | 3+ anchors | 3 | Built under tension. Triggers on contact: yanks the prey off the ground and holds it rigid for several seconds — long enough to cross a room. Must be re-armed with silk after each catch. |
+| **Funnel Lure** | 3+ anchors | 4 | Emits a scent/vibration field that pulls wandering prey toward it. Turns a dead corner into a lane. |
+| **Silk Bridge** | 2 anchors | 3 | Walkable strand. Traversal, not trapping. |
+| **Trapdoor** | 3+ anchors | 5 | A camouflaged hatch over a hole; prey walks over it and drops into whatever you built underneath. |
+| **Web Sack** | anchored point | 4 | Storage. Park a wrapped kill in it to eat later — keeps biomass fresh, hides it from scavengers. |
+
+### Designing traps, not picking them
+
+The intended depth is **combining** the above rather than unlocking a bigger
+number. A tripline at a doorway that pings you, feeding into a funnel lure that
+steers the rat down the wall, into a pressure snare strung over the drain — that
+chain is the game's version of a build. Later tiers add trigger links so the
+chain can fire *itself*: a tripline can be wired to release a snare's tension,
+so the trap arms and fires without you in the room.
+
+### Web physics rules
+* **Anchors must be on real surfaces**, and a strand cannot exceed your
+  tier's span limit.
+* **Sag**: a strand near its max length hangs, loses tension and holds worse.
+* **Damage**: struggling prey drains durability. Rain, wind, fire and brooms
+  destroy webs outright.
+* **Weight**: a web can only hold prey up to a mass limit set by its silk type
+  and anchor count. Over that, it tears — and heavy prey tears *through*,
+  taking the web with it.
+
+---
+
+## 7. Prey and threats
+
+| Class | Examples | Behaviour |
+|-------|----------|-----------|
+| **Drifters** | gnats, moths, flies | wander, attracted to light; tiny biomass, easy |
+| **Trailers** | ants, roaches, mice | follow fixed routes along edges; predictable, good for triplines |
+| **Fliers** | wasps, sparrows, bats | fast, 3D routes; need strong webs and high anchors |
+| **Fighters** | rats, cats, dogs | will attack you if you are small; damage webs badly |
+| **Hunters** | wasp nests, birds, pest control, people | hunt *you*; your web is your cover, not just your larder |
+
+Everything you can eat can also eat you at the wrong size. The tension curve
+is: each new zone opens with you as the smallest thing in it.
+
+---
+
+## 8. Controls (current build)
+
+| Input | Action |
+|-------|--------|
+| **WASD** | Move |
+| **Mouse** | Look |
+| **Space** | Jump |
+| **Shift / Ctrl** | Sprint / crouch |
+| **Q** | Toggle web build mode |
+| **Left Mouse** | Place anchor |
+| **Right Mouse** | Undo last anchor (or leave build mode) |
+| **F** | Finish and spin the web |
+| **Mouse Wheel / Z / C** | Cycle web pattern |
+| **E** | Interact — wrap prey, then drain it; re-arm a sprung snare |
+| **X** | Demolish the web you are looking at (50% silk back) |
+| **H** | Toggle help |
+| **R** | Free-fly (debug, from the character template) |
+| **T** | Release mouse · **Esc** Quit |
+
+---
+
+## 9. Build order
+
+**Milestone 1 — Web building** ✅ *(this commit)*
+Anchor-based web construction, procedural web meshes, silk economy, size
+tiers that rescale the player, snaring prey, wrap/drain feeding, HUD.
+Playable in the character-controller example level as a sandbox.
+
+**Milestone 2 — Being a spider**
+Wall and ceiling climbing (surface-aligned movement), eight-legged procedural
+body with IK, third-person option, dropping on a dragline.
+
+**Milestone 3 — The Room**
+A purpose-built tier-1/2 room at spider scale, real prey lanes, the vent exit,
+the first "you are too big for this" moment.
+
+**Milestone 4 — Trap chains**
+Trigger links between webs, tension silk, repair, web sacks, saving/loading
+built webs with the world.
+
+**Milestone 5 — Zone two and the loop at scale**
+Crawlspace zone, wasps as a predator, verticality, streaming between zones.
+
+---
+
+## 10. Design guardrails
+
+* **The web is the gameplay.** If a feature does not make building, placing or
+  maintaining webs more interesting, it is a later problem.
+* **Never chase.** If the player is running after prey more than they are
+  building for it, the trap design has failed.
+* **Size must be felt, not read.** No stat screen moment should be needed to
+  notice you grew — the camera, the geometry and the webs should say it.
+* **Cheap to experiment.** Refunds, repairs and passive regen keep the player
+  building rather than hoarding.
+* **Readable lanes.** Prey movement must be legible from a distance; the player
+  should be able to point at a spot and say "that's where it walks".

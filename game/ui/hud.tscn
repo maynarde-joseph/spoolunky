@@ -1,0 +1,146 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://game/ui/hud.gd" id="1_hud"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_track"]
+bg_color = Color(0, 0, 0, 0.45)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_silk"]
+bg_color = Color(0.85, 0.91, 1, 0.92)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_biomass"]
+bg_color = Color(0.96, 0.72, 0.33, 0.92)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="Crosshair" type="ColorRect" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -2.0
+offset_top = -2.0
+offset_right = 2.0
+offset_bottom = 2.0
+color = Color(1, 1, 1, 0.65)
+
+[node name="Stats" type="VBoxContainer" parent="."]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -136.0
+offset_right = 348.0
+offset_bottom = -24.0
+theme_override_constants/separation = 4
+
+[node name="StageLabel" type="Label" parent="Stats"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 19
+text = "Stage 1 — Spiderling"
+
+[node name="SilkLabel" type="Label" parent="Stats"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.93, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 15
+text = "Silk"
+
+[node name="SilkBar" type="ProgressBar" parent="Stats"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_track")
+theme_override_styles/fill = SubResource("StyleBoxFlat_silk")
+value = 100.0
+show_percentage = false
+
+[node name="BiomassLabel" type="Label" parent="Stats"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.88, 0.7, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 15
+text = "Biomass"
+
+[node name="BiomassBar" type="ProgressBar" parent="Stats"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_track")
+theme_override_styles/fill = SubResource("StyleBoxFlat_biomass")
+max_value = 1.0
+step = 0.001
+show_percentage = false
+
+[node name="Build" type="VBoxContainer" parent="."]
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -118.0
+offset_right = 300.0
+offset_bottom = -40.0
+theme_override_constants/separation = 2
+
+[node name="PatternLabel" type="Label" parent="Build"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+
+[node name="HintLabel" type="Label" parent="Build"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.82, 0.85, 0.9, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+
+[node name="ProblemLabel" type="Label" parent="Build"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.55, 0.45, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+
+[node name="Toast" type="Label" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -340.0
+offset_top = 52.0
+offset_right = 340.0
+offset_bottom = 88.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 7
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+
+[node name="Help" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 540.0
+offset_bottom = 300.0
+theme_override_colors/font_color = Color(0.85, 0.88, 0.94, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 14
