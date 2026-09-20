@@ -43,6 +43,7 @@ func _run() -> void:
 	await _test_dragline()
 	await _test_letting_go()
 	await _test_leaping_off_a_wall()
+	await _test_ziplining()
 
 	_release_all()
 	current_scene = null
@@ -171,6 +172,81 @@ func _test_leaping_off_a_wall() -> void:
 	await _run_frames(12)
 	var travelled := (_spider.global_position.x - distance_before) * wall_normal.x
 	_check(travelled > 0.05, "and pushes off away from it (%.2fm)" % travelled)
+
+
+## Stringing a line across the room and riding it: the ride should pick up
+## speed going downhill and fling the spider off the far end.
+func _test_ziplining() -> void:
+	_spider.climb.release()
+	_spider.global_position = Vector3(-ROOM_HALF.x + 0.6, ROOM_HALF.y - 0.5, 0.0)
+	_spider.velocity = Vector3.ZERO
+	# Bridges unlock at the second size tier, and build mode quietly falls back
+	# to something spinnable if you have not got there.
+	_spider.growth.feed(120.0, "test")
+	_spider.silk.refill(_spider.silk.maximum)
+	await _run_frames(10)
+
+	# A line running downhill across the room.
+	var builder := _spider.web_builder
+	var top := Vector3(-ROOM_HALF.x + 0.5, ROOM_HALF.y - 0.4, 0.0)
+	var bottom := Vector3(ROOM_HALF.x - 0.5, -ROOM_HALF.y + 0.9, 0.0)
+	for i in builder.patterns.size():
+		if builder.patterns[i].id == "silk_bridge":
+			builder.pattern_index = i
+	builder.start()
+	builder.add_anchor(top)
+	builder.add_anchor(bottom)
+	builder.stop()
+	await _run_frames(2)
+
+	var bridge: WebStrand = null
+	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
+		var strand := node as WebStrand
+		if strand != null and strand.pattern.id == "silk_bridge":
+			bridge = strand
+	if not _check(bridge != null, "a line to ride"):
+		return
+	_check(bridge.pattern.ridable, "and it is one you can ride")
+
+	_spider.global_position = top + Vector3(0.1, -0.1, 0)
+	_spider.velocity = Vector3.ZERO
+	await _run_frames(2)
+	_check(_spider.climb.toggle_ride(), "the spider clips onto the line")
+	_check(_spider.climb.is_riding(), "and is riding it")
+
+	var started_at := _spider.global_position
+	await _run_frames(20)
+	_check(_spider.climb.ride_velocity() > 0.3,
+		"it picks up speed going downhill (%.2f m/s)" % _spider.climb.ride_velocity())
+	_check(_spider.global_position.distance_to(started_at) > 0.2, "and travels along the line")
+	_check(_spider.global_position.y < started_at.y, "downwards, as gravity intends")
+
+	# Ride it to the end and get thrown off.
+	var top_speed := 0.0
+	for i in 200:
+		top_speed = maxf(top_speed, _spider.climb.ride_velocity())
+		if not _spider.climb.is_riding():
+			break
+		await physics_frame
+	_check(not _spider.climb.is_riding(), "the far end throws it off the line")
+	_check(top_speed > 1.0, "after building real speed (%.2f m/s)" % top_speed)
+	_check(_spider.velocity.length() > 0.5,
+		"and it carries that speed off the end (%.2f m/s)" % _spider.velocity.length())
+
+	# Let go part way along instead.
+	_spider.climb.release()
+	_spider.global_position = top + Vector3(0.1, -0.1, 0)
+	_spider.velocity = Vector3.ZERO
+	await _run_frames(4)
+	_spider.climb.toggle_ride()
+	await _run_frames(25)
+	if _check(_spider.climb.is_riding(), "back on the line"):
+		_spider.climb.toggle_ride()
+		_check(not _spider.climb.is_riding(), "and can let go part way along")
+		_check(_spider.velocity.y > 0.0, "with a kick to clear the edge")
+
+	# The levelled horizon should survive being upside down.
+	_check(_spider.level_horizon, "the horizon is levelled by default")
 
 
 # --- scaffolding --------------------------------------------------------

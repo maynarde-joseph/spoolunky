@@ -34,6 +34,7 @@ func _run() -> void:
 	await _shot_wall()
 	await _shot_ceiling()
 	await _shot_dragline()
+	await _shot_zipline()
 
 	current_scene = null
 	_level.free()
@@ -80,6 +81,41 @@ func _shot_dragline() -> void:
 	camera.near = 0.02
 	camera.make_current()
 	await _save("climb_hanging_outside", "the line from outside")
+
+
+## Riding a line strung across the arena — the thing the whole traversal side
+## of the game hangs off.
+func _shot_zipline() -> void:
+	_spider.climb.release()
+	_spider.growth.feed(200.0, "shot")
+	_spider.silk.refill(9000.0)
+	var top := Vector3(-9.0, 7.5, 6.0)
+	var bottom := Vector3(9.0, 1.4, 6.0)
+	var builder := _spider.web_builder
+	for i in builder.patterns.size():
+		if builder.patterns[i].id == "silk_bridge":
+			builder.pattern_index = i
+	builder.start()
+	builder.add_anchor(top)
+	builder.add_anchor(bottom)
+	builder.stop()
+	_spider.global_position = top + Vector3(0.3, -0.2, 0)
+	_spider.velocity = Vector3.ZERO
+	await _frames(3)
+	_spider.climb.toggle_ride()
+	await _frames(45)
+	_spider.head.rotation.x = deg_to_rad(-8)
+	await _save("zipline_riding", "riding at %.1f m/s" % _spider.climb.ride_velocity())
+
+	# And from outside, so the line and the rider both read.
+	var camera := Camera3D.new()
+	_level.add_child(camera)
+	var spot := _spider.global_position
+	camera.global_position = spot + Vector3(-3.0, 2.0, 5.0)
+	camera.look_at(spot, Vector3.UP)
+	camera.near = 0.02
+	camera.make_current()
+	await _save("zipline_outside", "the line from beside it")
 
 
 # --- scaffolding --------------------------------------------------------

@@ -24,13 +24,12 @@ size 5. The world never changes; you do.
 ## 2. The core loop
 
 ```
-   SCOUT            BUILD             WAIT              FEED             GROW
- read a space →  spend silk on  →  prey blunders  →  wrap it, drain  →  biomass →
- find the traffic   a web that      into the web      it, refill silk    next size
- lane (vent,        fits that       (or you herd it                      tier
- gutter, doorway)   lane            into it)
-        ↑                                                                  │
-        └──────────── bigger body = bigger webs = bigger prey ←────────────┘
+   BUILD              LEAVE                RETURN              FEED
+ string a web    →  zip away on your   →  something is     →  secure it, drain
+ across a lane       own lines, build      stuck and            it, silk back,
+                     somewhere else        fighting the silk    biomass in
+        ↑                                                             │
+        └────────── bigger body = longer lines = bigger prey ←────────┘
 ```
 
 **Scout.** Prey moves along readable lanes: flies circle a lightbulb, ants walk
@@ -41,14 +40,23 @@ Learning the lane is the puzzle.
 good as its anchors — span too far for your size and it sags, tears and drops
 your dinner.
 
-**Wait.** Dead time is designed out: while a web works you are building the
-next one, repairing, or laying a lure. You can also actively herd prey by
-dropping on it, so patient play and aggressive play both work.
+**Leave.** This is the part that makes the game move. Standing next to a web
+hoping something wanders in is not gameplay, so the web works *while you are
+not there*. You string it, you ride your own silk somewhere else, you build the
+next one — and a trap going off is news that reaches you across the level.
+
+Getting back fast is the skill that replaces waiting, which is why the traversal
+half of the game is not a side feature: **your webs are both your larder and
+your road network.**
 
 **Feed.** Caught prey struggles and damages the web. You have a window to get
 there, **wrap** it (cheap silk, stops the struggling, preserves the web) and
 then **drain** it (turns it into biomass + silk). Leave it too long and it
-tears free and the web with it.
+tears free and the web with it — so the race back is real.
+
+Securing a catch should ask something of the player rather than being one
+keypress. Wrapping is the beat that wants it: something to fight against while
+the thing under you thrashes, harder the bigger it is. Not built yet.
 
 **Grow.** Biomass raises your size tier. Size is the single stat that gates
 everything: silk capacity, span length, what you can bite, what you can lift,
@@ -339,19 +347,37 @@ This is the traversal answer to a world built vertically: you get *down* fast
 and precisely, and back up at the cost of silk. It is also the best place in
 the game to build from — hanging under a doorway, spinning a web across it.
 
-### The camera stays welded to the spider
-**Decided: first person, always, rolling with the body.** No third-person
-option, and no comfort mode that keeps the horizon upright on a ceiling.
+### The camera: first person, level horizon
 
-The whole point of the game is that you stop reading the world the way a person
-does. If the camera quietly stays upright while you walk across a ceiling, the
-ceiling is just a differently-textured floor and the fantasy evaporates. The
-disorientation *is* the feature — it is the moment the player stops being a
-tourist in the room.
+**Decided: first person, always. The body rolls onto the surface; the view does
+not.** You see your own legs up on the ceiling, but the room stays the right
+way up.
 
-It also settles a lot of downstream questions cheaply: no third-person rig, no
-second set of animations to read at distance, no camera collision, and the
-spider's body only ever has to look right from the inside.
+This reverses an earlier call. The original argument was that the world
+flipping over is the moment the player stops being a tourist in the room, and
+that is still true — it is a genuinely great one-off sensation. But the game's
+centre of gravity has moved from a trapping sim, where you have all the time in
+the world to enjoy being upside down, to a traversal game where you are lining
+up a line to ride. Fighting an inverted horizon at speed is not characterful,
+it is just hard to aim. The flip is available on a toggle (**L**) because it is
+worth feeling at least once.
+
+Still no third person. The body only ever has to look right from the inside,
+which saves a camera rig, camera collision and a second set of animations. If
+that changes it will be because the spider body turned out too good to hide,
+and the cheap version is a *look at my spider* mode that snaps back to first
+person the moment you start building.
+
+### Ziplines
+Any strand marked ridable can be clipped onto and slid along. Gravity does most
+of the work — a line strung downhill builds real speed — the movement keys push
+you along a level one, and letting go throws you off carrying everything you
+had built up, with a small kick to clear the edge. Arriving on a line with
+speed keeps it, so dropping onto one from a height flings you along it.
+
+This is the traversal answer to a world built vertically, and the reason to
+string silk somewhere you have no intention of catching anything. A line is
+cheap, permanent and yours.
 
 ### Still to come
 The body itself is the missing half: eight legs with IK that actually reach for
@@ -398,6 +424,8 @@ is: each new zone opens with you as the smallest thing in it.
 | **G** | Wire one web to another — press on each end |
 | **B** | Keep the rig you are looking at as a design |
 | **V** | Place a saved design — wheel to pick, left mouse to spin it |
+| **F** or **middle mouse** | Clip onto a silk line and ride it — again to let go |
+| **L** | Level horizon on walls and ceilings, or let it roll |
 | **K** | Switch weave: stretched or inscribed |
 | **;** | Pick which tuning dial the keys point at |
 | **[** / **]** | Turn that dial down / up |
@@ -416,8 +444,8 @@ tiers that rescale the player, snaring prey, wrap/drain feeding, HUD.
 Playable in the character-controller example level as a sandbox.
 
 **Milestone 2 — Being a spider** *(half done)*
-Done: wall and ceiling climbing with surface-aligned movement and camera, and
-the dragline — drop, pay out, reel in, swing, let go.
+Done: wall and ceiling climbing with surface-aligned movement, a levelled
+horizon, the dragline — drop, pay out, reel in, swing, let go — and ziplines.
 Left: eight-legged procedural body with IK, seen from inside — legs reaching
 for the surface at the edges of the frame. The camera stays first person and
 rolls with the body; that is settled, see section 7.
@@ -442,10 +470,15 @@ Crawlspace zone, wasps as a predator, verticality, streaming between zones.
 
 ## 11. Design guardrails
 
-* **The web is the gameplay.** If a feature does not make building, placing or
-  maintaining webs more interesting, it is a later problem.
-* **Never chase.** If the player is running after prey more than they are
-  building for it, the trap design has failed.
+* **The web is the gameplay — and the road network.** Silk catches things and
+  silk carries you. If a feature does not make building, placing, maintaining
+  or *travelling on* webs more interesting, it is a later problem.
+* **Never wait.** If the player is standing next to a web hoping something
+  wanders in, the design has failed. Traps run while you are elsewhere, and
+  getting back fast is the skill that replaces patience.
+* **Never chase, either.** Running after prey on foot means the trap did not
+  do its job. Riding across the level because a trap went off is not chasing,
+  it is answering.
 * **Size must be felt, not read.** No stat screen moment should be needed to
   notice you grew — the camera, the geometry and the webs should say it.
 * **Cheap to experiment.** Refunds, repairs and passive regen keep the player

@@ -19,6 +19,8 @@ enum Mode {
 	ATTACHED,
 	## Swinging from a line of silk.
 	HANGING,
+	## Clipped onto a strand and sliding along it.
+	RIDING,
 }
 
 signal mode_changed(mode: Mode)
@@ -81,10 +83,33 @@ signal notice(text: String)
 @export var line_color := Color(0.95, 0.96, 1, 0.92)
 
 
+@export_group("Ziplining")
+
+## How far the spider will reach to grab a line, in body heights.
+@export var grab_reach := 9.0
+
+## Push along the line from the movement keys, in body heights per second.
+@export var ride_push := 9.0
+
+## Fastest a ride can get, in body heights per second. Gravity does the rest.
+@export var ride_top_speed := 26.0
+
+## Drag on a moving rider, so a level line eventually coasts to a stop.
+@export var ride_drag := 0.35
+
+## Upward kick when letting go, so launching off a line clears the edge.
+@export var launch_lift := 2.5
+
+
 var mode: Mode = Mode.AIRBORNE
 var surface_normal := Vector3.UP
 var line_anchor := Vector3.ZERO
 var line_length := 0.0
+
+## The strand being ridden, how far along it, and how fast.
+var ride_web: WebStrand = null
+var ride_distance := 0.0
+var ride_speed := 0.0
 
 ## Speed along the surface, for head bob and footsteps.
 var tangent_velocity := Vector3.ZERO
@@ -125,6 +150,15 @@ func is_hanging() -> bool:
 	return mode == Mode.HANGING
 
 
+func is_riding() -> bool:
+	return mode == Mode.RIDING
+
+
+## Ground speed along the line, for the HUD and the speed rush on the camera.
+func ride_velocity() -> float:
+	return absf(ride_speed)
+
+
 ## True when the spider is on something it could not stand on upright.
 func on_steep_surface() -> bool:
 	return mode == Mode.ATTACHED and surface_normal.dot(Vector3.UP) < 0.7
@@ -154,7 +188,7 @@ func add_yaw(amount: float) -> void:
 func update_orientation(delta: float) -> void:
 	if _spider == null:
 		return
-	if mode == Mode.AIRBORNE:
+	if mode == Mode.AIRBORNE or mode == Mode.RIDING:
 		_blend_up(Vector3.UP, delta)
 	elif mode == Mode.HANGING:
 		var to_anchor := line_anchor - _spider.global_position
@@ -174,7 +208,9 @@ func step(delta: float, input_axis: Vector2, want_jump: bool, want_sprint: bool,
 		return
 	_grace = maxf(0.0, _grace - delta)
 	_silk_warning = maxf(0.0, _silk_warning - delta)
-	if mode == Mode.HANGING:
+	if mode == Mode.RIDING:
+		_step_riding(delta, input_axis, want_jump, want_release)
+	elif mode == Mode.HANGING:
 		_step_hanging(delta, input_axis, want_line_out, want_line_in, want_release)
 	else:
 		_step_surface(delta, input_axis, want_jump, want_sprint, want_line_out)
@@ -184,6 +220,8 @@ func step(delta: float, input_axis: Vector2, want_jump: bool, want_sprint: bool,
 func release() -> void:
 	if mode != Mode.AIRBORNE:
 		_set_mode(Mode.AIRBORNE)
+	ride_web = null
+	ride_speed = 0.0
 	line_length = 0.0
 	if _spider != null:
 		_spider.up_direction = Vector3.UP
@@ -455,6 +493,123 @@ func _warn(text: String) -> void:
 	notice.emit(text)
 
 
+# --- ziplines -----------------------------------------------------------
+
+## Clips onto the nearest ridable strand, or lets go of the one being ridden.
+## Returns true if anything happened.
+func toggle_ride() -> bool:
+	if mode == Mode.RIDING:
+		_launch_off_line()
+		return true
+	var strand := _find_ridable()
+	if strand == null:
+		notice.emit("No line in reach to ride")
+		return false
+	_grab_line(strand)
+	return true
+
+
+## The best strand to clip onto: near enough to reach, and roughly the way the
+## player is looking so grabbing is aimed rather than accidental.
+func _find_ridable() -> WebStrand:
+	var height := _body_height()
+	var reach := height * grab_reach
+	var origin := _spider.global_position
+	var look := _facing
+	var camera := _spider.get_viewport().get_camera_3d()
+	if camera != null:
+		look = -camera.global_basis.z
+
+	var best: WebStrand = null
+	var best_score := -INF
+	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
+		var strand := node as WebStrand
+		if strand == null or strand.pattern == null or not strand.pattern.ridable:
+			continue
+		var point := Geometry3D.get_closest_point_to_segment(origin,
+			strand.point_a, strand.point_b)
+		var distance := origin.distance_to(point)
+		if distance > reach:
+			continue
+		var towards := point - origin
+		var aim := 1.0 if towards.length() < 0.001 else towards.normalized().dot(look)
+		var score := aim - distance / reach
+		if score > best_score:
+			best_score = score
+			best = strand
+	return best
+
+
+func _grab_line(strand: WebStrand) -> void:
+	ride_web = strand
+	var point := Geometry3D.get_closest_point_to_segment(_spider.global_position,
+		strand.point_a, strand.point_b)
+	ride_distance = strand.point_a.distance_to(point)
+
+	# Carry whatever speed you arrived with into the ride, so dropping onto a
+	# line from a height throws you along it instead of stopping you dead.
+	var axis := _ride_axis()
+	ride_speed = _spider.velocity.dot(axis)
+	_spider.velocity = Vector3.ZERO
+	_set_mode(Mode.RIDING)
+	notice.emit("On the line")
+
+
+func _step_riding(delta: float, input_axis: Vector2, want_jump: bool, want_release: bool) -> void:
+	if not is_instance_valid(ride_web):
+		_launch_off_line()
+		return
+	if want_jump or want_release:
+		_launch_off_line()
+		return
+
+	var height := _body_height()
+	var axis := _ride_axis()
+	var length := ride_web.point_a.distance_to(ride_web.point_b)
+
+	# Gravity pulls you down the slope; the keys push you along it.
+	ride_speed += -_spider.gravity * axis.y * delta
+	if absf(input_axis.y) > 0.1:
+		var facing_along: float = signf(_facing.dot(axis))
+		if facing_along == 0.0:
+			facing_along = 1.0
+		ride_speed += input_axis.y * facing_along * ride_push * height * delta
+	ride_speed -= ride_speed * ride_drag * delta
+	ride_speed = clampf(ride_speed, -ride_top_speed * height, ride_top_speed * height)
+
+	ride_distance += ride_speed * delta
+	if ride_distance <= 0.0 or ride_distance >= length:
+		ride_distance = clampf(ride_distance, 0.0, length)
+		_launch_off_line()
+		return
+
+	# Hang under the line like something on a pulley.
+	var point := ride_web.point_a + axis * ride_distance
+	_spider.global_position = point - Vector3.UP * height * 0.45
+	_spider.velocity = axis * ride_speed
+	tangent_velocity = _spider.velocity
+
+
+func _launch_off_line() -> void:
+	var axis := _ride_axis()
+	var thrown := axis * ride_speed
+	ride_web = null
+	ride_speed = 0.0
+	ride_distance = 0.0
+	_grace = release_grace
+	_set_mode(Mode.AIRBORNE)
+	_spider.velocity = thrown + Vector3.UP * launch_lift * _body_height()
+
+
+func _ride_axis() -> Vector3:
+	if not is_instance_valid(ride_web):
+		return Vector3.FORWARD
+	var axis := ride_web.point_b - ride_web.point_a
+	if axis.length_squared() < 0.000001:
+		return Vector3.FORWARD
+	return axis.normalized()
+
+
 # --- helpers ------------------------------------------------------------
 
 func _wish_direction(input_axis: Vector2, up: Vector3) -> Vector3:
@@ -500,6 +655,8 @@ func _set_mode(new_mode: Mode) -> void:
 			_spider.velocity += _current_up * into
 	if new_mode != Mode.HANGING:
 		line_length = 0.0
+	if new_mode != Mode.RIDING:
+		ride_web = null
 	mode_changed.emit(new_mode)
 
 

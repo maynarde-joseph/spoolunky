@@ -35,6 +35,18 @@ signal respawned()
 @export var input_dial_up := "web_dial_up"
 @export var input_dial_reset := "web_dial_reset"
 @export var input_weave_toggle := "web_weave_toggle"
+@export var input_ride := "web_ride"
+@export var input_toggle_horizon := "toggle_horizon"
+
+## Keep the horizon level even when the body is on a wall or a ceiling. The
+## body still rolls onto the surface — you see your own legs up there — but the
+## room stays the right way up, which matters a lot when you are lining up a
+## line to ride rather than admiring the ceiling.
+@export var level_horizon := true
+
+## How much the view opens up at speed. Pure sugar, and most of what makes a
+## zipline feel fast.
+@export var speed_fov_gain := 18.0
 @export var input_interact := "interact"
 
 ## Falling below this puts the spider back where it started.
@@ -53,6 +65,7 @@ signal respawned()
 var _spawn_transform: Transform3D
 var _stage: GrowthStage
 var _pitch := 0.0
+var _base_fov := 0.0
 
 
 func _ready() -> void:
@@ -178,15 +191,59 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.reset_dials()
 	elif event.is_action_pressed(input_weave_toggle):
 		web_builder.toggle_weave()
+	elif event.is_action_pressed(input_toggle_horizon):
+		level_horizon = not level_horizon
+		notice.emit("Horizon: %s" % ("levelled" if level_horizon else "rolls with the body"))
 	elif _web_tool_active() and event.is_action_pressed(input_place_anchor):
 		web_builder.place()
 	elif _web_tool_active() and event.is_action_pressed(input_cancel_anchor):
 		web_builder.undo()
 	elif web_builder.building and event.is_action_pressed(input_finish_web):
 		web_builder.finish()
+	elif event.is_action_pressed(input_ride):
+		climb.toggle_ride()
 	else:
 		return
 	get_viewport().set_input_as_handled()
+
+
+func _process(delta: float) -> void:
+	_level_view()
+	_rush(delta)
+
+
+## Cancels the roll the body picked up from whatever it is standing on, leaving
+## pitch and yaw alone. Applied to the head, so the head bob's own lean still
+## layers on top of it.
+func _level_view() -> void:
+	if not level_horizon or head == null:
+		return
+	var basis := head.global_basis
+	var forward := -basis.z
+	var reference := Vector3.UP
+	if absf(forward.dot(reference)) > 0.995:
+		# Looking straight up or down: nothing to level against, so keep the
+		# up we already had rather than snapping to something arbitrary.
+		reference = basis.y
+	var right := forward.cross(reference)
+	if right.length_squared() < 0.000001:
+		return
+	right = right.normalized()
+	var up := right.cross(forward).normalized()
+	head.global_basis = Basis(right, up, -forward)
+
+
+## Opens the view up as you pick up speed.
+func _rush(delta: float) -> void:
+	var camera := get_viewport().get_camera_3d()
+	if camera == null:
+		return
+	if _base_fov <= 0.0:
+		_base_fov = camera.fov
+	var reference: float = maxf(stage().move_speed * 2.5, 0.001)
+	var rush := clampf(velocity.length() / reference - 0.2, 0.0, 1.0)
+	camera.fov = lerpf(camera.fov, _base_fov + rush * speed_fov_gain,
+		clampf(delta * 6.0, 0.0, 1.0))
 
 
 ## Current size tier.

@@ -31,6 +31,7 @@ dropped into it.
 |-------|--------|
 | WASD / Space / Shift | move, jump, sprint |
 | *walk into a wall* | climb it — walls and ceilings are floors to a spider |
+| **F** or **middle mouse** | clip onto a silk line and ride it — again to let go |
 | **Ctrl** | drop onto a dragline (from a wall or ceiling) |
 | **Ctrl** / **Space** | lower / raise yourself on the line |
 | **Right Mouse** | let go of the line |
@@ -44,6 +45,7 @@ dropped into it.
 | **G** | wire one web to another — press on each end |
 | **B** | keep the rig you're looking at as a design |
 | **V** | place a saved design — wheel to pick, left mouse to spin it |
+| **L** | level horizon on walls and ceilings, or let it roll |
 | **K** | switch weave: stretched or inscribed |
 | **;** | pick a tuning dial |
 | **[** / **]** | turn that dial down / up |
@@ -61,6 +63,18 @@ net, which is filled in with spokes and a spiral and will catch things.
 You are charged silk only when the web actually goes up, and the HUD shows a
 running estimate plus the reason a spot won't take an anchor — out of reach, too
 far to span, not enough silk, or a pattern your size can't spin yet.
+
+## Riding your own silk
+
+Any strand built from a ridable pattern — the silk bridge — can be clipped onto
+with **F** or the middle mouse button, and ridden. Gravity does the work on a
+downhill line, the movement keys push you along a level one, and letting go
+throws you off carrying all the speed you built, plus a kick to clear the edge.
+Arrive on a line already moving and you keep it.
+
+The camera opens up as you go faster, and the horizon stays level even when the
+body is on a wall or a ceiling. **L** turns that off if you want the world to
+roll with you.
 
 ## Climbing
 

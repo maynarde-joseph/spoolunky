@@ -7,6 +7,7 @@ extends CanvasLayer
 const HELP_TEXT := """[ Spoolunky — sandbox ]
 WASD / Space / Shift   move, jump, sprint
 walk into a wall       climb it — walls and ceilings are floors to you
+F or middle mouse      clip onto a silk line and ride it (again to let go)
 Ctrl                   drop onto a dragline (from a wall or ceiling)
   Ctrl / Space           lower / raise yourself on the line
   Right Mouse            let go
@@ -22,6 +23,7 @@ B                      keep the rig you're looking at as a design
 V                      place a saved design (wheel to pick, LMB to spin)
 ; and [ ]              pick a tuning dial, then turn it   ('  resets)
 K                      switch weave: stretched / inscribed
+L                      level horizon on walls and ceilings
 R                      free-fly (debug)   T  free the mouse   Esc  quit
 H                      hide this"""
 
@@ -122,7 +124,9 @@ func _refresh_state() -> void:
 	var climb := _spider.climb
 	if climb == null:
 		return
-	if climb.is_hanging():
+	if climb.is_riding():
+		state_label.text = "Riding — %.1f m/s   [F] let go" % climb.ride_velocity()
+	elif climb.is_hanging():
 		state_label.text = "On a line — %.1fm   [Ctrl] down  [Space] up  [RMB] let go" % climb.line_length
 	elif not climb.is_attached():
 		state_label.text = "Falling"
