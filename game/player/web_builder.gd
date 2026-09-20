@@ -64,6 +64,7 @@ var estimated_cost := 0.0
 var _spider: CharacterBody3D
 var _silk: SilkPool
 var _growth: SpiderGrowth
+var _view: SpiderCamera
 var _preview: MeshInstance3D
 var _preview_mesh: ImmediateMesh
 var _preview_material: StandardMaterial3D
@@ -80,10 +81,12 @@ func _ready() -> void:
 
 
 ## Wires the builder to the spider that owns it.
-func setup(spider: CharacterBody3D, silk: SilkPool, growth: SpiderGrowth) -> void:
+func setup(spider: CharacterBody3D, silk: SilkPool, growth: SpiderGrowth,
+		view: SpiderCamera) -> void:
 	_spider = spider
 	_silk = silk
 	_growth = growth
+	_view = view
 
 
 func _process(_delta: float) -> void:
@@ -476,10 +479,7 @@ func _unique_design_name(base: String) -> String:
 
 ## Direction the player is looking, flattened later into the design's forward.
 func _facing() -> Vector3:
-	var camera := get_viewport().get_camera_3d()
-	if camera == null:
-		return Vector3.FORWARD
-	return -camera.global_basis.z
+	return _view.aim_forward() if _view != null else Vector3.FORWARD
 
 
 # --- trigger links ------------------------------------------------------
@@ -561,11 +561,10 @@ func is_linking() -> bool:
 
 ## The web the player is looking at, if any. Tolerant, because silk is thin.
 func aimed_web() -> WebStructure:
-	var camera := get_viewport().get_camera_3d()
-	if camera == null:
+	if _view == null:
 		return null
-	var from := camera.global_position
-	var direction := -camera.global_basis.z
+	var from := _view.aim_origin()
+	var direction := _view.aim_forward()
 	var reach := _stage().anchor_range
 
 	var space := get_world_3d().direct_space_state
@@ -674,11 +673,10 @@ func _update_design_aim() -> void:
 
 ## Raycast down the crosshair for a surface. Fills in the aim fields.
 func _cast_surface(reach: float) -> bool:
-	var camera := get_viewport().get_camera_3d()
-	if camera == null:
+	if _view == null:
 		return false
-	var from := camera.global_position
-	var to := from - camera.global_basis.z * reach
+	var from := _view.aim_origin()
+	var to := from + _view.aim_forward() * reach
 	var space := get_world_3d().direct_space_state
 	var query := PhysicsRayQueryParameters3D.create(from, to, GameLayers.WORLD, _exclusions())
 	var hit := space.intersect_ray(query)

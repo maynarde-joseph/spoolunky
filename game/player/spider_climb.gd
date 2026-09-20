@@ -117,19 +117,24 @@ var tangent_velocity := Vector3.ZERO
 var _spider: CharacterController3D
 var _silk: SilkPool
 var _growth: SpiderGrowth
+var _view: SpiderCamera
 var _facing := Vector3.FORWARD
 var _current_up := Vector3.UP
 var _grace := 0.0
+var _previous_up := Vector3.ZERO
+var _swap_cooldown := 0.0
 var _silk_warning := 0.0
 var _line_mesh: ImmediateMesh
 var _line_instance: MeshInstance3D
 var _line_material: StandardMaterial3D
 
 
-func setup(spider: CharacterController3D, silk: SilkPool, growth: SpiderGrowth) -> void:
+func setup(spider: CharacterController3D, silk: SilkPool, growth: SpiderGrowth,
+		view: SpiderCamera) -> void:
 	_spider = spider
 	_silk = silk
 	_growth = growth
+	_view = view
 	_facing = -spider.global_basis.z
 	_current_up = Vector3.UP
 	surface_normal = Vector3.UP
@@ -169,18 +174,35 @@ func body_up() -> Vector3:
 	return _current_up
 
 
-## Points the body at a direction, flattened onto whatever it is standing on.
+## Points the view, and so the body, along a direction.
 func face(direction: Vector3) -> void:
+	if _view != null:
+		_view.face(direction)
 	var flat := direction - _current_up * direction.dot(_current_up)
+	if flat.length_squared() > 0.000001:
+		_facing = flat.normalized()
+
+
+## Which way "forward" is on the surface underfoot: the way the camera is
+## looking, flattened onto it.
+##
+## Looking straight into a wall leaves nothing to flatten, so it falls back to
+## the camera's own up — which means walking at a wall climbs it rather than
+## jamming, and looking out from a wall walks you back down it.
+func _surface_forward(up: Vector3) -> Vector3:
+	if _view == null:
+		return _facing
+	var look := _view.forward()
+	var flat := look - up * look.dot(up)
+	if flat.length_squared() < 0.02:
+		var sideways: float = -signf(look.dot(up))
+		if sideways == 0.0:
+			sideways = 1.0
+		var fallback := _view.up() * sideways
+		flat = fallback - up * fallback.dot(up)
 	if flat.length_squared() < 0.000001:
-		return
-	_facing = flat.normalized()
-
-
-## Mouse look. Yaw turns around whatever the body is standing on, so looking
-## around works the same on a ceiling as on the floor.
-func add_yaw(amount: float) -> void:
-	_facing = _facing.rotated(_current_up, amount).normalized()
+		return _facing
+	return flat.normalized()
 
 
 ## Rolls the body toward the surface it is on. Runs every frame, including the
@@ -188,6 +210,8 @@ func add_yaw(amount: float) -> void:
 func update_orientation(delta: float) -> void:
 	if _spider == null:
 		return
+	# The body turns to follow the camera; the camera never follows the body.
+	_facing = _surface_forward(_current_up)
 	if mode == Mode.AIRBORNE or mode == Mode.RIDING:
 		_blend_up(Vector3.UP, delta)
 	elif mode == Mode.HANGING:
@@ -207,6 +231,7 @@ func step(delta: float, input_axis: Vector2, want_jump: bool, want_sprint: bool,
 	if _spider == null:
 		return
 	_grace = maxf(0.0, _grace - delta)
+	_swap_cooldown = maxf(0.0, _swap_cooldown - delta)
 	_silk_warning = maxf(0.0, _silk_warning - delta)
 	if mode == Mode.RIDING:
 		_step_riding(delta, input_axis, want_jump, want_release)
@@ -343,6 +368,12 @@ func _find_surface(height: float, wish: Vector3) -> Dictionary:
 	if mode != Mode.ATTACHED or same.is_empty():
 		return best
 
+	# Fresh off another surface and the candidate is the one we just left? Stay
+	# put for a moment, or an inside corner ping-pongs between wall and ceiling.
+	var candidate_normal: Vector3 = best.get("normal", Vector3.UP)
+	if _swap_cooldown > 0.0 and candidate_normal.dot(_previous_up) > 0.85:
+		return same
+
 	# Still on the old surface. Only change allegiance if the player is
 	# actively pushing into the new one.
 	var candidate: Vector3 = best.get("normal", Vector3.UP)
@@ -374,6 +405,8 @@ func _adopt_surface(normal: Vector3) -> void:
 		if new_facing.length_squared() < 0.000001:
 			new_facing = normal.cross(Vector3.FORWARD)
 	_facing = new_facing.normalized()
+	_previous_up = _current_up
+	_swap_cooldown = 0.3
 	_current_up = normal
 	surface_normal = normal
 	surface_changed.emit(normal)
@@ -515,10 +548,7 @@ func _find_ridable() -> WebStrand:
 	var height := _body_height()
 	var reach := height * grab_reach
 	var origin := _spider.global_position
-	var look := _facing
-	var camera := _spider.get_viewport().get_camera_3d()
-	if camera != null:
-		look = -camera.global_basis.z
+	var look := _view.aim_forward() if _view != null else _facing
 
 	var best: WebStrand = null
 	var best_score := -INF
@@ -615,7 +645,7 @@ func _ride_axis() -> Vector3:
 func _wish_direction(input_axis: Vector2, up: Vector3) -> Vector3:
 	if input_axis.length_squared() < 0.01:
 		return Vector3.ZERO
-	var forward := _facing - up * _facing.dot(up)
+	var forward := _surface_forward(up)
 	if forward.length_squared() < 0.000001:
 		return Vector3.ZERO
 	forward = forward.normalized()

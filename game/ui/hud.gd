@@ -23,7 +23,7 @@ B                      keep the rig you're looking at as a design
 V                      place a saved design (wheel to pick, LMB to spin)
 ; and [ ]              pick a tuning dial, then turn it   ('  resets)
 K                      switch weave: stretched / inscribed
-L                      level horizon on walls and ceilings
+L                      camera: third person / first person
 R                      free-fly (debug)   T  free the mouse   Esc  quit
 H                      hide this"""
 

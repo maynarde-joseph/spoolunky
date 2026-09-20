@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="PackedScene" path="res://addons/character-controller/example/main/player.tscn" id="1_base"]
 [ext_resource type="Script" path="res://game/player/spider.gd" id="2_spider"]
@@ -6,6 +6,8 @@
 [ext_resource type="Script" path="res://game/player/spider_growth.gd" id="4_growth"]
 [ext_resource type="Script" path="res://game/player/web_builder.gd" id="5_builder"]
 [ext_resource type="Script" path="res://game/player/spider_climb.gd" id="6_climb"]
+[ext_resource type="Script" path="res://game/player/spider_camera.gd" id="7_view"]
+[ext_resource type="Script" path="res://game/player/spider_body.gd" id="8_body"]
 
 [node name="Spider" instance=ExtResource("1_base")]
 collision_layer = 2
@@ -23,3 +25,9 @@ script = ExtResource("5_builder")
 
 [node name="Climb" type="Node3D" parent="."]
 script = ExtResource("6_climb")
+
+[node name="View" type="Node3D" parent="."]
+script = ExtResource("7_view")
+
+[node name="Body" type="Node3D" parent="."]
+script = ExtResource("8_body")

@@ -97,6 +97,9 @@ func _test_ceiling() -> void:
 	_check(_spider.climb.surface_normal.dot(Vector3.DOWN) > 0.9,
 		"carried on over onto the ceiling (normal %.2v)" % _spider.climb.surface_normal)
 	_check(_spider.global_position.y > ROOM_HALF.y - 0.5, "and is up at ceiling height")
+	# Movement is camera-relative now, so turn to look along the ceiling rather
+	# than back at the wall that was just climbed.
+	_spider.climb.face(Vector3.RIGHT)
 	var across_before := _spider.global_position.x
 	await _run_frames(60)
 	_check(_spider.global_position.x > across_before + 0.2,
@@ -245,8 +248,10 @@ func _test_ziplining() -> void:
 		_check(not _spider.climb.is_riding(), "and can let go part way along")
 		_check(_spider.velocity.y > 0.0, "with a kick to clear the edge")
 
-	# The levelled horizon should survive being upside down.
-	_check(_spider.level_horizon, "the horizon is levelled by default")
+	_check(_spider.view.third_person, "the camera starts behind the spider")
+	_spider.view.toggle_mode()
+	_check(not _spider.view.third_person, "and can be brought inside its head")
+	_spider.view.toggle_mode()
 
 
 # --- scaffolding --------------------------------------------------------

@@ -347,26 +347,37 @@ This is the traversal answer to a world built vertically: you get *down* fast
 and precisely, and back up at the cost of silk. It is also the best place in
 the game to build from — hanging under a doorway, spinning a web across it.
 
-### The camera: first person, level horizon
+### The camera: world-space look, and both distances
 
-**Decided: first person, always. The body rolls onto the surface; the view does
-not.** You see your own legs up on the ceiling, but the room stays the right
-way up.
+**Decided: look direction lives in world yaw and pitch, never in the body's
+frame — and the camera defaults to third person, with first person on a key.**
 
-This reverses an earlier call. The original argument was that the world
-flipping over is the moment the player stops being a tourist in the room, and
-that is still true — it is a genuinely great one-off sensation. But the game's
-centre of gravity has moved from a trapping sim, where you have all the time in
-the world to enjoy being upside down, to a traversal game where you are lining
-up a line to ride. Fighting an inverted horizon at speed is not characterful,
-it is just hard to aim. The flip is available on a toggle (**L**) because it is
-worth feeling at least once.
+The important half is the first one. Look used to be derived from the body: yaw
+turned you around whatever surface you were stuck to. On the floor that is
+identical to normal mouse look, so it seemed fine — but the moment you walk onto
+a wall it silently remaps the mouse axes, and "left" stops meaning left. That is
+why looking around on a wall felt wrong, and it is fixed by keeping the view in
+world terms and letting the body follow the camera instead of the reverse.
 
-Still no third person. The body only ever has to look right from the inside,
-which saves a camera rig, camera collision and a second set of animations. If
-that changes it will be because the spider body turned out too good to hide,
-and the cheap version is a *look at my spider* mode that snaps back to first
-person the moment you start building.
+Movement follows from the same decision: forward is *the way the camera is
+looking, flattened onto whatever you are standing on*. Walk at a wall while
+looking at it and you climb it, because looking into a surface leaves nothing to
+flatten and it falls back to the camera's up.
+
+The second half reverses an earlier call, twice reversed now, so here is the
+reasoning rather than a quiet edit. Third person wins because **the size ladder
+is the whole progression** and you cannot judge your own size from inside your
+own head. A game about being a coin that becomes a car has to let you see the
+coin. It also suits a goofy register: eight legs scuttling up a wall is funny to
+look at and invisible in first person.
+
+First person stays, on **L**, because it is better for lining up an anchor and
+for the sensation of speed on a line.
+
+The world no longer flips upside down on a ceiling, and there is no toggle for
+it any more, because under a world-space look model there is nothing to flip —
+the camera was never derived from the body in the first place. That sensation is
+gone, and it was a real one. It cost less than scrambled controls.
 
 ### Ziplines
 Any strand marked ridable can be clipped onto and slid along. Gravity does most
@@ -380,10 +391,10 @@ string silk somewhere you have no intention of catching anything. A line is
 cheap, permanent and yours.
 
 ### Still to come
-The body itself is the missing half: eight legs with IK that actually reach for
-the surface and take its angle. From first person that means legs working at
-the edges of your vision — the Mirror's Edge trick — which sells the climb far
-better than a third-person view of a model would.
+The body is a placeholder: primitives, with legs that swing in two alternating
+sets when it moves. It is enough to read the spider's size and which way it is
+pointing, which is what third person needed. A real one wants eight legs with
+IK that reach for the surface and take its angle.
 
 ---
 
@@ -425,7 +436,7 @@ is: each new zone opens with you as the smallest thing in it.
 | **B** | Keep the rig you are looking at as a design |
 | **V** | Place a saved design — wheel to pick, left mouse to spin it |
 | **F** or **middle mouse** | Clip onto a silk line and ride it — again to let go |
-| **L** | Level horizon on walls and ceilings, or let it roll |
+| **L** | Camera: third person or first person |
 | **K** | Switch weave: stretched or inscribed |
 | **;** | Pick which tuning dial the keys point at |
 | **[** / **]** | Turn that dial down / up |

@@ -110,8 +110,8 @@ func _send(action: StringName) -> void:
 
 func _test_aiming(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	builder.start()
-	# Look straight down at the floor.
-	spider.head.rotation.x = -PI / 2.0
+	# Look straight down at the floor. Aim lives on the camera rig now.
+	spider.view.pitch = -PI / 2.0
 	await process_frame
 	builder._update_aim()
 	_check(builder.aim_valid, "aiming at the floor finds an anchor point")
@@ -119,7 +119,7 @@ func _test_aiming(spider: SpiderPlayer, builder: WebBuilder) -> void:
 		"anchor point is inside the tier's reach")
 
 	# Aiming at open sky should not find anything.
-	spider.head.rotation.x = PI / 2.0
+	spider.view.pitch = PI / 2.0
 	await process_frame
 	builder._update_aim()
 	_check(not builder.aim_valid, "aiming at nothing gives no anchor")

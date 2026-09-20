@@ -45,7 +45,7 @@ dropped into it.
 | **G** | wire one web to another — press on each end |
 | **B** | keep the rig you're looking at as a design |
 | **V** | place a saved design — wheel to pick, left mouse to spin it |
-| **L** | level horizon on walls and ceilings, or let it roll |
+| **L** | camera: third person or first person |
 | **K** | switch weave: stretched or inscribed |
 | **;** | pick a tuning dial |
 | **[** / **]** | turn that dial down / up |
@@ -72,9 +72,10 @@ downhill line, the movement keys push you along a level one, and letting go
 throws you off carrying all the speed you built, plus a kick to clear the edge.
 Arrive on a line already moving and you keep it.
 
-The camera opens up as you go faster, and the horizon stays level even when the
-body is on a wall or a ceiling. **L** turns that off if you want the world to
-roll with you.
+The camera opens up as you go faster. Look direction is kept in world terms, so
+the mouse means the same thing whatever surface the spider is stuck to, and the
+horizon stays level even on a ceiling. **L** switches between third and first
+person.
 
 ## Climbing
 

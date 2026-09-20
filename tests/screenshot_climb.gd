@@ -29,8 +29,9 @@ func _run() -> void:
 	await physics_frame
 	_spider = root.get_tree().get_first_node_in_group("spider") as SpiderPlayer
 	_spider.require_captured_mouse = false
-	_mark_body()
 
+	_spider.view.third_person = true
+	await _shot_scale()
 	await _shot_wall()
 	await _shot_ceiling()
 	await _shot_dragline()
@@ -41,13 +42,30 @@ func _run() -> void:
 	quit(0)
 
 
-## On a wall: the world tips ninety degrees because the spider's floor did.
+## Just standing there, so the size of the thing reads against the level.
+func _shot_scale() -> void:
+	_spider.view.distance = 3.0
+	_place(Vector3(-11.0, 1.5, 4.0), Vector3.FORWARD)
+	await _frames(80)
+	_spider.view.pitch = deg_to_rad(-22.0)
+	await _save("body_scale", "a spiderling at stage 1, third person")
+	_spider.growth.feed(400.0, "shot")
+	await _frames(30)
+	await _save("body_scale_grown", "the same spider several tiers up")
+	_spider.view.distance = 4.5
+	_spider.growth.biomass = 0.0
+	_spider.growth.stage_index = 0
+	_spider.growth.stage_changed.emit(_spider.growth.current_stage(), 0)
+	await _frames(10)
+
+
+## On a wall: the body rolls onto it, the horizon does not.
 func _shot_wall() -> void:
 	_place(Vector3(0, 1.2, -17.0), Vector3.FORWARD)
 	Input.action_press("move_forward")
 	await _frames(120)
 	Input.action_release("move_forward")
-	_spider.head.rotation.x = deg_to_rad(-15)
+	_spider.view.pitch = deg_to_rad(-15)
 	await _save("climb_wall", "on a wall, normal %.2v" % _spider.climb.surface_normal)
 
 
@@ -58,7 +76,7 @@ func _shot_ceiling() -> void:
 	Input.action_press("move_forward")
 	await _frames(40)
 	Input.action_release("move_forward")
-	_spider.head.rotation.x = deg_to_rad(-10)
+	_spider.view.pitch = deg_to_rad(-10)
 	await _save("climb_ceiling", "on the ceiling, normal %.2v" % _spider.climb.surface_normal)
 
 
@@ -69,7 +87,7 @@ func _shot_dragline() -> void:
 	await _frames(45)
 	Input.action_release("move_crouch")
 	await _frames(20)
-	_spider.head.rotation.x = deg_to_rad(55)
+	_spider.view.pitch = deg_to_rad(55)
 	await _save("climb_hanging", "hanging, line %.2fm" % _spider.climb.line_length)
 
 	# And from outside, so the thread itself is visible.
@@ -104,7 +122,7 @@ func _shot_zipline() -> void:
 	await _frames(3)
 	_spider.climb.toggle_ride()
 	await _frames(45)
-	_spider.head.rotation.x = deg_to_rad(-8)
+	_spider.view.pitch = deg_to_rad(-8)
 	await _save("zipline_riding", "riding at %.1f m/s" % _spider.climb.ride_velocity())
 
 	# And from outside, so the line and the rider both read.
@@ -125,21 +143,6 @@ func _place(at: Vector3, facing: Vector3) -> void:
 	_spider.global_position = at
 	_spider.velocity = Vector3.ZERO
 	_spider.climb.face(facing)
-
-
-## The player has no body mesh yet, so give it a blob for the outside shot.
-func _mark_body() -> void:
-	var mesh := SphereMesh.new()
-	mesh.radius = 0.09
-	mesh.height = 0.16
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.06, 0.05, 0.07)
-	material.roughness = 0.6
-	var body := MeshInstance3D.new()
-	body.name = "BodyBlob"
-	body.mesh = mesh
-	body.material_override = material
-	_spider.add_child(body)
 
 
 func _frames(count: int) -> void:

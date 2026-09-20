@@ -36,13 +36,7 @@ signal respawned()
 @export var input_dial_reset := "web_dial_reset"
 @export var input_weave_toggle := "web_weave_toggle"
 @export var input_ride := "web_ride"
-@export var input_toggle_horizon := "toggle_horizon"
-
-## Keep the horizon level even when the body is on a wall or a ceiling. The
-## body still rolls onto the surface — you see your own legs up there — but the
-## room stays the right way up, which matters a lot when you are lining up a
-## line to ride rather than admiring the ceiling.
-@export var level_horizon := true
+@export var input_toggle_camera := "toggle_camera"
 
 ## How much the view opens up at speed. Pure sugar, and most of what makes a
 ## zipline feel fast.
@@ -61,6 +55,8 @@ signal respawned()
 @onready var growth: SpiderGrowth = $Growth
 @onready var web_builder: WebBuilder = $WebBuilder
 @onready var climb: SpiderClimb = $Climb
+@onready var view: SpiderCamera = $View
+@onready var body: SpiderBody = $Body
 
 var _spawn_transform: Transform3D
 var _stage: GrowthStage
@@ -81,10 +77,12 @@ func _ready() -> void:
 	collision_layer = GameLayers.PLAYER
 	collision_mask = GameLayers.WORLD
 
-	web_builder.setup(self, silk, growth)
+	view.setup(self, get_node_or_null("Head/FirstPersonCameraReference"))
+	view.face(-global_basis.z)
+	web_builder.setup(self, silk, growth, view)
 	web_builder.notice.connect(_on_notice)
 
-	climb.setup(self, silk, growth)
+	climb.setup(self, silk, growth, view)
 	climb.notice.connect(_on_notice)
 	climb.jumped.connect(_on_jumped)
 	climb.line_dropped.connect(_on_line_dropped)
@@ -115,6 +113,8 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed(input_fly_mode_action_name):
 			fly_ability.set_active(not fly_ability.is_actived())
 
+	# Keep the rig current before anything asks it which way forward is.
+	view.update(stage().body_height)
 	climb.update_orientation(delta)
 
 	if climb.handles_movement():
@@ -140,15 +140,11 @@ func _physics_process(delta: float) -> void:
 		notice.emit("Fell out of the world — put you back")
 
 
-## Mouse look. Yaw turns the body around whatever it is standing on rather than
-## around world up, so looking around on a ceiling behaves like looking around
-## on the floor. Pitch stays on the head.
+## Mouse look goes straight to the camera rig, which keeps it in world terms.
+## The body then turns to follow the camera rather than the other way round —
+## that is what stops the mouse axes scrambling when you walk onto a wall.
 func rotate_head(mouse_axis: Vector2) -> void:
-	var sensitivity: float = head.mouse_sensitivity / 1000.0
-	var limit: float = head.vertical_angle_limit
-	_pitch = clampf(_pitch - mouse_axis.y * sensitivity, -limit, limit)
-	head.rotation.x = _pitch
-	climb.add_yaw(-mouse_axis.x * sensitivity)
+	view.look(mouse_axis)
 
 
 ## True while the web builder owns the mouse buttons — spinning a web by hand
@@ -191,9 +187,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.reset_dials()
 	elif event.is_action_pressed(input_weave_toggle):
 		web_builder.toggle_weave()
-	elif event.is_action_pressed(input_toggle_horizon):
-		level_horizon = not level_horizon
-		notice.emit("Horizon: %s" % ("levelled" if level_horizon else "rolls with the body"))
+	elif event.is_action_pressed(input_toggle_camera):
+		view.toggle_mode()
+		notice.emit("Camera: %s" % ("third person" if view.third_person else "first person"))
 	elif _web_tool_active() and event.is_action_pressed(input_place_anchor):
 		web_builder.place()
 	elif _web_tool_active() and event.is_action_pressed(input_cancel_anchor):
@@ -208,29 +204,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	_level_view()
+	view.update(stage().body_height)
 	_rush(delta)
-
-
-## Cancels the roll the body picked up from whatever it is standing on, leaving
-## pitch and yaw alone. Applied to the head, so the head bob's own lean still
-## layers on top of it.
-func _level_view() -> void:
-	if not level_horizon or head == null:
-		return
-	var basis := head.global_basis
-	var forward := -basis.z
-	var reference := Vector3.UP
-	if absf(forward.dot(reference)) > 0.995:
-		# Looking straight up or down: nothing to level against, so keep the
-		# up we already had rather than snapping to something arbitrary.
-		reference = basis.y
-	var right := forward.cross(reference)
-	if right.length_squared() < 0.000001:
-		return
-	right = right.normalized()
-	var up := right.cross(forward).normalized()
-	head.global_basis = Basis(right, up, -forward)
+	if body != null:
+		body.visible = view.third_person
+		body.animate(delta, _horizontal_velocity.length())
 
 
 ## Opens the view up as you pick up speed.
@@ -367,20 +345,16 @@ func _apply_stage(new_stage: GrowthStage, previous_height: float) -> void:
 	if previous_height < height:
 		global_position.y += (height - previous_height) * 0.5
 
-	var camera := get_viewport().get_camera_3d()
-	if camera != null:
-		camera.near = clampf(height * 0.02, 0.005, 0.05)
+	if body != null:
+		body.set_body_height(height)
 
 
 # --- helpers ------------------------------------------------------------
 
 ## The prey nearest the middle of the screen, within reach.
 func _aimed_prey() -> Prey:
-	var camera := get_viewport().get_camera_3d()
-	if camera == null:
-		return null
-	var origin := camera.global_position
-	var forward := -camera.global_basis.z
+	var origin := view.aim_origin()
+	var forward := view.aim_forward()
 	var current := stage()
 	var range_limit: float = maxf(current.reach * 2.5, current.body_height * 4.0)
 
