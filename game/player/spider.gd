@@ -239,6 +239,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	# Letting go spins the web. Polling for that as well as listening for the
+	# release event means a swallowed key-up cannot leave it growing for ever.
+	if web_builder.placing and not Input.is_action_pressed(input_build_mode):
+		web_builder.commit_place()
 	view.update(stage().body_height)
 	_rush(delta)
 	if body != null:

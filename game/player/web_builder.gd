@@ -124,6 +124,7 @@ var _cursor_material: StandardMaterial3D
 func _ready() -> void:
 	patterns = WebLibrary.load_patterns()
 	designs = DesignLibrary.load_all()
+	_select_first_spinnable()
 	_build_preview_nodes()
 	set_process(true)
 
@@ -1206,6 +1207,19 @@ func _is_unlocked(pattern: WebPattern) -> bool:
 	if _growth == null:
 		return pattern.unlock_stage == 0
 	return pattern.is_unlocked_at(_growth.stage_index)
+
+
+## The wheel has to start on something Q can actually spin. It used to start
+## on whatever sorted first — frame line, which is a strand — and entering
+## build mode was what quietly fixed that. Taking build mode away left the
+## wheel parked on a pattern the place key refuses, so holding Q did nothing
+## whatsoever and said so in a toast that is easy to miss.
+func _select_first_spinnable() -> void:
+	for i in patterns.size():
+		if patterns[i].shape == WebPattern.Shape.NET and _is_unlocked(patterns[i]):
+			pattern_index = i
+			return
+	_select_first_unlocked()
 
 
 func _select_first_unlocked() -> void:

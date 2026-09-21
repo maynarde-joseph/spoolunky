@@ -177,8 +177,18 @@ func _refresh_build_panel() -> void:
 		return
 
 	if not builder.building:
-		pattern_label.text = ""
-		hint_label.text = ""
+		# There is no build mode any more, so this is the only place the player
+		# ever sees which web the wheel is on — and whether Q can spin it.
+		var chosen := builder.current_pattern()
+		if chosen == null:
+			pattern_label.text = ""
+			hint_label.text = ""
+		elif chosen.shape == WebPattern.Shape.NET:
+			pattern_label.text = chosen.display_name
+			hint_label.text = "[Q] hold to spin one — the longer you hold, the bigger"
+		else:
+			pattern_label.text = chosen.display_name
+			hint_label.text = "Left mouse drags this across a gap — [Q] needs a web pattern"
 		var web := builder.aimed_web()
 		if web == null:
 			problem_label.text = ""

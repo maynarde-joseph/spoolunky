@@ -80,6 +80,12 @@ func _test_starting_state(spider: SpiderPlayer, builder: WebBuilder) -> void:
 		"frame line, tripline and sheet web to start with (%d)"
 		% builder.unlocked_patterns().size())
 	_check(spider.silk.maximum == stage.silk_capacity, "silk capacity comes from the tier")
+	# Q spins nets and refuses strands, so a wheel parked on a strand is a
+	# place key that silently does nothing. That is exactly how it shipped.
+	var starting := builder.current_pattern()
+	_check(starting != null and starting.shape == WebPattern.Shape.NET,
+		"the wheel starts on a web Q can actually spin (%s)"
+		% (starting.display_name if starting != null else "nothing"))
 
 
 func _test_input_map(spider: SpiderPlayer, builder: WebBuilder) -> void:
@@ -106,6 +112,7 @@ func _test_input_map(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	await process_frame
 	_check(not builder.building, "and Q does not put you in one")
 	builder.cancel_place()
+	_send_release(spider.input_build_mode)
 
 
 func _send(action: StringName) -> void:
@@ -114,6 +121,14 @@ func _send(action: StringName) -> void:
 	event.pressed = true
 	Input.parse_input_event(event)
 	# Input is accumulated by default, so push it through now.
+	Input.flush_buffered_events()
+
+
+func _send_release(action: StringName) -> void:
+	var event := InputEventAction.new()
+	event.action = action
+	event.pressed = false
+	Input.parse_input_event(event)
 	Input.flush_buffered_events()
 
 
@@ -1437,15 +1452,38 @@ func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	_check(not builder.placing, "and leaves you holding nothing")
 	silk.refill(silk.maximum)
 
+	# Drive it through the input system as well. Calling begin_place() straight
+	# is how this shipped broken: the wheel sat on a strand, so the real key
+	# refused every single press while the test never went near a key.
+	_select_pattern(builder, "orb_web")
+	silk.refill(silk.maximum)
+	var count_before := _web_count(webs)
+	_send(spider.input_build_mode)
+	await process_frame
+	_check(builder.placing, "the Q key itself starts it")
+	await _run_frames(20)
+	_send_release(spider.input_build_mode)
+	await process_frame
+	await physics_frame
+	_check(not builder.placing, "and letting the key go finishes it")
+	_check(_web_count(webs) == count_before + 1,
+		"leaving a web behind (%d -> %d)" % [count_before, _web_count(webs)])
+
 	# A line is grappled across a gap, not spun in mid-air.
 	_select_pattern(builder, "trip_line")
 	_check(not builder.begin_place(), "a tripline refuses to be spun as a web")
 	builder.cancel_place()
+	_select_first_spinnable_again(builder)
 
 	web.demolish()
 	slab.queue_free()
 	await physics_frame
 	await process_frame
+
+
+## Puts the wheel back on something spinnable, the way a fresh spider starts.
+func _select_first_spinnable_again(builder: WebBuilder) -> void:
+	builder._select_first_spinnable()
 
 
 ## Clears the spawner's wandering flies out of a patch, so a test about one
