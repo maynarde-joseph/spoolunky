@@ -37,7 +37,15 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if prey_scene == null:
 		return
-	_alive = _alive.filter(func(node: Node3D) -> bool: return is_instance_valid(node))
+	# Not filter() with a typed lambda: Array.filter returns an untyped Array,
+	# which will not assign back to Array[Node3D], and a freed instance cannot
+	# be passed as a Node3D either. Both of those throw once per frame, for
+	# every frame after anything is freed.
+	var live: Array[Node3D] = []
+	for node in _alive:
+		if is_instance_valid(node) and not node.is_queued_for_deletion():
+			live.append(node)
+	_alive = live
 	if _alive.size() >= population:
 		return
 	_pending -= delta

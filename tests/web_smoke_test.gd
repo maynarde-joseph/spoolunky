@@ -1396,20 +1396,45 @@ func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	_check(builder.place_radius <= ceiling + 0.001,
 		"and nothing grew past it (%.2fm)" % builder.place_radius)
 
+	# Measure what this tier's smallest and largest webs actually cost rather
+	# than guessing numbers that will rot the next time a pattern is tuned.
+	silk.unlimited = true
+	_check(builder.begin_place(), "spinning one with silk to spare")
+	var small_cost := builder.estimated_cost
+	await _run_frames(120)
+	var full_cost := builder.estimated_cost
+	var full_radius := builder.place_radius
+	builder.cancel_place()
+	silk.unlimited = false
+	_check(full_radius > ceiling - 0.05,
+		"unlimited silk grows it to the tier ceiling (%.2fm)" % full_radius)
+	_check(full_cost > small_cost,
+		"and a big web costs more than a small one (%d vs %d)"
+		% [ceili(full_cost), ceili(small_cost)])
+
 	# Silk is the other ceiling, and it has to stop the web growing rather than
 	# refuse it at the end — holding a key down for a web you cannot buy is a
 	# nasty way to find out you are broke.
-	silk.spend(silk.current - 6.0)
-	_check(builder.begin_place(), "spinning another on almost no silk")
-	await _run_frames(40)
-	_check(builder.place_capped, "growth stops when the silk runs out")
-	_check(builder.place_radius < ceiling,
-		"short of what the tier would otherwise allow (%.2fm of %.2fm)"
-		% [builder.place_radius, ceiling])
+	var thin: float = clampf((small_cost + full_cost) * 0.5, small_cost + 1.0, silk.maximum)
+	silk.refill(silk.maximum)
+	silk.spend(maxf(silk.current - thin, 0.0))
+	_check(builder.begin_place(), "spinning another on a thin reserve")
+	await _run_frames(120)
 	_check(silk.can_afford(builder.estimated_cost),
-		"and what it stopped at is affordable (~%d of %d silk)"
+		"what it grew to is affordable (~%d of %d silk)"
 		% [ceili(builder.estimated_cost), floori(silk.current)])
+	if thin < full_cost:
+		_check(builder.place_capped, "growth stopped when the silk ran out")
+		_check(builder.place_radius < ceiling,
+			"short of what the tier would otherwise allow (%.2fm of %.2fm)"
+			% [builder.place_radius, ceiling])
 	builder.cancel_place()
+
+	# And below even a small web's price it refuses to start, rather than
+	# letting you hold the key down for something you cannot buy.
+	silk.spend(silk.current)
+	_check(not builder.begin_place(), "with nothing in the spool it will not start")
+	_check(not builder.placing, "and leaves you holding nothing")
 	silk.refill(silk.maximum)
 
 	# A line is grappled across a gap, not spun in mid-air.

@@ -175,6 +175,13 @@ func begin_place() -> bool:
 	place_capped = false
 	place_radius = _min_place_radius()
 	_update_placement()
+	# You can never start something you could not finish: growth stops when
+	# the silk runs out, so refusing here is the same rule at its floor.
+	if place_valid and not _silk.can_afford(estimated_cost):
+		placing = false
+		notice.emit("Not enough silk for even a small web — %d needed"
+			% ceili(estimated_cost))
+		return false
 	state_changed.emit()
 	return true
 
