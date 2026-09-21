@@ -38,6 +38,7 @@ func _run() -> void:
 	_spider.climb.notice.connect(func(text: String) -> void: print("        (%s)" % text))
 
 	await _test_floor()
+	await _test_strafing()
 	await _test_wall()
 	await _test_ceiling()
 	await _test_dragline()
@@ -70,6 +71,46 @@ func _test_floor() -> void:
 		"standing the right way up (normal %.2v)" % _spider.climb.surface_normal)
 	_check(not _spider.climb.on_steep_surface(), "the floor is not a steep surface")
 	_check(_spider.up_direction.dot(Vector3.UP) > 0.95, "the body's up matches the floor")
+
+
+## Strafing has to mean the same thing the camera means by it, on every surface.
+## The climb component drives the body itself rather than going through the
+## template's mover, so nothing else checks that the two agree about which way
+## is right — and a mirrored strafe is the kind of bug you feel long before you
+## can name it.
+func _test_strafing() -> void:
+	_release_all()
+	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
+	_spider.velocity = Vector3.ZERO
+	# Looking down -Z, so "right" is +X by the usual right-handed reckoning,
+	# and that is also what the camera rig reports.
+	_spider.view.face(Vector3(0, 0, -1))
+	_spider.view.pitch = 0.0
+	await _run_frames(20)
+	_check(_spider.view.right().dot(Vector3.RIGHT) > 0.95,
+		"the camera agrees right is +X (%.2v)" % _spider.view.right())
+
+	var moved := await _strafe("move_right")
+	_check(moved.dot(_spider.view.right()) > 0.05,
+		"D goes the way the camera calls right (%.2v)" % moved)
+	moved = await _strafe("move_left")
+	_check(moved.dot(_spider.view.right()) < -0.05,
+		"and A goes the other way (%.2v)" % moved)
+	moved = await _strafe("move_forward")
+	_check(moved.dot(_spider.view.forward()) > 0.05,
+		"W goes where you are looking (%.2v)" % moved)
+
+
+## Holds one movement key and reports how far the spider actually went.
+func _strafe(action: String) -> Vector3:
+	_spider.velocity = Vector3.ZERO
+	await _run_frames(6)
+	var before := _spider.global_position
+	Input.action_press(action)
+	await _run_frames(25)
+	Input.action_release(action)
+	await _run_frames(2)
+	return _spider.global_position - before
 
 
 func _test_wall() -> void:
@@ -344,7 +385,8 @@ func _run_frames(count: int) -> void:
 
 
 func _release_all() -> void:
-	for action in ["move_forward", "move_back", "move_jump", "move_crouch", "web_cancel"]:
+	for action in ["move_forward", "move_backward", "move_left", "move_right",
+			"move_jump", "move_crouch", "web_cancel"]:
 		if InputMap.has_action(action) and Input.is_action_pressed(action):
 			Input.action_release(action)
 
