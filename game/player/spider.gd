@@ -67,6 +67,13 @@ var _stage: GrowthStage
 var _pitch := 0.0
 var _base_fov := 0.0
 
+## Whether the web now growing was started by the place key, and whether that
+## key has actually been seen held down since. The release poll needs both:
+## it exists to catch a swallowed key-up, and must not touch a placement
+## something else started, nor fire before the key has ever registered.
+var _placing_from_key := false
+var _place_key_seen := false
+
 
 func _ready() -> void:
 	super()
@@ -178,8 +185,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed(input_build_mode):
 		if device_placer.active:
 			device_placer.stop()
-		web_builder.begin_place()
+		_placing_from_key = web_builder.begin_place()
+		_place_key_seen = false
 	elif event.is_action_released(input_build_mode):
+		_placing_from_key = false
 		web_builder.commit_place()
 	elif _device_tool_active() and event.is_action_pressed(input_next_pattern):
 		device_placer.cycle(1)
@@ -239,10 +248,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	# Letting go spins the web. Polling for that as well as listening for the
-	# release event means a swallowed key-up cannot leave it growing for ever.
-	if web_builder.placing and not Input.is_action_pressed(input_build_mode):
-		web_builder.commit_place()
+	_watch_for_release()
 	view.update(stage().body_height)
 	_rush(delta)
 	if body != null:
@@ -261,6 +267,22 @@ func _rush(delta: float) -> void:
 	var rush := clampf(velocity.length() / reference - 0.2, 0.0, 1.0)
 	camera.fov = lerpf(camera.fov, _base_fov + rush * speed_fov_gain,
 		clampf(delta * 6.0, 0.0, 1.0))
+
+
+## Letting go spins the web. Watching the key as well as listening for its
+## release event means a swallowed key-up cannot leave one growing for ever —
+## but only after the key has been seen held, so this can never cut short a
+## placement that was started some other way.
+func _watch_for_release() -> void:
+	if not _placing_from_key or not web_builder.placing:
+		return
+	if Input.is_action_pressed(input_build_mode):
+		_place_key_seen = true
+		return
+	if not _place_key_seen:
+		return
+	_placing_from_key = false
+	web_builder.commit_place()
 
 
 ## Somewhere for a device across the level to put a message.
