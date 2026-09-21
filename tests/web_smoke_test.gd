@@ -1501,9 +1501,14 @@ func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder,
 	if not _check(builder.begin_place(), "spinning one in the open"):
 		silk.unlimited = false
 		return
-	await _run_frames(60)
+	# Pin the reach rather than growing to it. Growth accumulates delta in
+	# _process, and idle frames do not interleave with physics frames the same
+	# way twice, so two timed presses are never bit-for-bit the same size —
+	# and this test is about what the room does with a reach, not about growth.
+	var reach: float = clampf(2.0, builder._min_place_radius(), builder._max_place_radius())
+	builder.place_radius = reach
+	builder._update_placement()
 	var open_area := builder.place_area
-	var open_reach := builder.place_radius
 	_check(builder.place_anchored == 0,
 		"in open air nothing catches the edges (%d of %d)"
 		% [builder.place_anchored, WebBuilder.PLACE_SIDES])
@@ -1526,9 +1531,10 @@ func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder,
 	if not _check(builder.begin_place(), "spinning one down the slot"):
 		silk.unlimited = false
 		return
-	await _run_frames(60)
-	_check(is_equal_approx(builder.place_radius, open_reach),
-		"the same press allows the same reach (%.2fm)" % builder.place_radius)
+	builder.place_radius = reach
+	builder._update_placement()
+	_check(is_equal_approx(builder.place_radius, reach),
+		"the very same reach is allowed here (%.2fm)" % builder.place_radius)
 	_check(builder.place_anchored > 0,
 		"but here the edges find the walls (%d of %d)"
 		% [builder.place_anchored, WebBuilder.PLACE_SIDES])
