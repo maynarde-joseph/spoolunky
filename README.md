@@ -36,15 +36,15 @@ something down.
 | **Ctrl** | drop onto a dragline (from a wall or ceiling) |
 | **Ctrl** / **Space** | lower / raise yourself on the line |
 | **Right Mouse** | let go of the line |
-| **Q** | web build mode |
-| **Left Mouse** | grapple to the next anchor, dragging silk behind you |
-| **Right Mouse** | undo the last anchor, or leave build mode |
-| **F** | weave a ring of silk — the one you walked, or the one you're looking at |
-| **Wheel** or **Z** / **C** | change web pattern |
+| **Left Mouse** | **go there, trailing silk** — moving and building are the same act |
+| **Q** | weave the ring of silk you're looking at |
+| **Wheel** or **Z** / **C** | change which web **Q** weaves |
+| **Right Mouse** | let go of a line |
 | **E** | wrap caught prey, then drain it (also re-arms a sprung snare) |
 | **X** | pull down the web you're looking at, for half the silk back — or pick a device back up |
 | **G** | wire two things together — web or device, press on each end |
 | **N** | open the bag — place a device (wheel to pick, left mouse to put down) |
+| **J** | silk: unlimited / costs again (sandbox switch, starts unlimited) |
 | **B** | keep the rig you're looking at as a design |
 | **V** | place a saved design — wheel to pick, left mouse to spin it |
 | **L** | camera: third person or first person |
@@ -57,6 +57,16 @@ something down.
 | **T** | release the mouse · **Esc** quit |
 
 ## Building a web
+
+There is no build mode. **Left mouse grapples you to whatever you're pointing
+at, and drags a line behind you** — so getting around and building are the same
+act, and the silk ends up being a record of where you went.
+
+When your lines cross and enclose something, look at that gap and press **Q**:
+it fills with whichever web the wheel is on. That's the only deliberate build
+step, because it's the only one that's a decision.
+
+Every line is also a zipline, so a route you built once is a route you can ride.
 
 Placing an anchor **grapples you to it**, dragging a frame line behind you. So
 the frame of a web is the route you took around it, not an outline you drew from

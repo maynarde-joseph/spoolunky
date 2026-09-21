@@ -214,6 +214,24 @@ The exception is single strands — triplines, draglines, bridges. One line *is*
 legible, so those stay fully manual. The rule of thumb: **manual at the thread
 level for lines, pattern-driven for areas.**
 
+### Building has no mode
+
+Playtesting said building was slow, tedious and boring, and it was right. The
+old flow was: enter a mode, click an anchor, click another, click another,
+press a key to weave, leave the mode. Five decisions for one web, four of them
+bookkeeping.
+
+The verb is now one click. **Left mouse grapples you to whatever you point at
+and drags a line behind you**, always, with no mode around it. Getting about
+*is* building, so the silk is a record of where you went rather than something
+you stopped to construct. The only deliberate step left is the one that is
+actually a decision: look at a gap your lines enclose and press **Q** to fill
+it.
+
+That also settles what a mode is *for* in this game. A mode is worth it when it
+changes what the mouse means for a while — the bag (**N**) and design placement
+(**V**) qualify. Wrapping the main verb in one never did.
+
 ### Building is travelling
 
 Clicking an anchor hauls the spider to it and leaves a **frame line** behind —
@@ -559,11 +577,10 @@ is: each new zone opens with you as the smallest thing in it.
 | **Ctrl** | Drop onto a dragline (from a wall or ceiling) |
 | **Ctrl / Space** | Lower / raise yourself on the line |
 | **Right Mouse** | Let go of the line |
-| **Q** | Toggle web build mode |
-| **Left Mouse** | Grapple to the next anchor, dragging silk behind you |
-| **Right Mouse** | Undo last anchor (or leave build mode) |
-| **F** | Weave a ring of silk — the one you just walked, or the one you are looking at |
-| **Mouse Wheel / Z / C** | Cycle web pattern |
+| **Left Mouse** | **Go there, trailing silk.** No mode. Moving and building are one act |
+| **Q** | Weave the ring of silk under the crosshair |
+| **Mouse Wheel / Z / C** | Cycle which web **Q** weaves |
+| **Right Mouse** | Let go of a line |
 | **E** | Interact — wrap prey, then drain it; re-arm a sprung snare |
 | **X** | Demolish the web you are looking at (50% silk back) |
 | **G** | Wire two things together — web or device, press on each end |

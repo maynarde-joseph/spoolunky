@@ -11,11 +11,9 @@ F or middle mouse      clip onto a silk line and ride it (again to let go)
 Ctrl                   drop onto a dragline (from a wall or ceiling)
   Ctrl / Space           lower / raise yourself on the line
   Right Mouse            let go
-Q                      web build mode
-Left Mouse             grapple to the next anchor, dragging silk behind you
-Right Mouse            undo anchor / leave build mode
-F                      weave a ring of silk — walked, or looked at
-Wheel or Z / C         change web pattern
+Left Mouse             go there, trailing silk — this is how webs get built
+Q                      weave the ring of silk you are looking at
+Wheel or Z / C         change which web Q weaves
 E                      wrap prey, then drain it (also re-arms a snare)
 X                      pull down the web you're looking at
 G                      wire two things together — press on each end

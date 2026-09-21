@@ -78,6 +78,10 @@ var _chain: Array[WebStrand] = []
 var _pending_anchor := Vector3.ZERO
 var _awaiting_grapple := false
 
+## Where the spider pushed off from, so the line it drags has somewhere to
+## start once it lands.
+var _launched_from := Vector3.ZERO
+
 ## Rings of silk the player could weave into, and what they were built from.
 var _loops: Array = []
 var _loop_source := 0
@@ -111,9 +115,32 @@ func setup(spider: CharacterBody3D, silk: SilkPool, growth: SpiderGrowth,
 func _process(_delta: float) -> void:
 	if placing_design:
 		_update_design_aim()
-	elif building:
+	else:
 		_update_aim()
 	_draw_preview()
+
+
+# --- weaving ------------------------------------------------------------
+
+## Fill the ring under the crosshair. One press, no mode: the silk is already
+## up because you walked it, so the only decision left is "yes, weave that".
+func weave_aimed() -> bool:
+	if placing_design:
+		return false
+	var pattern := current_pattern()
+	if pattern == null:
+		return false
+	if pattern.shape != WebPattern.Shape.NET:
+		notice.emit("%s is a line, not a web — grapple it across a gap"
+			% pattern.display_name)
+		return false
+	if not _is_unlocked(pattern):
+		notice.emit("%s needs a bigger spider" % pattern.display_name)
+		return false
+	if aimed_loop() == null:
+		notice.emit("No ring of silk there — grapple a loop first")
+		return false
+	return fill_aimed_loop()
 
 
 # --- build mode ---------------------------------------------------------
@@ -146,16 +173,16 @@ func stop() -> void:
 	state_changed.emit()
 
 
-## Drops an anchor at the aim point, or closes the web if the player clicked
-## back on the first anchor.
+## Go to wherever the crosshair is, trailing silk. This is the game's main
+## verb and it has no mode around it: moving and building are the same act, so
+## the web ends up being a record of where you went.
 func place() -> void:
 	if placing_design:
 		place_design()
 		return
-	if not building or _awaiting_grapple:
+	if _awaiting_grapple:
 		return
-	var pattern := current_pattern()
-	if pattern == null:
+	if current_pattern() == null:
 		return
 	_update_aim()
 
@@ -163,20 +190,43 @@ func place() -> void:
 		notice.emit(problem_text())
 		return
 
-	# Going there is the point: an anchor is somewhere the spider has been, and
-	# the line behind it is silk it dragged on the way.
+	_launched_from = _line_start()
 	if _climb != null and _climb.grapple_to(aim_point, aim_normal):
 		_pending_anchor = aim_point
 		_awaiting_grapple = true
 		return
-	add_anchor(aim_point)
+	_arrive_at(aim_point)
 
 
 func _on_grappled(_point: Vector3, _normal: Vector3) -> void:
 	if not _awaiting_grapple:
 		return
 	_awaiting_grapple = false
-	add_anchor(_pending_anchor)
+	_arrive_at(_pending_anchor)
+
+
+## Landed. The line behind is the silk dragged on the way, which is all there
+## is to building now — no anchor list to keep in your head, no mode to be in.
+func _arrive_at(point: Vector3) -> void:
+	if building:
+		# The scripted run: saved designs and the test suite still walk an
+		# explicit ring and weave it with finish().
+		add_anchor(point)
+		return
+	if _launched_from.distance_to(point) > 0.01:
+		_lay_line(_launched_from, point)
+	_loop_source = -1
+	state_changed.emit()
+
+
+## Where a dragged line starts: the end of a scripted run, or simply where the
+## spider is standing.
+func _line_start() -> Vector3:
+	if building and anchors.size() > 0:
+		return anchors[anchors.size() - 1]
+	if _spider != null:
+		return _spider.global_position
+	return aim_point
 
 
 ## Drops an anchor at an explicit world point, laying silk from the last one.
@@ -820,27 +870,28 @@ func _update_aim() -> void:
 		return
 	problem = Problem.NONE
 
-	if anchors.size() >= pattern.max_anchors:
+	if building and anchors.size() >= pattern.max_anchors:
 		problem = Problem.FULL
 		return
+	# A scripted run measures from its last anchor and is held to the span
+	# limit. Free grappling measures from the spider and is limited only by how
+	# far it can see, which is what makes getting about feel quick.
+	if building and anchors.is_empty():
+		return
 
-	if anchors.size() > 0:
-		var last := anchors[anchors.size() - 1]
-		var span := last.distance_to(aim_point)
-		if span > stage.max_strand_length:
-			problem = Problem.TOO_FAR
-			return
-		if span < stage.body_height * 0.25:
-			problem = Problem.TOO_CLOSE
-			return
+	var span := _line_start().distance_to(aim_point)
+	if building and span > stage.max_strand_length:
+		problem = Problem.TOO_FAR
+		return
+	if span < stage.body_height * 0.25:
+		problem = Problem.TOO_CLOSE
+		return
 
-	if anchors.size() > 0:
-		var dragged := drag_pattern()
-		if dragged != null:
-			estimated_cost = dragged.cost_for(
-				anchors[anchors.size() - 1].distance_to(aim_point), 0.0)
-			if estimated_cost > _silk.current:
-				problem = Problem.NO_SILK
+	var dragged := drag_pattern()
+	if dragged != null:
+		estimated_cost = dragged.cost_for(span, 0.0)
+		if not _silk.can_afford(estimated_cost):
+			problem = Problem.NO_SILK
 
 
 ## Design placement only needs somewhere solid to sit against, not the anchor
@@ -1068,10 +1119,6 @@ func _draw_preview() -> void:
 	if placing_design:
 		_draw_design_ghost()
 		return
-	if not building:
-		_cursor.visible = false
-		return
-
 	var pattern := current_pattern()
 	if pattern == null:
 		return
@@ -1094,6 +1141,9 @@ func _draw_preview() -> void:
 			_preview_mesh.surface_end()
 
 	var points := anchors.duplicate()
+	if points.is_empty() and not building and aim_valid:
+		# Free grappling: the line you would leave runs from where you stand.
+		points.append(_line_start())
 	if aim_valid:
 		points.append(aim_point)
 

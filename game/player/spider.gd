@@ -178,7 +178,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed(input_build_mode):
 		if device_placer.active:
 			device_placer.stop()
-		web_builder.toggle()
+		web_builder.weave_aimed()
 	elif _device_tool_active() and event.is_action_pressed(input_next_pattern):
 		device_placer.cycle(1)
 	elif _device_tool_active() and event.is_action_pressed(input_prev_pattern):
@@ -223,12 +223,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		device_placer.place()
 	elif _device_tool_active() and event.is_action_pressed(input_cancel_anchor):
 		device_placer.stop()
-	elif _web_tool_active() and event.is_action_pressed(input_place_anchor):
+	# Left mouse is always "go there, trailing silk" — no mode to be in. That
+	# is the whole loop: moving and building are the same act.
+	elif event.is_action_pressed(input_place_anchor):
 		web_builder.place()
 	elif _web_tool_active() and event.is_action_pressed(input_cancel_anchor):
 		web_builder.undo()
-	elif web_builder.building and event.is_action_pressed(input_finish_web):
-		web_builder.finish()
 	elif event.is_action_pressed(input_ride):
 		climb.toggle_ride()
 	else:

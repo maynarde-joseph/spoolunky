@@ -87,12 +87,8 @@ func _test_input_map(spider: SpiderPlayer, builder: WebBuilder) -> void:
 			"device_mode", "toggle_help"]:
 		_check(InputMap.has_action(action), "input action '%s' is set up" % action)
 
-	# Drive build mode the way the player does, through the input system. A
-	# headless display server cannot capture the mouse, so lift that gate.
+	# A headless display server cannot capture the mouse, so lift that gate.
 	spider.require_captured_mouse = false
-	_send(spider.input_build_mode)
-	await process_frame
-	_check(builder.building, "Q turns build mode on")
 
 	var started_with := builder.current_pattern()
 	_send(spider.input_next_pattern)
@@ -102,9 +98,12 @@ func _test_input_map(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	await process_frame
 	_check(builder.current_pattern() == started_with, "and changes back")
 
+	# Grappling is not a mode any more: there is nothing to turn on, and Q is
+	# now "weave the ring I am looking at" rather than a state to be in.
+	_check(not builder.building, "there is no build mode to be in")
 	_send(spider.input_build_mode)
 	await process_frame
-	_check(not builder.building, "Q turns it off again")
+	_check(not builder.building, "and Q does not put you in one")
 
 
 func _send(action: StringName) -> void:

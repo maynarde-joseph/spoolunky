@@ -48,6 +48,7 @@ func _run() -> void:
 	await _test_leaping_off_a_wall()
 	await _test_ziplining()
 	await _test_grappling()
+	await _test_grappling_without_a_mode()
 
 	_release_all()
 	current_scene = null
@@ -384,6 +385,52 @@ func _add_slab(room: Node3D, centre: Vector3, half_extents: Vector3) -> void:
 func _run_frames(count: int) -> void:
 	for i in count:
 		await physics_frame
+
+
+## Grappling is the game's main verb and there is no mode around it any more:
+## moving and building are the same act, so a click anywhere leaves a line.
+func _test_grappling_without_a_mode() -> void:
+	var builder := _spider.web_builder
+	builder.stop()
+	_check(not builder.building, "there is no build mode to be in")
+
+	_spider.climb.release()
+	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
+	_spider.velocity = Vector3.ZERO
+	_spider.silk.refill(_spider.silk.maximum)
+	await _run_frames(20)
+
+	var lines_before := _silk_count()
+	var silk_before := _spider.silk.current
+	_spider.view.face(Vector3.FORWARD)
+	_spider.view.pitch = 0.0
+	await _run_frames(2)
+	var started_at := _spider.global_position
+
+	builder.place()
+	_check(_spider.climb.is_grappling(), "a click with no mode still grapples")
+	for i in 120:
+		if not _spider.climb.is_grappling():
+			break
+		await physics_frame
+	await _run_frames(2)
+
+	_check(_spider.global_position.distance_to(started_at) > 0.5,
+		"the spider travelled there (%.2fm)"
+		% _spider.global_position.distance_to(started_at))
+	_check(_silk_count() > lines_before,
+		"and left a line behind it (%d -> %d)" % [lines_before, _silk_count()])
+	_check(_spider.silk.current < silk_before, "which is what the silk went on")
+	_check(builder.anchors.is_empty(),
+		"with no anchor list to keep track of (%d)" % builder.anchors.size())
+
+
+func _silk_count() -> int:
+	var total := 0
+	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
+		if is_instance_valid(node) and not node.is_queued_for_deletion():
+			total += 1
+	return total
 
 
 func _release_all() -> void:
