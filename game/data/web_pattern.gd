@@ -118,10 +118,6 @@ enum Trigger {
 ## Width of that walkable surface, in metres, before size scaling.
 @export var walk_width := 0.14
 
-## Whether the spider can clip onto this strand and ride it. Ziplines are the
-## main reason to string silk across a gap you don't intend to catch anything in.
-@export var ridable := false
-
 ## Whether this web catches prey at all. Bridges and triplines don't.
 @export var catches_prey := true
 

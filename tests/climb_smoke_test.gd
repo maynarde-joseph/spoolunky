@@ -210,7 +210,8 @@ func _test_ziplining() -> void:
 			bridge = strand
 	if not _check(bridge != null, "a line to ride"):
 		return
-	_check(bridge.pattern.ridable, "and it is one you can ride")
+	_check(bridge.pattern.shape == WebPattern.Shape.STRAND,
+		"and it is a strand, which is all riding asks for now")
 
 	_spider.global_position = top + Vector3(0.1, -0.1, 0)
 	_spider.velocity = Vector3.ZERO

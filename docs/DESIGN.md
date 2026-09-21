@@ -220,9 +220,10 @@ Clicking an anchor hauls the spider to it and leaves a **frame line** behind —
 real silk, standing in the world, that exists whether or not a web ever gets
 woven into it. Three consequences, all of them good:
 
-* **The frame is a road.** Frame lines are ridable, so walking a triangle into a
-  corner leaves you three ziplines whether or not you weave anything. Building
-  and traversal stop being separate systems and become the same act.
+* **All silk is a road.** Every strand in the game can be clipped onto and
+  ridden — there is no ridable flag, because there is no kind of line that is
+  not also a zipline. Walking a triangle into a corner leaves you three of them
+  whether or not you weave anything, so building and traversal are the same act.
 * **Silk prices itself.** You pay per metre for the line you dragged, which is
   the most intuitive rule the game could have, and weaving the inside is a
   separate charge. That settles a question we had open for a while: the frame
@@ -230,9 +231,23 @@ woven into it. Three consequences, all of them good:
 * **The web outlives nothing; the roads outlive everything.** Tearing a web down
   leaves its frame standing. Traps are temporary, the network is not.
 
-Once a run of anchors closes a loop — walk back to where you started, or press
-**F** — the enclosed area can be woven in one go. The frame is already up, so
-weaving only spins and charges for the silk inside it.
+### Anything enclosed can be filled
+
+Weaving is not limited to a loop you just walked. Every strand you own is an
+edge in one graph, and lines count as joined **where they cross in mid-air as
+well as where they share an end** — so sling three lines across a shaft and the
+triangle where they overlap is a place you can put a web, even though none of
+those lines touches another at a tip.
+
+Look at any ring of silk in the world and press **F** to weave it. The silk
+around it is already up, so only the inside is spun and charged for. Rings are
+found by walking the graph for the shortest loop through each edge, which finds
+the small ones — the gaps you would actually want to fill rather than the huge
+outline around everything.
+
+This is what makes silk feel like a material rather than a menu. You string
+lines because you want to get somewhere, and the shapes they happen to make
+become places worth putting a trap.
 
 You can only build where you can physically get to. With climbing that is
 almost everywhere, and it is a far better constraint than an arbitrary reach.
@@ -455,7 +470,7 @@ is: each new zone opens with you as the smallest thing in it.
 | **Q** | Toggle web build mode |
 | **Left Mouse** | Grapple to the next anchor, dragging silk behind you |
 | **Right Mouse** | Undo last anchor (or leave build mode) |
-| **F** | Weave the inside of the loop you walked |
+| **F** | Weave a ring of silk — the one you just walked, or the one you are looking at |
 | **Mouse Wheel / Z / C** | Cycle web pattern |
 | **E** | Interact — wrap prey, then drain it; re-arm a sprung snare |
 | **X** | Demolish the web you are looking at (50% silk back) |

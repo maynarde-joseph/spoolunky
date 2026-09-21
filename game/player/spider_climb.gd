@@ -622,7 +622,8 @@ func _find_ridable() -> WebStrand:
 	var best_score := -INF
 	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
 		var strand := node as WebStrand
-		if strand == null or strand.pattern == null or not strand.pattern.ridable:
+		# Any silk you can reach is silk you can ride.
+		if strand == null or strand.pattern == null:
 			continue
 		var point := Geometry3D.get_closest_point_to_segment(origin,
 			strand.point_a, strand.point_b)

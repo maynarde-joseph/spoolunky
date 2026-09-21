@@ -52,6 +52,7 @@ func _run() -> void:
 	await _test_pressure_snare(spider, builder, webs, silk, level)
 	await _test_trigger_links(spider, builder, webs, silk, level)
 	await _test_weave_modes(spider, builder, webs, silk)
+	await _test_rings_of_silk(spider, builder, webs, silk)
 	await _test_tuning_dials(spider, builder, webs, silk, level)
 	await _test_saved_designs(spider, builder, webs, silk)
 	await _test_sandbox_wiring(level, spider)
@@ -541,6 +542,90 @@ func _test_weave_modes(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 	builder.toggle_weave()
 	_check(builder.weave == WebGeometry.Weave.STRETCHED, "K switches the weave back")
 	await physics_frame
+
+
+## Three lines slung across a gap, none of them touching another at an end,
+## still enclose the triangle where they cross — and that triangle can be woven.
+func _test_rings_of_silk(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
+		silk: SilkPool) -> void:
+	silk.refill(silk.maximum)
+	spider.view.pitch = 0.0
+	spider.view.face(Vector3.FORWARD)
+	await physics_frame
+	var origin := spider.view.aim_origin()
+	var forward := spider.view.aim_forward()
+	var centre := origin + forward * 2.0
+	var across := forward.cross(Vector3.UP).normalized()
+	var up := across.cross(forward).normalized()
+
+	# A triangle made only by crossings: each line runs well past the others.
+	var frame := _pattern(builder, "frame_line")
+	var lines: Array[WebStrand] = []
+	for pair in [
+			[centre - across * 1.0 - up * 0.35, centre + across * 1.0 - up * 0.35],
+			[centre - across * 0.5 - up * 0.7, centre + across * 0.5 + up * 0.7],
+			[centre + across * 0.5 - up * 0.7, centre - across * 0.5 + up * 0.7]]:
+		var line := WebStrand.spin(frame, pair[0], pair[1], 1.0)
+		if line != null:
+			line.place_in(webs)
+			lines.append(line)
+	_check(lines.size() == 3, "three lines strung across the gap")
+	await physics_frame
+
+	var rings := builder.loops()
+	if not _check(rings.size() > 0, "their crossings enclose something (%d ring%s)"
+			% [rings.size(), "" if rings.size() == 1 else "s"]):
+		return
+	var smallest = rings[rings.size() - 1]
+	_check(smallest.area > 0.01, "the ring has real area (%.3f m2)" % smallest.area)
+	_check(smallest.points.size() == 3, "and three corners (%d)" % smallest.points.size())
+
+	# None of those corners is the end of a line: they are all crossings.
+	var corners_on_ends := 0
+	for corner in smallest.points:
+		for line in lines:
+			if corner.distance_to(line.point_a) < 0.05 or corner.distance_to(line.point_b) < 0.05:
+				corners_on_ends += 1
+	_check(corners_on_ends == 0, "every corner is a crossing, not a line end")
+
+	_select_pattern(builder, "sheet_web")
+	builder.start()
+	var aimed = builder.aimed_loop()
+	_check(aimed != null, "the ring is found under the crosshair")
+	var before := silk.current
+	var woven := builder.fill_aimed_loop()
+	var spent := before - silk.current
+	builder.stop()
+	await physics_frame
+	_check(woven, "and can be woven in one go")
+	_check(spent > 0.0, "which costs silk (%.1f)" % spent)
+
+	var net := _newest_web(webs, "sheet_web") as WebNet
+	if _check(net != null, "a web is standing in the ring"):
+		_check(is_equal_approx(spent, net.silk_cost), "charged for the inside only")
+		net.demolish()
+	for line in lines:
+		if is_instance_valid(line):
+			_check(true, "the lines are still there afterwards")
+			break
+	for line in lines:
+		if is_instance_valid(line):
+			line.demolish()
+	await physics_frame
+
+	# And every strand is rideable now, not just the ones meant as roads.
+	var opt_in := false
+	for entry in _pattern(builder, "trip_line").get_property_list():
+		if entry.get("name", "") == "ridable":
+			opt_in = true
+	_check(not opt_in, "there is no opt-in for riding any more — all silk is a zipline")
+
+
+func _pattern(builder: WebBuilder, id: String) -> WebPattern:
+	for pattern in builder.patterns:
+		if pattern.id == id:
+			return pattern
+	return null
 
 
 func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,

@@ -38,7 +38,7 @@ dropped into it.
 | **Q** | web build mode |
 | **Left Mouse** | grapple to the next anchor, dragging silk behind you |
 | **Right Mouse** | undo the last anchor, or leave build mode |
-| **F** | weave the inside of the loop you walked |
+| **F** | weave a ring of silk — the one you walked, or the one you're looking at |
 | **Wheel** or **Z** / **C** | change web pattern |
 | **E** | wrap caught prey, then drain it (also re-arms a sprung snare) |
 | **X** | pull down the web you're looking at, for half the silk back |
@@ -68,6 +68,12 @@ dragged it. Pulling a web down later leaves the frame standing.
 
 If the selected pattern is a strand (tripline, bridge), that's what gets dragged
 instead of plain frame line, so you can lay a run of triplines the same way.
+
+**Every strand is a zipline** — there's no opt-in. And weaving isn't limited to
+a loop you just walked: all your silk is one graph, and lines count as joined
+where they *cross in mid-air* as well as where they share an end. Sling three
+lines across a shaft and the triangle where they overlap is a ring you can fill.
+Look at any ring and press **F**.
 
 ## Riding your own silk
 

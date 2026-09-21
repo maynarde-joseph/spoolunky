@@ -14,7 +14,7 @@ Ctrl                   drop onto a dragline (from a wall or ceiling)
 Q                      web build mode
 Left Mouse             grapple to the next anchor, dragging silk behind you
 Right Mouse            undo anchor / leave build mode
-F                      weave the inside of the loop you walked
+F                      weave a ring of silk — walked, or looked at
 Wheel or Z / C         change web pattern
 E                      wrap prey, then drain it (also re-arms a snare)
 X                      pull down the web you're looking at

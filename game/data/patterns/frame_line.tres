@@ -24,6 +24,5 @@ trigger = 0
 hold_strength = 0.0
 durability = 30.0
 walkable = false
-ridable = true
 catches_prey = false
 can_signal = false

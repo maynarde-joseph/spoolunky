@@ -77,6 +77,10 @@ var _climb: SpiderClimb
 var _chain: Array[WebStrand] = []
 var _pending_anchor := Vector3.ZERO
 var _awaiting_grapple := false
+
+## Rings of silk the player could weave into, and what they were built from.
+var _loops: Array = []
+var _loop_source := 0
 var _preview: MeshInstance3D
 var _preview_mesh: ImmediateMesh
 var _preview_material: StandardMaterial3D
@@ -216,6 +220,7 @@ func _lay_line(from: Vector3, to: Vector3) -> WebStrand:
 	strand.tuning = dials.copy()
 	strand.place_in(_resolve_container())
 	_chain.append(strand)
+	_loop_source = -1
 	web_built.emit(strand)
 	return strand
 
@@ -264,7 +269,11 @@ func finish() -> void:
 		return
 
 	if anchors.size() < 3:
-		notice.emit("Three anchors at least, to enclose anything")
+		# Not walking a run: weave whatever ring is under the crosshair instead.
+		if fill_aimed_loop():
+			_end_chain()
+			return
+		notice.emit("Walk three anchors, or look at a ring of silk")
 		return
 
 	# Close the ring if the spider has not already walked back to the start.
@@ -571,6 +580,78 @@ func _facing() -> Vector3:
 	return _view.aim_forward() if _view != null else Vector3.FORWARD
 
 
+# --- rings of silk ------------------------------------------------------
+
+## Every area the player's silk currently encloses, anywhere in the world.
+## Lines count as joined where they cross as well as where they share an end,
+## so three strands slung across a gap enclose the triangle in the middle.
+func loops() -> Array:
+	var strands: Array = []
+	for node in get_tree().get_nodes_in_group("silk_webs"):
+		var strand := node as WebStrand
+		if strand != null and not strand.is_queued_for_deletion():
+			strands.append(strand)
+	if strands.size() != _loop_source:
+		_loop_source = strands.size()
+		_loops = WebGraph.find_loops(strands, _merge_radius())
+	return _loops
+
+
+## The ring under the crosshair, if there is one.
+func aimed_loop():
+	if _view == null:
+		return null
+	var from := _view.aim_origin()
+	var direction := _view.aim_forward()
+	var reach := _stage().anchor_range * 4.0
+	var best = null
+	var best_score := 1.0
+	for loop in loops():
+		var offset: Vector3 = loop.centre - from
+		var along := offset.dot(direction)
+		if along <= 0.0 or along > reach:
+			continue
+		var miss := (offset - direction * along).length()
+		var score: float = miss / maxf(loop.radius, 0.001)
+		if score < best_score:
+			best_score = score
+			best = loop
+	return best
+
+
+## Weaves the ring under the crosshair. The silk around it is already up, so
+## only the inside is spun and charged for.
+func fill_aimed_loop() -> bool:
+	var loop = aimed_loop()
+	if loop == null:
+		return false
+	var pattern := current_pattern()
+	if pattern == null or pattern.shape != WebPattern.Shape.NET:
+		return false
+	var dials := tuning_for(pattern)
+	var web := WebNet.spin(dials.apply_to(pattern), loop.points, _quality(), weave, false)
+	if web == null:
+		notice.emit("Nothing to weave in there")
+		return false
+	if not _silk.can_afford(web.silk_cost):
+		notice.emit("Not enough silk to weave it — %d needed" % ceili(web.silk_cost))
+		web.free()
+		return false
+	web.tuning = dials.copy()
+	_silk.spend(web.silk_cost)
+	web.place_in(_resolve_container())
+	_loop_source = -1
+	state_changed.emit()
+	web_built.emit(web)
+	notice.emit("%s woven into the ring (%d silk)" % [pattern.display_name, roundi(web.silk_cost)])
+	return true
+
+
+## How close two bits of silk have to be to count as touching.
+func _merge_radius() -> float:
+	return maxf(_stage().body_height * 0.5, 0.05)
+
+
 # --- trigger links ------------------------------------------------------
 
 ## Wires one web to another, a press at each end. A web that is wired up sets
@@ -700,6 +781,7 @@ func demolish_aimed() -> float:
 	var label := web.pattern.display_name
 	var refund := web.demolish()
 	_silk.refill(refund)
+	_loop_source = -1
 	notice.emit("%s pulled down (+%d silk)" % [label, roundi(refund)])
 	return refund
 
@@ -845,6 +927,9 @@ func hint_text() -> String:
 	if pattern.shape == WebPattern.Shape.STRAND:
 		return "Click to grapple across, dragging %s   ·   F to stop" % pattern.display_name
 	if anchors.size() < 3:
+		var ring = aimed_loop()
+		if ring != null:
+			return "F to weave this ring — %.2f m² enclosed" % ring.area
 		return "Click to grapple — %d anchor%s of 3" % [anchors.size(),
 			"" if anchors.size() == 1 else "s"]
 	return "Encloses %.2f m² — F to weave, or grapple back to the first anchor" \
@@ -978,6 +1063,17 @@ func _draw_preview() -> void:
 	var bad := Color(1.0, 0.35, 0.3, 1.0)
 	var line_color := good if problem == Problem.NONE else bad
 	var tick: float = maxf(_stage().body_height * 0.35, 0.03)
+
+	# Nothing being walked: show the ring under the crosshair instead.
+	if anchors.is_empty() and pattern.shape == WebPattern.Shape.NET:
+		var ring = aimed_loop()
+		if ring != null:
+			_preview_mesh.surface_begin(Mesh.PRIMITIVE_LINES, _preview_material)
+			var ring_colour := Color(0.6, 1.0, 0.7, 1.0)
+			for i in ring.points.size():
+				_line(ring.points[i], ring.points[(i + 1) % ring.points.size()], ring_colour)
+				_line(ring.centre, ring.points[i], Color(0.6, 1.0, 0.7, 0.3))
+			_preview_mesh.surface_end()
 
 	var points := anchors.duplicate()
 	if aim_valid:
