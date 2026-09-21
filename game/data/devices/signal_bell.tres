@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="DeviceKind" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/device_kind.gd" id="1_device"]
+
+[resource]
+script = ExtResource("1_device")
+id = "signal_bell"
+display_name = "Signal Bell"
+description = "Wire it to anything and it tells you the moment that thing goes off, from anywhere in the level. The whole point of leaving a trap behind is knowing when to come back."
+effect = 2
+colour = Color(0.6, 0.85, 1, 1)
+radius = 0.0
+one_shot = false
+stack_limit = 4
+reports = true
+listens = true

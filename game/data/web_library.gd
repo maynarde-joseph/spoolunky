@@ -9,6 +9,7 @@ extends RefCounted
 ## with the built-in set and sorted into the build wheel.
 
 const PATTERN_DIR := "res://game/data/patterns"
+const DEVICE_DIR := "res://game/data/devices"
 
 const BUILTIN_PATTERNS: Array[String] = [
 	"res://game/data/patterns/frame_line.tres",
@@ -47,6 +48,24 @@ static func load_patterns() -> Array[WebPattern]:
 
 	patterns.sort_custom(_compare_patterns)
 	return patterns
+
+
+## Every kind of device the spider can carry, in a stable order.
+static func load_devices() -> Array[DeviceKind]:
+	var kinds: Array[DeviceKind] = []
+	var dir := DirAccess.open(DEVICE_DIR)
+	if dir == null:
+		return kinds
+	var files := dir.get_files()
+	files.sort()
+	for file in files:
+		var file_name := file.trim_suffix(".remap")
+		if not file_name.ends_with(".tres"):
+			continue
+		var kind := ResourceLoader.load(DEVICE_DIR.path_join(file_name)) as DeviceKind
+		if kind != null:
+			kinds.append(kind)
+	return kinds
 
 
 ## The size tiers, smallest first. Stage 0 is where a new spider starts.

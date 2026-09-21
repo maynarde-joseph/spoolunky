@@ -295,6 +295,41 @@ So a build looks like: tripline across the vent → wired to a snare over the
 drain → funnel lure at the far end to steer things in. That chain is the game's
 version of a loadout.
 
+### Devices — the things that aren't silk
+
+Devices are carried, placed and picked back up. They are deliberately **not**
+better webs. Silk already catches anything, at any angle, anywhere, for a
+renewable price — so the only honest room left for an item is doing something
+silk *cannot*. Anything a device does that a web could also do is a device that
+should not exist.
+
+They are finite and found rather than spun. That is the whole limit on them:
+no silk cost, no cooldown, just "you have two left". And they are
+[`SilkNode`](../game/web/silk_node.gd)s, exactly as webs are, so the wiring
+already in the game works on them with no special case — a tripline can set off
+a device, and a device can set off a web.
+
+| Device | What silk cannot do |
+|--------|---------------------|
+| **Venom Spur** | *Kills.* A dead thing can be drained whatever its size, so a spur wired to a trap beats the bite-power gate. Silk only ever **holds** something until you get there. One shot. |
+| **Scent Lure** | *Pulls, with no web.* Reaches much further than a funnel web and needs no silk around it. Drop one where you want traffic and traffic appears. |
+| **Signal Bell** | *Reaches you.* Wire it to anything and it tells you the moment that thing goes off, from anywhere in the level. |
+
+The bell is the one that pays for the whole loop. "Build a web, zip off
+somewhere else, come back later to deal with the prey" only works if something
+tells you *when* — otherwise coming back is guesswork, and guesswork is
+waiting, which is the thing this game is not allowed to be.
+
+The spur is the one that changes a rule. Up to now, prey above your bite power
+was a wall you could only pass by growing. A spur turns that wall into a
+**problem with a cost**: you can take the thing that is too big for you, but it
+costs you the spur, and you had to have already got it into a trap.
+
+Place mode is its own mode (**N**), thinner than build mode on purpose: there
+is no shape to draw and no silk to price, so it is pick, look, click. The
+interesting part is not the placing, it's the wire you run afterwards — which
+is the same **G** it has always been.
+
 ### Saved designs
 
 Point at any web and keep it. The whole rig it belongs to goes with it — every
@@ -491,7 +526,9 @@ is: each new zone opens with you as the smallest thing in it.
 | **Mouse Wheel / Z / C** | Cycle web pattern |
 | **E** | Interact — wrap prey, then drain it; re-arm a sprung snare |
 | **X** | Demolish the web you are looking at (50% silk back) |
-| **G** | Wire one web to another — press on each end |
+| **G** | Wire two things together — web or device, press on each end |
+| **N** | Open the bag — place a device (wheel to pick, left mouse to put down) |
+| **X** | …and take one back up (a device under the crosshair wins over a web) |
 | **B** | Keep the rig you are looking at as a design |
 | **V** | Place a saved design — wheel to pick, left mouse to spin it |
 | **F** or **middle mouse** | Clip onto a silk line and ride it — again to let go |
@@ -530,8 +567,11 @@ signalled, everything else tenses, signals chain. Saved designs — keep a whole
 wired rig and re-place it anywhere.
 Also done: tuning dials — tension, weight and mesh, each a trade rather than
 an upgrade, remembered per pattern and carried inside saved designs.
+Also done: carried devices — venom spur, scent lure and signal bell — placed
+from a bag, picked back up, and wired into the same signal graph as webs.
 Left: re-fitting a placed design's anchors to local geometry, renaming designs,
-tension silk, repair, web sacks, and saving built webs with the world.
+tension silk, repair, web sacks, saving built webs with the world, and somewhere
+to *find* devices rather than starting with them.
 
 **Milestone 5 — Zone two and the loop at scale**
 Crawlspace zone, wasps as a predator, verticality, streaming between zones.

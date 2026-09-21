@@ -59,7 +59,7 @@ var placing_design := false
 var anchors := PackedVector3Array()
 
 ## Web waiting to be wired to something, while the player picks the other end.
-var link_source: WebStructure = null
+var link_source: SilkNode = null
 
 var aim_valid := false
 var aim_point := Vector3.ZERO
@@ -658,18 +658,18 @@ func _merge_radius() -> float:
 ## off whatever hangs off it — a tripline across a doorway springing a snare on
 ## the other side of the room — which is how a pile of webs becomes a machine.
 func toggle_link() -> void:
-	var web := aimed_web()
+	var node := aimed_node()
 
 	if link_source == null:
-		if web == null:
-			notice.emit("Look at a web to wire it up")
+		if node == null:
+			notice.emit("Look at a web or a device to wire it up")
 			return
-		if not web.can_signal():
-			notice.emit("A %s never has anything to report" % web.pattern.display_name)
+		if not node.can_signal():
+			notice.emit("A %s never has anything to report" % node.label())
 			return
-		link_source = web
+		link_source = node
 		notice.emit("Wiring from the %s — now look at what it should set off"
-			% web.pattern.display_name)
+			% node.label())
 		state_changed.emit()
 		return
 
@@ -677,26 +677,28 @@ func toggle_link() -> void:
 	link_source = null
 	state_changed.emit()
 
-	if web == null or web == source:
+	if node == null or node == source:
 		notice.emit("Wiring cancelled")
 		return
-	link_webs(source, web)
+	link_nodes(source, node)
 
 
-## Runs a signal line between two specific webs, skipping the aiming. Returns
-## false, and spends nothing, if the pair cannot be wired or cannot be paid for.
-func link_webs(source: WebStructure, target: WebStructure) -> bool:
+## Runs a signal line between two specific things, skipping the aiming. Both
+## ends are [SilkNode]s, so a web setting off a device and a device setting off
+## a web cost and behave exactly the same. Returns false, and spends nothing,
+## if the pair cannot be wired or cannot be paid for.
+func link_nodes(source: SilkNode, target: SilkNode) -> bool:
 	if source == null or not is_instance_valid(source):
-		notice.emit("That web is gone")
+		notice.emit("That end of the line is gone")
 		return false
 	if target == null or not is_instance_valid(target):
 		notice.emit("Nothing there to set off")
 		return false
 	if not source.can_signal():
-		notice.emit("A %s never has anything to report" % source.pattern.display_name)
+		notice.emit("A %s never has anything to report" % source.label())
 		return false
 	if not target.can_receive_signal():
-		notice.emit("A %s can't do anything with a signal" % target.pattern.display_name)
+		notice.emit("A %s can't do anything with a signal" % target.label())
 		return false
 	if not source.can_link_to(target):
 		notice.emit("Those two are already wired together")
@@ -710,7 +712,7 @@ func link_webs(source: WebStructure, target: WebStructure) -> bool:
 
 	source.link_to(target)
 	notice.emit("%s now sets off the %s (%d silk)"
-		% [source.pattern.display_name, target.pattern.display_name, roundi(cost)])
+		% [source.label(), target.label(), roundi(cost)])
 	return true
 
 
@@ -728,6 +730,20 @@ func is_linking() -> bool:
 
 
 # --- existing webs ------------------------------------------------------
+
+## The wireable thing under the crosshair — a device if one is right there,
+## otherwise a web. Devices win ties on purpose: they are small and deliberately
+## placed, so if one is under the crosshair you meant it, even sitting on a web.
+func aimed_node() -> SilkNode:
+	if _view == null:
+		return null
+	var device := SilkDevice.aimed_from(get_tree(), _view.aim_origin(),
+		_view.aim_forward(), _stage().anchor_range,
+		maxf(_stage().body_height * 0.8, 0.25))
+	if device != null:
+		return device
+	return aimed_web()
+
 
 ## The web the player is looking at, if any. Tolerant, because silk is thin.
 func aimed_web() -> WebStructure:

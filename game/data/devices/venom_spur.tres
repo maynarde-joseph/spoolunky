@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="DeviceKind" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/device_kind.gd" id="1_device"]
+
+[resource]
+script = ExtResource("1_device")
+id = "venom_spur"
+display_name = "Venom Spur"
+description = "A barb of dried venom. Wire it to a trap and whatever that trap catches dies on the spot — and a dead thing can be drained whatever its size. Silk only ever holds."
+effect = 0
+colour = Color(0.72, 0.95, 0.35, 1)
+radius = 3.5
+one_shot = true
+stack_limit = 6
+reports = false
+listens = true

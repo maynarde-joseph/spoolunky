@@ -37,6 +37,7 @@ signal respawned()
 @export var input_weave_toggle := "web_weave_toggle"
 @export var input_ride := "web_ride"
 @export var input_toggle_camera := "toggle_camera"
+@export var input_device_mode := "device_mode"
 
 ## How much the view opens up at speed. Pure sugar, and most of what makes a
 ## zipline feel fast.
@@ -57,6 +58,8 @@ signal respawned()
 @onready var climb: SpiderClimb = $Climb
 @onready var view: SpiderCamera = $View
 @onready var body: SpiderBody = $Body
+@onready var bag: SpiderInventory = $Bag
+@onready var device_placer: DevicePlacer = $DevicePlacer
 
 var _spawn_transform: Transform3D
 var _stage: GrowthStage
@@ -81,7 +84,9 @@ func _ready() -> void:
 	view.face(-global_basis.z)
 	climb.setup(self, silk, growth, view)
 	web_builder.setup(self, silk, growth, view, climb)
+	device_placer.setup(self, bag, growth, view)
 	web_builder.notice.connect(_on_notice)
+	device_placer.notice.connect(_on_notice)
 	climb.notice.connect(_on_notice)
 	climb.jumped.connect(_on_jumped)
 	climb.line_dropped.connect(_on_line_dropped)
@@ -107,7 +112,7 @@ func _physics_process(delta: float) -> void:
 		sprint = Input.is_action_pressed(input_sprint_action_name)
 		down = Input.is_action_pressed(input_crouch_action_name)
 		# Right mouse means "undo anchor" while building, "let go" while hanging.
-		release_line = not _web_tool_active() \
+		release_line = not _web_tool_active() and not _device_tool_active() \
 			and Input.is_action_just_pressed(input_cancel_anchor)
 		if Input.is_action_just_pressed(input_fly_mode_action_name):
 			fly_ability.set_active(not fly_ability.is_actived())
@@ -152,6 +157,11 @@ func _web_tool_active() -> bool:
 	return web_builder.building or web_builder.placing_design
 
 
+## True while place mode owns the mouse buttons.
+func _device_tool_active() -> bool:
+	return device_placer != null and device_placer.active
+
+
 func _accepts_input() -> bool:
 	return not require_captured_mouse or Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED
 
@@ -160,8 +170,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not _accepts_input():
 		return
 
-	if event.is_action_pressed(input_build_mode):
+	if event.is_action_pressed(input_device_mode):
+		device_placer.toggle()
+		if device_placer.active and web_builder.building:
+			web_builder.stop()
+	elif event.is_action_pressed(input_build_mode):
+		if device_placer.active:
+			device_placer.stop()
 		web_builder.toggle()
+	elif _device_tool_active() and event.is_action_pressed(input_next_pattern):
+		device_placer.cycle(1)
+	elif _device_tool_active() and event.is_action_pressed(input_prev_pattern):
+		device_placer.cycle(-1)
 	elif event.is_action_pressed(input_next_pattern):
 		web_builder.cycle(1)
 	elif event.is_action_pressed(input_prev_pattern):
@@ -169,7 +189,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed(input_interact):
 		_interact()
 	elif event.is_action_pressed(input_remove_web):
-		web_builder.demolish_aimed()
+		# Taking a device back is reversible and pulling a web down is not, so a
+		# device under the crosshair always wins — including when the bag is too
+		# full to take it, which must not silently tear the web down instead.
+		if device_placer.aimed_device() != null:
+			device_placer.pick_up_aimed()
+		else:
+			web_builder.demolish_aimed()
 	elif event.is_action_pressed(input_link_web):
 		web_builder.toggle_link()
 	elif event.is_action_pressed(input_save_design):
@@ -189,6 +215,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed(input_toggle_camera):
 		view.toggle_mode()
 		notice.emit("Camera: %s" % ("third person" if view.third_person else "first person"))
+	elif _device_tool_active() and event.is_action_pressed(input_place_anchor):
+		device_placer.place()
+	elif _device_tool_active() and event.is_action_pressed(input_cancel_anchor):
+		device_placer.stop()
 	elif _web_tool_active() and event.is_action_pressed(input_place_anchor):
 		web_builder.place()
 	elif _web_tool_active() and event.is_action_pressed(input_cancel_anchor):
@@ -223,6 +253,11 @@ func _rush(delta: float) -> void:
 		clampf(delta * 6.0, 0.0, 1.0))
 
 
+## Somewhere for a device across the level to put a message.
+func notify(text: String) -> void:
+	notice.emit(text)
+
+
 ## Current size tier.
 func stage() -> GrowthStage:
 	return growth.current_stage()
@@ -250,7 +285,7 @@ func _interact() -> void:
 
 func _handle_prey(prey: Prey) -> void:
 	var current := stage()
-	if prey.size_class > current.bite_power:
+	if prey.size_class > current.bite_power and not prey.subdued:
 		notice.emit("The %s is too big for you — grow first" % prey.species)
 		return
 

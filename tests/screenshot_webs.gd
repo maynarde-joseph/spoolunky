@@ -86,7 +86,7 @@ func _run() -> void:
 		elif web.pattern.id == "trip_line":
 			trip = web
 	if trip != null and snare != null:
-		builder.link_webs(trip, snare)
+		builder.link_nodes(trip, snare)
 		trip.fire()
 	await physics_frame
 

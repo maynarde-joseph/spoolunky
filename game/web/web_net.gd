@@ -83,7 +83,7 @@ func signal_point() -> Vector3:
 ## A wired snare whips out when the signal reaches it and drags in whatever is
 ## close enough. That reach is the entire reason to wire one up — left alone, a
 ## snare only ever catches what happens to walk into it.
-func _react_to_signal(_source: WebStructure) -> bool:
+func _spring_to_signal(_source: SilkNode) -> bool:
 	if pattern.trigger != WebPattern.Trigger.SNARE or not armed:
 		return false
 	armed = false

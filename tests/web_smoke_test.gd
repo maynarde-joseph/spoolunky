@@ -56,6 +56,7 @@ func _run() -> void:
 	await _test_living_on_the_web(spider, builder, webs, silk, level)
 	await _test_tuning_dials(spider, builder, webs, silk, level)
 	await _test_saved_designs(spider, builder, webs, silk)
+	await _test_the_bag(spider, level, webs, builder, silk)
 	await _test_sandbox_wiring(level, spider)
 	await _test_demolish(builder, webs, silk)
 
@@ -79,7 +80,8 @@ func _test_starting_state(spider: SpiderPlayer, builder: WebBuilder) -> void:
 
 func _test_input_map(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	for action in ["web_build_mode", "web_place", "web_cancel", "web_finish",
-			"web_next_pattern", "web_prev_pattern", "web_remove", "interact", "toggle_help"]:
+			"web_next_pattern", "web_prev_pattern", "web_remove", "interact",
+			"device_mode", "toggle_help"]:
 		_check(InputMap.has_action(action), "input action '%s' is set up" % action)
 
 	# Drive build mode the way the player does, through the input system. A
@@ -373,7 +375,7 @@ func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 
 	# Wire them together, both ends by hand the way the player does.
 	var before := silk.current
-	_check(builder.link_webs(trip, snare), "the two webs can be wired together")
+	_check(builder.link_nodes(trip, snare), "the two webs can be wired together")
 	await physics_frame
 	_check(trip.links.has(snare), "the tripline is wired to the snare")
 	_check(silk.current < before, "the signal line costs silk")
@@ -806,7 +808,7 @@ func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	if not _check(snare != null and trip != null, "a rig to keep"):
 		return
 	_check(snare.anchors.size() == 4, "a spun web remembers its anchors")
-	_check(builder.link_webs(trip, snare), "wired the rig together")
+	_check(builder.link_nodes(trip, snare), "wired the rig together")
 
 	# Keep it.
 	var design := DesignLibrary.capture(trip, Vector3.FORWARD, spider.growth.stage_index)
@@ -917,6 +919,237 @@ func _square(centre: Vector3, half: float) -> Array[Vector3]:
 		centre + Vector3(half, half, 0),
 		centre + Vector3(-half, half, 0),
 	]
+
+
+# --- the bag ------------------------------------------------------------
+
+## Devices are the one thing that isn't silk, so what's tested here is the ways
+## they differ from a web: they run out, they come back up, they do something
+## silk can't, and they wire into the same network either way round.
+func _test_the_bag(spider: SpiderPlayer, level: Node, webs: Node3D,
+		builder: WebBuilder, silk: SilkPool) -> void:
+	var bag := spider.bag
+	var placer := spider.device_placer
+	placer.notice.connect(func(text: String) -> void: print("        (%s)" % text))
+
+	_check(bag.kinds.size() >= 3, "loaded %d kinds of device" % bag.kinds.size())
+	var venom := bag.kind_by_id("venom_spur")
+	var lure := bag.kind_by_id("scent_lure")
+	var bell := bag.kind_by_id("signal_bell")
+	if not _check(venom != null and lure != null and bell != null,
+			"venom spur, scent lure and signal bell all exist"):
+		return
+	_check(bag.count(venom) == 2, "starts carrying two venom spurs")
+	_check(bag.total() == 4, "and four devices in all (%d)" % bag.total())
+
+	# N is a mode of its own, and it takes the mouse off the web builder.
+	spider.require_captured_mouse = false
+	builder.start()
+	_send(spider.input_device_mode)
+	await process_frame
+	_check(placer.active, "N opens the bag")
+	_check(not builder.building, "and puts build mode away — one tool at a time")
+	_send(spider.input_device_mode)
+	await process_frame
+	_check(not placer.active, "N closes it again")
+
+	# The wheel walks what you are carrying, not every kind that exists.
+	placer.start()
+	var first := placer.current_kind()
+	placer.cycle(1)
+	_check(placer.current_kind() != first, "the wheel changes device")
+	placer.cycle(-1)
+	_check(placer.current_kind() == first, "and changes back")
+
+	# A slab of our own to work on, so what's under the crosshair is known
+	# rather than whatever the demo level happens to have at that coordinate.
+	var slab := _test_slab(level, Vector3(30, 0.0, 30))
+	await physics_frame
+	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	silk.refill(silk.maximum)
+	await process_frame
+
+	# Placing costs a device out of the bag and no silk at all: the bag is the
+	# whole limit on them, which is why they are allowed to be better than silk.
+	_select_device(placer, "venom_spur")
+	var silk_before := silk.current
+	var carried_before := bag.count(venom)
+	var spur := placer.place()
+	await physics_frame
+	if not _check(spur != null, "put a venom spur down"):
+		return
+	_check(bag.count(venom) == carried_before - 1, "it came out of the bag")
+	_check(is_equal_approx(silk.current, silk_before), "and cost no silk")
+	_check(spur.is_inside_tree(), "it is in the level")
+	_check(spur.global_position.distance_to(placer.aim_point) < 1.0,
+		"where the crosshair was")
+
+	# Two in the same spot would be a mess, and no use.
+	placer._update_aim()
+	_check(placer.problem == DevicePlacer.Problem.CROWDED,
+		"won't stack a second one on top of it")
+
+	# Taking it back up is the whole reason a device isn't a web.
+	_stand_on(spider, spur.global_position)
+	await process_frame
+	_check(placer.aimed_device() == spur, "looking at it finds it")
+	_check(placer.pick_up_aimed(), "picked it back up")
+	await physics_frame
+	await process_frame
+	_check(bag.count(venom) == carried_before, "and it is back in the bag")
+	_check(not is_instance_valid(spur) or spur.is_queued_for_deletion(),
+		"and gone from the level")
+
+	# Run out and the wheel moves off it rather than sitting on an empty slot.
+	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 3.0))
+	await process_frame
+	_select_device(placer, "scent_lure")
+	var only_lure := placer.place()
+	await physics_frame
+	if not _check(only_lure != null, "put the one scent lure down"):
+		return
+	_check(bag.count(lure) == 0, "that was the last one")
+	_check(placer.current_kind() != lure, "the wheel moved off the empty slot")
+	only_lure.pick_up()
+	await physics_frame
+	await process_frame
+
+	await _test_venom_kills_what_silk_only_holds(spider, level, slab)
+	await _test_wiring_a_device(spider, webs, builder, placer, silk, slab)
+	placer.stop()
+	slab.queue_free()
+
+
+## A bare platform a long way from everything else, so a device test is only
+## ever about the device.
+func _test_slab(level: Node, at: Vector3) -> StaticBody3D:
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(12, 0.5, 12)
+	var collider := CollisionShape3D.new()
+	collider.shape = shape
+	var slab := StaticBody3D.new()
+	slab.name = "TestSlab"
+	slab.collision_layer = GameLayers.WORLD
+	slab.collision_mask = 0
+	slab.add_child(collider)
+	level.add_child(slab)
+	slab.global_position = at
+	return slab
+
+
+## Puts the spider on top of a point, looking straight down at it.
+func _stand_on(spider: SpiderPlayer, at: Vector3) -> void:
+	spider.climb.release()
+	spider.global_position = at + Vector3(0, 0.6, 0)
+	spider.velocity = Vector3.ZERO
+	spider.view.face(Vector3(0, 0, -1))
+	spider.view.pitch = -PI / 2.0
+
+
+## The point of the venom spur: a dead fly can be drained whatever its size,
+## and silk can only ever hold something until you get there.
+func _test_venom_kills_what_silk_only_holds(spider: SpiderPlayer, level: Node,
+		slab: StaticBody3D) -> void:
+	var placer := spider.device_placer
+	var bag := spider.bag
+	_stand_on(spider, slab.global_position + Vector3(4.0, 0.25, 0))
+	await process_frame
+
+	_select_device(placer, "venom_spur")
+	var spur := placer.place()
+	await physics_frame
+	if not _check(spur != null, "a venom spur to fire"):
+		return
+
+	var fly := _spawn_fly(level, spur.global_position + Vector3(0, 0.3, 0))
+	fly.size_class = spider.stage().bite_power + 3
+	await physics_frame
+	_check(not fly.subdued, "a live fly beside it, too big to bite")
+
+	spur.receive_signal(null, 0)
+	await physics_frame
+	_check(fly.subdued, "a signal into the spur kills it")
+	_check(fly.wrapped, "a dead fly needs no wrapping")
+	_check(spur.spent, "and the spur is used up")
+	_check(not spur.can_receive_signal(), "a spent spur does nothing more")
+
+	# Too big to bite, but dead — so drainable. That is the trade the item buys.
+	var biomass_before := spider.growth.biomass
+	spider.global_position = fly.global_position + Vector3(0, 0.2, 0)
+	await physics_frame
+	spider._handle_prey(fly)
+	_check(spider.growth.biomass > biomass_before,
+		"drained something bigger than the spider could ever bite")
+
+	# A spent device still sweeps up, so the level doesn't fill with litter.
+	var spur_kind := spur.kind
+	var held := bag.count(spur_kind)
+	_stand_on(spider, spur.global_position)
+	await process_frame
+	if _check(placer.aimed_device() == spur, "the spent spur is still there to sweep up"):
+		_check(placer.pick_up_aimed(), "swept it up")
+		_check(bag.count(spur_kind) == held, "and a spent one does not go back in the bag")
+
+
+## A device is a node on the same signal graph a web is, which is the whole
+## reason it is worth having: the tripline you already built sets it off.
+func _test_wiring_a_device(spider: SpiderPlayer, webs: Node3D, builder: WebBuilder,
+		placer: DevicePlacer, silk: SilkPool, slab: StaticBody3D) -> void:
+	var at := slab.global_position + Vector3(-4.0, 0.25, 0)
+	_stand_on(spider, at)
+	await process_frame
+
+	_select_device(placer, "signal_bell")
+	var bell := placer.place()
+	await physics_frame
+	if not _check(bell != null, "a bell to wire up"):
+		return
+
+	_select_pattern(builder, "trip_line")
+	builder.start()
+	builder.add_anchor(at + Vector3(-0.6, 0.4, 0))
+	builder.add_anchor(at + Vector3(0.6, 0.4, 0))
+	builder.stop()
+	await physics_frame
+	var trip := _newest_web(webs, "trip_line") as WebStrand
+	if not _check(trip != null, "a tripline to wire it to"):
+		return
+
+	var before := silk.current
+	_check(builder.link_nodes(trip, bell), "a web can be wired to a device")
+	_check(trip.links.has(bell), "the tripline sets off the bell")
+	_check(silk.current < before, "and the line costs silk, same as any other")
+
+	# The bell reports, so it can be a source as well as a target — that is what
+	# lets a rig across the level reach you.
+	_check(bell.can_signal(), "a bell has something to report")
+	var heard := []
+	var handle := func(text: String) -> void: heard.append(text)
+	spider.notice.connect(handle)
+	trip.fire()
+	await physics_frame
+	spider.notice.disconnect(handle)
+	_check(heard.size() > 0, "setting the tripline off rings the bell")
+
+	# Wiring is aimed at whatever is under the crosshair, device or web alike.
+	_stand_on(spider, bell.global_position)
+	await process_frame
+	_check(builder.aimed_node() == bell, "the wiring cursor picks devices up too")
+
+	# Taking a device away takes its wiring with it, rather than leaving a line
+	# hanging off nothing.
+	bell.pick_up()
+	await physics_frame
+	_check(not trip.links.has(bell), "picking the bell up unwires it")
+	trip.queue_free()
+
+
+func _select_device(placer: DevicePlacer, id: String) -> void:
+	for i in placer._inventory.kinds.size():
+		if placer._inventory.kinds[i].id == id:
+			placer.kind_index = i
+			return
+	_check(false, "device '%s' exists" % id)
 
 
 func _spawn_fly(level: Node, at: Vector3) -> Prey:

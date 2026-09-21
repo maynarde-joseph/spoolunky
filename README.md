@@ -11,9 +11,9 @@ The full pitch — the loop, the size tiers, the zones, the trap catalogue — i
 
 ```
 game/
-  data/      web patterns and size tiers (plain resources — edit the numbers)
+  data/      web patterns, devices and size tiers (plain resources — edit the numbers)
   web/       procedural silk geometry and the webs themselves
-  player/    the spider: silk supply, growth, build mode, climbing
+  player/    the spider: silk supply, growth, build mode, the bag, climbing
   prey/      things to catch, and something to spawn them
   ui/        HUD
 tests/       headless smoke test and a screenshot tool
@@ -23,7 +23,8 @@ addons/character-controller/   the movement template the spider is built on
 The sandbox is the character-controller example level
 (`addons/character-controller/example/main/level.tscn`), which is the project's
 main scene. It has the spider, a HUD, a `Webs` container and a prey spawner
-dropped into it.
+dropped into it. A `Devices` container is made on demand the first time you put
+something down.
 
 ## Controls
 
@@ -41,8 +42,9 @@ dropped into it.
 | **F** | weave a ring of silk — the one you walked, or the one you're looking at |
 | **Wheel** or **Z** / **C** | change web pattern |
 | **E** | wrap caught prey, then drain it (also re-arms a sprung snare) |
-| **X** | pull down the web you're looking at, for half the silk back |
-| **G** | wire one web to another — press on each end |
+| **X** | pull down the web you're looking at, for half the silk back — or pick a device back up |
+| **G** | wire two things together — web or device, press on each end |
+| **N** | open the bag — place a device (wheel to pick, left mouse to put down) |
 | **B** | keep the rig you're looking at as a design |
 | **V** | place a saved design — wheel to pick, left mouse to spin it |
 | **L** | camera: third person or first person |
@@ -114,13 +116,36 @@ onto things, and right mouse lets go.
 
 ## Wiring traps together
 
-**G** on one web, then **G** on another, runs a signal line between them: when
+**G** on one thing, then **G** on another, runs a signal line between them: when
 the first goes off, the second reacts. A snare that gets a signal whips out and
 drags in prey within about three times its radius — so a tripline across a
 doorway can spring a snare on the far side of the room and catch something that
 never touched the silk. Any other web tenses instead, holding roughly twice as
 well for a few seconds. Signals chain, and the dashed cold-blue lines show you
 your own machine.
+
+Either end can be a **device** rather than a web — they sit on the same graph.
+
+## The bag — things that aren't silk
+
+**N** opens the bag. Wheel to pick, left mouse to put one down, **X** to take it
+back up. Placing costs no silk at all: devices are finite and found, and running
+out is the whole limit on them.
+
+They only ever do things silk *cannot*, which is what stops them being better
+webs:
+
+| Device | What it's for |
+|--------|---------------|
+| **Venom Spur** | Wire it to a trap and whatever that trap catches **dies**. A dead thing can be drained whatever its size, so this is how you take something too big to bite. One shot. |
+| **Scent Lure** | **Pulls prey in from much further than a funnel web, with no web at all.** Drop one where you want traffic. |
+| **Signal Bell** | Wire it to anything and it **tells you the moment that thing goes off**, from anywhere in the level. |
+
+The bell is what makes leaving a trap behind work: build it, zip off somewhere
+else, and get told when to come back rather than having to guess.
+
+Devices land in a `Devices` node next to `Webs`, and a new one is a `.tres` in
+`game/data/devices/` — same as adding a web pattern.
 
 ## Two ways to weave a web
 

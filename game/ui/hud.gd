@@ -18,7 +18,8 @@ F                      weave a ring of silk — walked, or looked at
 Wheel or Z / C         change web pattern
 E                      wrap prey, then drain it (also re-arms a snare)
 X                      pull down the web you're looking at
-G                      wire one web to another — press on each end
+G                      wire two things together — press on each end
+N                      bag: place a device (wheel to pick, LMB down, X back up)
 B                      keep the rig you're looking at as a design
 V                      place a saved design (wheel to pick, LMB to spin)
 ; and [ ]              pick a tuning dial, then turn it   ('  resets)
@@ -144,6 +145,9 @@ func _refresh_build_panel() -> void:
 		return
 
 	dial_label.text = ""
+	if _refresh_bag_panel():
+		return
+
 	if builder.placing_design:
 		var design := builder.current_design()
 		if design != null:
@@ -153,9 +157,9 @@ func _refresh_build_panel() -> void:
 		return
 
 	if builder.is_linking():
-		pattern_label.text = "Wiring from the %s" % builder.link_source.pattern.display_name
-		hint_label.text = "[G] on the web it should set off, or on nothing to cancel"
-		var aimed := builder.aimed_web()
+		pattern_label.text = "Wiring from the %s" % builder.link_source.label()
+		hint_label.text = "[G] on what it should set off, or on nothing to cancel"
+		var aimed := builder.aimed_node()
 		problem_label.text = aimed.status_line() if aimed != null else ""
 		return
 
@@ -185,6 +189,22 @@ func _refresh_build_panel() -> void:
 	hint_label.text = builder.hint_text()
 	problem_label.text = builder.problem_text()
 	dial_label.text = "%s      %s" % [_dial_readout(builder), _weave_readout(builder)]
+
+
+## Place mode takes the panel over while it is up, because the bag and the
+## build wheel are two different things to be holding. True if it did.
+func _refresh_bag_panel() -> bool:
+	var placer := _spider.device_placer
+	if placer == null or not placer.active:
+		return false
+	var kind := placer.current_kind()
+	pattern_label.text = "%s     %s" % [kind.display_name if kind != null else "Bag empty",
+		_spider.bag.summary(kind)]
+	hint_label.text = placer.hint_text()
+	var aimed := placer.aimed_device()
+	problem_label.text = aimed.status_line() if aimed != null else placer.problem_text()
+	dial_label.text = kind.description if kind != null else ""
+	return true
 
 
 ## The three dials, with a marker on whichever one the keys are pointed at.

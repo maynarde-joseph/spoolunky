@@ -60,6 +60,9 @@ enum State {
 var wrapped := false
 var eaten := false
 
+## Killed by venom: drainable no matter how big it is.
+var subdued := false
+
 var _state: State = State.WANDER
 var _home := Vector3.ZERO
 var _target := Vector3.ZERO
@@ -154,6 +157,20 @@ func is_stuck() -> bool:
 ## Silk needed to bundle this up so it stops wrecking the web.
 func wrap_cost() -> float:
 	return 1.0 + biomass * 0.25
+
+
+## Killed outright by venom: it stops fighting, and it can be drained whatever
+## size it is, which is what makes a venom spur worth carrying.
+func envenom() -> bool:
+	if eaten or subdued:
+		return false
+	subdued = true
+	wrapped = true
+	_state = State.WRAPPED
+	_struggle = 0.0
+	_set_marked(false)
+	_set_cocoon(true)
+	return true
 
 
 ## Bundles it: no more struggling, no more damage to the web.
@@ -251,14 +268,14 @@ func _sniff_for_lures() -> void:
 	var best: Node3D = null
 	var best_distance := INF
 	for node in get_tree().get_nodes_in_group("silk_lures"):
-		var web := node as WebStructure
-		if web == null:
+		var lure := node as SilkNode
+		if lure == null:
 			continue
-		var distance := global_position.distance_to(web.global_position)
-		if distance > web.lure_radius() or distance >= best_distance:
+		var distance := global_position.distance_to(lure.global_position)
+		if distance > lure.lure_radius() or distance >= best_distance:
 			continue
 		best_distance = distance
-		best = web
+		best = lure
 	if best == null:
 		return
 	if randf() > lure_susceptibility:
