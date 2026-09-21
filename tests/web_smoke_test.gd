@@ -1138,10 +1138,14 @@ func _test_wiring_a_device(spider: SpiderPlayer, webs: Node3D, builder: WebBuild
 	_check(builder.aimed_node() == bell, "the wiring cursor picks devices up too")
 
 	# Taking a device away takes its wiring with it, rather than leaving a line
-	# hanging off nothing.
+	# hanging off nothing. Count the links rather than looking for the bell
+	# among them: it has been freed by now, and a freed instance is never found
+	# in a typed array, so that version passed whether or not unlinking worked.
+	var wired_before := trip.links.size()
 	bell.pick_up()
 	await physics_frame
-	_check(not trip.links.has(bell), "picking the bell up unwires it")
+	_check(trip.links.size() == wired_before - 1,
+		"picking the bell up unwires it (%d → %d)" % [wired_before, trip.links.size()])
 	trip.queue_free()
 
 

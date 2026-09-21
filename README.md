@@ -237,6 +237,12 @@ godot --headless --script res://tests/climb_smoke_test.gd
 
 Both print a line per check and exit non-zero if any fail.
 
+They also run on every push: `.github/workflows/tests.yml` fetches the Linux
+build matching `GODOT_VERSION` and runs both suites, so you do not need Godot
+on PATH to find out whether a change broke something. Bump that one variable
+when the project moves to a new engine version — the workflow finds the build
+itself rather than holding a URL that rots.
+
 To look at the silk geometry without opening the editor:
 
 ```sh
