@@ -100,6 +100,11 @@ enum Trigger {
 ## meant for rats isn't clogged and torn by gnats.
 @export var min_catch_size := 1
 
+## How many things this holds at once. A full web stops catching, so the way to
+## catch more is another web somewhere else — which is what makes a second site
+## worth walking to rather than just spinning this one bigger.
+@export var capacity := 2
+
 ## SNARE only: how long prey is held completely rigid when the trap springs.
 @export var snap_hold_time := 4.0
 

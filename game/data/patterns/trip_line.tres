@@ -23,5 +23,6 @@ silk_per_square_metre = 0.0
 trigger = 1
 hold_strength = 0.0
 durability = 6.0
+capacity = 0
 mark_time = 8.0
 catches_prey = false

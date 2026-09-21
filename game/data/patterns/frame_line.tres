@@ -23,6 +23,7 @@ silk_per_square_metre = 0.0
 trigger = 0
 hold_strength = 0.0
 durability = 30.0
+capacity = 0
 walkable = false
 catches_prey = false
 can_signal = false

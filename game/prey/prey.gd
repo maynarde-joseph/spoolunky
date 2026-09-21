@@ -18,6 +18,12 @@ enum State {
 	FLEEING,   ## just tore loose, getting out
 }
 
+## How much better than a catch's total thrash a web has to be to keep it.
+## Tuned so each web tier holds the prey tier below it: a sheet web keeps a
+## fly, an orb web keeps a moth, a pressure snare keeps a wasp — and silk
+## quality, which climbs with size, moves every one of those lines up.
+const ESCAPE_MARGIN := 6.0
+
 
 @export_group("Species")
 
@@ -35,6 +41,17 @@ enum State {
 
 ## How hard it fights a web. Tears silk and eventually pulls free.
 @export var struggle_power := 1.0
+
+## How long it fights for before it tires out. A catch is won or lost inside
+## this window: if the web out-holds the whole thrash, it is still there when
+## you come back, which is the only reason leaving a web is a plan and not a
+## way to lose one.
+@export var struggle_stamina := 5.0
+
+## How hard a tired catch keeps pulling. Small on purpose — it means a full
+## larder is a web slowly wearing out rather than a free store, without ever
+## putting you on a stopwatch.
+@export var settled_drain := 0.015
 
 
 @export_group("Movement")
@@ -70,6 +87,7 @@ var _wander_timer := 0.0
 var _web: WebStructure = null
 var _stuck_point := Vector3.ZERO
 var _struggle := 0.0
+var _fight_left := 0.0
 var _snap_timer := 0.0
 var _flee_timer := 0.0
 var _recatch_cooldown := 0.0
@@ -131,6 +149,7 @@ func on_snared(web: WebStructure, point: Vector3, snap_time: float) -> void:
 	_stuck_point = point
 	_snap_timer = snap_time
 	_struggle = 0.0
+	_fight_left = struggle_stamina
 	_state = State.STUCK
 	velocity = Vector3.ZERO
 	_set_marked(false)
@@ -152,6 +171,18 @@ func on_tripped(_web: WebStructure, mark_time: float) -> void:
 
 func is_stuck() -> bool:
 	return _state == State.STUCK or _state == State.WRAPPED
+
+
+## Still fighting, and still able to get free. This is the only window in which
+## a catch can be lost, so it is the window worth running back for.
+func is_fighting() -> bool:
+	return _state == State.STUCK and _fight_left > 0.0
+
+
+## Caught for keeps: tired out or wrapped. It will hang there until you come
+## and take it, or until the web gives out under it.
+func is_secured() -> bool:
+	return is_stuck() and not is_fighting()
 
 
 ## Silk needed to bundle this up so it stops wrecking the web.
@@ -219,9 +250,17 @@ func _process_stuck(delta: float) -> void:
 		_release_into_flight()
 		return
 
+	if _fight_left <= 0.0:
+		# Fought itself out. It is not getting free on its own any more, so it
+		# keeps until you come for it — still hanging there pulling, which is
+		# what eventually costs you the web if you never do.
+		_web.take_damage(settled_drain * delta)
+		return
+
+	_fight_left -= delta
 	_struggle += struggle_power * delta
 	_web.take_damage(struggle_power * delta * 0.6)
-	if _struggle >= _web.hold_strength() * 2.5:
+	if _struggle >= _web.hold_strength() * ESCAPE_MARGIN:
 		var torn_from := _web
 		torn_from.on_prey_escaped(self)
 		_release_into_flight()
@@ -288,6 +327,7 @@ func _release_into_flight() -> void:
 	var escape_from := _stuck_point
 	_web = null
 	_struggle = 0.0
+	_fight_left = 0.0
 	_snap_timer = 0.0
 	wrapped = false
 	_set_cocoon(false)
@@ -304,8 +344,11 @@ func _arrival_distance() -> float:
 	return maxf(0.25, wander_radius * 0.05)
 
 
+## Fades out as it tires, so you can read a web across the room: still things
+## are yours, thrashing things are about to not be.
 func _stuck_wobble() -> float:
-	return clampf(struggle_power * 0.01, 0.002, 0.05)
+	var fight := clampf(_fight_left / maxf(struggle_stamina, 0.001), 0.0, 1.0)
+	return clampf(struggle_power * 0.01, 0.002, 0.05) * fight
 
 
 func _flap() -> void:

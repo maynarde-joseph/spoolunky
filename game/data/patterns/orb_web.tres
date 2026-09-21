@@ -23,3 +23,4 @@ silk_per_square_metre = 3.2
 trigger = 0
 hold_strength = 2.4
 durability = 26.0
+capacity = 4

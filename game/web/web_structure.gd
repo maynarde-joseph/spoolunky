@@ -79,6 +79,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_tick_signal(delta)
+	_prune_snared()
 	if _trip_cooldown > 0.0:
 		_trip_cooldown -= delta
 	if _tense_timer > 0.0:
@@ -213,6 +214,41 @@ func snared_prey() -> Array[Node3D]:
 	return _snared.duplicate()
 
 
+## Drops anything that stopped existing without telling us. Cheap, and it
+## matters now that being full stops a web catching: one dead reference would
+## otherwise retire the web permanently.
+func _prune_snared() -> void:
+	var live: Array[Node3D] = []
+	for prey in _snared:
+		if is_instance_valid(prey) and not prey.is_queued_for_deletion():
+			live.append(prey)
+	if live.size() == _snared.size():
+		return
+	_snared = live
+	state_changed.emit(self)
+
+
+## How many things this holds at once.
+func capacity() -> int:
+	return pattern.capacity if pattern != null else 0
+
+
+## A full web stops catching. That is the whole reason to own a second site
+## rather than keep spinning this one bigger.
+func is_full() -> bool:
+	return _snared.size() >= capacity()
+
+
+## Catches that are not going anywhere — the part of a web that is a larder
+## rather than a fight in progress.
+func secured_count() -> int:
+	var total := 0
+	for prey in _snared:
+		if is_instance_valid(prey) and prey.has_method("is_secured") and prey.is_secured():
+			total += 1
+	return total
+
+
 func label() -> String:
 	return pattern.display_name if pattern != null else name
 
@@ -223,7 +259,13 @@ func status_line() -> String:
 	if needs_rearm():
 		text += "  (sprung)"
 	elif _snared.size() > 0:
-		text += "  (%d caught)" % _snared.size()
+		var held := secured_count()
+		text += "  (%d/%d caught" % [_snared.size(), capacity()]
+		if held < _snared.size():
+			text += ", %d still fighting" % (_snared.size() - held)
+		text += ")"
+		if is_full():
+			text += "  FULL"
 	if links.size() > 0:
 		text += "  → sets off %d" % links.size()
 	if _linked_by.size() > 0:
@@ -318,6 +360,8 @@ func _capture(body: Node3D, snap_time: float, point: Vector3) -> bool:
 		return false
 	# An open mesh lets the small stuff walk straight through.
 	if "size_class" in body and body.size_class < pattern.min_catch_size:
+		return false
+	if is_full():
 		return false
 	_snared.append(body)
 	body.on_snared(self, point, snap_time)

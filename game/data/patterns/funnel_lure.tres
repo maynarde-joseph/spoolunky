@@ -23,4 +23,5 @@ silk_per_square_metre = 2.6
 trigger = 3
 hold_strength = 1.8
 durability = 18.0
+capacity = 3
 lure_radius = 9.0

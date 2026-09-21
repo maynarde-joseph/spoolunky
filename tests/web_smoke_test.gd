@@ -56,6 +56,7 @@ func _run() -> void:
 	await _test_living_on_the_web(spider, builder, webs, silk, level)
 	await _test_tuning_dials(spider, builder, webs, silk, level)
 	await _test_saved_designs(spider, builder, webs, silk)
+	await _test_the_larder(spider, builder, webs, level)
 	await _test_the_bag(spider, level, webs, builder, silk)
 	await _test_sandbox_wiring(level, spider)
 	await _test_demolish(builder, webs, silk)
@@ -1150,6 +1151,158 @@ func _select_device(placer: DevicePlacer, id: String) -> void:
 			placer.kind_index = i
 			return
 	_check(false, "device '%s' exists" % id)
+
+
+# --- the larder ---------------------------------------------------------
+
+## A web is meant to be somewhere you leave things and come back to. That only
+## works if a catch survives you walking away, and if a web can be full — so
+## this is about both: what a web keeps, and how much of it.
+func _test_the_larder(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
+		level: Node) -> void:
+	# Out in open air, well clear of everything else the suite has built, and
+	# with a full spool so this measures catching rather than what is left over.
+	spider.silk.refill(spider.silk.maximum)
+	var centre := Vector3(30, 3, 20)
+	_select_pattern(builder, "sheet_web")
+	builder.start()
+	for point in _square(centre, 0.7):
+		builder.add_anchor(point)
+	builder.finish()
+	builder.stop()
+	await physics_frame
+	var net := _newest_web(webs, "sheet_web") as WebNet
+	if not _check(net != null, "a sheet web to fill up"):
+		return
+	_check(net.capacity() == 2, "a sheet web holds two (%d)" % net.capacity())
+	_check(not net.is_full(), "and starts empty")
+
+	# The tuning spine: a web keeps a catch if it can out-hold the whole thrash.
+	# A sheet web is meant to be exactly good enough for a fly.
+	var at := net.to_global(net.centre_local)
+	var first := _spawn_fly(level, at)
+	await physics_frame
+	await physics_frame
+	if not _check(first.is_stuck(), "a fly flew into it"):
+		return
+	var thrash := first.struggle_power * first.struggle_stamina
+	_check(thrash < net.hold_strength() * Prey.ESCAPE_MARGIN,
+		"a fly's whole thrash (%.1f) is inside a sheet web's hold (%.1f)"
+		% [thrash, net.hold_strength() * Prey.ESCAPE_MARGIN])
+	_check(first.is_fighting(), "it is fighting at first — this is when you can lose it")
+
+	# Fast-forward the fight rather than waiting five real seconds through it.
+	first._fight_left = 0.15
+	var fought_out: bool = await _wait_until(
+		func() -> bool: return not first.is_fighting(), 120)
+	_check(fought_out, "it tires itself out")
+	_check(first.is_stuck(), "and is STILL in the web — this is the whole point")
+	_check(first.is_secured(), "the web is holding it for you now")
+	_check(not first.wrapped, "without you having been there to wrap it")
+
+	# A tired catch still pulls, but nothing like a fighting one: the web is a
+	# store that wears out slowly, not a countdown.
+	var settled_before := net.durability
+	await _run_frames(20)
+	var settled_drain := settled_before - net.durability
+
+	var second := _spawn_fly(level, at)
+	await physics_frame
+	await physics_frame
+	if not _check(second.is_stuck(), "a second fly lands in it"):
+		return
+	var fighting_before := net.durability
+	await _run_frames(20)
+	var fighting_drain := fighting_before - net.durability
+	_check(fighting_drain > settled_drain,
+		"a fighting catch costs the web far more than a settled one (%.4f vs %.4f)"
+		% [fighting_drain, settled_drain])
+
+	# Full means full. This is what makes a second site worth walking to.
+	_check(net.is_full(), "two catches fill a sheet web")
+	_check(net.status_line().contains("FULL"), "and it says so: %s" % net.status_line())
+	var turned_away := _spawn_fly(level, at)
+	await physics_frame
+	await physics_frame
+	_check(not turned_away.is_stuck(), "a full web catches nothing more")
+	turned_away.queue_free()
+
+	# A catch that stops existing without telling the web must not leave it
+	# retired: being full is what stops it catching, so a dead reference would
+	# be a web that never works again.
+	second.queue_free()
+	await physics_frame
+	await process_frame
+	await physics_frame
+	_check(not net.is_full(), "a catch vanishing frees the slot back up")
+	_check(net.snared_count() == 1, "and the web counts what is actually there")
+
+	# Wrapping is now preservation: it stops the catch costing you the web.
+	first.wrap()
+	await physics_frame
+	var wrapped_at := net.durability
+	await _run_frames(20)
+	_check(is_equal_approx(net.durability, wrapped_at),
+		"wrapping a catch stops it wearing the web at all")
+
+	await _test_a_web_can_lose_a_fight(builder, webs, level)
+	net.demolish()
+
+
+## The other half of the deal: a catch is only kept if the web was good enough
+## for it. Something that out-fights the silk still gets away, and takes a bite
+## of the web with it — which is what stops "leave a web anywhere" being free.
+func _test_a_web_can_lose_a_fight(builder: WebBuilder, webs: Node3D, level: Node) -> void:
+	var centre := Vector3(30, 3, 26)
+	_select_pattern(builder, "sheet_web")
+	builder.start()
+	for point in _square(centre, 0.7):
+		builder.add_anchor(point)
+	builder.finish()
+	builder.stop()
+	await physics_frame
+	var net := _newest_web(webs, "sheet_web") as WebNet
+	if not _check(net != null and not net.is_full(), "a fresh web for a real fight"):
+		return
+
+	var brute := _spawn_fly(level, net.to_global(net.centre_local))
+	brute.species = "Test Brute"
+	brute.struggle_power = 40.0
+	await physics_frame
+	await physics_frame
+	if not _check(brute.is_stuck(), "something much stronger hits the web"):
+		return
+	var thrash := brute.struggle_power * brute.struggle_stamina
+	_check(thrash > net.hold_strength() * Prey.ESCAPE_MARGIN,
+		"it out-fights the silk on paper (%.0f vs %.0f)"
+		% [thrash, net.hold_strength() * Prey.ESCAPE_MARGIN])
+
+	var before := net.durability
+	var escaped: bool = await _wait_until(
+		func() -> bool: return not brute.is_stuck(), 240)
+	_check(escaped, "and gets free in practice, inside its stamina")
+	# Either it tore loose and left the web worse, or it wrecked the web on the
+	# way out. Both are the web losing, which is the thing being asserted.
+	if is_instance_valid(net) and not net.is_queued_for_deletion():
+		_check(net.durability < before, "and the fight cost the web")
+	else:
+		_check(true, "and took the whole web with it")
+	brute.queue_free()
+
+
+## Runs physics until [param test] passes, or gives up. Returns whether it
+## passed, so a test can say "this happened" rather than "this took N frames".
+func _wait_until(test: Callable, max_frames: int) -> bool:
+	for i in max_frames:
+		if test.call():
+			return true
+		await physics_frame
+	return test.call()
+
+
+func _run_frames(count: int) -> void:
+	for i in count:
+		await physics_frame
 
 
 func _spawn_fly(level: Node, at: Vector3) -> Prey:

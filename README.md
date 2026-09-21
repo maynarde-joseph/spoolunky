@@ -126,6 +126,25 @@ your own machine.
 
 Either end can be a **device** rather than a web — they sit on the same graph.
 
+## Leaving a web and coming back
+
+Prey that hits a web fights hard for about five seconds. Survive that and it
+tires out and hangs there until you come for it — so a web is somewhere you
+*store* things, not a moment you have to be present for. Lose that window and
+it tears free and takes a piece of the web with it.
+
+Which web you used decides which way that goes: a sheet web just about keeps a
+fly, an orb web keeps a moth, a pressure snare keeps a wasp. Silk quality rises
+with your size and multiplies hold, so the same web keeps bigger things later.
+
+Webs also **fill up** — two for a sheet web, four for an orb web — and a full
+one catches nothing more. That's the nudge to run several sites rather than one
+big web, and a wired-up **Signal Bell** is how you find out a site is full
+without walking over to look.
+
+A settled catch still tugs, so a full larder slowly wears the web out. Wrapping
+it (**E**) stops that completely — wrapping is preservation, not just securing.
+
 ## The bag — things that aren't silk
 
 **N** opens the bag. Wheel to pick, left mouse to put one down, **X** to take it

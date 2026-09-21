@@ -295,6 +295,45 @@ So a build looks like: tripline across the vent → wired to a snare over the
 drain → funnel lure at the far end to steer things in. That chain is the game's
 version of a loadout.
 
+### The larder — a web is a store, not a moment
+
+A web is somewhere you leave things and come back to. That is the whole reason
+the game has ziplines and a signal bell — and it only works if a catch is still
+there when you get back.
+
+**A catch is won or lost in the first few seconds.** Prey hits the silk and
+fights, hard, for about five seconds. If the web out-holds that whole thrash it
+tires itself out and hangs there until you come for it. If it doesn't, the prey
+tears loose and takes a bite of the web with it. Nothing escapes on a longer
+timer than that: past the thrash, the catch is yours.
+
+That turns hold strength into the tuning spine of the whole prey ladder, because
+each web tier is built to keep the prey tier below it:
+
+| Web | Keeps |
+|-----|-------|
+| Sheet web | a fly, and only just |
+| Orb web | a moth |
+| Pressure snare | a wasp |
+
+Silk quality climbs with size, and multiplies hold, so every one of those lines
+moves up as you grow — a City Weaver's sheet web keeps things a Spiderling's
+orb web never could. A wired web that tenses just before the hit holds through a
+thrash it would otherwise lose, which is a real reason to run signal lines.
+
+**Webs have a capacity.** A sheet web holds two, an orb web four. A full web
+stops catching. This is the pressure that makes you own *sites* rather than one
+enormous web: the way to catch more is another web somewhere else, and the way
+to know it's full is the bell.
+
+**A settled catch still pulls.** Not much — but a full larder is a web slowly
+wearing out, so leaving everything hanging for ever costs you the web and the
+lot. Wrapping stops it dead, which is what makes wrapping worth silk: it is not
+"secure the kill", it is *preservation*.
+
+So the loop has a shape it didn't before: build a site, leave, get told, come
+back to something waiting. That is the part that was missing.
+
 ### Devices — the things that aren't silk
 
 Devices are carried, placed and picked back up. They are deliberately **not**
@@ -395,8 +434,9 @@ design's anchors to local geometry.
   fold and stays stuck to all three surfaces rather than slicing flat across
   it. Only the inscribed spiral cares about a flat plane.
 * **Sag**: a strand near its max length hangs, loses tension and holds worse.
-* **Damage**: struggling prey drains durability. Rain, wind, fire and brooms
-  destroy webs outright.
+* **Damage**: struggling prey drains durability fast, settled prey drains it
+  slowly, wrapped prey not at all. Rain, wind, fire and brooms destroy webs
+  outright.
 * **Weight**: a web can only hold prey up to a mass limit set by its silk type
   and anchor count. Over that, it tears — and heavy prey tears *through*,
   taking the web with it.
@@ -586,6 +626,9 @@ Crawlspace zone, wasps as a predator, verticality, streaming between zones.
 * **Never wait.** If the player is standing next to a web hoping something
   wanders in, the design has failed. Traps run while you are elsewhere, and
   getting back fast is the skill that replaces patience.
+* **Leaving must pay.** The corollary, and the one that is easiest to break by
+  accident: if walking away costs you the catch, every other system pushing the
+  player outward is wasted. A web holds what it caught.
 * **Never chase, either.** Running after prey on foot means the trap did not
   do its job. Riding across the level because a trap went off is not chasing,
   it is answering.
