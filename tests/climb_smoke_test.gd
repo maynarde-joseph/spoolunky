@@ -30,6 +30,8 @@ func _run() -> void:
 	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
 	await physics_frame
 	_spider.require_captured_mouse = false
+	# These suites assert that things cost silk, so the sandbox switch is off.
+	_spider.silk.unlimited = false
 	# Footsteps are not what this test is about, and a sound still being mixed
 	# when the tree is torn down shows up as a leak at exit.
 	var audio := _spider.get_node_or_null("Player Audios")

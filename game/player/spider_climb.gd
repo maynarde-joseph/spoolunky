@@ -719,8 +719,12 @@ func _wish_direction(input_axis: Vector2, up: Vector3) -> Vector3:
 	if forward.length_squared() < 0.000001:
 		return Vector3.ZERO
 	forward = forward.normalized()
+	# right = forward x up is the +X of the basis the body is rolled onto, and
+	# the template's own mover adds it for a positive x input. Subtracting it
+	# here mirrored every strafe the moment the climb component took over,
+	# which is nearly always — see the strafe checks in the climb suite.
 	var right := forward.cross(up).normalized()
-	return (forward * input_axis.y - right * input_axis.x).normalized()
+	return (forward * input_axis.y + right * input_axis.x).normalized()
 
 
 func _orientation_basis(up: Vector3) -> Basis:

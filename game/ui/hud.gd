@@ -26,6 +26,7 @@ V                      place a saved design (wheel to pick, LMB to spin)
 K                      switch weave: stretched / inscribed
 L                      camera: third person / first person
 R                      free-fly (debug)   T  free the mouse   Esc  quit
+J                      silk: unlimited / costs again (sandbox)
 H                      hide this"""
 
 ## Leave empty to find the spider by its group.
@@ -99,7 +100,10 @@ func _bind() -> void:
 func _on_silk_changed(current: float, maximum: float) -> void:
 	silk_bar.max_value = maxf(maximum, 0.001)
 	silk_bar.value = current
-	silk_label.text = "Silk   %d / %d" % [floori(current), roundi(maximum)]
+	if _spider != null and _spider.silk.unlimited:
+		silk_label.text = "Silk   ∞   [J] to make it cost again"
+	else:
+		silk_label.text = "Silk   %d / %d" % [floori(current), roundi(maximum)]
 
 
 func _on_biomass_changed(biomass: float, progress: float) -> void:

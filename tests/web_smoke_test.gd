@@ -39,6 +39,8 @@ func _run() -> void:
 
 	# Somewhere flat and open to work in.
 	spider.global_position = Vector3(12, 0.5, 0)
+	# These suites assert that things cost silk, so the sandbox switch is off.
+	spider.silk.unlimited = false
 	await physics_frame
 
 	_test_starting_state(spider, builder)
