@@ -153,6 +153,8 @@ func _refresh_build_panel() -> void:
 			spinning.display_name if spinning != null else "—",
 			builder.place_radius * 2.0, ceili(builder.estimated_cost)]
 		hint_label.text = "Let go to spin it — keep holding for a bigger one"
+		if builder.place_capped:
+			hint_label.text = "Let go to spin it — that is as big as your silk goes"
 		problem_label.text = "" if builder.place_valid else "Nothing to spin it against"
 		return
 

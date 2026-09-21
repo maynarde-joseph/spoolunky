@@ -86,6 +86,9 @@ var place_centre := Vector3.ZERO
 var place_normal := Vector3.UP
 var place_valid := false
 
+## Stopped growing because the next size over is more silk than we have.
+var place_capped := false
+
 var aim_valid := false
 var aim_point := Vector3.ZERO
 var aim_normal := Vector3.UP
@@ -139,9 +142,7 @@ func setup(spider: CharacterBody3D, silk: SilkPool, growth: SpiderGrowth,
 
 func _process(delta: float) -> void:
 	if placing:
-		place_radius = minf(place_radius + _place_growth_rate() * delta,
-			_max_place_radius())
-		_update_placement()
+		_grow_placement(delta)
 	elif placing_design:
 		_update_design_aim()
 	else:
@@ -171,6 +172,7 @@ func begin_place() -> bool:
 		notice.emit("%s needs a bigger spider" % pattern.display_name)
 		return false
 	placing = true
+	place_capped = false
 	place_radius = _min_place_radius()
 	_update_placement()
 	state_changed.emit()
@@ -270,15 +272,35 @@ func _update_placement() -> void:
 		estimated_cost = _estimate_cost(pattern, place_rim())
 
 
+## Grows the web while the key is held, and stops when the next size over
+## costs more silk than we have. Running out is the ceiling rather than an
+## error at the end: the ghost simply stops getting bigger, with the price on
+## screen, instead of letting you hold down a key for a web you cannot buy.
+func _grow_placement(delta: float) -> void:
+	if place_capped or place_radius >= _max_place_radius():
+		_update_placement()
+		return
+	var previous := place_radius
+	place_radius = minf(place_radius + _place_growth_rate() * delta,
+		_max_place_radius())
+	_update_placement()
+	if _silk.can_afford(estimated_cost) or previous <= _min_place_radius():
+		return
+	place_radius = previous
+	place_capped = true
+	_update_placement()
+
+
 ## Smallest web worth spinning at this size.
 func _min_place_radius() -> float:
 	return maxf(_stage().body_height * 1.2, 0.2)
 
 
-## Biggest. Web size is what the size tiers gate now — a bigger spider spins a
-## bigger web, which is a far more legible reward than a longer anchor span.
+## Biggest, before silk has its say. A strand limit is how far one thread can
+## span, so a web that wide across is the natural reading of it — using it as
+## a radius gave a Huntsman a ten-metre web it could never have paid for.
 func _max_place_radius() -> float:
-	return maxf(_stage().max_strand_length, _min_place_radius() * 2.0)
+	return maxf(_stage().max_strand_length * 0.5, _min_place_radius() * 2.0)
 
 
 func _place_growth_rate() -> float:

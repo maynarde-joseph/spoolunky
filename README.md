@@ -67,7 +67,9 @@ so the size is the length of the press, and letting go spins it. The web faces
 you, and its rim reaches out onto whatever is behind it — so one dropped into a
 corner sits *in* the corner rather than hovering in the middle of it.
 
-How big a web you can spin is what the size tiers gate.
+How big a web you can spin is what the size tiers gate — and what you can
+currently pay for. The web stops growing when your silk runs out rather than
+refusing at the end, so the ghost is always something you can actually buy.
 
 **Range is unlimited** — if you can see it, you can grapple to it. The size
 tiers gate what your silk can *hold* and how much you can spin, not where you

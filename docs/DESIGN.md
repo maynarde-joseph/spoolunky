@@ -231,6 +231,11 @@ The ring-filling code is still there and still tested; it just is not how webs
 get made any more. If a player *does* happen to enclose something, filling it
 remains possible.
 
+**Silk is the other ceiling, and it stops the web growing rather than refusing
+it at the end.** The ghost simply stops getting bigger, with the price on
+screen. Holding a key down for a second and a half and *then* being told you
+cannot afford it is a nasty way to find out you are broke.
+
 **Web size is now what the size tiers gate.** That is a much more legible
 reward than the thing it replaced (a longer anchor span): you can see your webs
 getting bigger as you grow, and a bigger web is straightforwardly better at the

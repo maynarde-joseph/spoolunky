@@ -1363,13 +1363,23 @@ func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	var facing := builder.place_normal.dot(-spider.view.aim_forward())
 	_check(facing > 0.9, "and it faces the player (%.2f)" % facing)
 
+	# Catch the web it actually spins rather than searching for one afterwards:
+	# an earlier test left orb webs about, and searching found one of those and
+	# then cheerfully measured it when this placement had in fact failed.
+	var spun: Array[WebStructure] = []
+	var catcher := func(built: WebStructure) -> void: spun.append(built)
+	builder.web_built.connect(catcher)
 	var spent_before := silk.current
 	_check(builder.commit_place(), "letting go spins it")
+	builder.web_built.disconnect(catcher)
 	_check(not builder.placing, "and stops the growing")
 	await physics_frame
 	_check(_web_count(webs) == before + 1, "a web is standing there")
-	var web := _newest_web(webs, "orb_web") as WebNet
-	if not _check(web != null, "and it is the pattern that was selected"):
+	if not _check(spun.size() == 1, "exactly one web came out of it (%d)" % spun.size()):
+		return
+	var web := spun[0] as WebNet
+	if not _check(web != null and web.pattern.id == "orb_web",
+			"and it is the pattern that was selected"):
 		return
 	_check(silk.current < spent_before, "which cost silk (%.1f)" % web.silk_cost)
 	_check(web.global_position.distance_to(builder.place_centre) < held * 2.0,
@@ -1380,9 +1390,27 @@ func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	# Web size is what growing buys now, so the ceiling moves with the tier
 	# rather than being a flat number.
 	var ceiling := builder._max_place_radius()
-	_check(ceiling >= spider.stage().max_strand_length * 0.99,
+	_check(is_equal_approx(ceiling, spider.stage().max_strand_length * 0.5),
 		"the biggest web a tier can spin comes from the tier (%.2fm)" % ceiling)
 	_check(builder._min_place_radius() < ceiling, "and the smallest is smaller")
+	_check(builder.place_radius <= ceiling + 0.001,
+		"and nothing grew past it (%.2fm)" % builder.place_radius)
+
+	# Silk is the other ceiling, and it has to stop the web growing rather than
+	# refuse it at the end — holding a key down for a web you cannot buy is a
+	# nasty way to find out you are broke.
+	silk.spend(silk.current - 6.0)
+	_check(builder.begin_place(), "spinning another on almost no silk")
+	await _run_frames(40)
+	_check(builder.place_capped, "growth stops when the silk runs out")
+	_check(builder.place_radius < ceiling,
+		"short of what the tier would otherwise allow (%.2fm of %.2fm)"
+		% [builder.place_radius, ceiling])
+	_check(silk.can_afford(builder.estimated_cost),
+		"and what it stopped at is affordable (~%d of %d silk)"
+		% [ceili(builder.estimated_cost), floori(silk.current)])
+	builder.cancel_place()
+	silk.refill(silk.maximum)
 
 	# A line is grappled across a gap, not spun in mid-air.
 	_select_pattern(builder, "trip_line")
