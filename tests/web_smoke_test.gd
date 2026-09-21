@@ -58,6 +58,7 @@ func _run() -> void:
 	await _test_living_on_the_web(spider, builder, webs, silk, level)
 	await _test_tuning_dials(spider, builder, webs, silk, level)
 	await _test_saved_designs(spider, builder, webs, silk)
+	await _test_placing_a_web(spider, builder, webs, silk)
 	await _test_the_larder(spider, builder, webs, level)
 	await _test_the_bag(spider, level, webs, builder, silk)
 	await _test_sandbox_wiring(level, spider)
@@ -98,12 +99,13 @@ func _test_input_map(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	await process_frame
 	_check(builder.current_pattern() == started_with, "and changes back")
 
-	# Grappling is not a mode any more: there is nothing to turn on, and Q is
-	# now "weave the ring I am looking at" rather than a state to be in.
+	# Grappling is not a mode any more, and Q spins a web where you point
+	# rather than putting you in a state.
 	_check(not builder.building, "there is no build mode to be in")
 	_send(spider.input_build_mode)
 	await process_frame
 	_check(not builder.building, "and Q does not put you in one")
+	builder.cancel_place()
 
 
 func _send(action: StringName) -> void:
@@ -1327,6 +1329,70 @@ func _wait_until(test: Callable, max_frames: int) -> bool:
 func _run_frames(count: int) -> void:
 	for i in count:
 		await physics_frame
+
+
+# --- spinning a web where you point -------------------------------------
+
+## The main way a web gets made. Aim, hold, let go — no ring to have built
+## first, and no area to have enclosed by accident.
+func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
+		silk: SilkPool) -> void:
+	silk.refill(silk.maximum)
+	var slab := _test_slab(spider.get_parent(), Vector3(-30, 0.0, 30))
+	await physics_frame
+	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+
+	_select_pattern(builder, "orb_web")
+	var before := _web_count(webs)
+	_check(builder.begin_place(), "Q starts spinning a web")
+	_check(builder.placing, "and it grows while held")
+	_check(builder.place_valid, "with somewhere to put it")
+	var smallest := builder.place_radius
+
+	# Holding is the only size control there is.
+	await _run_frames(30)
+	_check(builder.place_radius > smallest,
+		"holding makes it bigger (%.2fm -> %.2fm)" % [smallest, builder.place_radius])
+	var held := builder.place_radius
+	_check(builder.estimated_cost > 0.0,
+		"and it can be priced before you commit (~%d silk)" % ceili(builder.estimated_cost))
+
+	var rim := builder.place_rim()
+	_check(rim.size() >= 3, "it has a rim to spin round (%d corners)" % rim.size())
+	var facing := builder.place_normal.dot(-spider.view.aim_forward())
+	_check(facing > 0.9, "and it faces the player (%.2f)" % facing)
+
+	var spent_before := silk.current
+	_check(builder.commit_place(), "letting go spins it")
+	_check(not builder.placing, "and stops the growing")
+	await physics_frame
+	_check(_web_count(webs) == before + 1, "a web is standing there")
+	var web := _newest_web(webs, "orb_web") as WebNet
+	if not _check(web != null, "and it is the pattern that was selected"):
+		return
+	_check(silk.current < spent_before, "which cost silk (%.1f)" % web.silk_cost)
+	_check(web.global_position.distance_to(builder.place_centre) < held * 2.0,
+		"it sits where the ghost was")
+	_check(web.radius > 0.0, "with real size to it (%.2fm)" % web.radius)
+	_check(web.catch_area != null, "and something to catch with")
+
+	# Web size is what growing buys now, so the ceiling moves with the tier
+	# rather than being a flat number.
+	var ceiling := builder._max_place_radius()
+	_check(ceiling >= spider.stage().max_strand_length * 0.99,
+		"the biggest web a tier can spin comes from the tier (%.2fm)" % ceiling)
+	_check(builder._min_place_radius() < ceiling, "and the smallest is smaller")
+
+	# A line is grappled across a gap, not spun in mid-air.
+	_select_pattern(builder, "trip_line")
+	_check(not builder.begin_place(), "a tripline refuses to be spun as a web")
+	builder.cancel_place()
+
+	web.demolish()
+	slab.queue_free()
+	await physics_frame
+	await process_frame
 
 
 ## Clears the spawner's wandering flies out of a patch, so a test about one

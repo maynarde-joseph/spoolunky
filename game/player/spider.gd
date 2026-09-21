@@ -178,7 +178,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed(input_build_mode):
 		if device_placer.active:
 			device_placer.stop()
-		web_builder.weave_aimed()
+		web_builder.begin_place()
+	elif event.is_action_released(input_build_mode):
+		web_builder.commit_place()
 	elif _device_tool_active() and event.is_action_pressed(input_next_pattern):
 		device_placer.cycle(1)
 	elif _device_tool_active() and event.is_action_pressed(input_prev_pattern):

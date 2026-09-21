@@ -11,9 +11,9 @@ F or middle mouse      clip onto a silk line and ride it (again to let go)
 Ctrl                   drop onto a dragline (from a wall or ceiling)
   Ctrl / Space           lower / raise yourself on the line
   Right Mouse            let go
-Left Mouse             go there, trailing silk — this is how webs get built
-Q                      weave the ring of silk you are looking at
-Wheel or Z / C         change which web Q weaves
+Left Mouse             go there, trailing silk — every line is a zipline
+Q (hold)               spin a web where you are aiming; hold longer for bigger
+Wheel or Z / C         change which web you spin
 E                      wrap prey, then drain it (also re-arms a snare)
 X                      pull down the web you're looking at
 G                      wire two things together — press on each end
@@ -147,6 +147,15 @@ func _refresh_build_panel() -> void:
 		return
 
 	dial_label.text = ""
+	if builder.placing:
+		var spinning := builder.current_pattern()
+		pattern_label.text = "%s     %.2fm across     ~%d silk" % [
+			spinning.display_name if spinning != null else "—",
+			builder.place_radius * 2.0, ceili(builder.estimated_cost)]
+		hint_label.text = "Let go to spin it — keep holding for a bigger one"
+		problem_label.text = "" if builder.place_valid else "Nothing to spin it against"
+		return
+
 	if _refresh_bag_panel():
 		return
 

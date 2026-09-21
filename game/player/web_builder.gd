@@ -40,12 +40,20 @@ enum Problem {
 ## is what made getting about a chore.
 @export var grapple_reach := 0.0
 
+## How long holding the place key takes to grow a web from its smallest to the
+## biggest this size tier can spin.
+@export var place_grow_time := 1.1
+
 ## Pattern dragged between anchors when the chosen one is a net.
 const FRAME_PATTERN := "frame_line"
 
 ## Stand-in for "no limit": further than any sane level is wide, so the ray
 ## stops at geometry rather than at a rule.
 const UNLIMITED_REACH := 4096.0
+
+## Corners on a placed web's rim. Enough to read as round without spending
+## geometry on a shape nobody is going to count the sides of.
+const PLACE_SIDES := 10
 
 var patterns: Array[WebPattern] = []
 var pattern_index := 0
@@ -70,6 +78,13 @@ var anchors := PackedVector3Array()
 
 ## Web waiting to be wired to something, while the player picks the other end.
 var link_source: SilkNode = null
+
+## Spinning a web where you are pointing: held down, it grows.
+var placing := false
+var place_radius := 0.0
+var place_centre := Vector3.ZERO
+var place_normal := Vector3.UP
+var place_valid := false
 
 var aim_valid := false
 var aim_point := Vector3.ZERO
@@ -122,35 +137,152 @@ func setup(spider: CharacterBody3D, silk: SilkPool, growth: SpiderGrowth,
 		_climb.grappled.connect(_on_grappled)
 
 
-func _process(_delta: float) -> void:
-	if placing_design:
+func _process(delta: float) -> void:
+	if placing:
+		place_radius = minf(place_radius + _place_growth_rate() * delta,
+			_max_place_radius())
+		_update_placement()
+	elif placing_design:
 		_update_design_aim()
 	else:
 		_update_aim()
 	_draw_preview()
 
 
-# --- weaving ------------------------------------------------------------
+# --- spinning a web where you point -------------------------------------
 
-## Fill the ring under the crosshair. One press, no mode: the silk is already
-## up because you walked it, so the only decision left is "yes, weave that".
-func weave_aimed() -> bool:
-	if placing_design:
+## Start spinning. Held down the web grows; letting go puts it there.
+##
+## This replaced filling a ring the player had grappled around. That version
+## read well and played badly: it asked you to enclose an area by accident and
+## then go and find it again. Pointing at a spot and spinning a web there is
+## what people actually try to do, so it is what the game does.
+func begin_place() -> bool:
+	if placing or placing_design:
 		return false
 	var pattern := current_pattern()
 	if pattern == null:
 		return false
 	if pattern.shape != WebPattern.Shape.NET:
-		notice.emit("%s is a line, not a web — grapple it across a gap"
+		notice.emit("%s is a line — grapple it across a gap instead"
 			% pattern.display_name)
 		return false
 	if not _is_unlocked(pattern):
 		notice.emit("%s needs a bigger spider" % pattern.display_name)
 		return false
-	if aimed_loop() == null:
-		notice.emit("No ring of silk there — grapple a loop first")
+	placing = true
+	place_radius = _min_place_radius()
+	_update_placement()
+	state_changed.emit()
+	return true
+
+
+## Let go: spin what the ghost was showing.
+func commit_place() -> bool:
+	if not placing:
 		return false
-	return fill_aimed_loop()
+	placing = false
+	_update_placement()
+	state_changed.emit()
+	if not place_valid:
+		notice.emit("Nothing to spin a web against")
+		return false
+
+	var pattern := current_pattern()
+	var dials := tuning_for(pattern)
+	var web := WebNet.spin(dials.apply_to(pattern), place_rim(), _quality(), weave, true)
+	if web == null:
+		notice.emit("No room for a web there")
+		return false
+	if not _silk.can_afford(web.silk_cost):
+		notice.emit("Not enough silk — %d needed" % ceili(web.silk_cost))
+		web.free()
+		return false
+
+	web.tuning = dials.copy()
+	_silk.spend(web.silk_cost)
+	web.place_in(_resolve_container())
+	_loop_source = -1
+	web_built.emit(web)
+	notice.emit("%s spun, %.1fm across (%d silk)"
+		% [pattern.display_name, place_radius * 2.0, roundi(web.silk_cost)])
+	return true
+
+
+func cancel_place() -> void:
+	if not placing:
+		return
+	placing = false
+	place_valid = false
+	state_changed.emit()
+
+
+## The outline a placed web would have: a ring facing you at the aim point,
+## with every corner pulled out onto whatever is behind it. That last part is
+## what makes a web dropped into a corner sit *in* the corner instead of
+## hovering in the middle of it.
+func place_rim() -> PackedVector3Array:
+	var rim := PackedVector3Array()
+	if not place_valid:
+		return rim
+	var right := place_normal.cross(Vector3.UP)
+	if right.length_squared() < 0.001:
+		right = place_normal.cross(Vector3.RIGHT)
+	right = right.normalized()
+	var up := right.cross(place_normal).normalized()
+
+	var space := get_world_3d().direct_space_state
+	var exclude := _exclusions()
+	var reach := place_radius * 1.3
+	for i in PLACE_SIDES:
+		var angle := TAU * float(i) / float(PLACE_SIDES)
+		var direction := (right * cos(angle) + up * sin(angle)).normalized()
+		var span := place_radius
+		var query := PhysicsRayQueryParameters3D.create(place_centre,
+			place_centre + direction * reach, GameLayers.WORLD, exclude)
+		var hit := space.intersect_ray(query)
+		if not hit.is_empty():
+			# Clamped so a close wall makes the web fit snugly rather than
+			# collapsing it into a sliver.
+			span = clampf(place_centre.distance_to(hit["position"]),
+				place_radius * 0.5, reach)
+		rim.append(place_centre + direction * span)
+	return rim
+
+
+## Where the web would go and which way it would face: straight out from the
+## crosshair, turned to face you, so what you see is what you get.
+func _update_placement() -> void:
+	place_valid = false
+	estimated_cost = 0.0
+	if _view == null:
+		return
+	if not _cast_surface(UNLIMITED_REACH):
+		return
+	var facing := -_view.aim_forward()
+	if facing.length_squared() < 0.000001:
+		facing = aim_normal
+	place_normal = facing.normalized()
+	place_centre = aim_point + place_normal * clampf(place_radius * 0.2, 0.02, 0.4)
+	place_valid = true
+	var pattern := current_pattern()
+	if pattern != null:
+		estimated_cost = _estimate_cost(pattern, place_rim())
+
+
+## Smallest web worth spinning at this size.
+func _min_place_radius() -> float:
+	return maxf(_stage().body_height * 1.2, 0.2)
+
+
+## Biggest. Web size is what the size tiers gate now — a bigger spider spins a
+## bigger web, which is a far more legible reward than a longer anchor span.
+func _max_place_radius() -> float:
+	return maxf(_stage().max_strand_length, _min_place_radius() * 2.0)
+
+
+func _place_growth_rate() -> float:
+	return (_max_place_radius() - _min_place_radius()) / maxf(place_grow_time, 0.05)
 
 
 # --- build mode ---------------------------------------------------------
@@ -1133,6 +1265,9 @@ func _build_preview_nodes() -> void:
 
 func _draw_preview() -> void:
 	_preview_mesh.clear_surfaces()
+	if placing:
+		_draw_place_ghost()
+		return
 	if placing_design:
 		_draw_design_ghost()
 		return
@@ -1185,6 +1320,27 @@ func _draw_preview() -> void:
 		_cursor_mesh.height = tick
 		_cursor_material.albedo_color = Color(line_color.r, line_color.g, line_color.b, 0.7)
 		_cursor.global_position = aim_point
+
+
+## The web about to be spun, growing while the key is held.
+func _draw_place_ghost() -> void:
+	_cursor.visible = false
+	if not place_valid:
+		return
+	var rim := place_rim()
+	if rim.size() < 3:
+		return
+	var pattern := current_pattern()
+	var tint: Color = pattern.color if pattern != null else Color(1, 1, 1, 1)
+	tint.a = 1.0
+	if not _silk.can_afford(estimated_cost):
+		tint = Color(1.0, 0.4, 0.35, 1.0)
+	var spoke := Color(tint.r, tint.g, tint.b, 0.35)
+	_preview_mesh.surface_begin(Mesh.PRIMITIVE_LINES, _preview_material)
+	for i in rim.size():
+		_line(rim[i], rim[(i + 1) % rim.size()], tint)
+		_line(place_centre, rim[i], spoke)
+	_preview_mesh.surface_end()
 
 
 ## Ghost of a saved rig where it would land, so the player can line it up

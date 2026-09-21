@@ -214,6 +214,28 @@ The exception is single strands — triplines, draglines, bridges. One line *is*
 legible, so those stay fully manual. The rule of thumb: **manual at the thread
 level for lines, pattern-driven for areas.**
 
+### Webs are placed, not enclosed
+
+The version before this one had you grapple lines around a space until they
+crossed and enclosed an area, then look at that area and fill it. It is a
+lovely idea and it does not survive contact with a player: making a closed ring
+of silk by moving around a room is something that happens *by accident* at
+best, and then you have to go and find the ring again to use it.
+
+So webs are placed. **Aim, hold Q, let go.** Holding grows the web, which makes
+size an expressive part of one press rather than a separate control. The plane
+faces you — what you see is where it goes — and each corner of the rim reaches
+out onto whatever is behind it, so a web dropped into a corner fits the corner.
+
+The ring-filling code is still there and still tested; it just is not how webs
+get made any more. If a player *does* happen to enclose something, filling it
+remains possible.
+
+**Web size is now what the size tiers gate.** That is a much more legible
+reward than the thing it replaced (a longer anchor span): you can see your webs
+getting bigger as you grow, and a bigger web is straightforwardly better at the
+one job a web has.
+
 ### Building has no mode
 
 Playtesting said building was slow, tedious and boring, and it was right. The
@@ -589,8 +611,8 @@ is: each new zone opens with you as the smallest thing in it.
 | **Ctrl / Space** | Lower / raise yourself on the line |
 | **Right Mouse** | Let go of the line |
 | **Left Mouse** | **Go there, trailing silk.** No mode. Moving and building are one act |
-| **Q** | Weave the ring of silk under the crosshair |
-| **Mouse Wheel / Z / C** | Cycle which web **Q** weaves |
+| **Q** *(hold)* | Spin a web where you are aiming; held longer, it grows |
+| **Mouse Wheel / Z / C** | Cycle which web you spin |
 | **Right Mouse** | Let go of a line |
 | **E** | Interact — wrap prey, then drain it; re-arm a sprung snare |
 | **X** | Demolish the web you are looking at (50% silk back) |

@@ -37,8 +37,8 @@ something down.
 | **Ctrl** / **Space** | lower / raise yourself on the line |
 | **Right Mouse** | let go of the line |
 | **Left Mouse** | **go there, trailing silk** — moving and building are the same act |
-| **Q** | weave the ring of silk you're looking at |
-| **Wheel** or **Z** / **C** | change which web **Q** weaves |
+| **Q** *(hold)* | spin a web where you're aiming — hold longer for a bigger one |
+| **Wheel** or **Z** / **C** | change which web you spin |
 | **Right Mouse** | let go of a line |
 | **E** | wrap caught prey, then drain it (also re-arms a sprung snare) |
 | **X** | pull down the web you're looking at, for half the silk back — or pick a device back up |
@@ -62,9 +62,12 @@ There is no build mode. **Left mouse grapples you to whatever you're pointing
 at, and drags a line behind you** — so getting around and building are the same
 act, and the silk ends up being a record of where you went.
 
-When your lines cross and enclose something, look at that gap and press **Q**:
-it fills with whichever web the wheel is on. That's the only deliberate build
-step, because it's the only one that's a decision.
+To make a web, **aim where you want it and hold Q**. It grows while you hold,
+so the size is the length of the press, and letting go spins it. The web faces
+you, and its rim reaches out onto whatever is behind it — so one dropped into a
+corner sits *in* the corner rather than hovering in the middle of it.
+
+How big a web you can spin is what the size tiers gate.
 
 **Range is unlimited** — if you can see it, you can grapple to it. The size
 tiers gate what your silk can *hold* and how much you can spin, not where you
