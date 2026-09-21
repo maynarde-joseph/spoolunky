@@ -414,13 +414,21 @@ func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	await physics_frame
 	await process_frame
 
-	# Now trip the line, far away.
+	# Now set the line off, far away.
 	_check(snare.armed, "the snare is armed before anything happens")
 	var crosser := _spawn_fly(level, (trip.point_a + trip.point_b) * 0.5)
 	await physics_frame
 	await physics_frame
 
-	_check(not snare.armed, "crossing the tripline springs the distant snare")
+	# Fire the line directly rather than trusting a fly to blunder into a thread
+	# two centimetres thick inside two frames. That a fly trips a line is
+	# _test_tripline_alert's job; what is being tested here is that the signal
+	# reaches a snare across the room, and that should not ride on spawn luck.
+	trip.fire()
+	await physics_frame
+	await physics_frame
+
+	_check(not snare.armed, "a signal down the line springs the distant snare")
 	_check(bystander.is_stuck(),
 		"and the snare drags in a fly that never touched it")
 	_check(snare.snared_count() == 1, "the snare has it")
