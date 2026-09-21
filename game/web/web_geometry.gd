@@ -215,7 +215,10 @@ static func layout_strand(a: Vector3, b: Vector3, pattern: WebPattern,
 		var side := _perpendicular(axis) * pattern.walk_width * 0.5
 		strands.add(local_a + side, local_b + side, thickness)
 		strands.add(local_a - side, local_b - side, thickness)
-		var rungs := maxi(2, int(local_a.distance_to(local_b) / maxf(pattern.walk_width, 0.05)))
+		# Capped, because a bridge strung right across a level would otherwise
+		# ask for thousands of rungs and every one of them is crossed quads.
+		var rungs: int = clampi(
+			int(local_a.distance_to(local_b) / maxf(pattern.walk_width, 0.05)), 2, 240)
 		for i in range(1, rungs):
 			var t := float(i) / float(rungs)
 			var p := local_a.lerp(local_b, t)

@@ -66,6 +66,11 @@ When your lines cross and enclose something, look at that gap and press **Q**:
 it fills with whichever web the wheel is on. That's the only deliberate build
 step, because it's the only one that's a decision.
 
+**Range is unlimited** — if you can see it, you can grapple to it. The size
+tiers gate what your silk can *hold* and how much you can spin, not where you
+are allowed to go. A long grapple is flung faster so it still lands in about a
+second, because distance should cost you silk rather than patience.
+
 Every line is also a zipline, so a route you built once is a route you can ride.
 
 Placing an anchor **grapples you to it**, dragging a frame line behind you. So

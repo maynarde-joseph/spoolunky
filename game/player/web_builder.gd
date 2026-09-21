@@ -34,8 +34,18 @@ enum Problem {
 ## Most anchors one run round a frame may have.
 @export var max_chain := 12
 
+## How far a grapple may reach, in metres. Zero means as far as you can see.
+## The size tiers gate what you can hold and how much you can spin — not where
+## you are allowed to go, because being stuck within three metres of yourself
+## is what made getting about a chore.
+@export var grapple_reach := 0.0
+
 ## Pattern dragged between anchors when the chosen one is a net.
 const FRAME_PATTERN := "frame_line"
+
+## Stand-in for "no limit": further than any sane level is wide, so the ray
+## stops at geometry rather than at a rule.
+const UNLIMITED_REACH := 4096.0
 
 var patterns: Array[WebPattern] = []
 var pattern_index := 0
@@ -866,7 +876,14 @@ func _update_aim() -> void:
 		return
 
 	var stage := _stage()
-	if not _cast_surface(stage.anchor_range):
+	# A scripted run stays inside the tier's reach; free grappling does not,
+	# which is the whole point of it.
+	var reach := UNLIMITED_REACH
+	if building:
+		reach = stage.anchor_range
+	elif grapple_reach > 0.0:
+		reach = grapple_reach
+	if not _cast_surface(reach):
 		return
 	problem = Problem.NONE
 

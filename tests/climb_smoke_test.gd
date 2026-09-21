@@ -49,6 +49,7 @@ func _run() -> void:
 	await _test_ziplining()
 	await _test_grappling()
 	await _test_grappling_without_a_mode()
+	await _test_grappling_a_long_way()
 
 	_release_all()
 	current_scene = null
@@ -423,6 +424,59 @@ func _test_grappling_without_a_mode() -> void:
 	_check(_spider.silk.current < silk_before, "which is what the silk went on")
 	_check(builder.anchors.is_empty(),
 		"with no anchor list to keep track of (%d)" % builder.anchors.size())
+
+
+## Reach is not a size tier any more. A spiderling can go anywhere it can see,
+## and a long grapple has to stay quick or unlimited range just buys a longer
+## commute — so this checks both the distance and the time.
+func _test_grappling_a_long_way() -> void:
+	var builder := _spider.web_builder
+	builder.stop()
+
+	# A landing pad and a wall to aim at, far outside the room and far beyond
+	# anything the tier would have allowed.
+	_add_slab(_room, Vector3(60, 0, 0), Vector3(3.0, 0.2, 3.0))
+	_add_slab(_room, Vector3(100, 3, 0), Vector3(0.4, 6.0, 6.0))
+	await _run_frames(4)
+
+	_spider.climb.release()
+	_spider.global_position = Vector3(60, 0.8, 0)
+	_spider.velocity = Vector3.ZERO
+	_spider.silk.refill(_spider.silk.maximum)
+	await _run_frames(30)
+
+	var reach := _spider.stage().reach
+	var tier_range := _spider.stage().anchor_range
+	_spider.view.face(Vector3.RIGHT)
+	_spider.view.pitch = 0.0
+	await _run_frames(2)
+
+	builder._update_aim()
+	var span := _spider.global_position.distance_to(builder.aim_point)
+	_check(builder.aim_valid, "a wall %.0fm away is still something to aim at" % span)
+	_check(span > tier_range * 3.0,
+		"and it is far past this tier's own reach (%.1fm vs %.1fm)" % [span, tier_range])
+
+	var started_at := _spider.global_position
+	builder.place()
+	_check(_spider.climb.is_grappling(), "the grapple starts anyway")
+
+	var frames := 0
+	for i in 600:
+		if not _spider.climb.is_grappling():
+			break
+		frames += 1
+		await physics_frame
+	var seconds := float(frames) / 60.0
+	_check(not _spider.climb.is_grappling(), "and finishes")
+	var travelled := _spider.global_position.distance_to(started_at)
+	_check(travelled > tier_range * 3.0,
+		"the spider crossed %.1fm, far more than the tier allowed" % travelled)
+	_check(seconds < 2.5, "and it took %.2fs, not a commute" % seconds)
+	# Reaching for things did not change — only going places did.
+	_check(reach < travelled * 0.2,
+		"while handling things is still arm's length (%.1fm reach vs %.1fm travelled)"
+		% [reach, travelled])
 
 
 func _silk_count() -> int:

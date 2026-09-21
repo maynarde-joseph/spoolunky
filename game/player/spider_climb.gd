@@ -111,6 +111,11 @@ signal notice(text: String)
 ## Give up on a grapple after this long, so a blocked one cannot hang.
 @export var grapple_timeout := 2.5
 
+## Longest a grapple should take, however far it goes. Without this, reaching
+## across a courtyard at a spiderling's 6 m/s is a nine-second commute — which
+## is the tedium unlimited range was supposed to remove, not add.
+@export var grapple_max_travel := 1.1
+
 
 var mode: Mode = Mode.AIRBORNE
 var surface_normal := Vector3.UP
@@ -139,6 +144,9 @@ var _grace := 0.0
 var _previous_up := Vector3.ZERO
 var _swap_cooldown := 0.0
 var _grapple_time := 0.0
+
+## How far this grapple has to go, measured when it started.
+var _grapple_span := 0.0
 var _silk_warning := 0.0
 var _line_mesh: ImmediateMesh
 var _line_instance: MeshInstance3D
@@ -562,6 +570,7 @@ func grapple_to(point: Vector3, normal: Vector3) -> bool:
 	grapple_target = point
 	grapple_normal = normal
 	_grapple_time = 0.0
+	_grapple_span = _spider.global_position.distance_to(point)
 	_set_mode(Mode.GRAPPLING)
 	return true
 
@@ -571,11 +580,11 @@ func _step_grappling(delta: float) -> void:
 	_grapple_time += delta
 	var offset := grapple_target - _spider.global_position
 	var distance := offset.length()
-	if distance <= maxf(height * 0.5, 0.02) or _grapple_time > grapple_timeout:
+	var speed := _grapple_speed(height)
+	if distance <= maxf(height * 0.5, 0.02) or _grapple_time > _grapple_limit(speed):
 		_arrive()
 		return
 
-	var speed := grapple_speed * height
 	_spider.velocity = offset / distance * speed
 	_spider.up_direction = Vector3.UP
 	var before := _spider.global_position
@@ -584,6 +593,22 @@ func _step_grappling(delta: float) -> void:
 	# Jammed on geometry short of the target: near enough, stop there.
 	if _spider.global_position.distance_to(before) < speed * delta * 0.25:
 		_arrive()
+
+
+## Short hops keep the tier's own speed; long ones are flung fast enough to
+## arrive in about the same time, so distance costs you silk rather than
+## patience.
+func _grapple_speed(height: float) -> float:
+	var speed := grapple_speed * height
+	if _grapple_span > 0.0 and grapple_max_travel > 0.0:
+		speed = maxf(speed, _grapple_span / grapple_max_travel)
+	return speed
+
+
+## The bail-out, which has to scale with the trip or a long grapple would give
+## up in mid-air and drop the spider wherever it happened to be.
+func _grapple_limit(speed: float) -> float:
+	return maxf(grapple_timeout, _grapple_span / maxf(speed, 0.001) * 2.0 + 0.5)
 
 
 func _arrive() -> void:

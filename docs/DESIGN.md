@@ -228,6 +228,17 @@ you stopped to construct. The only deliberate step left is the one that is
 actually a decision: look at a gap your lines enclose and press **Q** to fill
 it.
 
+**Range is not a size tier.** Reach was capped at the tier's `anchor_range` —
+3.2 m as a spiderling — which meant getting anywhere was a chain of little
+hops, and that was most of what made building feel like a chore. Grappling now
+reaches as far as you can see. What the tiers still gate is what your silk can
+*hold*, how much you can spin and what you can bite; those are the limits that
+make growing mean something. Where you may go is not one of them.
+
+The catch is that a long grapple at a spiderling's 6 m/s would be a nine-second
+commute, so grapple speed scales with distance and everything lands in about a
+second. Distance costs silk, not patience.
+
 That also settles what a mode is *for* in this game. A mode is worth it when it
 changes what the mouse means for a while — the bag (**N**) and design placement
 (**V**) qualify. Wrapping the main verb in one never did.
