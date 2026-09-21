@@ -51,9 +51,13 @@ const FRAME_PATTERN := "frame_line"
 ## stops at geometry rather than at a rule.
 const UNLIMITED_REACH := 4096.0
 
-## Corners on a placed web's rim. Enough to read as round without spending
-## geometry on a shape nobody is going to count the sides of.
-const PLACE_SIDES := 10
+## Corners on a placed web's rim. More than it takes to read as round, because
+## they are what the shape of a gap gets recorded in.
+const PLACE_SIDES := 16
+
+## Closest a rim corner may sit to the middle. Silk can hug a corner tightly,
+## but a web that reaches almost nowhere on one side is a sliver, not a trap.
+const PLACE_MIN_SPAN := 0.18
 
 var patterns: Array[WebPattern] = []
 var pattern_index := 0
@@ -88,6 +92,11 @@ var place_valid := false
 
 ## Stopped growing because the next size over is more silk than we have.
 var place_capped := false
+
+## How many rim corners found something to hold onto, and how much the web
+## would actually cover once the room has had its say.
+var place_anchored := 0
+var place_area := 0.0
 
 var aim_valid := false
 var aim_point := Vector3.ZERO
@@ -200,7 +209,12 @@ func commit_place() -> bool:
 
 	var pattern := current_pattern()
 	var dials := tuning_for(pattern)
-	var web := WebNet.spin(dials.apply_to(pattern), place_rim(), _quality(), weave, true)
+	var rim := place_rim()
+	var smallest := _min_place_radius()
+	if place_area < smallest * smallest:
+		notice.emit("Too tight in there to get a web up")
+		return false
+	var web := WebNet.spin(dials.apply_to(pattern), rim, _quality(), weave, true)
 	if web == null:
 		notice.emit("No room for a web there")
 		return false
@@ -214,8 +228,12 @@ func commit_place() -> bool:
 	web.place_in(_resolve_container())
 	_loop_source = -1
 	web_built.emit(web)
-	notice.emit("%s spun, %.1fm across (%d silk)"
-		% [pattern.display_name, place_radius * 2.0, roundi(web.silk_cost)])
+	if place_anchored > 0:
+		notice.emit("%s spun into the gap, %.2f m2 on %d anchors (%d silk)"
+			% [pattern.display_name, place_area, place_anchored, roundi(web.silk_cost)])
+	else:
+		notice.emit("%s spun, %.2f m2 (%d silk)"
+			% [pattern.display_name, place_area, roundi(web.silk_cost)])
 	return true
 
 
@@ -228,9 +246,12 @@ func cancel_place() -> void:
 
 
 ## The outline a placed web would have: a ring facing you at the aim point,
-## with every corner pulled out onto whatever is behind it. That last part is
-## what makes a web dropped into a corner sit *in* the corner instead of
-## hovering in the middle of it.
+## with every corner run out until it meets something.
+##
+## Holding the key sets how far a corner is *allowed* to reach, and the room
+## decides where it actually stops. So the same press gives you a wide circle
+## in open air and a web that fills the angle when you point into a corner —
+## the shape is the space, not a disc dropped into it.
 func place_rim() -> PackedVector3Array:
 	var rim := PackedVector3Array()
 	if not place_valid:
@@ -243,20 +264,22 @@ func place_rim() -> PackedVector3Array:
 
 	var space := get_world_3d().direct_space_state
 	var exclude := _exclusions()
-	var reach := place_radius * 1.3
+	var floor_span: float = maxf(place_radius * PLACE_MIN_SPAN, 0.05)
+	place_anchored = 0
 	for i in PLACE_SIDES:
 		var angle := TAU * float(i) / float(PLACE_SIDES)
 		var direction := (right * cos(angle) + up * sin(angle)).normalized()
+		# Reaching exactly as far as it is allowed to, so open air gives the
+		# full held size and anything solid cuts the corner short where it is.
 		var span := place_radius
 		var query := PhysicsRayQueryParameters3D.create(place_centre,
-			place_centre + direction * reach, GameLayers.WORLD, exclude)
+			place_centre + direction * place_radius, GameLayers.WORLD, exclude)
 		var hit := space.intersect_ray(query)
 		if not hit.is_empty():
-			# Clamped so a close wall makes the web fit snugly rather than
-			# collapsing it into a sliver.
-			span = clampf(place_centre.distance_to(hit["position"]),
-				place_radius * 0.5, reach)
+			span = maxf(place_centre.distance_to(hit["position"]), floor_span)
+			place_anchored += 1
 		rim.append(place_centre + direction * span)
+	place_area = _polygon_area(rim)
 	return rim
 
 

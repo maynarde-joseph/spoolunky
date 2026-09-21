@@ -62,10 +62,16 @@ There is no build mode. **Left mouse grapples you to whatever you're pointing
 at, and drags a line behind you** — so getting around and building are the same
 act, and the silk ends up being a record of where you went.
 
-To make a web, **aim where you want it and hold Q**. It grows while you hold,
-so the size is the length of the press, and letting go spins it. The web faces
-you, and its rim reaches out onto whatever is behind it — so one dropped into a
-corner sits *in* the corner rather than hovering in the middle of it.
+To make a web, **aim where you want it and hold Q**, then let go.
+
+Holding sets how far the web is *allowed* to reach — the room decides where it
+actually stops. Every corner of the rim runs outward until it hits something,
+so the same press gives you a full circle in open air and a web that fills the
+angle when you point into a corner. A doorway gets something doorway-shaped
+rather than a disc hanging in the middle of it.
+
+The HUD shows the area you're about to cover and how many corners have found
+something to hold onto.
 
 How big a web you can spin is what the size tiers gate — and what you can
 currently pay for. The web stops growing when your silk runs out rather than

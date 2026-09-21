@@ -222,10 +222,19 @@ lovely idea and it does not survive contact with a player: making a closed ring
 of silk by moving around a room is something that happens *by accident* at
 best, and then you have to go and find the ring again to use it.
 
-So webs are placed. **Aim, hold Q, let go.** Holding grows the web, which makes
-size an expressive part of one press rather than a separate control. The plane
-faces you — what you see is where it goes — and each corner of the rim reaches
-out onto whatever is behind it, so a web dropped into a corner fits the corner.
+So webs are placed. **Aim, hold Q, let go.** The plane faces you — what you see
+is where it goes — and every corner of the rim runs outward until it meets
+something.
+
+The important part is what holding the key actually means: it sets how far a
+corner is *allowed* to reach, not how big the web will be. The room decides
+where each one stops. So the same press gives a full circle in open air and a
+web that fills the angle when you point into a corner, and a doorway produces
+something doorway-shaped rather than a disc hanging in the middle of it.
+
+That is the whole of "design your web" in this game now, and it comes out of
+moving and looking rather than out of a menu. Where you stand and what you
+point at *is* the design.
 
 The ring-filling code is still there and still tested; it just is not how webs
 get made any more. If a player *does* happen to enclose something, filling it

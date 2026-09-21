@@ -149,13 +149,22 @@ func _refresh_build_panel() -> void:
 	dial_label.text = ""
 	if builder.placing:
 		var spinning := builder.current_pattern()
-		pattern_label.text = "%s     %.2fm across     ~%d silk" % [
+		# Area, not diameter: once the rim has fitted itself to the room the
+		# web is rarely a circle, and "how much does it cover" is the thing
+		# actually being decided.
+		pattern_label.text = "%s     %.2f m²     ~%d silk" % [
 			spinning.display_name if spinning != null else "—",
-			builder.place_radius * 2.0, ceili(builder.estimated_cost)]
-		hint_label.text = "Let go to spin it — keep holding for a bigger one"
+			builder.place_area, ceili(builder.estimated_cost)]
+		hint_label.text = "Let go to spin it — keep holding to let it reach further"
 		if builder.place_capped:
-			hint_label.text = "Let go to spin it — that is as big as your silk goes"
-		problem_label.text = "" if builder.place_valid else "Nothing to spin it against"
+			hint_label.text = "Let go to spin it — that is as far as your silk reaches"
+		if not builder.place_valid:
+			problem_label.text = "Nothing to spin it against"
+		elif builder.place_anchored > 0:
+			problem_label.text = "Fitting the gap — %d of %d corners have hold" % [
+				builder.place_anchored, WebBuilder.PLACE_SIDES]
+		else:
+			problem_label.text = "Open air — nothing for the edges to catch on"
 		return
 
 	if _refresh_bag_panel():

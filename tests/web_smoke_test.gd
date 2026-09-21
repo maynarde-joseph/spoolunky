@@ -59,6 +59,7 @@ func _run() -> void:
 	await _test_tuning_dials(spider, builder, webs, silk, level)
 	await _test_saved_designs(spider, builder, webs, silk)
 	await _test_placing_a_web(spider, builder, webs, silk)
+	await _test_a_web_fits_the_space(spider, builder, silk)
 	await _test_the_larder(spider, builder, webs, level)
 	await _test_the_bag(spider, level, webs, builder, silk)
 	await _test_sandbox_wiring(level, spider)
@@ -1060,9 +1061,9 @@ func _test_the_bag(spider: SpiderPlayer, level: Node, webs: Node3D,
 
 ## A bare platform a long way from everything else, so a device test is only
 ## ever about the device.
-func _test_slab(level: Node, at: Vector3) -> StaticBody3D:
+func _test_slab(level: Node, at: Vector3, size := Vector3(12, 0.5, 12)) -> StaticBody3D:
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(12, 0.5, 12)
+	shape.size = size
 	var collider := CollisionShape3D.new()
 	collider.shape = shape
 	var slab := StaticBody3D.new()
@@ -1477,6 +1478,81 @@ func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 
 	web.demolish()
 	slab.queue_free()
+	await physics_frame
+	await process_frame
+
+
+# --- webs take the shape of the space -----------------------------------
+
+## Holding the key says how far a web is *allowed* to reach; the room decides
+## where it actually stops. The same press should give a full circle in open
+## air and something that fills the gap when there is a gap to fill.
+func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder,
+		silk: SilkPool) -> void:
+	var host := spider.get_parent()
+	silk.unlimited = true
+	_select_pattern(builder, "orb_web")
+
+	# Open air: a slab to stand on and nothing beside it.
+	var open_slab := _test_slab(host, Vector3(-60, 0.0, -60))
+	await physics_frame
+	_stand_on(spider, open_slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+	if not _check(builder.begin_place(), "spinning one in the open"):
+		silk.unlimited = false
+		return
+	await _run_frames(60)
+	var open_area := builder.place_area
+	var open_reach := builder.place_radius
+	_check(builder.place_anchored == 0,
+		"in open air nothing catches the edges (%d of %d)"
+		% [builder.place_anchored, WebBuilder.PLACE_SIDES])
+	_check(open_area > 0.0, "and it covers a plain %.2f m2" % open_area)
+	builder.cancel_place()
+
+	# A slot: two walls close either side, looking along it at the end.
+	var floor_at := Vector3(-90, 0.0, -60)
+	var slot_floor := _test_slab(host, floor_at, Vector3(10, 0.5, 10))
+	_test_slab(host, floor_at + Vector3(0, 2.0, -0.9), Vector3(10, 4.0, 0.4))
+	_test_slab(host, floor_at + Vector3(0, 2.0, 0.9), Vector3(10, 4.0, 0.4))
+	_test_slab(host, floor_at + Vector3(4.0, 2.0, 0), Vector3(0.4, 4.0, 4.0))
+	await physics_frame
+	_stand_on(spider, slot_floor.global_position + Vector3(-2.0, 0.25, 0))
+	spider.view.face(Vector3.RIGHT)
+	spider.view.pitch = 0.0
+	await process_frame
+	await _run_frames(4)
+
+	if not _check(builder.begin_place(), "spinning one down the slot"):
+		silk.unlimited = false
+		return
+	await _run_frames(60)
+	_check(is_equal_approx(builder.place_radius, open_reach),
+		"the same press allows the same reach (%.2fm)" % builder.place_radius)
+	_check(builder.place_anchored > 0,
+		"but here the edges find the walls (%d of %d)"
+		% [builder.place_anchored, WebBuilder.PLACE_SIDES])
+	_check(builder.place_area < open_area,
+		"so the web covers less than open air would (%.2f vs %.2f m2)"
+		% [builder.place_area, open_area])
+
+	var rim := builder.place_rim()
+	var nearest := INF
+	var furthest := 0.0
+	for point in rim:
+		var span := builder.place_centre.distance_to(point)
+		nearest = minf(nearest, span)
+		furthest = maxf(furthest, span)
+	_check(furthest <= builder.place_radius + 0.01,
+		"no corner reaches past what was held (%.2f of %.2f)"
+		% [furthest, builder.place_radius])
+	_check(nearest < furthest * 0.9,
+		"and the shape is genuinely the gap, not a disc (%.2f to %.2f)"
+		% [nearest, furthest])
+	builder.cancel_place()
+
+	silk.unlimited = false
+	open_slab.queue_free()
 	await physics_frame
 	await process_frame
 
