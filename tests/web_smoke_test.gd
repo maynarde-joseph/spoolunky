@@ -207,6 +207,9 @@ func _test_catching(spider: SpiderPlayer, level: Node, webs: Node3D) -> void:
 	var net := _first_web(webs) as WebNet
 	if net == null:
 		return
+	_clear_prey_near(level, net.to_global(net.centre_local), net.radius * 3.0, null)
+	await physics_frame
+	await process_frame
 	var fly := _spawn_fly(level, net.to_global(net.centre_local))
 	await physics_frame
 	await physics_frame
@@ -402,6 +405,14 @@ func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 		"and is genuinely outside the web")
 	_check(centre.distance_to(bystander.global_position) < reach,
 		"but inside the snare's strike range (%.1fm)" % reach)
+
+	# The level keeps a dozen flies wandering about, and a sprung snare grabs
+	# the nearest thing in reach — so anything else that has drifted into range
+	# would win the race and make this a test of where the spawner's flies
+	# happened to be. Clear the field first.
+	_clear_prey_near(level, centre, reach, bystander)
+	await physics_frame
+	await process_frame
 
 	# Now trip the line, far away.
 	_check(snare.armed, "the snare is armed before anything happens")
@@ -1309,6 +1320,17 @@ func _wait_until(test: Callable, max_frames: int) -> bool:
 func _run_frames(count: int) -> void:
 	for i in count:
 		await physics_frame
+
+
+## Clears the spawner's wandering flies out of a patch, so a test about one
+## particular fly is not quietly a test about where the others drifted.
+func _clear_prey_near(level: Node, point: Vector3, radius: float, keep: Prey) -> void:
+	for node in level.get_tree().get_nodes_in_group("prey"):
+		var other := node as Prey
+		if other == null or other == keep or not is_instance_valid(other):
+			continue
+		if point.distance_to(other.global_position) <= radius:
+			other.queue_free()
 
 
 func _spawn_fly(level: Node, at: Vector3) -> Prey:
