@@ -53,6 +53,7 @@ func _run() -> void:
 	await _test_trigger_links(spider, builder, webs, silk, level)
 	await _test_weave_modes(spider, builder, webs, silk)
 	await _test_rings_of_silk(spider, builder, webs, silk)
+	await _test_living_on_the_web(spider, builder, webs, silk, level)
 	await _test_tuning_dials(spider, builder, webs, silk, level)
 	await _test_saved_designs(spider, builder, webs, silk)
 	await _test_sandbox_wiring(level, spider)
@@ -628,6 +629,69 @@ func _pattern(builder: WebBuilder, id: String) -> WebPattern:
 	return null
 
 
+## A spider lives on its web. It has to hold the spider's weight and still let
+## prey fly into it, which is why silk gets its own collision layer.
+func _test_living_on_the_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
+		silk: SilkPool, level: Node) -> void:
+	silk.refill(silk.maximum)
+
+	# A web lying flat on the ground — the case worth checking, because a trap
+	# underfoot is the one that sounds like it needs to be a special object.
+	var floor_height := spider.global_position.y - spider.stage().body_height * 0.4
+	var centre := spider.global_position + Vector3(2.5, 0, 2.5)
+	centre.y = floor_height + 0.05
+	_select_pattern(builder, "sheet_web")
+	builder.start()
+	for offset in [Vector3(-0.7, 0, -0.7), Vector3(0.7, 0, -0.7),
+			Vector3(0.7, 0, 0.7), Vector3(-0.7, 0, 0.7)]:
+		builder.add_anchor(centre + offset)
+	builder.finish()
+	builder.stop()
+	await physics_frame
+
+	var mat := _newest_web(webs, "sheet_web") as WebNet
+	if not _check(mat != null, "a web woven flat on the ground"):
+		return
+	_check(absf(mat.plane_normal.dot(Vector3.UP)) > 0.9, "lying flat, as asked")
+
+	# It must be solid enough to stand on...
+	var walkway := mat.get_node_or_null("Walkway") as StaticBody3D
+	if not _check(walkway != null, "the web is something to stand on"):
+		return
+	_check(walkway.collision_layer & GameLayers.WEB_WALK != 0, "on the silk layer")
+	_check(spider.collision_mask & GameLayers.WEB_WALK != 0, "which the spider collides with")
+	_check(builder._climb.climbable_layers & GameLayers.WEB_WALK != 0,
+		"and can climb about on")
+
+	# ...without being solid to the things it is meant to catch.
+	var fly := _spawn_fly(level, centre + Vector3(0, 1.0, 0))
+	await physics_frame
+	_check(walkway.collision_layer & fly.collision_mask == 0,
+		"but prey passes straight through it")
+	_check(mat.catch_area.collision_mask & fly.collision_layer != 0,
+		"into the catch volume underneath")
+
+	# And it really does catch something walking over it.
+	fly.global_position = mat.to_global(mat.centre_local)
+	await physics_frame
+	await physics_frame
+	_check(fly.is_stuck(), "a fly that wandered onto it is caught")
+	fly.consume()
+
+	# The spider can stand on it: drop it on and see it stick.
+	spider.climb.release()
+	spider.global_position = mat.to_global(mat.centre_local) + Vector3(0, 0.4, 0)
+	spider.velocity = Vector3.ZERO
+	for i in 40:
+		await physics_frame
+	_check(spider.climb.is_attached(), "the spider settles onto the web")
+	_check(spider.global_position.y > floor_height,
+		"standing on the silk rather than through it (%.2f vs floor %.2f)"
+		% [spider.global_position.y, floor_height])
+	mat.demolish()
+	await physics_frame
+
+
 func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 		silk: SilkPool, level: Node) -> void:
 	_select_pattern(builder, "orb_web")
@@ -776,6 +840,8 @@ func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 
 	var before_webs := _web_count(webs)
 	var before_silk := silk.current
+	# Aim is recomputed every frame, so remember where this went.
+	var placed_at := builder.aim_point
 	_check(builder.place_design(), "the design can be spun somewhere new")
 	var spent := before_silk - silk.current
 	await physics_frame
@@ -787,7 +853,7 @@ func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	for child in webs.get_children():
 		var web := child as WebStructure
 		if web != null and not web.is_queued_for_deletion() and web != trip and web != snare \
-				and web.global_position.distance_to(builder.aim_point) < 6.0:
+				and web.global_position.distance_to(placed_at) < 6.0:
 			copies.append(web)
 	var wired_copies := 0
 	for web in copies:

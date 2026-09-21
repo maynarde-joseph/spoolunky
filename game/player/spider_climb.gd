@@ -56,8 +56,9 @@ signal notice(text: String)
 ## so a jump off a wall actually leaves the wall.
 @export var release_grace := 0.22
 
-## Surfaces to climb. World geometry by default; silk bridges count too.
-@export_flags_3d_physics var climbable_layers := 1
+## Surfaces to climb: the world, and silk. Standing on your own web is the
+## whole point of having one.
+@export_flags_3d_physics var climbable_layers := GameLayers.WORLD | GameLayers.WEB_WALK
 
 ## Colliders in this group cannot be climbed — glass, grease, a hot pipe.
 @export var no_climb_group := "no_climb"

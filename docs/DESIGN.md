@@ -231,6 +231,23 @@ woven into it. Three consequences, all of them good:
 * **The web outlives nothing; the roads outlive everything.** Tearing a web down
   leaves its frame standing. Traps are temporary, the network is not.
 
+### A spider lives on its web
+
+Webs are solid enough to stand on. The spider sticks to a finished web the same
+way it sticks to a wall, walks about on it, and deals with whatever is caught
+from on top of the silk rather than hovering beside it.
+
+That needs silk to be solid to the spider and not to anything else, so silk
+surfaces sit on their own collision layer: the spider collides with it, prey
+does not. Otherwise the moment a web is firm enough to hold a spider it is firm
+enough to bounce a fly off, and nothing is ever caught. (Silk bridges had
+exactly that bug before this — they were quietly blocking prey.)
+
+It also means a web works perfectly well **flat on the ground**. A floor trap is
+just a ring whose plane happens to be horizontal: things walk onto it and stick,
+and the spider walks over it without falling through. No special kind of object
+is needed for it.
+
 ### Anything enclosed can be filled
 
 Weaving is not limited to a loop you just walked. Every strand you own is an

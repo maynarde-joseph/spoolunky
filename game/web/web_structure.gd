@@ -330,11 +330,13 @@ func _make_catch_area(shape: Shape3D, collider_transform := Transform3D.IDENTITY
 	add_child(catch_area)
 
 
-## Solid surface for webs you can walk on, e.g. a silk bridge.
+## Solid surface for silk you can walk on. It sits on its own layer so that
+## making a web stand up to a spider's feet does not also make it bounce prey
+## off instead of catching it.
 func _make_walk_surface(shape: Shape3D, collider_transform := Transform3D.IDENTITY) -> void:
 	var body := StaticBody3D.new()
 	body.name = "Walkway"
-	body.collision_layer = GameLayers.WORLD | GameLayers.WEB
+	body.collision_layer = GameLayers.WEB_WALK | GameLayers.WEB
 	body.collision_mask = 0
 	var collider := CollisionShape3D.new()
 	collider.shape = shape

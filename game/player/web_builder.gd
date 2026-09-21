@@ -851,7 +851,9 @@ func _cast_surface(reach: float) -> bool:
 	var from := _view.aim_origin()
 	var to := from + _view.aim_forward() * reach
 	var space := get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(from, to, GameLayers.WORLD, _exclusions())
+	# Silk is something to anchor to as well as something to stand on.
+	var query := PhysicsRayQueryParameters3D.create(from, to,
+		GameLayers.WORLD | GameLayers.WEB_WALK, _exclusions())
 	var hit := space.intersect_ray(query)
 	if hit.is_empty():
 		return false

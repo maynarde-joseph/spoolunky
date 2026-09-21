@@ -88,6 +88,17 @@ the mouse means the same thing whatever surface the spider is stuck to, and the
 horizon stays level even on a ceiling. **L** switches between third and first
 person.
 
+## Living on the web
+
+Finished webs are solid enough to stand on — the spider sticks to one the same
+way it sticks to a wall, and deals with caught prey from on top of the silk.
+
+Silk surfaces are on their own collision layer so the spider collides with them
+and prey doesn't. That matters: a web firm enough to hold a spider would
+otherwise be firm enough to bounce a fly off. It also means a web laid flat on
+the ground works as a floor trap with no special handling — things walk onto it
+and stick, and you can walk over it.
+
 ## Climbing
 
 The spider has no floor — it sticks to whatever it touches, and the body's up

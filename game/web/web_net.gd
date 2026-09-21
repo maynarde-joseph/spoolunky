@@ -49,6 +49,13 @@ static func spin(pattern: WebPattern, world_points: PackedVector3Array, quality:
 
 	net._build_visual(layout.strands)
 
+	# A spider lives on its web, so give it something to stand on. Thin, and on
+	# the silk layer, so prey still flies straight into it.
+	var plank := ConvexPolygonShape3D.new()
+	plank.points = WebGeometry.catch_hull(layout.rim, layout.normal,
+		maxf(layout.radius * 0.03, 0.02))
+	net._make_walk_surface(plank)
+
 	if pattern.catches_prey or pattern.trigger == WebPattern.Trigger.ALERT:
 		var depth := clampf(layout.radius * 0.35, 0.03, 1.2)
 		if weave == WebGeometry.Weave.INSCRIBED:

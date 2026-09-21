@@ -75,7 +75,7 @@ func _ready() -> void:
 	head_check.shape = head_check.shape.duplicate()
 
 	collision_layer = GameLayers.PLAYER
-	collision_mask = GameLayers.WORLD
+	collision_mask = GameLayers.WORLD | GameLayers.WEB_WALK
 
 	view.setup(self, get_node_or_null("Head/FirstPersonCameraReference"))
 	view.face(-global_basis.z)
