@@ -1,0 +1,92 @@
+name: Smoke tests
+
+# The headless suites are the only thing standing between "it parses" and "it
+# works", so they run on every push rather than whenever someone remembers.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # The version the project targets — see config/features in project.godot.
+  # Bump this and the workflow finds the matching Linux build on its own.
+  GODOT_VERSION: "4.6"
+
+jobs:
+  smoke:
+    name: Headless smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Work out which build to fetch rather than pinning a URL that rots the
+      # moment 4.6 moves from beta to stable. Stable wins if it exists; the
+      # pre-release repo is the fallback.
+      - name: Resolve the Godot build
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          find_asset() {
+            curl -sSL -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/$1/releases?per_page=100" \
+            | jq -r --arg v "$GODOT_VERSION" '
+                [ .[]
+                  | select(.tag_name | startswith($v))
+                  | .assets[]
+                  | select(.name | test("_linux\\.x86_64\\.zip$"))
+                ] | first | .browser_download_url // empty'
+          }
+          URL="$(find_asset godotengine/godot || true)"
+          if [ -z "$URL" ]; then
+            echo "No stable $GODOT_VERSION build; trying the pre-release channel."
+            URL="$(find_asset godotengine/godot-builds || true)"
+          fi
+          if [ -z "$URL" ]; then
+            echo "::error::Found no Linux build for Godot $GODOT_VERSION."
+            exit 1
+          fi
+          echo "Using $URL"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "key=$(basename "$URL")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the engine
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-bin
+          key: godot-${{ steps.resolve.outputs.key }}
+
+      - name: Install Godot
+        run: |
+          set -euo pipefail
+          if [ ! -x "$HOME/godot-bin/godot" ]; then
+            mkdir -p "$HOME/godot-bin"
+            curl -sSL -o /tmp/godot.zip "${{ steps.resolve.outputs.url }}"
+            unzip -j -o /tmp/godot.zip -d "$HOME/godot-bin"
+            # The zip holds one binary under a version-stamped name.
+            mv "$HOME/godot-bin"/Godot_v*_linux.x86_64 "$HOME/godot-bin/godot"
+            chmod +x "$HOME/godot-bin/godot"
+          fi
+          echo "$HOME/godot-bin" >> "$GITHUB_PATH"
+
+      - name: Version
+        run: godot --headless --version
+
+      # The first import resolves .uid files and builds the script cache, and
+      # is allowed to complain on a cold checkout. The second one has to be
+      # clean, because a real error would show up there too.
+      - name: Import the project
+        run: |
+          set -uo pipefail
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Web smoke test
+        run: godot --headless --path . --script res://tests/web_smoke_test.gd
+
+      - name: Climb smoke test
+        run: godot --headless --path . --script res://tests/climb_smoke_test.gd
