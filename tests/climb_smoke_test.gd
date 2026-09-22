@@ -498,8 +498,9 @@ func _test_lines_are_roads() -> void:
 			pattern = candidate
 	if not _check(pattern != null, "a frame line to lay"):
 		return
-	var a := Vector3(-2.0, -ROOM_HALF.y + 1.0, 0)
-	var b := Vector3(2.0, -ROOM_HALF.y + 1.0, 0)
+	var eye := -ROOM_HALF.y + 0.6
+	var a := Vector3(2.0, eye, -2.0)
+	var b := Vector3(2.0, eye, 2.0)
 	var line := WebStrand.spin(pattern, a, b, 1.0)
 	if not _check(line != null, "the line goes up"):
 		return
@@ -515,6 +516,7 @@ func _test_lines_are_roads() -> void:
 			"on the silk layer, so prey still goes straight through")
 
 	# Standing on it is quicker than standing on the floor.
+	_spider.climb.on_silk = false
 	var ground_speed := _spider.climb._surface_speed(false)
 	_spider.climb.on_silk = true
 	var silk_speed := _spider.climb._surface_speed(false)

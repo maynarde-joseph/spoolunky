@@ -1068,12 +1068,17 @@ func is_linking() -> bool:
 ## A line under the crosshair, close enough to grapple onto and ride. Silk is
 ## thin, so this is a proximity-to-the-ray pick like every other one.
 func aimed_line() -> WebStrand:
-	if _view == null:
+	if _view == null or building:
+		# A scripted anchor run is placing anchors, not looking for a lift.
 		return null
 	var from := _view.aim_origin()
 	var direction := _view.aim_forward()
 	var reach: float = from.distance_to(aim_point) + _stage().body_height
-	var tolerance: float = maxf(_stage().body_height * 0.6, 0.2)
+	# Tight on purpose. This steals an ordinary grapple whenever it fires, so
+	# it has to mean "pointing at that line" rather than "there is a line
+	# somewhere near the line of sight" — which, in a room you have been
+	# building in, is nearly always true.
+	var tolerance: float = maxf(_stage().body_height * 0.4, 0.15)
 
 	var best: WebStrand = null
 	var best_score := INF
