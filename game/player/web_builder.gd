@@ -63,6 +63,10 @@ const PLACE_MIN_SPAN := 0.18
 ## so a throw at open sky still shows the size being wound up.
 const CHARGE_GHOST_RANGE := 6.0
 
+## How long a thrown web takes to spring out to full size. Looks only — the
+## silk catches at its real size from the moment it lands.
+const ARRIVAL_SPRING := 0.18
+
 var patterns: Array[WebPattern] = []
 var pattern_index := 0
 var building := false
@@ -354,6 +358,7 @@ func _open_web_at(at: Vector3, normal: Vector3, prey: Node3D, charged: float) ->
 		web.unlink_all()
 		web.queue_free()
 		return
+	web.play_arrival(ARRIVAL_SPRING)
 	notice.emit("%s opened out, %.2f m2 (%d silk)"
 		% [pattern.display_name, place_area, roundi(web.silk_cost)])
 

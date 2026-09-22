@@ -1790,7 +1790,7 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 
 	# Leading a fly: the bolt takes time to arrive, so the catch happens where
 	# the fly is when the silk gets there, not where the crosshair was.
-	silk.unlimited = true
+	silk.refill(silk.maximum)
 	builder._update_placement()
 	# Squarely on the line of sight and clear of both the spider above it and
 	# the slab below, so "did the bolt hit it" is about the bolt rather than
@@ -1806,34 +1806,41 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 	_check(builder.place_target == sitting, "and the crosshair is on it")
 
 	if not _check(builder.begin_place(), "winding up a throw at it"):
-		silk.unlimited = false
 		builder.toggle_throwing()
 		return
 	builder.place_radius = clampf(1.4, builder._min_place_radius(),
 		builder._max_place_radius())
+	# Read what the web arrived with inside the signal rather than afterwards. A
+	# throw that wraps everything frees the web on the spot, and casting a freed
+	# object a frame later is an error that takes the rest of the test with it.
+	# Boxed in an array because a lambda captures locals by value, so a plain
+	# int assigned in here would never be seen out there.
 	var at_fly: Array[WebStructure] = []
-	var second := func(built: WebStructure) -> void: at_fly.append(built)
+	var wrapped_on_arrival: Array[int] = [-1]
+	var second := func(built: WebStructure) -> void:
+		at_fly.append(built)
+		var net := built as WebNet
+		wrapped_on_arrival[0] = net.bundled_on_arrival if net != null else -1
 	builder.web_built.connect(second)
 	var before_fly := _web_count(webs)
 	_check(builder.commit_place(), "and throwing it")
 	var hit := await _wait_until(func() -> bool: return not at_fly.is_empty(), 240)
 	builder.web_built.disconnect(second)
-	if not _check(hit and at_fly.size() == 1, "the bolt reaches the fly"):
-		silk.unlimited = false
+	# Only ever the size of it: the one inside has been freed by now.
+	if not _check(hit and at_fly.size() == 1,
+			"the bolt reaches the fly (%d)" % at_fly.size()):
 		builder.toggle_throwing()
 		return
 
-	var caught := at_fly[0] as WebNet
-	_check(caught.bundled_on_arrival == 1,
-		"and wraps it on arrival (%d)" % caught.bundled_on_arrival)
+	_check(wrapped_on_arrival[0] == 1,
+		"and wraps it on arrival (%d)" % wrapped_on_arrival[0])
 	_check(sitting.wrapped and sitting.is_bundled(),
 		"the fly is a bundle rather than stuck in a web")
 	await physics_frame
 	await process_frame
-	_check(not is_instance_valid(caught) or caught.is_queued_for_deletion(),
-		"and the silk goes with it")
 	_check(_web_count(webs) == before_fly,
-		"leaving nothing hanging (%d, started %d)" % [_web_count(webs), before_fly])
+		"and the silk goes with it, leaving nothing hanging (%d, started %d)"
+		% [_web_count(webs), before_fly])
 
 	# And back to putting them down where you point.
 	builder.toggle_throwing()
@@ -1841,6 +1848,7 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 	_check(builder.throw_name().contains("placed"),
 		"and says so (%s)" % builder.throw_name())
 	_stand_on(spider, slab.global_position + Vector3(2.0, 0.25, 0))
+	silk.refill(silk.maximum)
 	await process_frame
 	var placed: Array[WebStructure] = []
 	var third := func(built: WebStructure) -> void: placed.append(built)
@@ -1856,8 +1864,8 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 		placed[0].demolish()
 
 	sitting.queue_free()
-	silk.unlimited = false
 	slab.queue_free()
+	silk.refill(silk.maximum)
 	await physics_frame
 	await process_frame
 

@@ -104,6 +104,21 @@ func place_in(container: Node3D) -> void:
 	catch_what_is_already_here()
 
 
+## Snaps the silk in tight and lets it spring out to full size.
+##
+## Purely how it looks. The web is its real size from the instant it exists,
+## catch volume and all — a thrown bolt that only became dangerous once an
+## animation finished would be a different thing from the web it is meant to
+## be, and it is the same web either way.
+func play_arrival(duration: float) -> void:
+	if mesh_instance == null or duration <= 0.0 or not is_inside_tree():
+		return
+	mesh_instance.scale = Vector3.ONE * 0.12
+	var tween := create_tween()
+	tween.tween_property(mesh_instance, "scale", Vector3.ONE, duration) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
 ## Anything standing in this web the moment it goes up is caught by it.
 ##
 ## An Area3D only ever reports arrivals, so without this, spinning a web over
