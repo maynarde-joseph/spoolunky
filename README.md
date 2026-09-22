@@ -152,6 +152,19 @@ your own machine.
 
 Either end can be a **device** rather than a web — they sit on the same graph.
 
+## Two things a web is for
+
+**Throw one at something.** A web spun over a moth catches it on the spot —
+new webs take whatever is already inside them, so you can deal with something
+in front of you rather than only setting up for later.
+
+**Leave one somewhere to work.** Fit a web to a corner prey walks past, drop a
+**Scent Lure** on the far side so traffic comes *through* the web to reach it,
+and wire a **Signal Bell** in so you get told when it catches. Then go
+somewhere else.
+
+Same object, same rules, either way — including whether it holds what hits it.
+
 ## Leaving a web and coming back
 
 Prey that hits a web fights hard for about five seconds. Survive that and it

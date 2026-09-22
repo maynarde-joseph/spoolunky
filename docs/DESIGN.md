@@ -214,6 +214,31 @@ The exception is single strands — triplines, draglines, bridges. One line *is*
 legible, so those stay fully manual. The rule of thumb: **manual at the thread
 level for lines, pattern-driven for areas.**
 
+### What the game turned out to be
+
+After the building controls were rebuilt around placing rather than enclosing,
+the loop settled into something the earlier drafts had been circling without
+naming:
+
+> **Grapple wherever you want, and spit webs onto surfaces and corners.**
+
+Both halves of that are one button each, both work anywhere, and between them
+they cover the two things a web is ever for:
+
+* **Thrown at something that is right there.** A web spun over a moth is a
+  catch, now, not a wait. That makes silk a way of dealing with a thing in
+  front of you and not only a thing you leave behind.
+* **Left somewhere to work.** Pick a corner prey walks past, fit a web to it,
+  and put a **Scent Lure** on the far side so traffic comes through the web to
+  reach it. Wire a **Signal Bell** in and go somewhere else.
+
+The second is the reason the devices exist and the reason the larder exists.
+The first is what stops the game being all setup and no moment. A trap you
+prepared and a web you threw are the same object under the same rules — which
+is why the size tiers gate both at once: whether a web *holds* what hits it
+comes from hold strength either way, so a sheet web thrown at a wasp loses it
+exactly as a sheet web left for one would.
+
 ### Webs are placed, not enclosed
 
 The version before this one had you grapple lines around a space until they

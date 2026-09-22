@@ -60,6 +60,7 @@ func _run() -> void:
 	await _test_saved_designs(spider, builder, webs, silk)
 	await _test_placing_a_web(spider, builder, webs, silk)
 	await _test_a_web_fits_the_space(spider, builder, silk)
+	await _test_spitting_a_web_at_something(spider, builder, level, silk)
 	await _test_the_larder(spider, builder, webs, level)
 	await _test_the_bag(spider, level, webs, builder, silk)
 	await _test_sandbox_wiring(level, spider)
@@ -1559,6 +1560,76 @@ func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder,
 
 	silk.unlimited = false
 	open_slab.queue_free()
+	await physics_frame
+	await process_frame
+
+
+# --- catching something by spinning a web over it ------------------------
+
+## The other half of what webs are for. A web is somewhere you leave a trap,
+## and it is also something you throw over a thing that is right there — and
+## the second only works if a new web catches what is already inside it, since
+## a catch volume otherwise only ever hears about arrivals.
+func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder,
+		level: Node, silk: SilkPool) -> void:
+	var host := spider.get_parent()
+	silk.unlimited = true
+	var slab := _test_slab(host, Vector3(-120, 0.0, -60))
+	await physics_frame
+	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+	_clear_prey_near(level, slab.global_position, 12.0, null)
+	await physics_frame
+	await process_frame
+
+	# A fly sitting still, between the spider and the floor it is aiming at.
+	builder._update_placement()
+	if not _check(builder.place_valid, "somewhere to spin one"):
+		silk.unlimited = false
+		return
+	var sitting := _spawn_fly(level, builder.aim_point + Vector3(0, 0.15, 0))
+	sitting.flying = false
+	await physics_frame
+	await physics_frame
+	_check(not sitting.is_stuck(), "a fly minding its own business")
+
+	_select_pattern(builder, "orb_web")
+	var caught: Array[Node3D] = []
+	var watcher := func(_web: WebStructure, prey: Node3D) -> void: caught.append(prey)
+	if not _check(builder.begin_place(), "spinning one straight onto it"):
+		silk.unlimited = false
+		return
+	builder.place_radius = clampf(1.2, builder._min_place_radius(),
+		builder._max_place_radius())
+	builder._update_placement()
+	var spun: Array[WebStructure] = []
+	var catcher := func(built: WebStructure) -> void:
+		spun.append(built)
+		if built is WebNet:
+			built.prey_caught.connect(watcher)
+	builder.web_built.connect(catcher)
+	var made := builder.commit_place()
+	builder.web_built.disconnect(catcher)
+	if not _check(made and spun.size() == 1, "the web goes up"):
+		silk.unlimited = false
+		return
+
+	# Caught on the spot, not on the next frame something happens to move.
+	_check(sitting.is_stuck(), "and the fly is caught the moment it exists")
+	var net := spun[0] as WebNet
+	_check(net.snared_count() == 1, "the web knows it has it (%d)" % net.snared_count())
+	_check(sitting.is_fighting(), "and it is fighting, same as anything else caught")
+
+	# It is still a web, so the larder rules apply — no free kill for a big one.
+	var thrash := sitting.struggle_power * sitting.struggle_stamina
+	_check(thrash < net.hold_strength() * Prey.ESCAPE_MARGIN,
+		"an orb web holds a fly thrown into it (%.1f vs %.1f)"
+		% [thrash, net.hold_strength() * Prey.ESCAPE_MARGIN])
+
+	net.demolish()
+	sitting.queue_free()
+	slab.queue_free()
+	silk.unlimited = false
 	await physics_frame
 	await process_frame
 

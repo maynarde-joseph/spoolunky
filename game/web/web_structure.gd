@@ -53,6 +53,7 @@ var area := 0.0
 
 var mesh_instance: MeshInstance3D
 var catch_area: Area3D
+var catch_shape: CollisionShape3D
 var material: StandardMaterial3D
 
 ## The anchor points this web was spun across, in world space. Kept so a web
@@ -95,6 +96,35 @@ func place_in(container: Node3D) -> void:
 	# Silk lines were laid out in world space around _origin, so the web itself
 	# must sit unrotated at that point whatever the container is doing.
 	global_transform = Transform3D(Basis.IDENTITY, _origin)
+	catch_what_is_already_here()
+
+
+## Anything standing in this web the moment it goes up is caught by it.
+##
+## An Area3D only ever reports arrivals, so without this, spinning a web over
+## something already there would quietly miss — and spinning a web over
+## something is one of the two things webs are for. A shape query rather than
+## overlapping bodies, because overlaps are not known until physics has run a
+## frame and a web should catch the instant it exists.
+func catch_what_is_already_here() -> int:
+	if catch_area == null or catch_shape == null or catch_shape.shape == null:
+		return 0
+	if pattern == null or not pattern.catches_prey:
+		return 0
+	var params := PhysicsShapeQueryParameters3D.new()
+	params.shape = catch_shape.shape
+	params.transform = catch_shape.global_transform
+	params.collision_mask = GameLayers.PREY
+	params.collide_with_areas = false
+	var space := get_world_3d().direct_space_state
+	var caught := 0
+	for hit in space.intersect_shape(params, maxi(capacity(), 1)):
+		var body := hit.get("collider") as Node3D
+		if body != null and _capture(body, 0.0, _catch_point(body)):
+			caught += 1
+	if caught > 0:
+		fire()
+	return caught
 
 
 ## How hard this web holds on to prey. A web that has just been signalled is
@@ -295,10 +325,10 @@ func _make_catch_area(shape: Shape3D, collider_transform := Transform3D.IDENTITY
 	catch_area.collision_layer = GameLayers.WEB
 	catch_area.collision_mask = GameLayers.PREY
 	catch_area.monitorable = true
-	var collider := CollisionShape3D.new()
-	collider.shape = shape
-	collider.transform = collider_transform
-	catch_area.add_child(collider)
+	catch_shape = CollisionShape3D.new()
+	catch_shape.shape = shape
+	catch_shape.transform = collider_transform
+	catch_area.add_child(catch_shape)
 	add_child(catch_area)
 
 
