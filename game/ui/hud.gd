@@ -160,9 +160,21 @@ func _refresh_build_panel() -> void:
 		pattern_label.text = "%s     %.2f m²     ~%d silk" % [
 			spinning.display_name if spinning != null else "—",
 			builder.place_area, ceili(builder.estimated_cost)]
-		hint_label.text = "Let go to spin it — keep holding to let it reach further"
+		# A throw has not found its room yet, so area and corners are not things
+		# to report — the size being wound up is the only thing being decided.
 		if builder.throwing:
+			pattern_label.text = "%s     %.1f m across     thrown" % [
+				spinning.display_name if spinning != null else "—",
+				builder.place_radius * 2.0]
 			hint_label.text = "Let go to throw it — it opens out where it lands"
+			if builder.place_target != null:
+				problem_label.text = "Lined up on the %s — it has to still be there" % (
+					builder.place_target.species
+					if "species" in builder.place_target else "target")
+			else:
+				problem_label.text = "Lead anything moving — the silk takes a moment"
+			return
+		hint_label.text = "Let go to spin it — keep holding to let it reach further"
 		if builder.place_capped:
 			hint_label.text = "Let go to spin it — that is as far as your silk reaches"
 		if not builder.place_valid:

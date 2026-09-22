@@ -1792,10 +1792,18 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 	# the fly is when the silk gets there, not where the crosshair was.
 	silk.unlimited = true
 	builder._update_placement()
-	var sitting := _spawn_fly(level, builder.aim_point + Vector3(0, 0.4, 0))
+	# Squarely on the line of sight and clear of both the spider above it and
+	# the slab below, so "did the bolt hit it" is about the bolt rather than
+	# about where a guessed offset happened to put the fly.
+	var muzzle := spider.view.aim_origin()
+	var floor_point := builder.aim_point
+	var sitting := _spawn_fly(level,
+		floor_point + (muzzle - floor_point).normalized() * 0.3)
 	await physics_frame
 	await physics_frame
 	_check(not sitting.is_stuck(), "a fly in the way of the next one")
+	builder._update_placement()
+	_check(builder.place_target == sitting, "and the crosshair is on it")
 
 	if not _check(builder.begin_place(), "winding up a throw at it"):
 		silk.unlimited = false

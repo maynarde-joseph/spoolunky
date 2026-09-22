@@ -59,6 +59,10 @@ const PLACE_SIDES := 16
 ## but a web that reaches almost nowhere on one side is a sliver, not a trap.
 const PLACE_MIN_SPAN := 0.18
 
+## How far ahead the charge ghost sits when the crosshair has found nothing,
+## so a throw at open sky still shows the size being wound up.
+const CHARGE_GHOST_RANGE := 6.0
+
 var patterns: Array[WebPattern] = []
 var pattern_index := 0
 var building := false
@@ -294,8 +298,12 @@ func _throw_place() -> bool:
 	shot.landed.connect(func(at: Vector3, normal: Vector3, prey: Node3D) -> void:
 		_open_web_at(at, normal, prey, charged))
 	shot.fizzled.connect(func() -> void: notice.emit("The silk went wide"))
-	shot.launch_from(_resolve_container(), _view.aim_origin()
-		+ _view.aim_forward() * maxf(_stage().body_height, 0.2))
+	# Straight from where aiming starts, with no head start down the barrel. An
+	# offset looks tidier and tunnels: aiming starts at the spider's own body in
+	# third person, so a body length forward is through the floor it is standing
+	# on. The sweep covers that first stretch anyway, and the spider is excluded
+	# from it.
+	shot.launch_from(_resolve_container(), _view.aim_origin())
 	_shot = shot
 	notice.emit("%s thrown" % pattern.display_name)
 	return true
@@ -420,6 +428,39 @@ func place_rim() -> PackedVector3Array:
 		rim.append(place_centre + direction * span)
 	place_area = _polygon_area(rim)
 	return rim
+
+
+## The ghost for a throw. Which room the bolt lands in is not known yet, so
+## this is the plain size being wound up rather than a rim fitted to whatever
+## the crosshair happens to be resting on — the fitting happens on arrival.
+## It also has to draw with nothing under the crosshair at all, because a
+## throw at open sky is a throw, not an error.
+func place_charge_ring() -> PackedVector3Array:
+	var ring := PackedVector3Array()
+	if _view == null:
+		return ring
+	var normal := -_view.aim_forward()
+	if normal.length_squared() < 0.000001:
+		normal = Vector3.UP
+	normal = normal.normalized()
+	var right := normal.cross(Vector3.UP)
+	if right.length_squared() < 0.001:
+		right = normal.cross(Vector3.RIGHT)
+	right = right.normalized()
+	var up := right.cross(normal).normalized()
+	var centre := place_charge_centre()
+	for i in PLACE_SIDES:
+		var angle := TAU * float(i) / float(PLACE_SIDES)
+		ring.append(centre + (right * cos(angle) + up * sin(angle)) * place_radius)
+	return ring
+
+
+## Middle of a charge ghost: on the crosshair when it found something, and a
+## fixed distance ahead when it did not.
+func place_charge_centre() -> Vector3:
+	if place_valid or _view == null:
+		return place_centre
+	return _view.aim_origin() + _view.aim_forward() * CHARGE_GHOST_RANGE
 
 
 ## Where the web would go and which way it would face: straight out from the
@@ -1619,9 +1660,9 @@ func _draw_preview() -> void:
 ## The web about to be spun, growing while the key is held.
 func _draw_place_ghost() -> void:
 	_cursor.visible = false
-	if not place_valid:
+	if not place_valid and not throwing:
 		return
-	var rim := place_rim()
+	var rim := place_charge_ring() if throwing else place_rim()
 	if rim.size() < 3:
 		return
 	var pattern := current_pattern()
@@ -1630,10 +1671,11 @@ func _draw_place_ghost() -> void:
 	if not _silk.can_afford(estimated_cost):
 		tint = Color(1.0, 0.4, 0.35, 1.0)
 	var spoke := Color(tint.r, tint.g, tint.b, 0.35)
+	var hub := place_charge_centre() if throwing else place_centre
 	_preview_mesh.surface_begin(Mesh.PRIMITIVE_LINES, _preview_material)
 	for i in rim.size():
 		_line(rim[i], rim[(i + 1) % rim.size()], tint)
-		_line(place_centre, rim[i], spoke)
+		_line(hub, rim[i], spoke)
 	_preview_mesh.surface_end()
 
 
