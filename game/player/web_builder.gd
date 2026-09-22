@@ -98,6 +98,10 @@ var place_capped := false
 var place_anchored := 0
 var place_area := 0.0
 
+## What the throw is aimed over, if anything — the web centres on it instead
+## of on the surface behind it.
+var place_target: Node3D = null
+
 var aim_valid := false
 var aim_point := Vector3.ZERO
 var aim_normal := Vector3.UP
@@ -302,7 +306,15 @@ func _update_placement() -> void:
 	if facing.length_squared() < 0.000001:
 		facing = aim_normal
 	place_normal = facing.normalized()
-	place_centre = aim_point + place_normal * clampf(place_radius * 0.2, 0.02, 0.4)
+	# Point at something and the web goes over *it*, not onto the wall behind
+	# it. Without this, throwing silk at a moth puts a web a metre past the
+	# moth and catches nothing, because a catch volume is a thin slab around
+	# the web's own plane.
+	place_target = _prey_under_crosshair()
+	if place_target != null:
+		place_centre = place_target.global_position
+	else:
+		place_centre = aim_point + place_normal * clampf(place_radius * 0.2, 0.02, 0.4)
 	place_valid = true
 	var pattern := current_pattern()
 	if pattern != null:
@@ -326,6 +338,37 @@ func _grow_placement(delta: float) -> void:
 	place_radius = previous
 	place_capped = true
 	_update_placement()
+
+
+## Whatever prey is sitting on the line of sight, nearer than the surface the
+## crosshair found. Generous about alignment, the way every other pick in the
+## game is, because a fly is a small thing to have to centre exactly.
+func _prey_under_crosshair() -> Node3D:
+	if _view == null or _spider == null:
+		return null
+	var from := _view.aim_origin()
+	var direction := _view.aim_forward()
+	var limit := from.distance_to(aim_point)
+	var tolerance: float = maxf(_stage().body_height, 0.3)
+
+	var best: Node3D = null
+	var best_score := INF
+	for node in get_tree().get_nodes_in_group("prey"):
+		var prey := node as Prey
+		if prey == null or not is_instance_valid(prey) or prey.eaten:
+			continue
+		if prey.is_bundled() or prey.is_stuck():
+			continue
+		var offset := prey.global_position - from
+		var along := offset.dot(direction)
+		if along <= 0.0 or along > limit:
+			continue
+		var off_axis := (offset - direction * along).length()
+		if off_axis > tolerance or off_axis >= best_score:
+			continue
+		best_score = off_axis
+		best = prey
+	return best
 
 
 ## Smallest web worth spinning at this size.

@@ -230,6 +230,12 @@ they cover the two things a web is ever for:
   you get round to it. That makes silk a way of dealing with a thing in front
   of you and not only a thing you leave behind.
 
+  Aiming at a thing puts the web over *that thing*, not on the wall behind it.
+  A catch volume is a thin slab around the web's own plane, so a throw that
+  lands where the crosshair's ray finally stopped would sail straight past the
+  moth it was aimed at. The ghost centres on whatever is under the crosshair
+  and the HUD names it, so the throw is visibly locked on before you let go.
+
   It is not a free kill, because it is the same number as everything else:
   a web only takes something outright if it can out-hold the whole fight that
   thing would have put up. Throw a sheet web at a wasp and you do not get a

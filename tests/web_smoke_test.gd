@@ -1587,10 +1587,19 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	if not _check(builder.place_valid, "somewhere to spin one"):
 		silk.unlimited = false
 		return
-	var sitting := _spawn_fly(level, builder.aim_point + Vector3(0, 0.9, 0))
+	var sitting := _spawn_fly(level, builder.aim_point + Vector3(0, 0.6, 0))
 	await physics_frame
 	await physics_frame
 	_check(not sitting.is_stuck(), "a fly minding its own business")
+
+	# Aiming down at the floor with a fly hanging in the way: the throw should
+	# lock onto the fly rather than the floor a foot behind it.
+	builder._update_placement()
+	_check(builder.place_target == sitting,
+		"the throw picks out the fly, not the floor behind it")
+	_check(builder.place_centre.distance_to(sitting.global_position) < 0.01,
+		"and centres on it (%.3fm off)"
+		% builder.place_centre.distance_to(sitting.global_position))
 
 	_select_pattern(builder, "orb_web")
 	var caught: Array[Node3D] = []
@@ -1645,6 +1654,7 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	brute.species = "Test Brute"
 	brute.struggle_power = 40.0
 	brute.flying = false
+	await physics_frame
 	await physics_frame
 	_check(brute.total_thrash() > net.hold_strength() * Prey.ESCAPE_MARGIN,
 		"something that out-fights the silk (%.0f vs %.0f)"

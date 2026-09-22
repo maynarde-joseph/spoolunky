@@ -160,6 +160,10 @@ func _refresh_build_panel() -> void:
 			hint_label.text = "Let go to spin it — that is as far as your silk reaches"
 		if not builder.place_valid:
 			problem_label.text = "Nothing to spin it against"
+		elif builder.place_target != null:
+			problem_label.text = "Over the %s — let go to throw it" % (
+				builder.place_target.species
+				if "species" in builder.place_target else "target")
 		elif builder.place_anchored > 0:
 			problem_label.text = "Fitting the gap — %d of %d corners have hold" % [
 				builder.place_anchored, WebBuilder.PLACE_SIDES]
