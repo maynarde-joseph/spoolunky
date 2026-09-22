@@ -61,6 +61,7 @@ func _run() -> void:
 	await _test_placing_a_web(spider, builder, webs, silk)
 	await _test_a_web_fits_the_space(spider, builder, silk)
 	await _test_spitting_a_web_at_something(spider, builder, level, webs, silk)
+	await _test_throwing_a_bolt(spider, builder, level, webs, silk)
 	await _test_the_larder(spider, builder, webs, level)
 	await _test_the_bag(spider, level, webs, builder, silk)
 	await _test_sandbox_wiring(level, spider)
@@ -93,7 +94,7 @@ func _test_starting_state(spider: SpiderPlayer, builder: WebBuilder) -> void:
 func _test_input_map(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	for action in ["web_build_mode", "web_place", "web_cancel", "web_finish",
 			"web_next_pattern", "web_prev_pattern", "web_remove", "interact",
-			"device_mode", "toggle_help"]:
+			"device_mode", "web_throw_mode", "toggle_help"]:
 		_check(InputMap.has_action(action), "input action '%s' is set up" % action)
 
 	# A headless display server cannot capture the mouse, so lift that gate.
@@ -1715,6 +1716,140 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	held.demolish()
 	slab.queue_free()
 	silk.unlimited = false
+	await physics_frame
+	await process_frame
+
+
+# --- throwing a bolt of silk --------------------------------------------
+
+## The other way of making a web, kept behind a toggle while the two are being
+## compared. A bolt leaves the spider, travels, and opens out where it lands —
+## so it can miss, it can be led onto something moving, and the web does not
+## exist until it gets there. All three of those are what make it different
+## from putting the web straight down under the crosshair.
+func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Node,
+		webs: Node3D, silk: SilkPool) -> void:
+	var host := spider.get_parent()
+	var slab := _test_slab(host, Vector3(90, 0.0, -90))
+	await physics_frame
+	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+	_clear_prey_near(level, slab.global_position, 16.0, null)
+	await physics_frame
+	silk.refill(silk.maximum)
+	_select_pattern(builder, "orb_web")
+
+	_check(not builder.throwing, "webs go down where you point to start with")
+	builder.toggle_throwing()
+	_check(builder.throwing, "and the toggle switches to throwing them")
+	_check(builder.throw_name().contains("thrown"),
+		"which the readout says out loud (%s)" % builder.throw_name())
+
+	if not _check(builder.begin_place(), "winding one up to throw"):
+		builder.toggle_throwing()
+		return
+	builder.place_radius = clampf(1.2, builder._min_place_radius(),
+		builder._max_place_radius())
+	builder._update_placement()
+	var aimed_at := builder.aim_point
+
+	var thrown: Array[WebStructure] = []
+	var catcher := func(built: WebStructure) -> void: thrown.append(built)
+	builder.web_built.connect(catcher)
+
+	var standing := _web_count(webs)
+	var silk_before := silk.current
+	_check(builder.commit_place(), "letting go throws it")
+	_check(builder.shot_in_flight(), "and puts a bolt in the air")
+	_check(thrown.is_empty(), "with no web yet — the silk has to get there first")
+	_check(is_equal_approx(silk.current, silk_before),
+		"and nothing paid for while it is still flying")
+	_check(_web_count(webs) == standing, "nothing standing yet either")
+
+	var arrived := await _wait_until(func() -> bool: return not thrown.is_empty(), 240)
+	builder.web_built.disconnect(catcher)
+	if not _check(arrived and thrown.size() == 1,
+			"the bolt opens out into a web (%d)" % thrown.size()):
+		builder.toggle_throwing()
+		return
+	_check(not builder.shot_in_flight(), "and the bolt itself is gone")
+	_check(silk.current < silk_before,
+		"paid for on landing (%.1f silk)" % (silk_before - silk.current))
+
+	var web := thrown[0] as WebNet
+	if not _check(web != null, "and it is a net, like the pattern asked for"):
+		builder.toggle_throwing()
+		return
+	_check(web.global_position.distance_to(aimed_at) < 1.5,
+		"near where it was aimed (%.2fm off)"
+		% web.global_position.distance_to(aimed_at))
+	_check(web.radius > 0.0, "with real size to it (%.2fm)" % web.radius)
+	_check(_web_count(webs) == standing + 1, "and it is standing there")
+	web.demolish()
+	await physics_frame
+
+	# Leading a fly: the bolt takes time to arrive, so the catch happens where
+	# the fly is when the silk gets there, not where the crosshair was.
+	silk.unlimited = true
+	builder._update_placement()
+	var sitting := _spawn_fly(level, builder.aim_point + Vector3(0, 0.4, 0))
+	await physics_frame
+	await physics_frame
+	_check(not sitting.is_stuck(), "a fly in the way of the next one")
+
+	if not _check(builder.begin_place(), "winding up a throw at it"):
+		silk.unlimited = false
+		builder.toggle_throwing()
+		return
+	builder.place_radius = clampf(1.4, builder._min_place_radius(),
+		builder._max_place_radius())
+	var at_fly: Array[WebStructure] = []
+	var second := func(built: WebStructure) -> void: at_fly.append(built)
+	builder.web_built.connect(second)
+	var before_fly := _web_count(webs)
+	_check(builder.commit_place(), "and throwing it")
+	var hit := await _wait_until(func() -> bool: return not at_fly.is_empty(), 240)
+	builder.web_built.disconnect(second)
+	if not _check(hit and at_fly.size() == 1, "the bolt reaches the fly"):
+		silk.unlimited = false
+		builder.toggle_throwing()
+		return
+
+	var caught := at_fly[0] as WebNet
+	_check(caught.bundled_on_arrival == 1,
+		"and wraps it on arrival (%d)" % caught.bundled_on_arrival)
+	_check(sitting.wrapped and sitting.is_bundled(),
+		"the fly is a bundle rather than stuck in a web")
+	await physics_frame
+	await process_frame
+	_check(not is_instance_valid(caught) or caught.is_queued_for_deletion(),
+		"and the silk goes with it")
+	_check(_web_count(webs) == before_fly,
+		"leaving nothing hanging (%d, started %d)" % [_web_count(webs), before_fly])
+
+	# And back to putting them down where you point.
+	builder.toggle_throwing()
+	_check(not builder.throwing, "the toggle goes back the other way")
+	_check(builder.throw_name().contains("placed"),
+		"and says so (%s)" % builder.throw_name())
+	_stand_on(spider, slab.global_position + Vector3(2.0, 0.25, 0))
+	await process_frame
+	var placed: Array[WebStructure] = []
+	var third := func(built: WebStructure) -> void: placed.append(built)
+	builder.web_built.connect(third)
+	_check(builder.begin_place(), "one more, the old way")
+	builder.place_radius = clampf(1.2, builder._min_place_radius(),
+		builder._max_place_radius())
+	builder.commit_place()
+	builder.web_built.disconnect(third)
+	_check(placed.size() == 1, "which goes up on the spot, with nothing in flight")
+	_check(not builder.shot_in_flight(), "because nothing was thrown")
+	if placed.size() == 1:
+		placed[0].demolish()
+
+	sitting.queue_free()
+	silk.unlimited = false
+	slab.queue_free()
 	await physics_frame
 	await process_frame
 

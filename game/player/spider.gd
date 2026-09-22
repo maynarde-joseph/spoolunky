@@ -39,6 +39,7 @@ signal respawned()
 @export var input_toggle_camera := "toggle_camera"
 @export var input_device_mode := "device_mode"
 @export var input_silk_unlimited := "silk_unlimited"
+@export var input_throw_mode := "web_throw_mode"
 
 ## How much the view opens up at speed. Pure sugar, and most of what makes a
 ## zipline feel fast.
@@ -224,6 +225,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.reset_dials()
 	elif event.is_action_pressed(input_weave_toggle):
 		web_builder.toggle_weave()
+	elif event.is_action_pressed(input_throw_mode):
+		web_builder.toggle_throwing()
 	elif event.is_action_pressed(input_silk_unlimited):
 		notice.emit("Silk: %s" % ("unlimited (sandbox)" if silk.toggle_unlimited()
 			else "costs again"))

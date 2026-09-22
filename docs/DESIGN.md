@@ -256,6 +256,26 @@ is why the size tiers gate both at once: whether a web *holds* what hits it
 comes from hold strength either way, so a sheet web thrown at a wasp loses it
 exactly as a sheet web left for one would.
 
+#### Two ways the web gets there
+
+"Thrown" above is a figure of speech in the default mode: the web appears under
+the crosshair the moment the key comes up, and the only thing between you and
+it is aim. **M** switches that for a literal throw — a bolt of silk leaves the
+spider, travels, drops a little on the way, and opens out to the size it was
+charged to wherever it lands.
+
+The two sit side by side on a toggle because they are different skills rather
+than different numbers. Placing is a pointing problem and resolves instantly;
+throwing is a leading problem, and a moth that was under the crosshair when you
+let go may not be where the silk arrives. Nothing is spent until the bolt
+lands, so a miss costs you the throw rather than the web.
+
+Everything downstream is shared. The bolt hands its landing point and the
+surface normal it found to the same fitting a placed web gets, so a thrown web
+runs its rim out into the room it landed in exactly as a placed one does — and
+a bolt that lands on a moth centres on the moth rather than on the skin of it,
+for the same reason the placed ghost does.
+
 ### Silk is the road network
 
 Every line is walkable, not only the ones spun as bridges — a bridge is simply

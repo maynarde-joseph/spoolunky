@@ -13,6 +13,7 @@ Ctrl                   drop onto a dragline (from a wall or ceiling)
   Right Mouse            let go
 Left Mouse             go there, trailing silk — every line is a zipline
 Q (hold)               spin a web where you are aiming; hold longer for bigger
+M                      webs: placed where you point / thrown as a bolt
 Wheel or Z / C         change which web you spin
 E                      wrap prey, then drain it (also re-arms a snare)
 X                      pull down the web you're looking at
@@ -160,6 +161,8 @@ func _refresh_build_panel() -> void:
 			spinning.display_name if spinning != null else "—",
 			builder.place_area, ceili(builder.estimated_cost)]
 		hint_label.text = "Let go to spin it — keep holding to let it reach further"
+		if builder.throwing:
+			hint_label.text = "Let go to throw it — it opens out where it lands"
 		if builder.place_capped:
 			hint_label.text = "Let go to spin it — that is as far as your silk reaches"
 		if not builder.place_valid:
@@ -201,7 +204,7 @@ func _refresh_build_panel() -> void:
 			pattern_label.text = ""
 			hint_label.text = ""
 		elif chosen.shape == WebPattern.Shape.NET:
-			pattern_label.text = chosen.display_name
+			pattern_label.text = "%s     [M] %s" % [chosen.display_name, builder.throw_name()]
 			hint_label.text = "[Q] hold to spin one — the longer you hold, the bigger"
 		else:
 			pattern_label.text = chosen.display_name

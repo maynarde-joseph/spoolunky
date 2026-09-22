@@ -93,6 +93,14 @@ var place_valid := false
 ## Stopped growing because the next size over is more silk than we have.
 var place_capped := false
 
+## Whether letting go throws a bolt of silk that opens where it lands, rather
+## than putting the web straight down under the crosshair. A test switch while
+## the two are being compared.
+var throwing := false
+
+## A bolt in flight, so a second press cannot send another.
+var _shot: SilkShot = null
+
 ## How many rim corners found something to hold onto, and how much the web
 ## would actually cover once the room has had its say.
 var place_anchored := 0
@@ -211,6 +219,8 @@ func commit_place() -> bool:
 	placing = false
 	_update_placement()
 	state_changed.emit()
+	if throwing:
+		return _throw_place()
 	if not place_valid:
 		notice.emit("Nothing to spin a web against")
 		return false
@@ -263,6 +273,100 @@ func commit_place() -> bool:
 		notice.emit("%s spun, %.2f m2 (%d silk)"
 			% [pattern.display_name, place_area, roundi(web.silk_cost)])
 	return true
+
+
+## Sends a bolt of silk off to open out wherever it lands. The size the throw
+## was charged to travels with it, so holding still decides how big the web is
+## — you just find out where it went a moment later.
+func _throw_place() -> bool:
+	if shot_in_flight():
+		return false
+	var pattern := current_pattern()
+	if pattern == null or _view == null:
+		return false
+	if not _silk.can_afford(estimated_cost):
+		notice.emit("Not enough silk to throw one — %d needed" % ceili(estimated_cost))
+		return false
+
+	var charged := place_radius
+	var shot := SilkShot.fire(_view.aim_origin(), _view.aim_forward(),
+		_stage().body_height, _exclusions())
+	shot.landed.connect(func(at: Vector3, normal: Vector3, prey: Node3D) -> void:
+		_open_web_at(at, normal, prey, charged))
+	shot.fizzled.connect(func() -> void: notice.emit("The silk went wide"))
+	shot.launch_from(_resolve_container(), _view.aim_origin()
+		+ _view.aim_forward() * maxf(_stage().body_height, 0.2))
+	_shot = shot
+	notice.emit("%s thrown" % pattern.display_name)
+	return true
+
+
+## A bolt landed. Open it out there, at the size it was charged to, fitted to
+## whatever it found — which is the same fitting a placed web gets.
+func _open_web_at(at: Vector3, normal: Vector3, prey: Node3D, charged: float) -> void:
+	_shot = null
+	var pattern := current_pattern()
+	if pattern == null:
+		return
+	place_radius = charged
+	place_normal = normal
+	place_centre = at + normal * clampf(charged * 0.2, 0.02, 0.4)
+	if prey != null:
+		# Over the thing rather than off the skin of it, the same way the placed
+		# web centres on prey: a catch volume is a thin slab around the web's own
+		# plane, so half a metre of clearance would catch nothing.
+		place_normal = -_view.aim_forward() if _view != null else normal
+		place_centre = at
+	place_valid = true
+	place_target = prey
+
+	var dials := tuning_for(pattern)
+	var rim := place_rim()
+	var smallest := _min_place_radius()
+	if place_area < smallest * smallest:
+		notice.emit("It landed somewhere too tight to open out")
+		return
+	var web := WebNet.spin(dials.apply_to(pattern), rim, _quality(), weave, true)
+	if web == null:
+		notice.emit("It landed somewhere a web will not hold")
+		return
+	if not _silk.can_afford(web.silk_cost):
+		notice.emit("Not enough silk to open it — %d needed" % ceili(web.silk_cost))
+		web.free()
+		return
+
+	web.tuning = dials.copy()
+	_silk.spend(web.silk_cost)
+	web.place_in(_resolve_container())
+	_loop_source = -1
+	web_built.emit(web)
+	if web.bundled_on_arrival > 0 and web.snared_count() == 0:
+		notice.emit("Caught it mid-air — wrapped and dropped (%d silk)"
+			% roundi(web.silk_cost))
+		web.unlink_all()
+		web.queue_free()
+		return
+	notice.emit("%s opened out, %.2f m2 (%d silk)"
+		% [pattern.display_name, place_area, roundi(web.silk_cost)])
+
+
+## Switches between putting the web down where you point and throwing a bolt
+## of silk that opens out where it lands.
+func toggle_throwing() -> void:
+	throwing = not throwing
+	state_changed.emit()
+	notice.emit("Webs: %s" % throw_name())
+
+
+func throw_name() -> String:
+	if throwing:
+		return "thrown — a bolt that opens where it lands"
+	return "placed — straight down where you point"
+
+
+## True while a bolt is still in the air.
+func shot_in_flight() -> bool:
+	return _shot != null and is_instance_valid(_shot)
 
 
 func cancel_place() -> void:

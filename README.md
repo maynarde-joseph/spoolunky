@@ -38,6 +38,7 @@ something down.
 | **Right Mouse** | let go of the line |
 | **Left Mouse** | **go there, trailing silk** — moving and building are the same act |
 | **Q** *(hold)* | spin a web where you're aiming — hold longer for a bigger one |
+| **M** | webs: **placed** where you point / **thrown** as a bolt that opens where it lands |
 | **Wheel** or **Z** / **C** | change which web you spin |
 | **Right Mouse** | let go of a line |
 | **E** | wrap caught prey, then drain it (also re-arms a sprung snare) |
@@ -72,6 +73,13 @@ rather than a disc hanging in the middle of it.
 
 The HUD shows the area you're about to cover and how many corners have found
 something to hold onto.
+
+**M** switches how the web gets there. *Placed* is the above: it appears under
+the crosshair the moment you let go. *Thrown* sends a bolt of silk instead —
+it flies, it drops a little on the way, and it opens out to the size you
+charged it to wherever it lands. It can miss, and something moving has to be
+led rather than pointed at, which is the whole point of having both. Nothing is
+paid for until the silk arrives.
 
 How big a web you can spin is what the size tiers gate — and what you can
 currently pay for. The web stops growing when your silk runs out rather than
