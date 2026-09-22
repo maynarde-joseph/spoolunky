@@ -1074,11 +1074,12 @@ func aimed_line() -> WebStrand:
 	var from := _view.aim_origin()
 	var direction := _view.aim_forward()
 	var reach: float = from.distance_to(aim_point) + _stage().body_height
-	# Tight on purpose. This steals an ordinary grapple whenever it fires, so
-	# it has to mean "pointing at that line" rather than "there is a line
-	# somewhere near the line of sight" — which, in a room you have been
-	# building in, is nearly always true.
-	var tolerance: float = maxf(_stage().body_height * 0.4, 0.15)
+	# Silk is a couple of centimetres across, so a fixed tolerance is either
+	# impossible to aim at or steals every grapple. Scale it with distance
+	# instead: a fixed slice of the screen, roughly a crosshair's width, which
+	# is how wide the line actually looks when you are pointing at it.
+	var span := from.distance_to(aim_point)
+	var tolerance: float = maxf(_stage().body_height * 0.5, span * 0.055)
 
 	var best: WebStrand = null
 	var best_score := INF

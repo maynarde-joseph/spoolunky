@@ -120,6 +120,11 @@ signal notice(text: String)
 ## road, and a road you built should beat walking round.
 @export var silk_speed_bonus := 1.5
 
+## Walking onto a line clips you to it rather than leaving you balanced on top
+## of something a few centimetres wide. Letting go is a button, not an
+## accident — which is the only way a rope is somewhere you can actually live.
+@export var cling_to_lines := true
+
 
 var mode: Mode = Mode.AIRBORNE
 var surface_normal := Vector3.UP
@@ -309,6 +314,14 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 
 	_adopt_surface(hit["normal"])
 	_note_surface(hit.get("collider"))
+	# Standing on a line means holding it. A web you can walk about on is a
+	# surface; a single thread is not, and trying to balance on one is how you
+	# spend the whole time falling off.
+	if cling_to_lines and on_silk:
+		var thread := _strand_under(hit.get("collider"))
+		if thread != null:
+			_grab_line(thread)
+			return
 	_set_mode(Mode.ATTACHED)
 
 	if want_line_out:
@@ -452,6 +465,18 @@ func _adopt_surface(normal: Vector3) -> void:
 	_current_up = normal
 	surface_normal = normal
 	surface_changed.emit(normal)
+
+
+## The single line a walkway belongs to, if it is one. A web's walk surface
+## belongs to a net, which is a floor rather than a rope, so that stays null.
+func _strand_under(collider: Variant) -> WebStrand:
+	var node := collider as Node
+	while node != null:
+		var strand := node as WebStrand
+		if strand != null:
+			return strand
+		node = node.get_parent()
+	return null
 
 
 ## Whether what is underfoot is silk rather than world. Read off the collider

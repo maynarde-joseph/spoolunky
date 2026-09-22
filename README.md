@@ -82,10 +82,14 @@ tiers gate what your silk can *hold* and how much you can spin, not where you
 are allowed to go. A long grapple is flung faster so it still lands in about a
 second, because distance should cost you silk rather than patience.
 
-Every line is a road. You can **walk along any of it** — silk is about half
-again quicker underfoot than the floor — and **grapple straight onto a line to
-start riding it**, which joins the network rather than stringing another line
-to it. A route you built once is a route you can take.
+Every line is a road. Step onto one and you **hold it** — you don't balance on
+it, so you can't fall off by accident. **W/S** moves you along, gravity pulls
+you down any slope, and **F** or **Space** lets go when you mean to.
+
+Silk is about half again quicker underfoot than the floor, and you can
+**grapple straight onto a line** from a distance to get on it — that joins the
+network rather than stringing another line to reach it. A route you built once
+is a route you can take.
 
 Placing an anchor **grapples you to it**, dragging a frame line behind you. So
 the frame of a web is the route you took around it, not an outline you drew from

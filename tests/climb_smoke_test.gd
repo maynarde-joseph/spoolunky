@@ -543,6 +543,33 @@ func _test_lines_are_roads() -> void:
 	var aimed := builder.aimed_line()
 	_check(aimed == line, "the crosshair picks the line out")
 
+	# Walking onto a line should clip you to it rather than leave you balancing.
+	_spider.climb.release()
+	_spider.global_position = Geometry3D.get_closest_point_to_segment(
+		_spider.global_position, line.point_a, line.point_b) + Vector3.UP * 0.1
+	_spider.velocity = Vector3.ZERO
+	var clung: bool = await _wait_for(func() -> bool: return _spider.climb.is_riding(), 90)
+	_check(clung, "dropping onto a line clips you to it instead of balancing")
+	if clung:
+		var held := _spider.global_position
+		await _run_frames(40)
+		_check(_spider.global_position.distance_to(held) < 0.5,
+			"and you stay on it rather than sliding off (%.2fm)"
+			% _spider.global_position.distance_to(held))
+		_check(_spider.climb.is_riding(), "still on it after a moment")
+		_spider.climb.toggle_ride()
+		await _run_frames(4)
+		_check(not _spider.climb.is_riding(), "and letting go is a button press")
+
+	_spider.climb.release()
+	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
+	_spider.velocity = Vector3.ZERO
+	await _run_frames(20)
+	_spider.view.face(Vector3.RIGHT)
+	_spider.view.pitch = 0.0
+	await _run_frames(2)
+	builder._update_aim()
+
 	var lines_before := _silk_count()
 	builder.place()
 	for i in 180:
@@ -557,6 +584,15 @@ func _test_lines_are_roads() -> void:
 	line.queue_free()
 	await physics_frame
 	await process_frame
+
+
+## Runs physics until a condition holds, or gives up. Reports whether it held.
+func _wait_for(test: Callable, max_frames: int) -> bool:
+	for i in max_frames:
+		if test.call():
+			return true
+		await physics_frame
+	return test.call()
 
 
 func _silk_count() -> int:

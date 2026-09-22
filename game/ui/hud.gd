@@ -128,7 +128,11 @@ func _refresh_state() -> void:
 	if climb == null:
 		return
 	if climb.is_riding():
-		state_label.text = "Riding — %.1f m/s   [F] let go" % climb.ride_velocity()
+		var along := climb.ride_velocity()
+		if absf(along) < 0.4:
+			state_label.text = "On a line — W/S to move along it   [F] or [Space] let go"
+		else:
+			state_label.text = "On a line — %.1f m/s   [F] or [Space] let go" % along
 	elif climb.is_hanging():
 		state_label.text = "On a line — %.1fm   [Ctrl] down  [Space] up  [RMB] let go" % climb.line_length
 	elif not climb.is_attached():
@@ -202,6 +206,10 @@ func _refresh_build_panel() -> void:
 		else:
 			pattern_label.text = chosen.display_name
 			hint_label.text = "Left mouse drags this across a gap — [Q] needs a web pattern"
+		var line := builder.aimed_line()
+		if line != null:
+			problem_label.text = "Line in reach — left mouse to get on it"
+			return
 		var web := builder.aimed_web()
 		if web == null:
 			problem_label.text = ""

@@ -263,6 +263,14 @@ wide enough to be comfortable, and anything else is a tightrope, which is what
 a spider is for. Silk is about half again quicker underfoot than the floor, so
 a route you built beats walking round.
 
+**Being on a line is a hold, not a balance.** The first version gave every
+strand a thin collider and left you standing on it, which meant falling off
+constantly — a rope you fall off is not somewhere you can live, and the whole
+point of the network is that it is somewhere you live. Stepping onto a line
+now clips you to it: the keys move you along, gravity pulls you down the
+slope, and letting go is a button. A *web* is still a surface you walk about
+on, because a web is a floor; a single thread is not.
+
 Grappling at a line you already have puts you *on* it rather than stringing a
 second line to it. That is the difference between extending the network and
 joining it, and it is what makes a web of lines feel like somewhere to get
