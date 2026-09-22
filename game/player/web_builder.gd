@@ -241,6 +241,11 @@ func commit_place() -> bool:
 		# wall, so the web goes with it rather than sitting there empty.
 		notice.emit("%s thrown over %d — wrapped and dropped (%d silk)"
 			% [pattern.display_name, web.bundled_on_arrival, roundi(web.silk_cost)])
+		# web_built has already gone out with this one, so anything that kept
+		# hold of it is looking at a web that is about to stop existing. Every
+		# listener in the game checks is_instance_valid before touching a web;
+		# anything new must too, because reading a freed one is a crash rather
+		# than an error.
 		web.unlink_all()
 		web.queue_free()
 		return true

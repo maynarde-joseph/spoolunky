@@ -273,7 +273,8 @@ func _test_strands(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D, silk
 	if not _check(trip != null, "a tripline was spun"):
 		return
 	_check(trip.catch_area != null, "the tripline watches for crossings")
-	_check(trip.get_node_or_null("Walkway") == null, "you cannot walk on a tripline")
+	_check(trip.get_node_or_null("Walkway") != null,
+		"and you can walk along it, because every line is a road")
 	builder.stop()
 
 
@@ -1661,11 +1662,10 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	_check(rest < floor_y + 0.25,
 		"all the way to the ground (%.2f, floor at %.2f)" % [rest, floor_y])
 	_check(sitting.is_on_floor(), "and is standing on it")
-	# The web it came out of must not grab it back: the bundle is sitting in
-	# that web's own catch volume, and a thing already wrapped is not catch.
-	_check(net.snared_count() == 0,
-		"the web it came out of does not grab it back (%d)" % net.snared_count())
-	_check(sitting.is_bundled(), "and it is still a bundle, not stuck again")
+	# Nothing may take it back: a bundle lands inside the catch volume of
+	# whatever wrapped it, and a thing already wrapped is not catch.
+	_check(not sitting.can_be_snared(), "and no web will take it back")
+	_check(sitting.is_bundled(), "so it is still a bundle, not stuck again")
 
 	# And is simply there to be drained off the floor.
 	var fed := spider.growth.biomass
