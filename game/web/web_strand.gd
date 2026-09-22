@@ -42,11 +42,15 @@ static func spin(pattern: WebPattern, a: Vector3, b: Vector3, quality: float) ->
 		trip_box.size = Vector3(girth, girth, length)
 		strand._make_catch_area(trip_box, alignment)
 
+	# Every line is something to walk along, not only the ones spun as bridges.
+	# A bridge is just wide enough to be comfortable; anything else is a
+	# tightrope, which is what a spider is for.
+	var width: float = maxf(0.05 * quality, 0.035)
 	if pattern.walkable:
-		var width: float = maxf(pattern.walk_width * quality, 0.05)
-		var plank := BoxShape3D.new()
-		plank.size = Vector3(width, maxf(width * 0.25, 0.02), length)
-		strand._make_walk_surface(plank, alignment)
+		width = maxf(pattern.walk_width * quality, 0.05)
+	var plank := BoxShape3D.new()
+	plank.size = Vector3(width, maxf(width * 0.25, 0.02), length)
+	strand._make_walk_surface(plank, alignment)
 
 	return strand
 

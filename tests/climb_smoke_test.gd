@@ -50,6 +50,7 @@ func _run() -> void:
 	await _test_grappling()
 	await _test_grappling_without_a_mode()
 	await _test_grappling_a_long_way()
+	await _test_lines_are_roads()
 
 	_release_all()
 	current_scene = null
@@ -477,6 +478,73 @@ func _test_grappling_a_long_way() -> void:
 	_check(reach < travelled * 0.2,
 		"while handling things is still arm's length (%.1fm reach vs %.1fm travelled)"
 		% [reach, travelled])
+
+
+## Silk is the road network: you can stand on any line, it is quicker under
+## foot than the floor, and pointing at one and grappling puts you on it.
+func _test_lines_are_roads() -> void:
+	var builder := _spider.web_builder
+	builder.stop()
+	_spider.climb.release()
+	_spider.silk.refill(_spider.silk.maximum)
+	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
+	_spider.velocity = Vector3.ZERO
+	await _run_frames(20)
+
+	# A plain line across the room, of the sort grappling leaves behind.
+	var pattern: WebPattern = null
+	for candidate in builder.patterns:
+		if candidate.id == "frame_line":
+			pattern = candidate
+	if not _check(pattern != null, "a frame line to lay"):
+		return
+	var a := Vector3(-2.0, -ROOM_HALF.y + 1.0, 0)
+	var b := Vector3(2.0, -ROOM_HALF.y + 1.0, 0)
+	var line := WebStrand.spin(pattern, a, b, 1.0)
+	if not _check(line != null, "the line goes up"):
+		return
+	line.place_in(_room)
+	await physics_frame
+
+	_check(not pattern.walkable,
+		"it is not a bridge — nothing about it was built to be walked on")
+	var walkway := line.get_node_or_null("Walkway")
+	_check(walkway != null, "and yet it has something to stand on")
+	if walkway != null:
+		_check((walkway.collision_layer & GameLayers.WEB_WALK) != 0,
+			"on the silk layer, so prey still goes straight through")
+
+	# Standing on it is quicker than standing on the floor.
+	var ground_speed := _spider.climb._surface_speed(false)
+	_spider.climb.on_silk = true
+	var silk_speed := _spider.climb._surface_speed(false)
+	_spider.climb.on_silk = false
+	_check(silk_speed > ground_speed,
+		"and silk is quicker underfoot (%.2f vs %.2f)" % [silk_speed, ground_speed])
+
+	# Point at it and grapple: you get on the line rather than stringing a new
+	# one to it.
+	_spider.view.face(Vector3.RIGHT)
+	_spider.view.pitch = 0.0
+	await _run_frames(2)
+	builder._update_aim()
+	var aimed := builder.aimed_line()
+	_check(aimed == line, "the crosshair picks the line out")
+
+	var lines_before := _silk_count()
+	builder.place()
+	for i in 180:
+		if _spider.climb.is_riding():
+			break
+		await physics_frame
+	_check(_spider.climb.is_riding(), "and grappling onto it starts a ride")
+	_check(_silk_count() == lines_before,
+		"without spinning a second line to get there (%d)" % _silk_count())
+
+	_spider.climb.toggle_ride()
+	line.queue_free()
+	await physics_frame
+	await process_frame
 
 
 func _silk_count() -> int:

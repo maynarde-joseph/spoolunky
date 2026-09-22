@@ -82,7 +82,10 @@ tiers gate what your silk can *hold* and how much you can spin, not where you
 are allowed to go. A long grapple is flung faster so it still lands in about a
 second, because distance should cost you silk rather than patience.
 
-Every line is also a zipline, so a route you built once is a route you can ride.
+Every line is a road. You can **walk along any of it** — silk is about half
+again quicker underfoot than the floor — and **grapple straight onto a line to
+start riding it**, which joins the network rather than stringing another line
+to it. A route you built once is a route you can take.
 
 Placing an anchor **grapples you to it**, dragging a frame line behind you. So
 the frame of a web is the route you took around it, not an outline you drew from
@@ -154,9 +157,10 @@ Either end can be a **device** rather than a web — they sit on the same graph.
 
 ## Two things a web is for
 
-**Throw one at something.** A web spun over a moth wraps it where it stood and
-the bundle drops to the floor for you to collect — so you can deal with
-something in front of you rather than only setting up for later.
+**Throw one at something.** A web spun over a moth wraps it where it stood, the
+silk goes with it, and the bundle drops to the floor for you to collect — so
+you can deal with something in front of you rather than only setting up for
+later. Nothing is left hanging on the wall: the web was the wrap.
 
 Only if your silk is up to it, mind: a web takes something outright just when
 it could have out-held the whole fight that thing would have put up. Throw a

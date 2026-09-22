@@ -116,6 +116,10 @@ signal notice(text: String)
 ## is the tedium unlimited range was supposed to remove, not add.
 @export var grapple_max_travel := 1.1
 
+## How much quicker silk is underfoot than anything else. A line you spun is a
+## road, and a road you built should beat walking round.
+@export var silk_speed_bonus := 1.5
+
 
 var mode: Mode = Mode.AIRBORNE
 var surface_normal := Vector3.UP
@@ -133,6 +137,9 @@ var grapple_normal := Vector3.UP
 
 ## Speed along the surface, for head bob and footsteps.
 var tangent_velocity := Vector3.ZERO
+
+## Standing on silk rather than on the world, which is quicker underfoot.
+var on_silk := false
 
 var _spider: CharacterController3D
 var _silk: SilkPool
@@ -295,11 +302,13 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	var hit := _find_surface(height, wish)
 
 	if hit.is_empty() or _grace > 0.0:
+		on_silk = false
 		_set_mode(Mode.AIRBORNE)
 		_move_airborne(delta, input_axis)
 		return
 
 	_adopt_surface(hit["normal"])
+	_note_surface(hit.get("collider"))
 	_set_mode(Mode.ATTACHED)
 
 	if want_line_out:
@@ -445,12 +454,22 @@ func _adopt_surface(normal: Vector3) -> void:
 	surface_changed.emit(normal)
 
 
+## Whether what is underfoot is silk rather than world. Read off the collider
+## the surface probe found, so it costs nothing to know.
+func _note_surface(collider: Variant) -> void:
+	var body := collider as CollisionObject3D
+	on_silk = body != null and (body.collision_layer & GameLayers.WEB_WALK) != 0
+
+
 func _surface_speed(want_sprint: bool) -> float:
 	var speed := _spider.speed
 	if want_sprint:
 		speed *= _spider.sprint_speed_multiplier
 	var steepness := clampf(1.0 - maxf(0.0, _current_up.dot(Vector3.UP)), 0.0, 1.0)
-	return speed * lerpf(1.0, steep_speed_factor, steepness)
+	speed *= lerpf(1.0, steep_speed_factor, steepness)
+	if on_silk:
+		speed *= silk_speed_bonus
+	return speed
 
 
 # --- dragline -----------------------------------------------------------
@@ -624,6 +643,17 @@ func _arrive() -> void:
 
 ## Clips onto the nearest ridable strand, or lets go of the one being ridden.
 ## Returns true if anything happened.
+## Clip onto a particular line, wherever the spider is standing. Grappling
+## onto a line to ride it comes through here.
+func ride_line(strand: WebStrand) -> bool:
+	if strand == null or not is_instance_valid(strand):
+		return false
+	if mode == Mode.RIDING and ride_web == strand:
+		return false
+	_grab_line(strand)
+	return true
+
+
 func toggle_ride() -> bool:
 	if mode == Mode.RIDING:
 		_launch_off_line()

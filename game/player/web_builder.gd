@@ -123,6 +123,10 @@ var _awaiting_grapple := false
 ## start once it lands.
 var _launched_from := Vector3.ZERO
 
+## A line the current grapple is aimed at, to be ridden on arrival instead of
+## having fresh silk laid out to it.
+var _pending_ride: WebStrand = null
+
 ## Rings of silk the player could weave into, and what they were built from.
 var _loops: Array = []
 var _loop_source := 0
@@ -232,9 +236,18 @@ func commit_place() -> bool:
 	web.place_in(_resolve_container())
 	_loop_source = -1
 	web_built.emit(web)
-	if web.bundled_on_arrival > 0:
+	if web.bundled_on_arrival > 0 and web.snared_count() == 0:
+		# The silk went round what it hit. There is nothing left to hang on a
+		# wall, so the web goes with it rather than sitting there empty.
 		notice.emit("%s thrown over %d — wrapped and dropped (%d silk)"
 			% [pattern.display_name, web.bundled_on_arrival, roundi(web.silk_cost)])
+		web.unlink_all()
+		web.queue_free()
+		return true
+	if web.bundled_on_arrival > 0:
+		notice.emit("%s thrown over %d, and still holding %d (%d silk)"
+			% [pattern.display_name, web.bundled_on_arrival, web.snared_count(),
+			roundi(web.silk_cost)])
 	elif web.caught_on_arrival > 0:
 		notice.emit("%s caught %d on the way up, still fighting (%d silk)"
 			% [pattern.display_name, web.caught_on_arrival, roundi(web.silk_cost)])
@@ -435,6 +448,12 @@ func place() -> void:
 		return
 
 	_launched_from = _line_start()
+	_pending_ride = aimed_line()
+	if _pending_ride != null:
+		# Joining the road network rather than extending it: no new silk, you
+		# just get on.
+		aim_point = Geometry3D.get_closest_point_to_segment(aim_point,
+			_pending_ride.point_a, _pending_ride.point_b)
 	if _climb != null and _climb.grapple_to(aim_point, aim_normal):
 		_pending_anchor = aim_point
 		_awaiting_grapple = true
@@ -452,6 +471,11 @@ func _on_grappled(_point: Vector3, _normal: Vector3) -> void:
 ## Landed. The line behind is the silk dragged on the way, which is all there
 ## is to building now — no anchor list to keep in your head, no mode to be in.
 func _arrive_at(point: Vector3) -> void:
+	if _pending_ride != null:
+		var line := _pending_ride
+		_pending_ride = null
+		if is_instance_valid(line) and _climb != null and _climb.ride_line(line):
+			return
 	if building:
 		# The scripted run: saved designs and the test suite still walk an
 		# explicit ring and weave it with finish().
@@ -1024,6 +1048,35 @@ func is_linking() -> bool:
 
 
 # --- existing webs ------------------------------------------------------
+
+## A line under the crosshair, close enough to grapple onto and ride. Silk is
+## thin, so this is a proximity-to-the-ray pick like every other one.
+func aimed_line() -> WebStrand:
+	if _view == null:
+		return null
+	var from := _view.aim_origin()
+	var direction := _view.aim_forward()
+	var reach: float = from.distance_to(aim_point) + _stage().body_height
+	var tolerance: float = maxf(_stage().body_height * 0.6, 0.2)
+
+	var best: WebStrand = null
+	var best_score := INF
+	for node in get_tree().get_nodes_in_group("silk_webs"):
+		var strand := node as WebStrand
+		if strand == null or not is_instance_valid(strand):
+			continue
+		var pair := Geometry3D.get_closest_points_between_segments(
+			from, from + direction * reach, strand.point_a, strand.point_b)
+		var along := (pair[0] - from).dot(direction)
+		if along <= _stage().body_height or along > reach:
+			continue
+		var gap := pair[0].distance_to(pair[1])
+		if gap > tolerance or gap >= best_score:
+			continue
+		best_score = gap
+		best = strand
+	return best
+
 
 ## The wireable thing under the crosshair — a device if one is right there,
 ## otherwise a web. Devices win ties on purpose: they are small and deliberately

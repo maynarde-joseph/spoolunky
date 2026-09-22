@@ -227,7 +227,10 @@ they cover the two things a web is ever for:
 
 * **Thrown at something that is right there.** Silk spun over a moth wraps it
   where it stood and the bundle drops to the floor, to be collected whenever
-  you get round to it. That makes silk a way of dealing with a thing in front
+  you get round to it. The web goes with it — the silk *was* the wrap, so
+  there is nothing left hanging on the wall afterwards. A throw that only
+  half connected, catching something it could not wrap, leaves the web up,
+  because then there is something in it. That makes silk a way of dealing with a thing in front
   of you and not only a thing you leave behind.
 
   Aiming at a thing puts the web over *that thing*, not on the wall behind it.
@@ -252,6 +255,18 @@ prepared and a web you threw are the same object under the same rules — which
 is why the size tiers gate both at once: whether a web *holds* what hits it
 comes from hold strength either way, so a sheet web thrown at a wasp loses it
 exactly as a sheet web left for one would.
+
+### Silk is the road network
+
+Every line is walkable, not only the ones spun as bridges — a bridge is simply
+wide enough to be comfortable, and anything else is a tightrope, which is what
+a spider is for. Silk is about half again quicker underfoot than the floor, so
+a route you built beats walking round.
+
+Grappling at a line you already have puts you *on* it rather than stringing a
+second line to it. That is the difference between extending the network and
+joining it, and it is what makes a web of lines feel like somewhere to get
+about rather than a pile of rope.
 
 ### Webs are placed, not enclosed
 
