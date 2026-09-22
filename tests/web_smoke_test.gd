@@ -60,7 +60,7 @@ func _run() -> void:
 	await _test_saved_designs(spider, builder, webs, silk)
 	await _test_placing_a_web(spider, builder, webs, silk)
 	await _test_a_web_fits_the_space(spider, builder, silk)
-	await _test_spitting_a_web_at_something(spider, builder, level, silk)
+	await _test_spitting_a_web_at_something(spider, builder, level, webs, silk)
 	await _test_the_larder(spider, builder, webs, level)
 	await _test_the_bag(spider, level, webs, builder, silk)
 	await _test_sandbox_wiring(level, spider)
@@ -1552,6 +1552,18 @@ func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder,
 	_check(furthest <= builder.place_radius + 0.01,
 		"no corner reaches past what was held (%.2f of %.2f)"
 		% [furthest, builder.place_radius])
+
+	# Silk has thickness, so a corner sitting exactly on the wall buries half
+	# of itself in it. Every anchored corner should stop just shy.
+	var space := spider.get_world_3d().direct_space_state
+	var buried := 0
+	for point in rim:
+		var probe := PhysicsRayQueryParameters3D.create(builder.place_centre, point,
+			GameLayers.WORLD)
+		if not space.intersect_ray(probe).is_empty():
+			buried += 1
+	_check(buried == 0,
+		"and no corner is inside the wall it found (%d of %d)" % [buried, rim.size()])
 	_check(nearest < furthest * 0.9,
 		"and the shape is genuinely the gap, not a disc (%.2f to %.2f)"
 		% [nearest, furthest])
@@ -1570,8 +1582,9 @@ func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder,
 ## the second only works if a new web catches what is already inside it, since
 ## a catch volume otherwise only ever hears about arrivals.
 func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder,
-		level: Node, silk: SilkPool) -> void:
+		level: Node, webs: Node3D, silk: SilkPool) -> void:
 	var host := spider.get_parent()
+	var before := _web_count(webs)
 	silk.unlimited = true
 	var slab := _test_slab(host, Vector3(-120, 0.0, -60))
 	await physics_frame

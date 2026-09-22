@@ -288,6 +288,13 @@ func place_rim() -> PackedVector3Array:
 	var space := get_world_3d().direct_space_state
 	var exclude := _exclusions()
 	var floor_span: float = maxf(place_radius * PLACE_MIN_SPAN, 0.05)
+	# Silk is drawn as crossed quads with real thickness, so a corner sitting
+	# exactly on the surface it found buries half of itself in the wall. Stop
+	# just shy of it instead, by enough to clear the strand.
+	var pattern := current_pattern()
+	var inset := 0.02
+	if pattern != null:
+		inset = maxf(pattern.strand_thickness * _quality() * 5.0, 0.02)
 	place_anchored = 0
 	for i in PLACE_SIDES:
 		var angle := TAU * float(i) / float(PLACE_SIDES)
@@ -299,7 +306,7 @@ func place_rim() -> PackedVector3Array:
 			place_centre + direction * place_radius, GameLayers.WORLD, exclude)
 		var hit := space.intersect_ray(query)
 		if not hit.is_empty():
-			span = maxf(place_centre.distance_to(hit["position"]), floor_span)
+			span = maxf(place_centre.distance_to(hit["position"]) - inset, floor_span)
 			place_anchored += 1
 		rim.append(place_centre + direction * span)
 	place_area = _polygon_area(rim)
@@ -328,6 +335,10 @@ func _update_placement() -> void:
 		place_centre = place_target.global_position
 	else:
 		place_centre = aim_point + place_normal * clampf(place_radius * 0.2, 0.02, 0.4)
+	# Never let the middle of a web sit inside whatever the crosshair found.
+	var clearance := place_normal.dot(place_centre - aim_point)
+	if clearance < 0.02:
+		place_centre += place_normal * (0.02 - clearance)
 	place_valid = true
 	var pattern := current_pattern()
 	if pattern != null:
