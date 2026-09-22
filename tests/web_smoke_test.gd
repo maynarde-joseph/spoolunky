@@ -1587,7 +1587,8 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	if not _check(builder.place_valid, "somewhere to spin one"):
 		silk.unlimited = false
 		return
-	var sitting := _spawn_fly(level, builder.aim_point + Vector3(0, 0.6, 0))
+	var floor_y := builder.aim_point.y
+	var sitting := _spawn_fly(level, builder.aim_point + Vector3(0, 0.35, 0))
 	await physics_frame
 	await physics_frame
 	_check(not sitting.is_stuck(), "a fly minding its own business")
@@ -1602,8 +1603,6 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 		% builder.place_centre.distance_to(sitting.global_position))
 
 	_select_pattern(builder, "orb_web")
-	var caught: Array[Node3D] = []
-	var watcher := func(_web: WebStructure, prey: Node3D) -> void: caught.append(prey)
 	if not _check(builder.begin_place(), "spinning one straight onto it"):
 		silk.unlimited = false
 		return
@@ -1611,10 +1610,7 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 		builder._max_place_radius())
 	builder._update_placement()
 	var spun: Array[WebStructure] = []
-	var catcher := func(built: WebStructure) -> void:
-		spun.append(built)
-		if built is WebNet:
-			built.prey_caught.connect(watcher)
+	var catcher := func(built: WebStructure) -> void: spun.append(built)
 	builder.web_built.connect(catcher)
 	var made := builder.commit_place()
 	builder.web_built.disconnect(catcher)
@@ -1631,16 +1627,20 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	_check(not sitting.is_fighting(), "with no fight left to put up")
 	_check(net.snared_count() == 0,
 		"so the web is not holding it (%d)" % net.snared_count())
-	_check(caught.size() == 1, "and it still reads as a catch (%d)" % caught.size())
+	_check(net.caught_on_arrival == 1,
+		"and it reads as a catch (%d)" % net.caught_on_arrival)
 
-	# It has to come down. A bundle is dead weight whether or not it could fly.
+	# It has to come down, and come down to the floor — a bundle is dead weight
+	# whether or not the thing inside it could fly, and it must not come to
+	# rest on the silk it was caught with.
 	var dropped_from := sitting.global_position.y
-	var landed: bool = await _wait_until(
-		func() -> bool: return sitting.is_on_floor(), 240)
-	_check(landed, "the bundle falls")
-	_check(sitting.global_position.y < dropped_from - 0.05,
-		"and ends up lower than it was (%.2f -> %.2f)"
-		% [dropped_from, sitting.global_position.y])
+	await _wait_until(func() -> bool: return sitting.is_on_floor(), 240)
+	var rest := sitting.global_position.y
+	_check(rest < dropped_from - 0.05,
+		"the bundle falls (%.2f -> %.2f)" % [dropped_from, rest])
+	_check(rest < floor_y + 0.25,
+		"all the way to the ground (%.2f, floor at %.2f)" % [rest, floor_y])
+	_check(sitting.is_on_floor(), "and is standing on it")
 
 	# And is simply there to be drained off the floor.
 	var fed := spider.growth.biomass

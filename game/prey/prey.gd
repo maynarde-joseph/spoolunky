@@ -238,6 +238,10 @@ func bundle() -> bool:
 	_set_marked(false)
 	_set_cocoon(true)
 	velocity = Vector3.ZERO
+	# Whatever it was before, a bundle is a thing that falls: floating bodies
+	# never report standing on anything, so it would never settle.
+	motion_mode = CharacterBody3D.MOTION_MODE_GROUNDED
+	up_direction = Vector3.UP
 	return true
 
 
