@@ -30,9 +30,10 @@ something down.
 
 | Input | Action |
 |-------|--------|
-| WASD / Space / Shift | move, jump, sprint |
+| WASD / Space / Shift | move, jump, sprint — **jump is also how you let go of silk** |
 | *walk into a wall* | climb it — walls and ceilings are floors to a spider |
-| **F** or **middle mouse** | clip onto a silk line and ride it — again to let go |
+| *stand on silk* | it holds you — a thread runs one way, and **jump** is how you come off |
+| **F** or **middle mouse** | ride a silk line like a zipline — again to let go |
 | **Ctrl** | drop onto a dragline (from a wall or ceiling) |
 | **Ctrl** / **Space** | lower / raise yourself on the line |
 | **Right Mouse** | let go of the line |
@@ -90,9 +91,16 @@ tiers gate what your silk can *hold* and how much you can spin, not where you
 are allowed to go. A long grapple is flung faster so it still lands in about a
 second, because distance should cost you silk rather than patience.
 
-Every line is a road. Step onto one and you **hold it** — you don't balance on
-it, so you can't fall off by accident. **W/S** moves you along, gravity pulls
-you down any slope, and **F** or **Space** lets go when you mean to.
+Every line is a road, and **silk is sticky**. Step onto a thread and you're
+stuck to it — it keeps hold of you until you **jump off**, the same as the wall
+and the ceiling do. A thread only runs one way, so that's the way you walk on
+it: pushing across a line does nothing rather than walking you off the side of
+it. You still set your own pace and face either way. A *web* is a floor and
+gets none of that — walk about on it however you like.
+
+**F** is the zipline, and it's something you ask for rather than something that
+happens to you: clip onto the line proper, let gravity pull you down the slope,
+and let go to be thrown off carrying the speed.
 
 Silk is about half again quicker underfoot than the floor, and you can
 **grapple straight onto a line** from a distance to get on it — that joins the

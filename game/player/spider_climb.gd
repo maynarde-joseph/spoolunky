@@ -120,10 +120,17 @@ signal notice(text: String)
 ## road, and a road you built should beat walking round.
 @export var silk_speed_bonus := 1.5
 
-## Walking onto a line clips you to it rather than leaving you balanced on top
-## of something a few centimetres wide. Letting go is a button, not an
-## accident — which is the only way a rope is somewhere you can actually live.
-@export var cling_to_lines := true
+## How much further the spider's feet reach for silk it is already on, in
+## multiples of the ordinary reach. A spider does not fall off its own thread:
+## once you are on silk it holds you, and you leave it by jumping.
+@export var silk_stick_reach := 2.5
+
+## How firmly a single thread pulls the body back over it, in metres per second
+## per metre of drift. A web is a floor and wants none of this; one strand is a
+## tightrope, and a spider that has to balance on a tightrope is a spider
+## falling off it. Only the drift across the line is corrected — moving along
+## it is left entirely alone.
+@export var thread_grip := 5.0
 
 
 var mode: Mode = Mode.AIRBORNE
@@ -314,14 +321,6 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 
 	_adopt_surface(hit["normal"])
 	_note_surface(hit.get("collider"))
-	# Standing on a line means holding it. A web you can walk about on is a
-	# surface; a single thread is not, and trying to balance on one is how you
-	# spend the whole time falling off.
-	if cling_to_lines and on_silk:
-		var thread := _strand_under(hit.get("collider"))
-		if thread != null:
-			_grab_line(thread)
-			return
 	_set_mode(Mode.ATTACHED)
 
 	if want_line_out:
@@ -337,12 +336,16 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	# Walking the surface: all the movement happens in its tangent plane, and
 	# the only force is the one holding the spider onto it.
 	wish = _wish_direction(input_axis, _current_up)
+	var thread := _strand_under(hit.get("collider")) if on_silk else null
+	if thread != null:
+		wish = _along_thread(thread, wish)
 	var speed := _surface_speed(want_sprint)
 	var velocity := _spider.velocity
 	var tangent := velocity - _current_up * velocity.dot(_current_up)
 	var target := wish * speed
 	var rate: float = acceleration if target.dot(tangent) > 0.0 else deceleration
 	tangent = tangent.lerp(target, clampf(rate * delta, 0.0, 1.0))
+	tangent = _hold_to_thread(thread, tangent)
 
 	_spider.velocity = tangent - _current_up * stick_force * height
 	_spider.up_direction = _current_up
@@ -378,7 +381,10 @@ func _leap(input_axis: Vector2) -> void:
 func _find_surface(height: float, wish: Vector3) -> Dictionary:
 	var space := _spider.get_world_3d().direct_space_state
 	var origin := _spider.global_position
-	var reach := height * stick_reach
+	# Silk already underfoot is worth looking harder for. A thread is a couple
+	# of centimetres across, so an ordinary reach loses it the moment the body
+	# drifts, and losing it means falling off something you were stuck to.
+	var reach := height * stick_reach * (silk_stick_reach if on_silk else 1.0)
 	var up := _current_up
 	var forward := _facing
 	var right := forward.cross(up)
@@ -477,6 +483,49 @@ func _strand_under(collider: Variant) -> WebStrand:
 			return strand
 		node = node.get_parent()
 	return null
+
+
+## A thread runs one way, so that is the way you can walk on it.
+##
+## Pushing across a line does nothing rather than walking you off the side of
+## it, which is what makes a thread somewhere a spider can live instead of
+## something it keeps falling off. You still set your own pace along it, under
+## your own power, facing either way — none of which riding lets you do.
+## Leaving is the jump.
+##
+## A web gets none of this. A web is a floor, and a floor you can only cross
+## in one direction is not a floor.
+func _along_thread(strand: WebStrand, wish: Vector3) -> Vector3:
+	var axis := _thread_axis(strand)
+	if axis == Vector3.ZERO or wish.length_squared() < 0.000001:
+		return Vector3.ZERO
+	return axis * wish.dot(axis)
+
+
+## Keeps the body over the thread it is walking on. Only the drift across the
+## line is pulled back; moving along it is untouched, and so is the force
+## holding the spider on. With input already confined to the line this is
+## mopping up the last few centimetres, not steering.
+func _hold_to_thread(strand: WebStrand, tangent: Vector3) -> Vector3:
+	var axis := _thread_axis(strand)
+	if axis == Vector3.ZERO:
+		return tangent
+	var nearest := Geometry3D.get_closest_point_to_segment(_spider.global_position,
+		strand.point_a, strand.point_b)
+	var offset := nearest - _spider.global_position
+	offset -= axis * offset.dot(axis)
+	offset -= _current_up * offset.dot(_current_up)
+	return tangent + offset * thread_grip
+
+
+## Which way a thread runs, or zero if it is not one.
+func _thread_axis(strand: WebStrand) -> Vector3:
+	if strand == null or not is_instance_valid(strand):
+		return Vector3.ZERO
+	var axis := strand.point_b - strand.point_a
+	if axis.length_squared() < 0.000001:
+		return Vector3.ZERO
+	return axis.normalized()
 
 
 ## Whether what is underfoot is silk rather than world. Read off the collider

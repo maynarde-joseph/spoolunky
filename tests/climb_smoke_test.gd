@@ -555,23 +555,47 @@ func _test_lines_are_roads() -> void:
 	var aimed := builder.aimed_line()
 	_check(aimed == line, "the crosshair picks the line out")
 
-	# Walking onto a line should clip you to it rather than leave you balancing.
+	# Silk is sticky. Landing on a line leaves you standing on it, not railed
+	# along it, and it holds you there until you jump off — a spider does not
+	# fall off its own thread, and it does not get grabbed into a ride it never
+	# asked for either.
 	_spider.climb.release()
 	_spider.global_position = Geometry3D.get_closest_point_to_segment(
 		_spider.global_position, line.point_a, line.point_b) + Vector3.UP * 0.1
 	_spider.velocity = Vector3.ZERO
-	var clung: bool = await _wait_for(func() -> bool: return _spider.climb.is_riding(), 90)
-	_check(clung, "dropping onto a line clips you to it instead of balancing")
-	if clung:
+	var stuck: bool = await _wait_for(func() -> bool:
+		return _spider.climb.is_attached() and _spider.climb.on_silk, 90)
+	_check(stuck, "dropping onto a line sticks you to it")
+	_check(not _spider.climb.is_riding(),
+		"and does not grab you into a ride you never asked for")
+	if stuck:
 		var held := _spider.global_position
 		await _run_frames(40)
+		_check(_spider.climb.on_silk, "still on it a moment later")
 		_check(_spider.global_position.distance_to(held) < 0.5,
-			"and you stay on it rather than sliding off (%.2fm)"
+			"without sliding off (%.2fm)"
 			% _spider.global_position.distance_to(held))
-		_check(_spider.climb.is_riding(), "still on it after a moment")
-		_spider.climb.toggle_ride()
-		await _run_frames(4)
-		_check(not _spider.climb.is_riding(), "and letting go is a button press")
+
+		# Walking about on it must not walk you off the side of it. Along the
+		# line is fine; that is the only direction a thread has.
+		var axis := (line.point_b - line.point_a).normalized()
+		var from := _spider.global_position
+		Input.action_press("move_forward")
+		await _run_frames(40)
+		Input.action_release("move_forward")
+		await _run_frames(2)
+		var moved := _spider.global_position - from
+		var across := (moved - axis * moved.dot(axis)).length()
+		_check(_spider.climb.on_silk, "walking about on it does not shake you off")
+		_check(across < 0.25, "and you stay over the thread (%.2fm off it)" % across)
+
+		# And the way off is the jump.
+		Input.action_press("move_jump")
+		await _run_frames(3)
+		Input.action_release("move_jump")
+		await _run_frames(2)
+		_check(not _spider.climb.is_attached(), "and a jump is what takes you off")
+		_check(not _spider.climb.on_silk, "leaving the silk behind")
 
 	_spider.climb.release()
 	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)

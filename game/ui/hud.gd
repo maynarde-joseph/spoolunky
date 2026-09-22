@@ -7,7 +7,8 @@ extends CanvasLayer
 const HELP_TEXT := """[ Spoolunky — sandbox ]
 WASD / Space / Shift   move, jump, sprint
 walk into a wall       climb it — walls and ceilings are floors to you
-F or middle mouse      clip onto a silk line and ride it (again to let go)
+silk is sticky         stand on it and it holds you; jump to come off
+F or middle mouse      ride a silk line like a zipline (again to let go)
 Ctrl                   drop onto a dragline (from a wall or ceiling)
   Ctrl / Space           lower / raise yourself on the line
   Right Mouse            let go
@@ -131,13 +132,15 @@ func _refresh_state() -> void:
 	if climb.is_riding():
 		var along := climb.ride_velocity()
 		if absf(along) < 0.4:
-			state_label.text = "On a line — W/S to move along it   [F] or [Space] let go"
+			state_label.text = "Riding a line — W/S along it   [F] or [Space] let go"
 		else:
-			state_label.text = "On a line — %.1f m/s   [F] or [Space] let go" % along
+			state_label.text = "Riding — %.1f m/s   [F] or [Space] let go" % along
 	elif climb.is_hanging():
 		state_label.text = "On a line — %.1fm   [Ctrl] down  [Space] up  [RMB] let go" % climb.line_length
 	elif not climb.is_attached():
 		state_label.text = "Falling"
+	elif climb.on_silk:
+		state_label.text = "On silk — it holds you   [Space] off   [F] ride it"
 	elif climb.surface_normal.dot(Vector3.UP) < -0.5:
 		state_label.text = "On the ceiling   [Ctrl] drop on a line"
 	elif climb.on_steep_surface():

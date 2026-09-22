@@ -283,13 +283,32 @@ wide enough to be comfortable, and anything else is a tightrope, which is what
 a spider is for. Silk is about half again quicker underfoot than the floor, so
 a route you built beats walking round.
 
-**Being on a line is a hold, not a balance.** The first version gave every
-strand a thin collider and left you standing on it, which meant falling off
-constantly — a rope you fall off is not somewhere you can live, and the whole
-point of the network is that it is somewhere you live. Stepping onto a line
-now clips you to it: the keys move you along, gravity pulls you down the
-slope, and letting go is a button. A *web* is still a surface you walk about
-on, because a web is a floor; a single thread is not.
+**Silk is sticky, and you leave it by jumping.** This took two goes to get
+right, and the second one is the one worth keeping.
+
+The first version gave every strand a thin collider and left you standing on
+it, which meant falling off constantly. A rope you fall off is not somewhere
+you can live, and the whole point of the network is that it is somewhere you
+live. So the second version clipped you onto the line on contact and railed
+you along it. That fixed falling off and introduced something worse: the game
+grabbing hold of you. Walk near your own silk and it took the controls away.
+
+What was wrong was not the holding, it was who asked for it. A spider does not
+balance on its thread and it does not get railed along it either — it is
+simply *stuck to it*, and it lets go when it decides to. So silk is sticky
+now, as an ordinary surface: land on a thread and you are standing on it, and
+it keeps hold of you until you jump, exactly like the wall and the ceiling
+already did. A thread only runs one way, so that is the way you walk on it —
+pushing across a line does nothing instead of walking you off the side — but
+you set your own pace, face either way, and stop when you stop.
+
+Riding is still there and is now something you *ask* for: press for it and you
+clip onto the line proper, gravity feeds you down the slope, and letting go
+throws you off carrying everything you built up. Two different things that
+were briefly the same thing.
+
+A *web* gets none of the one-way rule, because a web is a floor, and a floor
+you can only cross in one direction is not a floor.
 
 Grappling at a line you already have puts you *on* it rather than stringing a
 second line to it. That is the difference between extending the network and
