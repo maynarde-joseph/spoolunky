@@ -262,7 +262,7 @@ func _test_ziplining() -> void:
 	_spider.global_position = top + Vector3(0.1, -0.1, 0)
 	_spider.velocity = Vector3.ZERO
 	await _run_frames(2)
-	_check(_spider.climb.toggle_ride(), "the spider clips onto the line")
+	_check(_get_on_line(), "the spider clips onto the line")
 	_check(_spider.climb.is_riding(), "and is riding it")
 
 	var started_at := _spider.global_position
@@ -289,17 +289,29 @@ func _test_ziplining() -> void:
 	_spider.global_position = top + Vector3(0.1, -0.1, 0)
 	_spider.velocity = Vector3.ZERO
 	await _run_frames(4)
-	_spider.climb.toggle_ride()
+	_get_on_line()
 	await _run_frames(25)
 	if _check(_spider.climb.is_riding(), "back on the line"):
 		_spider.climb.toggle_ride()
 		_check(not _spider.climb.is_riding(), "and can let go part way along")
 		_check(_spider.velocity.y > 0.0, "with a kick to clear the edge")
+		# The other half of the pair: the line is still right there, so the same
+		# key takes hold again rather than making you land on it a second time.
+		_check(_spider.climb.toggle_ride(), "and the same key takes hold again")
+		_check(_spider.climb.is_riding(), "back on the line straight away")
+		_spider.climb.release()
 
 	_check(_spider.view.third_person, "the camera starts behind the spider")
 	_spider.view.toggle_mode()
 	_check(not _spider.view.third_person, "and can be brought inside its head")
 	_spider.view.toggle_mode()
+
+
+## Gets the spider onto a line the way a player would. Dropping onto one clips
+## you on by itself now, so pressing the key when you are already riding would
+## take you straight back off — this only presses it when it has to.
+func _get_on_line() -> bool:
+	return _spider.climb.is_riding() or _spider.climb.toggle_ride()
 
 
 ## Placing an anchor is a journey: the spider hauls itself to the spot and

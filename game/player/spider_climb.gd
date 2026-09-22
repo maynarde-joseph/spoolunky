@@ -666,8 +666,6 @@ func _arrive() -> void:
 
 # --- ziplines -----------------------------------------------------------
 
-## Clips onto the nearest ridable strand, or lets go of the one being ridden.
-## Returns true if anything happened.
 ## Clip onto a particular line, wherever the spider is standing. Grappling
 ## onto a line to ride it comes through here.
 func ride_line(strand: WebStrand) -> bool:
@@ -679,6 +677,8 @@ func ride_line(strand: WebStrand) -> bool:
 	return true
 
 
+## Clips onto the nearest ridable strand, or lets go of the one being ridden.
+## Returns true if anything happened.
 func toggle_ride() -> bool:
 	if mode == Mode.RIDING:
 		_launch_off_line()
