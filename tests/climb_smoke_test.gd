@@ -491,6 +491,16 @@ func _test_lines_are_roads() -> void:
 	_spider.velocity = Vector3.ZERO
 	await _run_frames(20)
 
+	# Clear the silk the earlier tests strung up. The pick takes whichever line
+	# is nearest the crosshair, so leaving five of them about makes this a test
+	# of which one happened to be closest rather than of the pick itself.
+	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
+		if is_instance_valid(node):
+			node.queue_free()
+	await physics_frame
+	await process_frame
+	_check(_silk_count() == 0, "no silk left over from earlier (%d)" % _silk_count())
+
 	# A plain line across the room, of the sort grappling leaves behind.
 	var pattern: WebPattern = null
 	for candidate in builder.patterns:
