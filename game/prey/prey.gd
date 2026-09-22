@@ -140,9 +140,15 @@ func _physics_process(delta: float) -> void:
 
 # --- being prey ---------------------------------------------------------
 
-## Webs ask before catching, so prey that just tore loose gets a moment.
+## Webs ask before catching, so prey that just tore loose gets a moment — and
+## so that anything already caught is not caught again. Bundles matter here:
+## one dropped inside the web that made it sits in that web's catch volume,
+## and without this the web grabs it back on the next frame and pins it in
+## mid-air instead of letting it fall.
 func can_be_snared() -> bool:
-	return not eaten and _recatch_cooldown <= 0.0 and _state != State.STUCK and _state != State.WRAPPED
+	if eaten or wrapped or _state == State.STUCK:
+		return false
+	return _recatch_cooldown <= 0.0
 
 
 ## Called by a web that has caught this. [param snap_time] is the rigid hold
