@@ -225,9 +225,17 @@ naming:
 Both halves of that are one button each, both work anywhere, and between them
 they cover the two things a web is ever for:
 
-* **Thrown at something that is right there.** A web spun over a moth is a
-  catch, now, not a wait. That makes silk a way of dealing with a thing in
-  front of you and not only a thing you leave behind.
+* **Thrown at something that is right there.** Silk spun over a moth wraps it
+  where it stood and the bundle drops to the floor, to be collected whenever
+  you get round to it. That makes silk a way of dealing with a thing in front
+  of you and not only a thing you leave behind.
+
+  It is not a free kill, because it is the same number as everything else:
+  a web only takes something outright if it can out-hold the whole fight that
+  thing would have put up. Throw a sheet web at a wasp and you do not get a
+  bundle — you get a wasp hanging in a sheet web, fighting, exactly as if it
+  had flown into one. So which web you bring is the decision, and throwing is
+  a *use* of a web rather than a way round needing a good one.
 * **Left somewhere to work.** Pick a corner prey walks past, fit a web to it,
   and put a **Scent Lure** on the far side so traffic comes through the web to
   reach it. Wire a **Signal Bell** in and go somewhere else.

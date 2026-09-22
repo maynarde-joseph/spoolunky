@@ -16,6 +16,7 @@ enum State {
 	STUCK,     ## caught in silk, fighting it
 	WRAPPED,   ## bundled up, going nowhere
 	FLEEING,   ## just tore loose, getting out
+	BUNDLED,   ## wrapped where it stood and dropped, out of any web
 }
 
 ## How much better than a catch's total thrash a web has to be to keep it.
@@ -123,6 +124,8 @@ func _physics_process(delta: float) -> void:
 	_flap()
 
 	match _state:
+		State.BUNDLED:
+			_fall(delta)
 		State.STUCK, State.WRAPPED:
 			_process_stuck(delta)
 		State.FLEEING:
@@ -173,6 +176,18 @@ func is_stuck() -> bool:
 	return _state == State.STUCK or _state == State.WRAPPED
 
 
+## Wrapped and on the floor, out of any web. Something a thrown web took
+## cleanly, waiting to be collected.
+func is_bundled() -> bool:
+	return _state == State.BUNDLED
+
+
+## Everything it will throw at a web before it tires itself out: the number a
+## web has to beat to keep hold of it.
+func total_thrash() -> float:
+	return struggle_power * struggle_stamina
+
+
 ## Still fighting, and still able to get free. This is the only window in which
 ## a catch can be lost, so it is the window worth running back for.
 func is_fighting() -> bool:
@@ -182,7 +197,7 @@ func is_fighting() -> bool:
 ## Caught for keeps: tired out or wrapped. It will hang there until you come
 ## and take it, or until the web gives out under it.
 func is_secured() -> bool:
-	return is_stuck() and not is_fighting()
+	return _state == State.BUNDLED or (is_stuck() and not is_fighting())
 
 
 ## Silk needed to bundle this up so it stops wrecking the web.
@@ -202,6 +217,40 @@ func envenom() -> bool:
 	_set_marked(false)
 	_set_cocoon(true)
 	return true
+
+
+## Wrapped on the spot and cut loose: the silk goes round it where it is and
+## the bundle drops. This is what a web thrown over something does when the
+## silk is good enough to take it outright, rather than leaving it hanging
+## there fighting.
+func bundle() -> bool:
+	if eaten or _state == State.BUNDLED:
+		return false
+	if is_instance_valid(_web):
+		_web.on_prey_escaped(self)
+	_web = null
+	wrapped = true
+	_struggle = 0.0
+	_fight_left = 0.0
+	_snap_timer = 0.0
+	_recatch_cooldown = 0.0
+	_state = State.BUNDLED
+	_set_marked(false)
+	_set_cocoon(true)
+	velocity = Vector3.ZERO
+	return true
+
+
+## A bundle is dead weight: it falls whether or not the thing inside it could
+## fly, and stays where it lands until you come and drain it.
+func _fall(delta: float) -> void:
+	if is_on_floor():
+		velocity = Vector3.ZERO
+		return
+	velocity.x = move_toward(velocity.x, 0.0, delta * 4.0)
+	velocity.z = move_toward(velocity.z, 0.0, delta * 4.0)
+	velocity.y -= _gravity * delta
+	move_and_slide()
 
 
 ## Bundles it: no more struggling, no more damage to the web.

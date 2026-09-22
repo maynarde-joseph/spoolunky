@@ -228,7 +228,13 @@ func commit_place() -> bool:
 	web.place_in(_resolve_container())
 	_loop_source = -1
 	web_built.emit(web)
-	if place_anchored > 0:
+	if web.bundled_on_arrival > 0:
+		notice.emit("%s thrown over %d — wrapped and dropped (%d silk)"
+			% [pattern.display_name, web.bundled_on_arrival, roundi(web.silk_cost)])
+	elif web.caught_on_arrival > 0:
+		notice.emit("%s caught %d on the way up, still fighting (%d silk)"
+			% [pattern.display_name, web.caught_on_arrival, roundi(web.silk_cost)])
+	elif place_anchored > 0:
 		notice.emit("%s spun into the gap, %.2f m2 on %d anchors (%d silk)"
 			% [pattern.display_name, place_area, place_anchored, roundi(web.silk_cost)])
 	else:

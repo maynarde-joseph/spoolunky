@@ -54,6 +54,11 @@ var area := 0.0
 var mesh_instance: MeshInstance3D
 var catch_area: Area3D
 var catch_shape: CollisionShape3D
+
+## What this web took the moment it went up, and how much of that it wrapped
+## outright. Read straight after placing, for the notice.
+var caught_on_arrival := 0
+var bundled_on_arrival := 0
 var material: StandardMaterial3D
 
 ## The anchor points this web was spun across, in world space. Kept so a web
@@ -118,13 +123,38 @@ func catch_what_is_already_here() -> int:
 	params.collide_with_areas = false
 	var space := get_world_3d().direct_space_state
 	var caught := 0
+	bundled_on_arrival = 0
 	for hit in space.intersect_shape(params, maxi(capacity(), 1)):
 		var body := hit.get("collider") as Node3D
-		if body != null and _capture(body, 0.0, _catch_point(body)):
+		if body == null or not is_instance_valid(body):
+			continue
+		if body.has_method("can_be_snared") and not body.can_be_snared():
+			continue
+		if "size_class" in body and body.size_class < pattern.min_catch_size:
+			continue
+		# Silk thrown over something it can hold takes it outright: wrapped
+		# where it stood, and the bundle drops. Anything the silk is not up to
+		# is caught the ordinary way and has to be fought for.
+		if _takes_cleanly(body) and body.bundle():
 			caught += 1
+			bundled_on_arrival += 1
+			prey_caught.emit(self, body)
+			continue
+		if _capture(body, 0.0, _catch_point(body)):
+			caught += 1
+	caught_on_arrival = caught
 	if caught > 0:
 		fire()
 	return caught
+
+
+## Whether this web can take something outright rather than hold it while it
+## fights. Same number that decides whether a catch stays put at all, so a
+## sheet web thrown at a wasp is no better than a sheet web left for one.
+func _takes_cleanly(body: Node3D) -> bool:
+	if not body.has_method("bundle") or not body.has_method("total_thrash"):
+		return false
+	return body.total_thrash() <= hold_strength() * Prey.ESCAPE_MARGIN
 
 
 ## How hard this web holds on to prey. A web that has just been signalled is

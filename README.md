@@ -154,9 +154,13 @@ Either end can be a **device** rather than a web — they sit on the same graph.
 
 ## Two things a web is for
 
-**Throw one at something.** A web spun over a moth catches it on the spot —
-new webs take whatever is already inside them, so you can deal with something
-in front of you rather than only setting up for later.
+**Throw one at something.** A web spun over a moth wraps it where it stood and
+the bundle drops to the floor for you to collect — so you can deal with
+something in front of you rather than only setting up for later.
+
+Only if your silk is up to it, mind: a web takes something outright just when
+it could have out-held the whole fight that thing would have put up. Throw a
+sheet web at a wasp and you get a wasp hanging in a sheet web, fighting.
 
 **Leave one somewhere to work.** Fit a web to a corner prey walks past, drop a
 **Scent Lure** on the far side so traffic comes *through* the web to reach it,

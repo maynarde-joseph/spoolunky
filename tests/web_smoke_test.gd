@@ -1587,8 +1587,7 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	if not _check(builder.place_valid, "somewhere to spin one"):
 		silk.unlimited = false
 		return
-	var sitting := _spawn_fly(level, builder.aim_point + Vector3(0, 0.15, 0))
-	sitting.flying = false
+	var sitting := _spawn_fly(level, builder.aim_point + Vector3(0, 0.9, 0))
 	await physics_frame
 	await physics_frame
 	_check(not sitting.is_stuck(), "a fly minding its own business")
@@ -1599,7 +1598,7 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	if not _check(builder.begin_place(), "spinning one straight onto it"):
 		silk.unlimited = false
 		return
-	builder.place_radius = clampf(1.2, builder._min_place_radius(),
+	builder.place_radius = clampf(1.6, builder._min_place_radius(),
 		builder._max_place_radius())
 	builder._update_placement()
 	var spun: Array[WebStructure] = []
@@ -1614,20 +1613,49 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 		silk.unlimited = false
 		return
 
-	# Caught on the spot, not on the next frame something happens to move.
-	_check(sitting.is_stuck(), "and the fly is caught the moment it exists")
+	# Taken on the spot, not on the next frame something happens to move.
 	var net := spun[0] as WebNet
-	_check(net.snared_count() == 1, "the web knows it has it (%d)" % net.snared_count())
-	_check(sitting.is_fighting(), "and it is fighting, same as anything else caught")
+	_check(net.bundled_on_arrival == 1,
+		"the web wraps it the moment it exists (%d)" % net.bundled_on_arrival)
+	_check(sitting.wrapped, "the fly is wrapped in the silk")
+	_check(sitting.is_bundled(), "and out of the web rather than hanging in it")
+	_check(not sitting.is_fighting(), "with no fight left to put up")
+	_check(net.snared_count() == 0,
+		"so the web is not holding it (%d)" % net.snared_count())
+	_check(caught.size() == 1, "and it still reads as a catch (%d)" % caught.size())
 
-	# It is still a web, so the larder rules apply — no free kill for a big one.
-	var thrash := sitting.struggle_power * sitting.struggle_stamina
-	_check(thrash < net.hold_strength() * Prey.ESCAPE_MARGIN,
-		"an orb web holds a fly thrown into it (%.1f vs %.1f)"
-		% [thrash, net.hold_strength() * Prey.ESCAPE_MARGIN])
+	# It has to come down. A bundle is dead weight whether or not it could fly.
+	var dropped_from := sitting.global_position.y
+	var landed: bool = await _wait_until(
+		func() -> bool: return sitting.is_on_floor(), 240)
+	_check(landed, "the bundle falls")
+	_check(sitting.global_position.y < dropped_from - 0.05,
+		"and ends up lower than it was (%.2f -> %.2f)"
+		% [dropped_from, sitting.global_position.y])
 
+	# And is simply there to be drained off the floor.
+	var fed := spider.growth.biomass
+	spider._handle_prey(sitting)
+	await process_frame
+	_check(spider.growth.biomass > fed, "a bundle on the floor is drainable")
+
+	# The silk still has to be up to it: one that out-fights the web is caught
+	# the ordinary way and has to be held, exactly as if it had flown in.
+	var brute := _spawn_fly(level, net.to_global(net.centre_local))
+	brute.species = "Test Brute"
+	brute.struggle_power = 40.0
+	brute.flying = false
+	await physics_frame
+	_check(brute.total_thrash() > net.hold_strength() * Prey.ESCAPE_MARGIN,
+		"something that out-fights the silk (%.0f vs %.0f)"
+		% [brute.total_thrash(), net.hold_strength() * Prey.ESCAPE_MARGIN])
+	_check(net.catch_what_is_already_here() >= 1, "is still caught by it")
+	_check(net.bundled_on_arrival == 0, "but not wrapped outright")
+	_check(brute.is_stuck() and not brute.is_bundled(),
+		"it hangs in the web and has to be fought for")
+
+	brute.queue_free()
 	net.demolish()
-	sitting.queue_free()
 	slab.queue_free()
 	silk.unlimited = false
 	await physics_frame
