@@ -1997,13 +1997,6 @@ func _hold_of(builder: WebBuilder, id: String, quality: float) -> float:
 	return pattern.hold_strength * quality * Prey.ESCAPE_MARGIN
 
 
-func _pattern(builder: WebBuilder, id: String) -> WebPattern:
-	for pattern in builder.patterns:
-		if pattern.id == id:
-			return pattern
-	return null
-
-
 ## Puts the wheel back on something spinnable, the way a fresh spider starts.
 func _select_first_spinnable_again(builder: WebBuilder) -> void:
 	builder._select_first_spinnable()
