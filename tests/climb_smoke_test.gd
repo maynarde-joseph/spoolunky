@@ -51,6 +51,7 @@ func _run() -> void:
 	await _test_grappling_without_a_mode()
 	await _test_grappling_a_long_way()
 	await _test_lines_are_roads()
+	await _test_sloppy_normals()
 
 	_release_all()
 	current_scene = null
@@ -642,6 +643,49 @@ func _test_lines_are_roads() -> void:
 	line.queue_free()
 	await physics_frame
 	await process_frame
+
+
+## The body's up is slerped towards a target every frame, and Vector3.slerp
+## builds its rotation about the cross product of the two — so it refuses an
+## axis that is not unit length. Physics hands back surface normals that are a
+## shade under unit, 0.999263 among them, and that value used to become the
+## body's up unexamined. One sloppy normal from the world was then an error
+## every single frame until the spider next touched something else.
+func _test_sloppy_normals() -> void:
+	_release_all()
+	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
+	_spider.velocity = Vector3.ZERO
+	await _run_frames(15)
+
+	# The exact value the engine handed back when this turned up in play.
+	var sloppy := Vector3(0.0, 0.0, 0.999263)
+	_check(not sloppy.is_normalized(),
+		"a normal a shade under unit length (%.6f)" % sloppy.length())
+
+	_spider.climb._adopt_surface(sloppy)
+	_check(_spider.climb.body_up().is_normalized(),
+		"is cleaned up before it becomes the body's up (%.6f)"
+		% _spider.climb.body_up().length())
+	_check(_spider.climb.surface_normal.is_normalized(),
+		"and so is the surface normal (%.6f)" % _spider.climb.surface_normal.length())
+
+	# And the blend itself has to cope, because that is where it threw. Airborne
+	# in the middle of the room, which is the branch the stack trace named, and
+	# far enough from anything that it stays airborne while the blend runs.
+	_spider.climb._current_up = sloppy
+	_spider.global_position = Vector3.ZERO
+	_spider.velocity = Vector3.ZERO
+	_spider.climb.release()
+	await _run_frames(5)
+	_check(_spider.climb.body_up().is_normalized(),
+		"and a sloppy up set behind that guard is fixed by the blend (%.6f)"
+		% _spider.climb.body_up().length())
+
+	_release_all()
+	_spider.climb._current_up = Vector3.UP
+	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
+	_spider.velocity = Vector3.ZERO
+	await _run_frames(20)
 
 
 ## Holds W for a while and lets go.

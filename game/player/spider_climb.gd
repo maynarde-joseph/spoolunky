@@ -451,7 +451,16 @@ func _find_surface(height: float, wish: Vector3) -> Dictionary:
 
 ## Moves the body's idea of up onto a new surface, carrying the facing
 ## direction with it.
-func _adopt_surface(normal: Vector3) -> void:
+##
+## The normal is normalized on the way in rather than trusted. Physics hands
+## back normals that are a shade under unit length — 0.9993 turns up readily —
+## and this value becomes the body's up, which is then slerped every frame.
+## Vector3.slerp needs both ends exactly unit, so one sloppy normal from the
+## world is an error every frame until the spider next touches something else.
+func _adopt_surface(raw_normal: Vector3) -> void:
+	if raw_normal.length_squared() < 0.000001:
+		return
+	var normal := raw_normal.normalized()
 	if normal.dot(_current_up) > 0.999:
 		surface_normal = normal
 		_current_up = normal
@@ -665,7 +674,7 @@ func grapple_to(point: Vector3, normal: Vector3) -> bool:
 	if mode == Mode.GRAPPLING or _spider == null:
 		return false
 	grapple_target = point
-	grapple_normal = normal
+	grapple_normal = normal.normalized() if normal.length_squared() > 0.000001 else Vector3.UP
 	_grapple_time = 0.0
 	_grapple_span = _spider.global_position.distance_to(point)
 	_set_mode(Mode.GRAPPLING)
@@ -853,7 +862,8 @@ func _wish_direction(input_axis: Vector2, up: Vector3) -> Vector3:
 	return (forward * input_axis.y + right * input_axis.x).normalized()
 
 
-func _orientation_basis(up: Vector3) -> Basis:
+func _orientation_basis(raw_up: Vector3) -> Basis:
+	var up := raw_up.normalized() if raw_up.length_squared() > 0.000001 else Vector3.UP
 	var back := -_facing
 	var right := up.cross(back)
 	if right.length_squared() < 0.000001:
@@ -866,9 +876,14 @@ func _orientation_basis(up: Vector3) -> Basis:
 
 
 func _blend_up(target: Vector3, delta: float) -> void:
-	if target.length_squared() < 0.000001:
+	if target.length_squared() < 0.000001 or _current_up.length_squared() < 0.000001:
 		return
-	var blended := _current_up.slerp(target, clampf(orientation_speed * delta, 0.0, 1.0))
+	# Both ends, every time. slerp builds a rotation about the cross product of
+	# its operands and refuses an axis that is not unit length, so a hair off
+	# on either side is a hard error rather than a slightly wrong angle.
+	var from := _current_up.normalized()
+	var to := target.normalized()
+	var blended := from.slerp(to, clampf(orientation_speed * delta, 0.0, 1.0))
 	if blended.length_squared() > 0.000001:
 		_current_up = blended.normalized()
 
