@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PreySpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/prey_species.gd" id="1_species"]
+
+[resource]
+script = ExtResource("1_species")
+id = "beetle"
+display_name = "Beetle"
+description = "Walks. No web strung in the air will ever see one, and it fights slowly for a very long time rather than hard for a moment."
+sort_order = 3
+biomass = 30.0
+silk_return = 12.0
+size_class = 3
+struggle_power = 1.2
+struggle_stamina = 16.0
+settled_drain = 0.03
+move_speed = 0.8
+flying = false
+wander_radius = 6.0
+wander_height = Vector2(0.0, 0.2)
+wander_interval = 3.4
+lure_susceptibility = 0.5
+colour = Color(0.12, 0.2, 0.14, 1)
+sheen = Color(0.1, 0.3, 0.16, 1)
+body_radius = 0.075
+winged = false
+spawn_weight = 0.8

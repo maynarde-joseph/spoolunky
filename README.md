@@ -195,6 +195,27 @@ somewhere else.
 
 Same object, same rules, either way — including whether it holds what hits it.
 
+## What there is to catch
+
+Creatures are resources in `game/data/prey/`, and one scene serves all of them
+— body, size and behaviour all come from the `.tres`, so adding something new
+to catch is a file, not a scene and not a line of code.
+
+| | Size | Fight | Where | Worth |
+|---|---|---|---|---|
+| **Midge** | 1 | nothing | anywhere, high | 3 — but they come in numbers |
+| **Fly** | 1 | 5 | anywhere | 8 |
+| **Moth** | 2 | 12 | high up, loves a lure | 16 |
+| **Beetle** | 3 | 19, slow and long | **walks** — ground only | 30 |
+| **Wasp** | 3 | 31, ignores lures | anywhere | 34 |
+
+Three things decide where a creature belongs. **Fight** is what a web has to
+out-hold to keep it, so it picks the web. **Where** picks the *place* — no web
+strung in the air will ever see a beetle, and a moth lives near the ceiling.
+And **size** is a web's mesh (a pressure snare doesn't notice anything smaller
+than a moth) and your bite power, which is why a wasp needs venom or a few more
+meals before you can drain one.
+
 ## Leaving a web and coming back
 
 Prey that hits a web fights hard for about five seconds. Survive that and it

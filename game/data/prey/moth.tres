@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PreySpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/prey_species.gd" id="1_species"]
+
+[resource]
+script = ExtResource("1_species")
+id = "moth"
+display_name = "Moth"
+description = "Flies high and cannot resist a lure, so it is caught by where you put the web rather than by how good it is. A sheet will not keep one."
+sort_order = 2
+biomass = 16.0
+silk_return = 14.0
+size_class = 2
+struggle_power = 2.0
+struggle_stamina = 6.0
+settled_drain = 0.02
+move_speed = 1.4
+flying = true
+wander_radius = 8.0
+wander_height = Vector2(1.2, 4.2)
+wander_interval = 3.0
+lure_susceptibility = 0.95
+colour = Color(0.86, 0.82, 0.7, 1)
+sheen = Color(0.5, 0.46, 0.38, 1)
+body_radius = 0.065
+winged = true
+spawn_weight = 1.2

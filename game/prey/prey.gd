@@ -4,8 +4,13 @@ extends CharacterBody3D
 ## Something worth eating.
 ##
 ## Prey wanders a patch of the world, gets stuck in webs, struggles hard enough
-## to tear them, and can be wrapped and drained by the spider. Everything about
-## a species is exported, so a rat is this script with bigger numbers.
+## to tear them, and can be wrapped and drained by the spider. What kind of
+## creature it is comes from a [PreySpecies] resource, so one scene and one
+## script serve every creature in the game and a new one is a .tres.
+##
+## The species is copied into plain fields when it is applied rather than read
+## through, so a level — or a test — can make one unusual individual without
+## authoring a whole species for it.
 
 signal snared(prey: Prey)
 signal broke_free(prey: Prey)
@@ -25,54 +30,56 @@ enum State {
 ## quality, which climbs with size, moves every one of those lines up.
 const ESCAPE_MARGIN := 6.0
 
+## The one scene every creature is built from.
+const SCENE_PATH := "res://game/prey/prey.tscn"
 
-@export_group("Species")
+
+## What this is. Applied on the way into the tree, or by whatever spawned it.
+@export var kind: PreySpecies
 
 ## Shown in HUD messages.
-@export var species := "Fly"
+var species := "Fly"
 
 ## Biomass gained by draining it.
-@export var biomass := 8.0
+var biomass := 8.0
 
 ## Silk recovered by draining it.
-@export var silk_return := 7.0
+var silk_return := 7.0
 
-## How big it is, against the spider's bite power. 1 is fly-sized.
-@export var size_class := 1
+## How big it is, against a web's mesh and the spider's bite power. 1 is
+## fly-sized.
+var size_class := 1
 
 ## How hard it fights a web. Tears silk and eventually pulls free.
-@export var struggle_power := 1.0
+var struggle_power := 1.0
 
 ## How long it fights for before it tires out. A catch is won or lost inside
 ## this window: if the web out-holds the whole thrash, it is still there when
 ## you come back, which is the only reason leaving a web is a plan and not a
 ## way to lose one.
-@export var struggle_stamina := 5.0
+var struggle_stamina := 5.0
 
 ## How hard a tired catch keeps pulling. Small on purpose — it means a full
 ## larder is a web slowly wearing out rather than a free store, without ever
 ## putting you on a stopwatch.
-@export var settled_drain := 0.015
+var settled_drain := 0.015
 
-
-@export_group("Movement")
-
-@export var move_speed := 1.6
+var move_speed := 1.6
 
 ## Flying prey ignores gravity and drifts; walking prey falls.
-@export var flying := true
+var flying := true
 
 ## How far from its spawn point it will wander.
-@export var wander_radius := 6.0
+var wander_radius := 6.0
 
 ## Low and high limits above the spawn point, for fliers.
-@export var wander_height := Vector2(0.3, 2.6)
+var wander_height := Vector2(0.3, 2.6)
 
 ## Seconds before it picks somewhere new to be, even if it hasn't arrived.
-@export var wander_interval := 3.0
+var wander_interval := 3.0
 
 ## How strongly it drifts toward a funnel lure it can smell.
-@export_range(0.0, 1.0, 0.05) var lure_susceptibility := 0.8
+var lure_susceptibility := 0.8
 
 
 var wrapped := false
@@ -98,19 +105,59 @@ var _life := 0.0
 var _marker: MeshInstance3D
 var _cocoon: MeshInstance3D
 var _wings: Array[Node3D] = []
+var _applied := false
 
 @onready var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
+
+
+## Builds one of a species, ready to be dropped into the world.
+static func of(species: PreySpecies) -> Prey:
+	# Loaded rather than preloaded: the scene this makes carries this very
+	# script, and a preload of it from in here is a cycle.
+	var scene := load(SCENE_PATH) as PackedScene
+	if scene == null or species == null:
+		return null
+	var prey := scene.instantiate() as Prey
+	if prey == null:
+		return null
+	prey.apply_species(species)
+	return prey
+
+
+## Takes on a species: its numbers, its name and its body. Safe before the
+## node is in the tree, which is where the spawner does it.
+func apply_species(from: PreySpecies) -> void:
+	if from == null:
+		return
+	kind = from
+	name = from.display_name.replace(" ", "")
+	species = from.display_name
+	biomass = from.biomass
+	silk_return = from.silk_return
+	size_class = from.size_class
+	struggle_power = from.struggle_power
+	struggle_stamina = from.struggle_stamina
+	settled_drain = from.settled_drain
+	move_speed = from.move_speed
+	flying = from.flying
+	wander_radius = from.wander_radius
+	wander_height = from.wander_height
+	wander_interval = from.wander_interval
+	lure_susceptibility = from.lure_susceptibility
+	_applied = true
+	if is_inside_tree():
+		_build_body()
 
 
 func _ready() -> void:
 	add_to_group("prey")
 	collision_layer = GameLayers.PREY
 	collision_mask = GameLayers.WORLD
+	if kind != null and not _applied:
+		apply_species(kind)
+	_build_body()
 	_home = global_position
 	_pick_target()
-	for child in get_children():
-		if child.name.begins_with("Wing"):
-			_wings.append(child)
 
 
 func _physics_process(delta: float) -> void:
@@ -378,7 +425,9 @@ func _sniff_for_lures() -> void:
 		return
 	if randf() > lure_susceptibility:
 		return
-	_target = best.global_position + Vector3(randf_range(-0.2, 0.2), randf_range(-0.2, 0.2), randf_range(-0.2, 0.2))
+	var wobble := Vector3(randf_range(-0.2, 0.2), randf_range(-0.2, 0.2),
+		randf_range(-0.2, 0.2))
+	_target = best.global_position + wobble
 	_wander_timer = wander_interval
 
 
@@ -422,12 +471,108 @@ func _flap() -> void:
 		wing.rotation.z = angle * sign_value
 
 
+## Body, wings and hitbox, all from the species. Built in code rather than
+## authored per creature, so a new one really is a .tres and nothing else.
+func _build_body() -> void:
+	var radius := 0.045
+	var colour := Color(0.13, 0.12, 0.15, 1.0)
+	var sheen := Color(0.45, 0.3, 0.08, 1.0)
+	var winged := true
+	if kind != null:
+		radius = maxf(kind.body_radius, 0.008)
+		colour = kind.colour
+		sheen = kind.sheen
+		winged = kind.winged
+
+	_replace_child("Body", _make_body(radius, colour, sheen))
+	_replace_child("Hitbox", _make_hitbox(radius))
+	_wings.clear()
+	if winged:
+		_replace_child("WingLeft", _make_wing(radius, 1.0))
+		_replace_child("WingRight", _make_wing(radius, -1.0))
+		for wing_name in ["WingLeft", "WingRight"]:
+			var wing := get_node_or_null(NodePath(wing_name)) as Node3D
+			if wing != null:
+				_wings.append(wing)
+	else:
+		_drop_child("WingLeft")
+		_drop_child("WingRight")
+
+	# A cocoon drawn for the old body is the wrong size for this one.
+	if _cocoon != null:
+		_cocoon.queue_free()
+		_cocoon = null
+	if _marker != null:
+		_marker.queue_free()
+		_marker = null
+
+
+func _make_body(radius: float, colour: Color, sheen: Color) -> MeshInstance3D:
+	var mesh := SphereMesh.new()
+	mesh.radius = radius
+	mesh.height = radius * 2.2
+	mesh.radial_segments = 10
+	mesh.rings = 5
+	var material := StandardMaterial3D.new()
+	material.albedo_color = colour
+	material.metallic = 0.4
+	material.roughness = 0.35
+	material.emission_enabled = true
+	material.emission = sheen
+	material.emission_energy_multiplier = 0.6
+	var view := MeshInstance3D.new()
+	view.mesh = mesh
+	view.material_override = material
+	return view
+
+
+func _make_wing(radius: float, side: float) -> Node3D:
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(radius * 2.4, maxf(radius * 0.06, 0.002), radius * 1.1)
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(0.85, 0.9, 1.0, 0.35)
+	material.roughness = 0.1
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var view := MeshInstance3D.new()
+	view.name = "Mesh"
+	view.mesh = mesh
+	view.material_override = material
+	view.position = Vector3(radius * 1.2 * side, radius * 0.45, 0.0)
+	var pivot := Node3D.new()
+	pivot.add_child(view)
+	return pivot
+
+
+func _make_hitbox(radius: float) -> CollisionShape3D:
+	var shape := SphereShape3D.new()
+	shape.radius = radius * 1.15
+	var hit := CollisionShape3D.new()
+	hit.shape = shape
+	return hit
+
+
+func _replace_child(child_name: String, node: Node) -> void:
+	_drop_child(child_name)
+	node.name = child_name
+	add_child(node)
+
+
+func _drop_child(child_name: String) -> void:
+	var existing := get_node_or_null(NodePath(child_name))
+	if existing == null:
+		return
+	remove_child(existing)
+	existing.queue_free()
+
+
 ## Silk bundle drawn around wrapped prey.
 func _set_cocoon(active: bool) -> void:
 	if active and _cocoon == null:
+		var radius: float = kind.body_radius if kind != null else 0.045
 		var mesh := SphereMesh.new()
-		mesh.radius = 0.09
-		mesh.height = 0.26
+		mesh.radius = radius * 2.0
+		mesh.height = radius * 5.8
 		mesh.radial_segments = 10
 		mesh.rings = 5
 		var material := StandardMaterial3D.new()

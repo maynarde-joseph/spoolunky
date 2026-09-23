@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PreySpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/prey_species.gd" id="1_species"]
+
+[resource]
+script = ExtResource("1_species")
+id = "midge"
+display_name = "Midge"
+description = "Barely there. Any web holds one, and one is barely worth the walk — but they come in numbers, and a web left out fills with them."
+sort_order = 0
+biomass = 3.0
+silk_return = 3.0
+size_class = 1
+struggle_power = 0.25
+struggle_stamina = 3.0
+settled_drain = 0.008
+move_speed = 2.4
+flying = true
+wander_radius = 5.0
+wander_height = Vector2(0.6, 3.2)
+wander_interval = 1.2
+lure_susceptibility = 0.95
+colour = Color(0.55, 0.53, 0.48, 1)
+sheen = Color(0.3, 0.3, 0.26, 1)
+body_radius = 0.022
+winged = true
+spawn_weight = 3.0

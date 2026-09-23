@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://bmy13ib0322y" path="res://addons/character-controller/example/main/level.gd" id="1_cikgd"]
 [ext_resource type="PackedScene" path="res://game/player/spider.tscn" id="2_spider"]
 [ext_resource type="PackedScene" path="res://game/ui/hud.tscn" id="13_hud"]
-[ext_resource type="PackedScene" path="res://game/prey/fly.tscn" id="14_fly"]
+[ext_resource type="PackedScene" path="res://game/prey/prey.tscn" id="14_prey"]
 [ext_resource type="Script" path="res://game/prey/prey_spawner.gd" id="15_spawner"]
 [ext_resource type="Material" uid="uid://2ciy11rdndma" path="res://addons/character-controller/example/main/materials/grass.tres" id="3_7vb8p"]
 [ext_resource type="PackedScene" uid="uid://b3wdcta6c4k4t" path="res://addons/character-controller/example/main/geometry/floor.tscn" id="3_80rlo"]
@@ -474,7 +474,7 @@ directional_shadow_max_distance = 250.0
 [node name="PreySpawner" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 6)
 script = ExtResource("15_spawner")
-prey_scene = ExtResource("14_fly")
+prey_scene = ExtResource("14_prey")
 population = 12
 spawn_extents = Vector3(26, 5, 26)
 respawn_delay = 5.0

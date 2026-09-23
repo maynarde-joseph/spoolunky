@@ -62,6 +62,7 @@ func _run() -> void:
 	await _test_a_web_fits_the_space(spider, builder, silk)
 	await _test_spitting_a_web_at_something(spider, builder, level, webs, silk)
 	await _test_throwing_a_bolt(spider, builder, level, webs, silk)
+	await _test_species(spider, builder, level, silk)
 	await _test_the_larder(spider, builder, webs, level)
 	await _test_the_bag(spider, level, webs, builder, silk)
 	await _test_sandbox_wiring(level, spider)
@@ -926,7 +927,9 @@ func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 func _test_sandbox_wiring(level: Node, spider: SpiderPlayer) -> void:
 	var spawner := level.get_node_or_null("PreySpawner") as PreySpawner
 	if _check(spawner != null, "the level has a prey spawner"):
-		_check(spawner.alive_count() > 0, "it stocked %d flies" % spawner.alive_count())
+		_check(spawner.alive_count() > 0, "it stocked %d creatures" % spawner.alive_count())
+		_check(spawner.stock.size() > 1,
+			"from a mixed stock (%d species)" % spawner.stock.size())
 	var hud := level.get_node_or_null("HUD") as SpiderHUD
 	if _check(hud != null, "the level has a HUD"):
 		_check(hud.stage_label.text.contains(spider.stage().display_name),
@@ -1870,6 +1873,137 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 	await process_frame
 
 
+# --- what there is to catch ---------------------------------------------
+
+## Creatures are resources, and the point of having several is that they are
+## not interchangeable. What is checked here is the ladder the escape margin
+## claims to define — a sheet web keeps a fly, an orb web keeps a moth, a
+## pressure snare keeps a wasp — because if that is not true then every web in
+## the game is the same web and none of the choosing matters.
+func _test_species(spider: SpiderPlayer, builder: WebBuilder, level: Node,
+		silk: SilkPool) -> void:
+	var all := PreyLibrary.load_species()
+	_check(all.size() >= 5, "the game has creatures in it (%d)" % all.size())
+	var ids: Array[String] = []
+	for kind in all:
+		ids.append(kind.id)
+	_check(ids.has("midge") and ids.has("fly") and ids.has("moth")
+		and ids.has("beetle") and ids.has("wasp"),
+		"five of them, smallest first: %s" % ", ".join(ids))
+
+	var midge := PreyLibrary.find("midge")
+	var fly := PreyLibrary.find("fly")
+	var moth := PreyLibrary.find("moth")
+	var beetle := PreyLibrary.find("beetle")
+	var wasp := PreyLibrary.find("wasp")
+	if not _check(midge != null and fly != null and moth != null
+			and beetle != null and wasp != null, "all five load"):
+		return
+
+	# They have to fight differently, or the hold strengths decide nothing.
+	_check(midge.total_thrash() < fly.total_thrash()
+		and fly.total_thrash() < moth.total_thrash()
+		and moth.total_thrash() < beetle.total_thrash()
+		and beetle.total_thrash() < wasp.total_thrash(),
+		"each fights harder than the last (%.1f, %.1f, %.1f, %.1f, %.1f)"
+		% [midge.total_thrash(), fly.total_thrash(), moth.total_thrash(),
+			beetle.total_thrash(), wasp.total_thrash()])
+	_check(beetle.size_class > fly.size_class,
+		"and a beetle is bigger than a fly (%d vs %d)"
+		% [beetle.size_class, fly.size_class])
+	_check(not beetle.flying and moth.flying,
+		"a beetle walks and a moth flies, so they are caught in different places")
+	_check(moth.wander_height.x > fly.wander_height.x,
+		"and the moth lives higher up (%.1fm vs %.1fm)"
+		% [moth.wander_height.x, fly.wander_height.x])
+	_check(wasp.lure_susceptibility < fly.lure_susceptibility,
+		"a wasp will not come to a lure the way a fly will (%.2f vs %.2f)"
+		% [wasp.lure_susceptibility, fly.lure_susceptibility])
+
+	# The ladder, measured against real patterns. At a stated silk quality
+	# rather than whatever the spider happens to be: growth is *supposed* to
+	# move every one of these lines, so reading the live stage would make this
+	# a test of how much the earlier tests fed the spider.
+	var mid := 1.8
+	var sheet := _hold_of(builder, "sheet_web", mid)
+	var orb := _hold_of(builder, "orb_web", mid)
+	var snare := _hold_of(builder, "pressure_snare", mid)
+	_check(sheet > 0.0 and orb > sheet and snare > orb,
+		"the webs hold in order too (%.1f, %.1f, %.1f)" % [sheet, orb, snare])
+	_check(fly.total_thrash() <= sheet and moth.total_thrash() > sheet,
+		"a sheet web keeps a fly and loses a moth (%.1f, %.1f, holds %.1f)"
+		% [fly.total_thrash(), moth.total_thrash(), sheet])
+	_check(beetle.total_thrash() <= orb and wasp.total_thrash() > orb,
+		"an orb web keeps a beetle and loses a wasp (%.1f, %.1f, holds %.1f)"
+		% [beetle.total_thrash(), wasp.total_thrash(), orb])
+	_check(wasp.total_thrash() <= snare,
+		"and a pressure snare keeps the wasp (%.1f, holds %.1f)"
+		% [wasp.total_thrash(), snare])
+
+	# And growing is supposed to move the lines, not just the numbers: better
+	# silk should turn the web that lost a moth into the web that keeps one.
+	var grown := _hold_of(builder, "sheet_web", mid * 2.0)
+	_check(moth.total_thrash() <= grown,
+		"better silk turns the sheet web into one that keeps a moth (holds %.1f)"
+		% grown)
+
+	# Mesh, the other gate: the heavy ground trap should not be the answer to
+	# something you can barely see.
+	var snare_pattern := _pattern(builder, "pressure_snare")
+	if snare_pattern != null:
+		_check(midge.size_class < snare_pattern.min_catch_size,
+			"a midge goes straight through a pressure snare (%d under %d)"
+			% [midge.size_class, snare_pattern.min_catch_size])
+		_check(beetle.size_class >= snare_pattern.min_catch_size,
+			"and a beetle does not")
+
+	# And one of them, in the world, built from nothing but its resource.
+	var host := spider.get_parent()
+	var slab := _test_slab(host, Vector3(-90, 0.0, 90))
+	await physics_frame
+	_clear_prey_near(level, slab.global_position, 16.0, null)
+	await physics_frame
+	var one := _spawn_species(level, "wasp", slab.global_position + Vector3(0, 1.2, 0))
+	await physics_frame
+	if _check(one != null, "a wasp can be put in the world"):
+		_check(one.species == "Wasp", "it knows what it is (%s)" % one.species)
+		_check(is_equal_approx(one.total_thrash(), wasp.total_thrash()),
+			"and fights like the resource says (%.1f)" % one.total_thrash())
+		_check(one.get_node_or_null("Body") != null,
+			"with a body built from the species, not from a scene per creature")
+		_check(one.get_node_or_null("Hitbox") != null, "and something to hit")
+		one.queue_free()
+
+	# A walker gets no wings, which is the visible half of "caught elsewhere".
+	var walker := _spawn_species(level, "beetle", slab.global_position + Vector3(1.5, 0.6, 0))
+	await physics_frame
+	if _check(walker != null, "and so can a beetle"):
+		_check(walker.get_node_or_null("WingLeft") == null,
+			"which has no wings, because it does not fly")
+		walker.queue_free()
+
+	slab.queue_free()
+	silk.refill(silk.maximum)
+	await physics_frame
+	await process_frame
+
+
+## The most a pattern can hold at a given silk quality, as the escape check
+## measures it — pattern strength times quality, times the margin.
+func _hold_of(builder: WebBuilder, id: String, quality: float) -> float:
+	var pattern := _pattern(builder, id)
+	if pattern == null:
+		return 0.0
+	return pattern.hold_strength * quality * Prey.ESCAPE_MARGIN
+
+
+func _pattern(builder: WebBuilder, id: String) -> WebPattern:
+	for pattern in builder.patterns:
+		if pattern.id == id:
+			return pattern
+	return null
+
+
 ## Puts the wheel back on something spinnable, the way a fresh spider starts.
 func _select_first_spinnable_again(builder: WebBuilder) -> void:
 	builder._select_first_spinnable()
@@ -1886,11 +2020,19 @@ func _clear_prey_near(level: Node, point: Vector3, radius: float, keep: Prey) ->
 			other.queue_free()
 
 
+## A plain fly, the baseline everything else is measured against.
 func _spawn_fly(level: Node, at: Vector3) -> Prey:
-	var fly := load("res://game/prey/fly.tscn").instantiate() as Prey
-	level.add_child(fly)
-	fly.global_position = at
-	return fly
+	return _spawn_species(level, "fly", at)
+
+
+func _spawn_species(level: Node, id: String, at: Vector3) -> Prey:
+	var kind := PreyLibrary.find(id)
+	if not _check(kind != null, "species '%s' exists" % id):
+		return null
+	var prey := Prey.of(kind)
+	level.add_child(prey)
+	prey.global_position = at
+	return prey
 
 
 func _select_pattern(builder: WebBuilder, id: String) -> void:

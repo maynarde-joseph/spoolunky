@@ -276,6 +276,61 @@ runs its rim out into the room it landed in exactly as a placed one does — and
 a bolt that lands on a moth centres on the moth rather than on the skin of it,
 for the same reason the placed ghost does.
 
+### What kind of game this is
+
+The mechanics settled before the genre did, so it is worth writing down what
+they turned out to want.
+
+Look at what is in here: catches persist while you are gone, webs have
+capacity, a bell exists solely to tell you something fired while you were
+elsewhere, lures reroute traffic through a spot you picked. Every one of those
+only pays off if you set something up and walk away. **This is a trap-building
+game** — the shape of How to Fish or Schedule 1, not the shape of a character
+action game.
+
+That rules out one thing and sharpens another. It rules out a boss *fight*:
+combat wants health, dodging and telegraphs, none of which exist, and the
+spider's only offensive verb is wrapping something already held. Building that
+would be building a second game, and the webs would shrink to scenery.
+
+But a boss does not have to be a fight, and here it should not be. `ESCAPE_MARGIN`
+already compares a creature's *entire* fight against one web's hold, so "a boss"
+is already expressible as **something no single web can hold**. That makes it a
+construction problem in the language the game already speaks: venom to weaken
+it, a lure to put it where you want it, several webs rigged together, the road
+network to move around it while it thrashes. An exam, not a duel.
+
+### Creatures are resources
+
+The first version had one creature with thirteen exported numbers on it, and
+seven web patterns, three devices, tuning dials and two mesh gates pointed at
+it. All of that is machinery for deciding *which* web goes *where*, and none of
+it could decide anything, because every catch was the same catch.
+
+So a creature is a [PreySpecies] resource now, exactly as a web is a
+[WebPattern] and a device is a [DeviceKind], and one scene builds its body from
+whatever the resource says. A new thing to catch is a .tres.
+
+The five that exist are picked to switch on the machinery that was already
+built, one gate each:
+
+* **Fight** — what a web has to out-hold — is the ladder `ESCAPE_MARGIN` always
+  claimed: a sheet web keeps a fly, an orb web keeps a moth and a beetle, a
+  pressure snare keeps a wasp. Silk quality rises with size, so growing moves
+  every one of those lines rather than just the numbers.
+* **Where** is the beetle. It walks, so no web strung in the air will ever see
+  one, and a moth lives near the ceiling where you have to go and put a web.
+  Placement stops being cosmetic the moment two creatures live in two places.
+* **Size** is the mesh. A pressure snare does not notice anything smaller than
+  a moth, so bringing the heavy trap to a patch of midges is a mistake you can
+  make. It is also bite power, which is what makes a venom spur worth carrying
+  before you are big enough to eat a wasp.
+* **Lures** are the wasp: the one thing that will not come when called, so the
+  device that trivialises everything else has something it cannot solve.
+
+The midge earns its place by being nearly worthless and very common — it is
+what fills a web you left out, which is the thing the larder is for.
+
 ### Silk is the road network
 
 Every line is walkable, not only the ones spun as bridges — a bridge is simply

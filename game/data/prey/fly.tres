@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PreySpecies" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/prey_species.gd" id="1_species"]
+
+[resource]
+script = ExtResource("1_species")
+id = "fly"
+display_name = "Fly"
+description = "The ordinary catch. A sheet web keeps one, which is the whole reason a sheet web is the first thing you learn."
+sort_order = 1
+biomass = 8.0
+silk_return = 7.0
+size_class = 1
+struggle_power = 1.0
+struggle_stamina = 5.0
+settled_drain = 0.015
+move_speed = 1.7
+flying = true
+wander_radius = 7.0
+wander_height = Vector2(0.3, 2.8)
+wander_interval = 2.6
+lure_susceptibility = 0.85
+colour = Color(0.13, 0.12, 0.15, 1)
+sheen = Color(0.45, 0.3, 0.08, 1)
+body_radius = 0.045
+winged = true
+spawn_weight = 2.0
