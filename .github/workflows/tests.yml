@@ -90,3 +90,6 @@ jobs:
 
       - name: Climb smoke test
         run: godot --headless --path . --script res://tests/climb_smoke_test.gd
+
+      - name: World smoke test
+        run: godot --headless --path . --script res://tests/world_smoke_test.gd

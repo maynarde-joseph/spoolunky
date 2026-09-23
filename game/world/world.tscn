@@ -1,0 +1,40 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://game/world/world.gd" id="1_world"]
+[ext_resource type="PackedScene" path="res://game/player/spider.tscn" id="2_spider"]
+[ext_resource type="PackedScene" path="res://game/ui/hud.tscn" id="3_hud"]
+[ext_resource type="PackedScene" path="res://game/prey/prey.tscn" id="4_prey"]
+[ext_resource type="Script" path="res://game/prey/prey_spawner.gd" id="5_spawner"]
+
+[sub_resource type="Environment" id="Environment_world"]
+background_mode = 1
+background_color = Color(0.05, 0.055, 0.07, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.62, 0.65, 0.74, 1)
+ambient_light_energy = 0.35
+tonemap_mode = 2
+
+[node name="World" type="Node3D"]
+
+[node name="Greybox" type="Node3D" parent="."]
+script = ExtResource("1_world")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_world")
+
+[node name="Webs" type="Node3D" parent="."]
+
+[node name="Player" parent="." instance=ExtResource("2_spider")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -88, 41.5, 12)
+
+[node name="PreySpawner" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -76, 46, 0)
+script = ExtResource("5_spawner")
+prey_scene = ExtResource("4_prey")
+population = 10
+spawn_extents = Vector3(26, 10, 26)
+respawn_delay = 5.0
+snap_to_ground = true
+hover_height = Vector2(0.35, 2.4)
+
+[node name="HUD" parent="." instance=ExtResource("3_hud")]
