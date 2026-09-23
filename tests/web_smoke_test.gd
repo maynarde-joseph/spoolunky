@@ -2112,11 +2112,11 @@ func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
 	await _run_frames(4)
 	_check(tether.aimed_cargo() == live,
 		"the crosshair picks the bundle out from nine metres")
-	var anchors := _silk_count()
+	var strands := get_tree().get_nodes_in_group("silk_webs").size()
 	_check(tether.grab_aimed(), "and the grapple puts a line on it")
 	_check(tether.is_towing(), "so you are towing rather than standing on it")
-	_check(_silk_count() == anchors,
-		"with no line strung to go there (%d)" % _silk_count())
+	var after := get_tree().get_nodes_in_group("silk_webs").size()
+	_check(after == strands, "with no line strung to go there (%d)" % after)
 
 	# A long shot pays out the whole distance and then winds back in, so it
 	# harpoons rather than yanking the thing to your feet.
