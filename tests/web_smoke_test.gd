@@ -64,6 +64,7 @@ func _run() -> void:
 	await _test_throwing_a_bolt(spider, builder, level, webs, silk)
 	await _test_species(spider, builder, level, silk)
 	await _test_tethering(spider, level, silk)
+	await _test_wrapped_things_fall(spider, builder, level, webs, silk)
 	await _test_the_larder(spider, builder, webs, level)
 	await _test_the_bag(spider, level, webs, builder, silk)
 	await _test_sandbox_wiring(level, spider)
@@ -2105,6 +2106,87 @@ func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
 		await physics_frame
 		_check(not tether.is_towing(), "draining the cargo drops the line")
 
+	slab.queue_free()
+	silk.refill(silk.maximum)
+	await physics_frame
+	await process_frame
+
+
+# --- wrapped silk with nothing holding it -------------------------------
+
+## Anything wrapped is finished business, and finished business obeys gravity.
+## Two ways to end up wrapped in mid-air with nothing under you — killed by
+## venom where you flew, and left behind when the web holding you comes down —
+## and neither of them should leave a cocoon hovering in the air.
+func _test_wrapped_things_fall(spider: SpiderPlayer, builder: WebBuilder, level: Node,
+		webs: Node3D, silk: SilkPool) -> void:
+	var host := spider.get_parent()
+	var slab := _test_slab(host, Vector3(-120, 0.0, -120))
+	await physics_frame
+	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+	_clear_prey_near(level, slab.global_position, 18.0, null)
+	await physics_frame
+	silk.refill(silk.maximum)
+	var floor_y := slab.global_position.y + 0.25
+
+	# Poisoned in mid-air, having never been in a web at all.
+	var high := slab.global_position + Vector3(0, 2.4, 0)
+	var flier := _spawn_species(level, "fly", high)
+	if not _check(flier != null, "a fly in the air to poison"):
+		return
+	await physics_frame
+	_check(flier.envenom(), "venom kills it where it flew")
+	_check(flier.wrapped, "and wraps it")
+	await _wait_until(func() -> bool: return flier.is_on_floor(), 300)
+	_check(flier.global_position.y < high.y - 0.5,
+		"a dead thing falls (%.2f from %.2f)" % [flier.global_position.y, high.y])
+	_check(flier.global_position.y < floor_y + 0.3,
+		"all the way down (%.2f, floor at %.2f)" % [flier.global_position.y, floor_y])
+	# Not off across the level: with nowhere recorded to hang from, the old
+	# behaviour dragged it towards the middle of the world instead.
+	var drift := Vector2(flier.global_position.x - high.x, flier.global_position.z - high.z)
+	_check(drift.length() < 2.0,
+		"and lands under where it died rather than sailing off (%.2fm)" % drift.length())
+	flier.queue_free()
+	await physics_frame
+
+	# Wrapped in a web, and then the web comes down around it.
+	var second := _spawn_species(level, "fly", high)
+	if not _check(second != null, "another fly, this one for a web"):
+		slab.queue_free()
+		return
+	await physics_frame
+	_select_pattern(builder, "orb_web")
+	var spun: Array[WebStructure] = []
+	var catcher := func(built: WebStructure) -> void: spun.append(built)
+	builder.web_built.connect(catcher)
+	var taken := 0
+	if _check(builder.begin_place(), "spinning one over it"):
+		builder.place_radius = clampf(1.2, builder._min_place_radius(),
+			builder._max_place_radius())
+		builder._update_placement()
+		builder.commit_place()
+		taken = spun.size()
+	builder.web_built.disconnect(catcher)
+	if not _check(taken == 1, "the web goes up (%d)" % taken):
+		second.queue_free()
+		slab.queue_free()
+		return
+
+	# A fly is inside what an orb web can hold, so it is wrapped outright and
+	# the silk goes with it. Either way it must not be left in the air.
+	await physics_frame
+	_check(second.wrapped, "the fly ends up wrapped")
+	var landed: bool = await _wait_until(func() -> bool: return second.is_on_floor(), 300)
+	_check(landed, "and a wrapped fly with no web under it comes down")
+	_check(second.global_position.y < floor_y + 0.3,
+		"onto the floor (%.2f, floor at %.2f)" % [second.global_position.y, floor_y])
+	second.queue_free()
+
+	for web in spun:
+		if is_instance_valid(web):
+			web.demolish()
 	slab.queue_free()
 	silk.refill(silk.maximum)
 	await physics_frame
