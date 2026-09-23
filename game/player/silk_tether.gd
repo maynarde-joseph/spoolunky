@@ -52,6 +52,7 @@ var _spider: SpiderPlayer
 var _silk: SilkPool
 var _growth: SpiderGrowth
 var _view: SpiderCamera
+var _climb: SpiderClimb
 var _rope := PackedVector3Array()
 var _previous := PackedVector3Array()
 var _rope_length := 0.0
@@ -60,12 +61,20 @@ var _material: StandardMaterial3D
 var _view_node: MeshInstance3D
 
 
+## Handed its parts by the spider. Not read off the parent in _ready(), because
+## a child is ready before its parent is and the spider's own pieces are not
+## assigned yet at that point — which reads as a null silk pool the first time
+## anything asks the line to cost something.
+func setup(spider: SpiderPlayer, silk: SilkPool, growth: SpiderGrowth,
+		view: SpiderCamera, climb: SpiderClimb) -> void:
+	_spider = spider
+	_silk = silk
+	_growth = growth
+	_view = view
+	_climb = climb
+
+
 func _ready() -> void:
-	_spider = get_parent() as SpiderPlayer
-	if _spider != null:
-		_silk = _spider.silk
-		_growth = _spider.growth
-		_view = _spider.view
 	_build_view()
 
 
@@ -106,6 +115,8 @@ func toggle() -> bool:
 ## Puts a line on something. Costs silk by the length of it, like everything.
 func hook(target: Node3D) -> bool:
 	if target == null or not is_instance_valid(target) or cargo != null:
+		return false
+	if _silk == null or _spider == null:
 		return false
 	if not can_carry(target):
 		notice.emit("Not something you can drag along")
@@ -283,7 +294,7 @@ func _still_there() -> bool:
 ## Where the line leaves the spider — a little above where it stands, so the
 ## rope does not start inside the floor.
 func _hand() -> Vector3:
-	var up := _spider.climb.body_up() if _spider.climb != null else Vector3.UP
+	var up := _climb.body_up() if _climb != null else Vector3.UP
 	return _spider.global_position + up * _height() * 0.4
 
 

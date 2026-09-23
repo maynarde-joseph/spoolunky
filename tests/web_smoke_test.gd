@@ -334,8 +334,16 @@ func _test_pressure_snare(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 	silk.refill(silk.maximum)
 
 	_select_pattern(builder, "pressure_snare")
-	builder.start()
 	var centre := spider.global_position + Vector3(0, 0.5, 2.0)
+	# Clear the patch first. Some of what wanders the level walks on the floor
+	# now, and a trap on the floor is exactly what a walker blunders into — so
+	# without this the snare is sometimes already sprung before the first check
+	# looks at it, which is a test of where the beetles happened to be.
+	_clear_prey_near(level, centre, 8.0, null)
+	await physics_frame
+	await process_frame
+
+	builder.start()
 	for point in _square(centre, 0.7):
 		builder.add_anchor(point)
 	builder.finish()
@@ -347,6 +355,8 @@ func _test_pressure_snare(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 		return
 	_check(snare.armed, "it starts armed")
 	_check(not snare.needs_rearm(), "and does not want re-arming yet")
+	_check(snare.snared_count() == 0,
+		"with nothing already in it (%d)" % snare.snared_count())
 
 	# A beetle walks, which is the whole reason a trap on the ground exists.
 	var quarry := _spawn_species(level, "beetle", snare.to_global(snare.centre_local))

@@ -96,6 +96,7 @@ func _ready() -> void:
 	climb.setup(self, silk, growth, view)
 	web_builder.setup(self, silk, growth, view, climb)
 	device_placer.setup(self, bag, growth, view)
+	tether.setup(self, silk, growth, view, climb)
 	web_builder.notice.connect(_on_notice)
 	device_placer.notice.connect(_on_notice)
 	climb.notice.connect(_on_notice)
