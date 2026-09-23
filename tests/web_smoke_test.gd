@@ -2102,16 +2102,22 @@ func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
 	# than hauling you over to stand next to it — the same click, read the only
 	# way that makes sense for a thing already wrapped up and going nowhere.
 	silk.refill(silk.maximum)
-	var far := slab.global_position + Vector3(0, 0.4, -9.0)
-	live.global_position = far
-	await physics_frame
+	# On the slab, not off the edge of it. A bundle dropped past the edge is a
+	# bundle falling for ever, which measures gravity rather than aiming.
+	live.global_position = slab.global_position + Vector3(0, 0.35, -5.5)
 	spider.climb.release()
 	spider.global_position = slab.global_position + Vector3(0, 0.85, 0)
-	spider.view.face(Vector3(0, 0, -1))
-	spider.view.pitch = 0.0
+	await physics_frame
+	# First person, so the crosshair really is the line the pick uses. In third
+	# person the camera sits behind the spider and the two are a parallax
+	# apart, which is fine to play with and no way to write an aiming test.
+	var was_third := spider.view.third_person
+	if was_third:
+		spider.view.toggle_mode()
+	_aim_at(spider, live.global_position)
 	await _run_frames(4)
 	_check(tether.aimed_cargo() == live,
-		"the crosshair picks the bundle out from nine metres")
+		"the crosshair picks the bundle out from five metres")
 	var strands := spider.get_tree().get_nodes_in_group("silk_webs").size()
 	_check(tether.grab_aimed(), "and the grapple puts a line on it")
 	_check(tether.is_towing(), "so you are towing rather than standing on it")
@@ -2121,18 +2127,21 @@ func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
 	# A long shot pays out the whole distance and then winds back in, so it
 	# harpoons rather than yanking the thing to your feet.
 	var reeled := live.global_position.distance_to(spider.global_position)
-	_check(reeled > 5.0, "it is still out there to start with (%.2fm)" % reeled)
+	_check(reeled > 4.0, "it is still out there to start with (%.2fm)" % reeled)
 	await _run_frames(150)
 	var closer := live.global_position.distance_to(spider.global_position)
-	_check(closer < reeled - 1.0, "and it reels in (%.2fm from %.2fm)" % [closer, reeled])
+	_check(closer < reeled - 0.8, "and it reels in (%.2fm from %.2fm)" % [closer, reeled])
 	tether.cut()
 
 	# But a click that merely passes a bundle on its way to a wall is a grapple.
-	live.global_position = slab.global_position + Vector3(2.5, 0.4, -9.0)
+	# Same aim, bundle moved off to the side of it.
+	live.global_position = slab.global_position + Vector3(2.5, 0.35, -5.5)
 	await physics_frame
 	_check(tether.aimed_cargo() == null,
 		"a bundle off to one side is not what the click meant")
 	_check(not tether.grab_aimed(), "so the grapple stays a grapple")
+	if was_third:
+		spider.view.toggle_mode()
 
 	# The line does not outlive what is on the end of it.
 	live.global_position = slab.global_position + Vector3(0, 0.4, 0)
@@ -2252,6 +2261,14 @@ func _clear_prey_near(level: Node, point: Vector3, radius: float, keep: Prey) ->
 			continue
 		if point.distance_to(other.global_position) <= radius:
 			other.queue_free()
+
+
+## Points the spider's crosshair at a spot in the world, yaw and pitch both.
+func _aim_at(spider: SpiderPlayer, point: Vector3) -> void:
+	var offset := point - spider.view.aim_origin()
+	var flat := Vector2(offset.x, offset.z).length()
+	spider.view.face(Vector3(offset.x, 0.0, offset.z))
+	spider.view.pitch = atan2(offset.y, maxf(flat, 0.0001))
 
 
 ## A plain fly, the baseline everything else is measured against.
