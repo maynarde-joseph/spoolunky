@@ -16,6 +16,12 @@ extends Node3D
 @export var built_for := Vector2(0.25, 0.4)
 
 ## The volume this zone claims, in world space.
+##
+## The **interior** — the space you stand in — not the shell around it. Shells
+## are shared: the attic's floor is also the roof of the crawlspace below it,
+## and if both zones claimed their walls then the slab between them would
+## belong to two places at once and "where am I" would be a coin toss. Zones
+## touch, and never overlap.
 var bounds := AABB()
 
 

@@ -66,8 +66,7 @@ func build() -> void:
 ## Dry, still and cluttered, and the only place in the world where nothing is
 ## trying to take your silk back. Crates and a beam to string between.
 func _attic() -> void:
-	var zone := Zone.make(self, "The Attic", ATTIC_LO - Vector3(WALL, WALL, WALL),
-		ATTIC_HI + Vector3(WALL, WALL, WALL), Vector2(0.25, 0.4))
+	var zone := Zone.make(self, "The Attic", ATTIC_LO, ATTIC_HI, Vector2(0.25, 0.4))
 	Greybox.room(zone, ATTIC_LO, ATTIC_HI, WALL, "Shell", ["floor"] as Array[String])
 
 	# The floor has the crawlspace mouth in it, so the way down is visible from
@@ -101,8 +100,7 @@ func _attic() -> void:
 ## Vertical, dark, and made of gaps. Joists to grapple between and a long drop
 ## if you get it wrong.
 func _crawlspace() -> void:
-	var zone := Zone.make(self, "The Crawlspace", SHAFT_LO - Vector3(WALL, 0.0, WALL),
-		SHAFT_HI + Vector3(WALL, 0.0, WALL), Vector2(0.4, 0.7))
+	var zone := Zone.make(self, "The Crawlspace", SHAFT_LO, SHAFT_HI, Vector2(0.4, 0.7))
 	Greybox.room(zone, SHAFT_LO, SHAFT_HI, WALL, "Shell",
 		["floor", "ceiling"] as Array[String])
 
@@ -138,8 +136,7 @@ func _crawlspace() -> void:
 ## Wet and hostile, and the first place that takes silk back off you. The
 ## channel down the middle is where the water will run.
 func _sewer() -> void:
-	var zone := Zone.make(self, "The Sewer", SEWER_LO - Vector3(0.0, WALL, WALL),
-		SEWER_HI + Vector3(0.0, WALL, WALL), Vector2(0.7, 1.2))
+	var zone := Zone.make(self, "The Sewer", SEWER_LO, SEWER_HI, Vector2(0.7, 1.2))
 	Greybox.room(zone, SEWER_LO, SEWER_HI, WALL, "Shell",
 		["ceiling", "floor"] as Array[String])
 
