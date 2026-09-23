@@ -576,18 +576,36 @@ func _test_lines_are_roads() -> void:
 			"without sliding off (%.2fm)"
 			% _spider.global_position.distance_to(held))
 
-		# Walking about on it must not walk you off the side of it. Along the
-		# line is fine; that is the only direction a thread has.
+		# Facing across the line and pushing forward should get you nowhere: a
+		# thread has one direction, and that is not it. Checking this on its own
+		# would pass just as well if a thread could not be walked at all, so the
+		# along-the-line case is checked straight after.
 		var axis := (line.point_b - line.point_a).normalized()
+		var sideways := axis.cross(Vector3.UP).normalized()
+		_spider.view.face(sideways)
+		_spider.view.pitch = 0.0
+		await _run_frames(4)
 		var from := _spider.global_position
-		Input.action_press("move_forward")
-		await _run_frames(40)
-		Input.action_release("move_forward")
-		await _run_frames(2)
+		await _walk_forward(30)
 		var moved := _spider.global_position - from
 		var across := (moved - axis * moved.dot(axis)).length()
-		_check(_spider.climb.on_silk, "walking about on it does not shake you off")
+		_check(_spider.climb.on_silk, "pushing across it does not shake you off")
 		_check(across < 0.25, "and you stay over the thread (%.2fm off it)" % across)
+
+		# Along it is the one direction it has, and you walk it under your own
+		# power rather than being fed down it.
+		_spider.view.face(axis)
+		_spider.view.pitch = 0.0
+		await _run_frames(4)
+		from = _spider.global_position
+		await _walk_forward(20)
+		moved = _spider.global_position - from
+		_check(absf(moved.dot(axis)) > 0.25,
+			"and it walks you along it (%.2fm)" % absf(moved.dot(axis)))
+		_check((moved - axis * moved.dot(axis)).length() < 0.25,
+			"still over the thread after walking it")
+		_check(_spider.climb.on_silk and not _spider.climb.is_riding(),
+			"under your own power, not on a ride")
 
 		# And the way off is the jump.
 		Input.action_press("move_jump")
@@ -620,6 +638,14 @@ func _test_lines_are_roads() -> void:
 	line.queue_free()
 	await physics_frame
 	await process_frame
+
+
+## Holds W for a while and lets go.
+func _walk_forward(frames: int) -> void:
+	Input.action_press("move_forward")
+	await _run_frames(frames)
+	Input.action_release("move_forward")
+	await _run_frames(2)
 
 
 ## Runs physics until a condition holds, or gives up. Reports whether it held.
