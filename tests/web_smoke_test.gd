@@ -347,10 +347,25 @@ func _test_pressure_snare(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 	_check(snare.armed, "it starts armed")
 	_check(not snare.needs_rearm(), "and does not want re-arming yet")
 
-	var fly := _spawn_fly(level, snare.to_global(snare.centre_local))
+	# The snare is the heavy ground trap and its mesh says so: it does not
+	# notice anything smaller than a moth, so springing it on a fly would be
+	# the trap wasting itself. Bringing one to the wrong patch is a mistake
+	# worth being able to make.
+	var small := _spawn_fly(level, snare.to_global(snare.centre_local))
 	await physics_frame
 	await physics_frame
-	_check(fly.is_stuck(), "the snare caught a fly")
+	_check(not small.is_stuck(), "a fly goes straight through a pressure snare")
+	_check(snare.armed, "leaving it armed for something worth springing on")
+	small.queue_free()
+	await physics_frame
+
+	# A beetle walks, which is the whole reason a trap on the ground exists.
+	var quarry := _spawn_species(level, "beetle", snare.to_global(snare.centre_local))
+	if not _check(quarry != null, "a beetle to spring it on"):
+		return
+	await physics_frame
+	await physics_frame
+	_check(quarry.is_stuck(), "the snare caught a beetle")
 	_check(not snare.armed, "the snare has sprung")
 	_check(snare.needs_rearm(), "and now needs re-arming")
 
@@ -365,7 +380,7 @@ func _test_pressure_snare(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 	_check(snare.rearm(), "the snare re-arms")
 	_check(snare.armed and not snare.needs_rearm(), "and is ready again")
 	_check(silk.current < before, "re-arming costs silk")
-	fly.consume()
+	quarry.consume()
 	await physics_frame
 
 
@@ -2018,11 +2033,12 @@ func _spawn_fly(level: Node, at: Vector3) -> Prey:
 	return _spawn_species(level, "fly", at)
 
 
+## Callers check what comes back, so this does not add a check of its own —
+## one per spawn buried the suite in "species 'fly' exists".
 func _spawn_species(level: Node, id: String, at: Vector3) -> Prey:
-	var kind := PreyLibrary.find(id)
-	if not _check(kind != null, "species '%s' exists" % id):
+	var prey := Prey.of(PreyLibrary.find(id))
+	if prey == null:
 		return null
-	var prey := Prey.of(kind)
 	level.add_child(prey)
 	prey.global_position = at
 	return prey
