@@ -147,20 +147,25 @@ on it. Early on you stand on it and nothing happens. Later you stand on it and
 it gives.
 
 This is the whole direction system, and it needs no quest marker, no objective
-text and no gate dialogue. The world simply behaves differently because you are
-different. The HUD at most reports what the thing itself reports — *"the lid
-gives slightly: 0.4 kg of the 1.2 kg it is sprung for"* — and the player works
-the rest out.
+text and no gate dialogue — not even a readout. The feedback is the thing
+itself: stand on the lid too small and it **shifts slightly and settles back**.
+That tells you it is a lid, that it is yours to open, and that you are not
+enough yet, in one motion and no words.
 
-**What this needs that does not exist yet:** a tier has `body_height` but no
-mass. Weight should be derived rather than hand-authored — cube the body
-height and scale it — so that one number moves and everything physical follows
-it, rather than two numbers drifting apart. Once weight is real it is worth
-more than doors: floorboards that give, things that tip, surfaces that will not
-take you any more. It is also the first honest *cost* of growing, in a game
-where growth has so far been pure upside — a heavier spider needs better silk
-simply to hold itself up, and `hold_strength` and `silk_quality` already exist
-to say so.
+**Built on size, not on weight.** It is tempting to give the spider a mass and
+have the lid read it. Do not: mass would be derived from `body_height` and
+nothing else, so it is a monotonic function of a number already in hand — "is
+it heavy enough" and "is it big enough" become the same comparison in different
+units, and the only thing gained is a second number to keep in sync. `body_height`
+is already the one value everything physical hangs off. A gate names a size and
+compares.
+
+And most gates should not even be that. **A gap you fit through or you do not
+is the collider's business**, not a rule's — the spider's own shape against the
+hole's, decided by the physics that is already running. Reserve explicit size
+checks for things that *react* to you, like the lid; let geometry handle
+everything that simply is or is not wide enough. The cheapest gate in the game
+is a hole that was always that size.
 
 It also solves push versus pull in one move. Nothing ever *expels* you: you can
 live in the attic as long as you like, and it stays valuable because it is
@@ -1027,7 +1032,9 @@ Crawlspace zone, wasps as a predator, verticality, streaming between zones.
 * **Gates are physical, and say nothing.** A threshold is a thing in the world
   that responds to your body — a sprung lid, a weak flap, a drop you can now
   survive. If it needs a line of dialogue or an objective marker to be
-  understood, it is the wrong gate.
+  understood, it is the wrong gate. Prefer a shape the collider decides over a
+  rule that compares; prefer a rule that compares `body_height` over inventing
+  a second number to compare instead.
 * **Nothing expels the player.** Zones are left because somewhere else is
   better, never because this one stopped working. The first place must stay
   worth having, because it is where the network is.
