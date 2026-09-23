@@ -640,7 +640,12 @@ func _arrive_at(point: Vector3) -> void:
 	if _pending_ride != null:
 		var line := _pending_ride
 		_pending_ride = null
-		if is_instance_valid(line) and _climb != null and _climb.ride_line(line):
+		# You joined the road network rather than extending it, so no new silk.
+		# What happens now you are here is yours: silk is sticky, so you arrive
+		# standing on the line, and F rides it if that is what you came for.
+		# Being put on a ride by a click that merely passed near a line is the
+		# game taking the controls off you, which is the one thing it must not do.
+		if is_instance_valid(line):
 			return
 	if building:
 		# The scripted run: saved designs and the test suite still walk an
@@ -1228,8 +1233,12 @@ func aimed_line() -> WebStrand:
 	# impossible to aim at or steals every grapple. Scale it with distance
 	# instead: a fixed slice of the screen, roughly a crosshair's width, which
 	# is how wide the line actually looks when you are pointing at it.
+	# Capped, though, or a fixed slice of the screen turns into metres of world
+	# space at range: at forty metres 5.5% is over two metres, and a click meant
+	# for the wall behind a line would be quietly stolen by the line.
 	var span := from.distance_to(aim_point)
-	var tolerance: float = maxf(_stage().body_height * 0.5, span * 0.055)
+	var height := _stage().body_height
+	var tolerance: float = clampf(span * 0.055, height * 0.5, height * 2.0)
 
 	var best: WebStrand = null
 	var best_score := INF

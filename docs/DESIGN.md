@@ -307,6 +307,15 @@ clip onto the line proper, gravity feeds you down the slope, and letting go
 throws you off carrying everything you built up. Two different things that
 were briefly the same thing.
 
+The key press is the *only* way into one. Grappling at a line still takes you
+to the line rather than stringing a second line to reach it — that is the
+difference between joining the network and extending it, and it is worth
+keeping — but it now leaves you standing on it. It used to start the ride, and
+because the pick is deliberately forgiving about aim, a click meant for the
+wall behind a line would be quietly stolen by the line and turned into a ride
+nobody asked for. Forgiving aim is only affordable when being wrong is cheap;
+arriving somewhere you can stand is cheap, and losing the controls is not.
+
 A *web* gets none of the one-way rule, because a web is a floor, and a floor
 you can only cross in one direction is not a floor.
 

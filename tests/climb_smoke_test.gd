@@ -626,13 +626,17 @@ func _test_lines_are_roads() -> void:
 
 	var lines_before := _silk_count()
 	builder.place()
-	for i in 180:
-		if _spider.climb.is_riding():
-			break
-		await physics_frame
-	_check(_spider.climb.is_riding(), "and grappling onto it starts a ride")
+	var arrived: bool = await _wait_for(func() -> bool:
+		return _spider.climb.on_silk, 180)
+	_check(arrived, "and grappling onto it puts you on it")
 	_check(_silk_count() == lines_before,
 		"without spinning a second line to get there (%d)" % _silk_count())
+	# The click was aimed at a line, not at a ride. Nothing but the key starts
+	# one — a grapple that merely passed near silk must not take the controls.
+	_check(not _spider.climb.is_riding(),
+		"and leaves the riding to you")
+	_check(_spider.climb.toggle_ride(), "which the key still does")
+	_check(_spider.climb.is_riding(), "and now it is a ride")
 
 	_spider.climb.toggle_ride()
 	line.queue_free()

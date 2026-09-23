@@ -98,14 +98,16 @@ it: pushing across a line does nothing rather than walking you off the side of
 it. You still set your own pace and face either way. A *web* is a floor and
 gets none of that — walk about on it however you like.
 
-**F** is the zipline, and it's something you ask for rather than something that
-happens to you: clip onto the line proper, let gravity pull you down the slope,
-and let go to be thrown off carrying the speed.
+**F** is the zipline, and it's the *only* way into one — nothing puts you on a
+ride for landing near silk or for grappling somewhere a line happened to be.
+Ask for it and you clip onto the line proper, gravity pulls you down the slope,
+and letting go throws you off carrying the speed.
 
 Silk is about half again quicker underfoot than the floor, and you can
 **grapple straight onto a line** from a distance to get on it — that joins the
-network rather than stringing another line to reach it. A route you built once
-is a route you can take.
+network rather than stringing another line to reach it. You arrive standing on
+the line, stuck to it like any other silk; whether you then walk it or ride it
+is yours. A route you built once is a route you can take.
 
 Placing an anchor **grapples you to it**, dragging a frame line behind you. So
 the frame of a web is the route you took around it, not an outline you drew from
