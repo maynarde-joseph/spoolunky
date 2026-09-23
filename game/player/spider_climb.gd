@@ -153,6 +153,10 @@ var tangent_velocity := Vector3.ZERO
 ## Standing on silk rather than on the world, which is quicker underfoot.
 var on_silk := false
 
+## What speed is multiplied by while dragging something. Written by the tether;
+## one means empty-handed.
+var haul := 1.0
+
 var _spider: CharacterController3D
 var _silk: SilkPool
 var _growth: SpiderGrowth
@@ -543,7 +547,7 @@ func _surface_speed(want_sprint: bool) -> float:
 	speed *= lerpf(1.0, steep_speed_factor, steepness)
 	if on_silk:
 		speed *= silk_speed_bonus
-	return speed
+	return speed * haul
 
 
 # --- dragline -----------------------------------------------------------

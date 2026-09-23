@@ -8,6 +8,7 @@ const HELP_TEXT := """[ Spoolunky — sandbox ]
 WASD / Space / Shift   move, jump, sprint
 walk into a wall       climb it — walls and ceilings are floors to you
 silk is sticky         stand on it and it holds you; jump to come off
+Y                      put a line on a bundle and drag it along (again to drop)
 F or middle mouse      ride a silk line like a zipline (again to let go)
 Ctrl                   drop onto a dragline (from a wall or ceiling)
   Ctrl / Space           lower / raise yourself on the line
@@ -147,6 +148,18 @@ func _refresh_state() -> void:
 		state_label.text = "Climbing   [Ctrl] drop on a line"
 	else:
 		state_label.text = "On the ground"
+	_note_tether()
+
+
+## What is on the end of your line, in front of wherever you are standing. Easy
+## to forget you are towing something until you wonder why you are so slow.
+func _note_tether() -> void:
+	var tether := _spider.tether
+	if tether == null or not tether.is_towing():
+		return
+	var pull := "trailing" if tether.slack() > 0.05 else "pulling"
+	state_label.text = "Towing a %s (%s)   [Y] drop it      %s" % [
+		tether.cargo_name(), pull, state_label.text]
 
 
 func _refresh_build_panel() -> void:

@@ -63,6 +63,7 @@ func _run() -> void:
 	await _test_spitting_a_web_at_something(spider, builder, level, webs, silk)
 	await _test_throwing_a_bolt(spider, builder, level, webs, silk)
 	await _test_species(spider, builder, level, silk)
+	await _test_tethering(spider, level, silk)
 	await _test_the_larder(spider, builder, webs, level)
 	await _test_the_bag(spider, level, webs, builder, silk)
 	await _test_sandbox_wiring(level, spider)
@@ -95,7 +96,7 @@ func _test_starting_state(spider: SpiderPlayer, builder: WebBuilder) -> void:
 func _test_input_map(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	for action in ["web_build_mode", "web_place", "web_cancel", "web_finish",
 			"web_next_pattern", "web_prev_pattern", "web_remove", "interact",
-			"device_mode", "web_throw_mode", "toggle_help"]:
+			"device_mode", "web_throw_mode", "web_tether", "toggle_help"]:
 		_check(InputMap.has_action(action), "input action '%s' is set up" % action)
 
 	# A headless display server cannot capture the mouse, so lift that gate.
@@ -1999,6 +2000,105 @@ func _hold_of(builder: WebBuilder, id: String, quality: float) -> float:
 	if pattern == null:
 		return 0.0
 	return pattern.hold_strength * quality * Prey.ESCAPE_MARGIN
+
+
+# --- dragging things about ----------------------------------------------
+
+## A catch used to be something you walked back to. A tether makes it cargo:
+## hook it and it comes with you. What matters is that it is a rope and not a
+## rod — slack does nothing, so walking towards the thing you are towing is
+## free, and only past the length of the line does it pull.
+func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
+	var tether := spider.tether
+	var host := spider.get_parent()
+	var slab := _test_slab(host, Vector3(120, 0.0, 120))
+	await physics_frame
+	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+	_clear_prey_near(level, slab.global_position, 18.0, null)
+	await physics_frame
+	silk.refill(silk.maximum)
+
+	_check(not tether.is_towing(), "you start with nothing on the line")
+	_check(is_equal_approx(tether.drag_factor(), 1.0), "and nothing slowing you")
+
+	# Something still fighting is not cargo. That is what the wrapping is for.
+	var live := _spawn_species(level, "fly", slab.global_position + Vector3(0.5, 0.6, 0))
+	if not _check(live != null, "a fly to try it on"):
+		return
+	await physics_frame
+	_check(not tether.can_carry(live), "a fly going about its business is not cargo")
+	_check(not tether.hook(live), "so it refuses the line")
+	_check(not tether.is_towing(), "and nothing is on it")
+
+	# Wrapped, it is finished business and can be dragged.
+	_check(live.bundle(), "wrapping it makes it a bundle")
+	await physics_frame
+	_check(tether.can_carry(live), "and a bundle is cargo")
+
+	var spent := silk.current
+	if not _check(tether.hook(live), "the line goes on it"):
+		return
+	_check(tether.is_towing(), "and you are towing it")
+	_check(tether.cargo_name() == "Fly", "which the HUD can name (%s)" % tether.cargo_name())
+	_check(silk.current < spent, "line costs silk, same as any other (%.1f)"
+		% (spent - silk.current))
+
+	# A rope, not a rod: standing still next to it does nothing at all.
+	var resting := live.global_position
+	await _run_frames(30)
+	_check(tether.slack() > 0.5, "slack line, standing next to it (%.2f)" % tether.slack())
+	_check(live.global_position.distance_to(resting) < 0.35,
+		"which leaves the bundle where it lies (%.2fm)"
+		% live.global_position.distance_to(resting))
+
+	# Walk away and it has to come. Not snapped to a fixed distance — hauled.
+	var started := live.global_position
+	var rope: float = spider.stage().body_height * tether.rope_bodies
+	spider.climb.release()
+	spider.global_position = slab.global_position + Vector3(rope * 2.0, 0.85, 0)
+	await _run_frames(90)
+	var moved := live.global_position.distance_to(started)
+	_check(moved > 0.5, "walking off drags it along (%.2fm)" % moved)
+	_check(live.global_position.distance_to(spider.global_position)
+		<= rope * tether.snap_strain,
+		"and it stays on the end of the line (%.2fm of %.2fm)"
+		% [live.global_position.distance_to(spider.global_position),
+			rope * tether.snap_strain])
+	_check(tether.is_towing(), "still towing after the haul")
+
+	# Weight is the cost. Something three sizes up is a real drag.
+	var light := tether.drag_factor()
+	tether.cut()
+	_check(not tether.is_towing(), "cutting the line lets go")
+	var heavy_one := _spawn_species(level, "wasp", slab.global_position + Vector3(0, 0.6, 0))
+	if _check(heavy_one != null, "something heavier to drag"):
+		heavy_one.bundle()
+		await physics_frame
+		silk.refill(silk.maximum)
+		if _check(tether.hook(heavy_one), "hooked the wasp"):
+			_check(tether.drag_factor() < light,
+				"a wasp is heavier going than a fly (%.2f against %.2f)"
+				% [tether.drag_factor(), light])
+			spider.climb.haul = tether.drag_factor()
+			_check(spider.climb._surface_speed(false) < spider.stage().move_speed,
+				"which you feel in your own legs")
+			tether.cut()
+			spider.climb.haul = 1.0
+		heavy_one.queue_free()
+
+	# The line does not outlive what is on the end of it.
+	silk.refill(silk.maximum)
+	if _check(tether.hook(live), "one more, to be eaten off the line"):
+		live.consume()
+		await physics_frame
+		await physics_frame
+		_check(not tether.is_towing(), "draining the cargo drops the line")
+
+	slab.queue_free()
+	silk.refill(silk.maximum)
+	await physics_frame
+	await process_frame
 
 
 ## Puts the wheel back on something spinnable, the way a fresh spider starts.

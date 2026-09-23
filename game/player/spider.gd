@@ -40,6 +40,7 @@ signal respawned()
 @export var input_device_mode := "device_mode"
 @export var input_silk_unlimited := "silk_unlimited"
 @export var input_throw_mode := "web_throw_mode"
+@export var input_tether := "web_tether"
 
 ## How much the view opens up at speed. Pure sugar, and most of what makes a
 ## zipline feel fast.
@@ -62,6 +63,7 @@ signal respawned()
 @onready var body: SpiderBody = $Body
 @onready var bag: SpiderInventory = $Bag
 @onready var device_placer: DevicePlacer = $DevicePlacer
+@onready var tether: SilkTether = $Tether
 
 var _spawn_transform: Transform3D
 var _stage: GrowthStage
@@ -97,6 +99,7 @@ func _ready() -> void:
 	web_builder.notice.connect(_on_notice)
 	device_placer.notice.connect(_on_notice)
 	climb.notice.connect(_on_notice)
+	tether.notice.connect(_on_notice)
 	climb.jumped.connect(_on_jumped)
 	climb.line_dropped.connect(_on_line_dropped)
 	climb.line_cut.connect(_on_line_cut)
@@ -227,6 +230,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.toggle_weave()
 	elif event.is_action_pressed(input_throw_mode):
 		web_builder.toggle_throwing()
+	elif event.is_action_pressed(input_tether):
+		tether.toggle()
 	elif event.is_action_pressed(input_silk_unlimited):
 		notice.emit("Silk: %s" % ("unlimited (sandbox)" if silk.toggle_unlimited()
 			else "costs again"))
@@ -252,6 +257,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	_watch_for_release()
+	climb.haul = tether.drag_factor()
 	view.update(stage().body_height)
 	_rush(delta)
 	if body != null:

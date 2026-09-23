@@ -106,6 +106,7 @@ var _marker: MeshInstance3D
 var _cocoon: MeshInstance3D
 var _wings: Array[Node3D] = []
 var _applied := false
+var _tow_pull := Vector3.ZERO
 
 @onready var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 
@@ -291,6 +292,7 @@ func bundle() -> bool:
 	_set_marked(false)
 	_set_cocoon(true)
 	velocity = Vector3.ZERO
+	_tow_pull = Vector3.ZERO
 	# Whatever it was before, a bundle is a thing that falls: floating bodies
 	# never report standing on anything, so it would never settle.
 	motion_mode = CharacterBody3D.MOTION_MODE_GROUNDED
@@ -298,15 +300,29 @@ func bundle() -> bool:
 	return true
 
 
+## Dragged by something outside — a tether. Kept as a pull to be spent rather
+## than applied on the spot, because whatever is towing this runs in its own
+## physics step and the movement belongs in ours.
+func tow(pull: Vector3) -> void:
+	_tow_pull += pull
+
+
 ## A bundle is dead weight: it falls whether or not the thing inside it could
-## fly, and stays where it lands until you come and drain it.
+## fly, and stays where it lands until you come and drain it — unless something
+## is dragging it, in which case it comes along and keeps the swing.
 func _fall(delta: float) -> void:
-	if is_on_floor():
+	var pull := _tow_pull
+	_tow_pull = Vector3.ZERO
+	if is_on_floor() and pull.length_squared() < 0.000001:
 		velocity = Vector3.ZERO
 		return
-	velocity.x = move_toward(velocity.x, 0.0, delta * 4.0)
-	velocity.z = move_toward(velocity.z, 0.0, delta * 4.0)
+	# A towed bundle scrapes along rather than gliding: enough friction that it
+	# trails behind you, not so much that it refuses to come.
+	var slow: float = 4.0 if pull.length_squared() < 0.000001 else 1.2
+	velocity.x = move_toward(velocity.x, 0.0, delta * slow)
+	velocity.z = move_toward(velocity.z, 0.0, delta * slow)
 	velocity.y -= _gravity * delta
+	velocity += pull
 	move_and_slide()
 
 
@@ -351,6 +367,10 @@ func _process_stuck(delta: float) -> void:
 		_snap_timer -= delta
 		return
 	if _state == State.WRAPPED:
+		# Dragged out of the web it was hanging in. A wrapped catch is finished
+		# business, so pulling it loose costs the web nothing and frees a slot.
+		if _tow_pull.length_squared() > 0.000001:
+			bundle()
 		return
 	if not is_instance_valid(_web):
 		_release_into_flight()

@@ -335,6 +335,36 @@ built, one gate each:
 The midge earns its place by being nearly worthless and very common — it is
 what fills a web you left out, which is the thing the larder is for.
 
+### A catch you can carry
+
+Catching and moving were separate problems, and the gap between them was
+quietly shaping the game. You could take something anywhere but only *use* it
+where it fell, so a bundle on a floor across the level was a thing you walked
+back to, and a larder could only ever be the web it was caught in.
+
+A tether closes that. Hook a bundle and it comes with you, which makes a catch
+into cargo and makes "carry it home" a verb the game has. Everything the
+direction needs — a nest, a day you come back from, a catalogue you hand things
+to — needs that verb first.
+
+It is a **rope, not a rod**, and that is the whole feel of it. Slack does
+nothing at all: walk towards the thing you are towing and the line sags onto
+the floor and the bundle sits where it is. Only past the length of the line
+does it pull, and then it *pulls* rather than snapping the cargo to a fixed
+distance, so the weight swings in behind you and is still swinging when you
+stop. The line is simulated as a real chain of points rather than drawn as a
+straight segment, because a straight line between two points would say "rod" no
+matter what the numbers did.
+
+Weight is the cost, and it is the decision. Dragging a wasp home is genuinely
+slower than dragging a fly, so hauling something back is weighed against eating
+it where it lies — which is the first time in the game that *where* you deal
+with a catch has been a choice at all.
+
+Only finished business can be hooked: a bundle, a wrapped catch, something that
+has worn itself out. A catch still fighting refuses the line, which gives
+wrapping a second reason to exist beyond preservation.
+
 ### Silk is the road network
 
 Every line is walkable, not only the ones spun as bridges — a bridge is simply
