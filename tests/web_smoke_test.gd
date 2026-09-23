@@ -2107,15 +2107,19 @@ func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
 	live.global_position = slab.global_position + Vector3(0, 0.35, -5.5)
 	spider.climb.release()
 	spider.global_position = slab.global_position + Vector3(0, 0.85, 0)
-	await physics_frame
 	# First person, so the crosshair really is the line the pick uses. In third
 	# person the camera sits behind the spider and the two are a parallax
 	# apart, which is fine to play with and no way to write an aiming test.
 	var was_third := spider.view.third_person
 	if was_third:
 		spider.view.toggle_mode()
+	# Settle first, then aim. The camera rig moves to its new place on the
+	# next frame rather than on the call, and the spider is still dropping on
+	# to the slab — aiming from a viewpoint that is still moving points the
+	# crosshair at where the viewpoint used to be.
+	await _run_frames(10)
 	_aim_at(spider, live.global_position)
-	await _run_frames(4)
+	await _run_frames(2)
 	_check(tether.aimed_cargo() == live,
 		"the crosshair picks the bundle out from five metres")
 	var strands := spider.get_tree().get_nodes_in_group("silk_webs").size()
