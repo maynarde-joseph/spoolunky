@@ -12,12 +12,14 @@ A first-person predator sim about **building traps, not chasing prey**.
 
 You do not fight. You engineer. Your one verb is *silk*: you spend it to build
 webs, bridges, triplines and snares, and you get it back by eating whatever
-those webs catch. Every meal makes you bigger. Every size makes you a worse fit
-for the room you are in — which is exactly how you get out of it.
+those webs catch. Every meal makes you bigger, and being bigger is what opens
+the way out — not because the room rejects you, but because the drain lid is
+sprung for something heavier than you currently are.
 
-The fantasy is **scale creep**. The crack under the bedroom door is an exit at
-size 1 and a wall at size 4. The rat that was a boss at size 3 is food at
-size 5. The world never changes; you do.
+The fantasy is **scale creep**. The rat that was a boss at size 3 is food at
+size 5. The world never changes; you do — and the world is full of things
+built for a body that is not yours, which start responding to you once your
+body is enough.
 
 ---
 
@@ -84,44 +86,138 @@ Growth is **visible and physical**: the camera rises, your stride lengthens,
 your webs get coarser and stronger, the level geometry shrinks around you. The
 same bedroom you started in becomes a dollhouse.
 
-### Growth is also a lock
+### Growth is the key, and never the lock
 
-Some gates want you **small**, not big — the drain pipe, the vent grille, the
-gap under the door. So the player sometimes has to *stop eating*, or find the
-big route. Later tiers get a "squeeze" ability that lets a big spider compress
-through a gap at the cost of most of its silk, which turns old routes back on.
+Growth only ever opens things. It is tempting to make some gates want you
+*small* — squeeze under the door, through the vent grille — so that eating
+becomes a decision. **Rejected, deliberately**, and it is worth writing down
+why, because it is an idea that keeps coming back:
+
+* It makes the player *avoid the core loop*. A game whose progression is eating
+  must never give a reason to stop eating.
+* It turns the escalation fantasy ambivalent. "I am enormous now" is the whole
+  pitch, and it does not survive "…which is a problem".
+* It forces backtracking into a world that is physically one-way (see §4).
+
+So every gate reads the same direction: you could not do this before, you can
+now. A door you are too big for is never the design; a door that needs more of
+you than you have yet, always is.
 
 ---
 
 ## 4. The world
 
 Five zones, each a handful of hand-built rooms plus connective crawlspace.
-It is open-world in the sense that a zone is fully explorable and you choose
-your own route through it — but zones unlock in order, by size.
+A zone is fully explorable and you choose your own route through it; zones
+come in order, and the order is your own body.
+
+### The shape: a sequence of sandboxes, not a Metroidvania
+
+Worth naming, because "Metroidvania" is the nearest genre word and it is the
+wrong one. That genre's core pleasure is *returning* — you gain the ability,
+you go back to the room you could not reach. Physical size escalation is a
+**one-way ratchet**: once you are park-sized you will never fit up that
+downpipe again, and no amount of design will make you.
+
+So this is a **sequence of sandboxes**, each ended by outgrowing it. Katamari's
+structure rather than Hollow Knight's. Two properties of the genre are worth
+keeping and the rest is let go:
+
+* **Legible gates.** You can always see the next place, and you always know
+  what you are short of.
+* **No timer.** Inside a zone there is total freedom and nothing is owed. No
+  daily quota, no global clock — those would turn a game about making a place
+  yours into a game about hitting a number.
+
+What is given up is backtracking. What replaces it is **scale**: standing in
+the park and looking back down the drain you came out of. That is the better
+trade for this game, and it is the stronger pitch.
+
+**The cost, stated plainly so nobody is surprised by it later:** each zone is
+played *once*. There is no revisiting to stretch content over. So zones should
+be **short** — the size jump is the reward, not the acreage. Build all five
+fast and thin, then thicken whichever turns out to be fun.
+
+### How a zone ends: the body is the key
+
+A threshold is a **physical thing that responds to your body**, not a locked
+door with a message. The model is the drain lid between the shed and the
+sewer: it is a pressure lid, and it opens when something heavy enough stands
+on it. Early on you stand on it and nothing happens. Later you stand on it and
+it gives.
+
+This is the whole direction system, and it needs no quest marker, no objective
+text and no gate dialogue. The world simply behaves differently because you are
+different. The HUD at most reports what the thing itself reports — *"the lid
+gives slightly: 0.4 kg of the 1.2 kg it is sprung for"* — and the player works
+the rest out.
+
+**What this needs that does not exist yet:** a tier has `body_height` but no
+mass. Weight should be derived rather than hand-authored — cube the body
+height and scale it — so that one number moves and everything physical follows
+it, rather than two numbers drifting apart. Once weight is real it is worth
+more than doors: floorboards that give, things that tip, surfaces that will not
+take you any more. It is also the first honest *cost* of growing, in a game
+where growth has so far been pure upside — a heavier spider needs better silk
+simply to hold itself up, and `hold_strength` and `silk_quality` already exist
+to say so.
+
+It also solves push versus pull in one move. Nothing ever *expels* you: you can
+live in the attic as long as you like, and it stays valuable because it is
+where your network is. You leave because you can, and because the sewer has
+things in it worth twice what the attic holds.
+
+**You carry your belongings.** Moving on does not mean hauling your larder
+through a pipe — the bag comes with you. What stays behind is the silk: the
+network you built is the thing you cannot take, which is what makes each move
+cost something without making it a chore.
+
+### Each zone taxes silk differently
+
+A zone is not a new mechanic, it is a **new pressure on the one mechanic**. The
+question each zone asks is *how does this place erase silk?* — and the answer
+is usually one multiplier on something that already exists.
+
+| Zone | How it fights you | What it taxes |
+|------|-------------------|---------------|
+| Attic / Room | nothing — it is dry, still and cluttered | *learn here* |
+| Walls & Crawlspace | dark, vertical, a wasp nest | anchors, and a predator |
+| Gutter & Sewer | floods on a cycle you can read | spans — build above the water |
+| Park | wind, rain, open space with no anchors | `durability`, and frames of your own |
+| City | swept, cleaned, trafficked | persistence — nothing unattended survives |
+
+The pressure a global clock would have provided belongs **inside one zone**,
+not over the whole game. The city gets cleaned on a schedule; that is the
+city's clock, not your life's. It is a place you raid rather than a life you
+live, and the contrast is what makes the attic feel like home.
 
 ### 4.1 The Room (tier 1–2) — *tutorial*
 A child's bedroom, seen from skirting-board height. Dust, a radiator, a
 lightbulb with a moth orbiting it, a spilled juice box drawing ants.
 Teaches: anchors, strands, first sheet web, feeding.
-**Exit:** the wall vent, once you can climb (tier 2).
+**Exit:** the wall vent — a flap on a weak spring, which stays shut until
+there is enough of you to lean on it.
 
 ### 4.2 The Walls & Crawlspace (tier 2–3)
 Inside the house's skeleton: joists, pipe runs, insulation, a wasp nest as a
 mid-zone threat. Vertical, dark, made for orb webs across pipe gaps.
 Teaches: 3D web building, verticality, avoiding a predator (the wasps).
-**Exit:** the downpipe into the drain.
+**Exit:** the downpipe. A cap of matted dust and old web seals it; you go
+through when you are heavy enough to fall through.
 
 ### 4.3 The Gutter & Sewer (tier 3–4)
 Wet, flowing, hostile. Running water destroys webs, so you build high and dry.
 Rats travel in packs — your first prey that fights back and your first real
 use of the pressure snare.
-**Exit:** a storm grate into daylight.
+**Exit:** the storm grate. A hinged pressure lid, sprung for a rat — stand on
+it light and nothing happens, stand on it heavy and daylight.
 
 ### 4.4 The Park (tier 4–6)
 The first open space. Trees, a pond, bins, a playground, dog walkers at dawn
 and dusk. Wind now matters: webs sway and long spans need more anchors.
 Day/night cycle begins — birds by day, bats and moths by night.
-**Exit:** the storm drain under the road, or simply walking into the street.
+**Exit:** none needed. By now you are large enough that the park's edge stops
+being a boundary and the street is simply the next thing you walk into.
 
 ### 4.5 The City (tier 6–8) — *endgame*
 Alleys, fire escapes, scaffolding, the underground station, and eventually
@@ -285,8 +381,11 @@ Look at what is in here: catches persist while you are gone, webs have
 capacity, a bell exists solely to tell you something fired while you were
 elsewhere, lures reroute traffic through a spot you picked. Every one of those
 only pays off if you set something up and walk away. **This is a trap-building
-game** — the shape of How to Fish or Schedule 1, not the shape of a character
-action game.
+game**, not a character action game.
+
+(For a while the nearest comparison looked like Schedule 1 — a daily quota
+against a clock. That is settled the other way now: see §4. The trap-building
+thesis below is unaffected; what changed is where the pressure comes from.)
 
 That rules out one thing and sharpens another. It rules out a boss *fight*:
 combat wants health, dodging and telegraphs, none of which exist, and the
@@ -922,3 +1021,18 @@ Crawlspace zone, wasps as a predator, verticality, streaming between zones.
   building rather than hoarding.
 * **Readable lanes.** Prey movement must be legible from a distance; the player
   should be able to point at a spot and say "that's where it walks".
+* **Growth only ever opens.** No gate wants the player smaller, and nothing
+  ever rewards not eating. A game whose progression is eating must never give
+  a reason to stop.
+* **Gates are physical, and say nothing.** A threshold is a thing in the world
+  that responds to your body — a sprung lid, a weak flap, a drop you can now
+  survive. If it needs a line of dialogue or an objective marker to be
+  understood, it is the wrong gate.
+* **Nothing expels the player.** Zones are left because somewhere else is
+  better, never because this one stopped working. The first place must stay
+  worth having, because it is where the network is.
+* **No clock over the whole game.** Time pressure belongs to *one place* — the
+  city gets cleaned; your life does not have a deadline. A global quota would
+  make this a game about a number.
+* **Zones are played once, so keep them short.** There is no backtracking to
+  stretch content over. The size jump is the reward; acreage is not.
