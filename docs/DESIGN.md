@@ -321,10 +321,14 @@ built, one gate each:
 * **Where** is the beetle. It walks, so no web strung in the air will ever see
   one, and a moth lives near the ceiling where you have to go and put a web.
   Placement stops being cosmetic the moment two creatures live in two places.
-* **Size** is the mesh. A pressure snare does not notice anything smaller than
-  a moth, so bringing the heavy trap to a patch of midges is a mistake you can
-  make. It is also bite power, which is what makes a venom spur worth carrying
-  before you are big enough to eat a wasp.
+* **Size** is bite power, which is what makes a venom spur worth carrying
+  before you are big enough to eat a wasp. It is also the mesh, though the
+  mesh stays a *dial* rather than something baked into a pattern: giving the
+  pressure snare a size floor read well until it met the snare's other job,
+  which is being triggered from across the room to drag in something that
+  never touched it. A trap that refuses half of what it is pointed at is a
+  worse trap, and the dial already lets you choose coarse and cheap over fine
+  and dear.
 * **Lures** are the wasp: the one thing that will not come when called, so the
   device that trivialises everything else has something it cannot solve.
 

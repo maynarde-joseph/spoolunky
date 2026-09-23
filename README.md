@@ -212,9 +212,9 @@ to catch is a file, not a scene and not a line of code.
 Three things decide where a creature belongs. **Fight** is what a web has to
 out-hold to keep it, so it picks the web. **Where** picks the *place* — no web
 strung in the air will ever see a beetle, and a moth lives near the ceiling.
-And **size** is a web's mesh (a pressure snare doesn't notice anything smaller
-than a moth) and your bite power, which is why a wasp needs venom or a few more
-meals before you can drain one.
+And **size** is your bite power, which is why a wasp needs venom or a few more
+meals before you can drain one — and it's what a web's **mesh** dial catches
+or lets through, so spinning coarse to save silk means small things walk out.
 
 ## Leaving a web and coming back
 

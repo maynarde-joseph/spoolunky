@@ -347,18 +347,6 @@ func _test_pressure_snare(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 	_check(snare.armed, "it starts armed")
 	_check(not snare.needs_rearm(), "and does not want re-arming yet")
 
-	# The snare is the heavy ground trap and its mesh says so: it does not
-	# notice anything smaller than a moth, so springing it on a fly would be
-	# the trap wasting itself. Bringing one to the wrong patch is a mistake
-	# worth being able to make.
-	var small := _spawn_fly(level, snare.to_global(snare.centre_local))
-	await physics_frame
-	await physics_frame
-	_check(not small.is_stuck(), "a fly goes straight through a pressure snare")
-	_check(snare.armed, "leaving it armed for something worth springing on")
-	small.queue_free()
-	await physics_frame
-
 	# A beetle walks, which is the whole reason a trap on the ground exists.
 	var quarry := _spawn_species(level, "beetle", snare.to_global(snare.centre_local))
 	if not _check(quarry != null, "a beetle to spring it on"):
@@ -1962,15 +1950,16 @@ func _test_species(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 		"better silk turns the sheet web into one that keeps a moth (holds %.1f)"
 		% grown)
 
-	# Mesh, the other gate: the heavy ground trap should not be the answer to
-	# something you can barely see.
-	var snare_pattern := _pattern(builder, "pressure_snare")
-	if snare_pattern != null:
-		_check(midge.size_class < snare_pattern.min_catch_size,
-			"a midge goes straight through a pressure snare (%d under %d)"
-			% [midge.size_class, snare_pattern.min_catch_size])
-		_check(beetle.size_class >= snare_pattern.min_catch_size,
-			"and a beetle does not")
+	# Mesh is a dial rather than something baked into a pattern, so what a
+	# species says about it is what it is worth catching in a web spun coarse.
+	# The midge earns its place by being the cheap common thing that fills a
+	# web you left out, not by being hard to catch.
+	_check(midge.spawn_weight > wasp.spawn_weight,
+		"midges are what you mostly get (%.1f against a wasp's %.1f)"
+		% [midge.spawn_weight, wasp.spawn_weight])
+	_check(midge.biomass < fly.biomass and wasp.biomass > moth.biomass,
+		"and worth the least, while the hard ones are worth the most (%d, %d, %d)"
+		% [midge.biomass, moth.biomass, wasp.biomass])
 
 	# And one of them, in the world, built from nothing but its resource.
 	var host := spider.get_parent()
