@@ -265,8 +265,20 @@ func envenom() -> bool:
 	if eaten or subdued:
 		return false
 	subdued = true
+	# Something dead in open air is not something that hovers. Killed in a web
+	# it hangs there wrapped, which is what a web holding something is for;
+	# killed anywhere else it drops, like any other bundle.
+	#
+	# This used to set WRAPPED whatever was true, without ever recording a
+	# point to hang from — and the stuck handler drags the body towards that
+	# point every frame, which for anything poisoned in open air is the world
+	# origin. It sailed off across the level wearing a cocoon.
+	if not is_stuck() or not is_instance_valid(_web):
+		bundle()
+		return true
 	wrapped = true
 	_state = State.WRAPPED
+	_stuck_point = global_position
 	_struggle = 0.0
 	_set_marked(false)
 	_set_cocoon(true)
@@ -367,9 +379,11 @@ func _process_stuck(delta: float) -> void:
 		_snap_timer -= delta
 		return
 	if _state == State.WRAPPED:
-		# Dragged out of the web it was hanging in. A wrapped catch is finished
-		# business, so pulling it loose costs the web nothing and frees a slot.
-		if _tow_pull.length_squared() > 0.000001:
+		# Wrapped is finished business, and finished business obeys gravity.
+		# With nothing holding it up — the web came down, or something has a
+		# line on it and is dragging it out — it is a bundle, and bundles fall.
+		# Left as it was, the cocoon hung in the air where the web used to be.
+		if not is_instance_valid(_web) or _tow_pull.length_squared() > 0.000001:
 			bundle()
 		return
 	if not is_instance_valid(_web):

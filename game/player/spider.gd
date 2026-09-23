@@ -243,10 +243,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		device_placer.place()
 	elif _device_tool_active() and event.is_action_pressed(input_cancel_anchor):
 		device_placer.stop()
-	# Left mouse is always "go there, trailing silk" — no mode to be in. That
-	# is the whole loop: moving and building are the same act.
+	# Left mouse is always "silk connects me to that". What it does depends on
+	# what you pointed at, not on a mode you are in: a surface pulls you over
+	# to it, a line puts you on it, and something you have already caught comes
+	# to you instead — which is the same act read the only way that makes sense
+	# for a thing that is already wrapped up and going nowhere.
 	elif event.is_action_pressed(input_place_anchor):
-		web_builder.place()
+		if not tether.grab_aimed():
+			web_builder.place()
 	elif _web_tool_active() and event.is_action_pressed(input_cancel_anchor):
 		web_builder.undo()
 	elif event.is_action_pressed(input_ride):

@@ -8,7 +8,8 @@ const HELP_TEXT := """[ Spoolunky — sandbox ]
 WASD / Space / Shift   move, jump, sprint
 walk into a wall       climb it — walls and ceilings are floors to you
 silk is sticky         stand on it and it holds you; jump to come off
-Y                      put a line on a bundle and drag it along (again to drop)
+Left Mouse on a bundle put a line on it and drag it along instead of going there
+Y                      same, and drops what you are carrying
 F or middle mouse      ride a silk line like a zipline (again to let go)
 Ctrl                   drop onto a dragline (from a wall or ceiling)
   Ctrl / Space           lower / raise yourself on the line

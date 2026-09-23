@@ -20,11 +20,21 @@ signal hooked(cargo: Node3D)
 signal released(cargo: Node3D)
 signal notice(text: String)
 
-## How far away something can be hooked, in body heights.
-@export var reach_bodies := 5.0
+## As far as the crosshair is ever asked to look for a wall.
+const WALL_REACH := 4096.0
 
-## How much line is paid out, in body heights. Past this the cargo is hauled.
+## How far away something can be hooked. Zero is as far as you can see, which
+## is what grappling already is: aiming at a thing you have caught and firing
+## silk at it should not stop working because it is across the room.
+@export var reach := 0.0
+
+## How much line is left paid out once it is reeled in, in body heights. Past
+## this the cargo is hauled along.
 @export var rope_bodies := 6.0
+
+## How fast a long shot is wound back in, in metres per second. Hooking
+## something across the room does not snap it to your feet; it comes in.
+@export var reel_speed := 7.0
 
 @export var silk_per_metre := 0.8
 
@@ -91,6 +101,10 @@ func _physics_process(delta: float) -> void:
 	if span > _rope_length * snap_strain:
 		_let_go("The line snapped")
 		return
+	# A shot fired across the room pays out the whole distance, then winds
+	# back to a length you can walk with. That is what makes hooking something
+	# at range a harpoon rather than a yank.
+	_rope_length = move_toward(_rope_length, _resting_length(), reel_speed * delta)
 
 	_haul(delta, hand, tail)
 	_simulate_rope(delta, hand, cargo.global_position)
@@ -107,7 +121,7 @@ func toggle() -> bool:
 		return true
 	var target := aimed_cargo()
 	if target == null:
-		notice.emit("Nothing on a line to hook — wrap it first")
+		notice.emit("Nothing to put a line on — wrap it first")
 		return false
 	return hook(target)
 
@@ -121,8 +135,9 @@ func hook(target: Node3D) -> bool:
 	if not can_carry(target):
 		notice.emit("Not something you can drag along")
 		return false
-	var height := _height()
-	_rope_length = height * rope_bodies
+	# Paid out to wherever it is, and charged for what that took. A long shot
+	# costs what a long line costs, and then reels in.
+	_rope_length = maxf(_resting_length(), _hand().distance_to(target.global_position))
 	var cost := _rope_length * silk_per_metre * _quality()
 	if not _silk.spend(cost):
 		notice.emit("Not enough line for that — %d silk" % ceili(cost))
@@ -179,30 +194,70 @@ func can_carry(target: Node3D) -> bool:
 	return target is SilkDevice
 
 
-## The nearest thing worth hooking along the line of sight.
+## The thing worth hooking along the line of sight, near or far.
+##
+## Picked by how close it sits to the line rather than by a cone, and the
+## tolerance is a slice of the screen with a ceiling on it — the same shape as
+## the line pick, and for the same reason. A bundle is a small deliberate
+## target, so a click that merely passed one on its way to a wall is a grapple
+## and must stay one.
 func aimed_cargo() -> Node3D:
 	if _view == null or _spider == null:
 		return null
 	var origin := _view.aim_origin()
 	var forward := _view.aim_forward()
-	var limit := _height() * reach_bodies
+	var wall := _wall_distance(origin, forward)
+	var height := _height()
 
 	var best: Node3D = null
-	var best_score := 0.8
+	var best_gap := INF
 	for group in ["prey", "silk_devices"]:
 		for node in get_tree().get_nodes_in_group(group):
 			var target := node as Node3D
 			if target == null or not can_carry(target):
 				continue
 			var offset := target.global_position - origin
-			var distance := offset.length()
-			if distance > limit or distance < 0.0001:
+			var along := offset.dot(forward)
+			if along <= 0.0 or along > wall:
 				continue
-			var alignment := offset.normalized().dot(forward)
-			if alignment > best_score:
-				best_score = alignment
-				best = target
+			if reach > 0.0 and along > reach:
+				continue
+			var gap := (offset - forward * along).length()
+			var tolerance: float = clampf(along * 0.05, height * 0.5, height * 2.0)
+			if gap > tolerance or gap >= best_gap:
+				continue
+			best_gap = gap
+			best = target
 	return best
+
+
+## Hooks whatever the crosshair is on, and says whether it did. This is what
+## the grapple asks first: firing silk at something you have already caught
+## should put a line on it, not haul you over to stand next to it.
+func grab_aimed() -> bool:
+	if cargo != null:
+		return false
+	var target := aimed_cargo()
+	return target != null and hook(target)
+
+
+## How far the crosshair gets before it meets something solid. Cargo behind a
+## wall is not cargo you can see, let alone hook.
+func _wall_distance(origin: Vector3, forward: Vector3) -> float:
+	var space := get_world_3d().direct_space_state
+	var exclude: Array[RID] = []
+	if _spider != null:
+		exclude.append(_spider.get_rid())
+	var query := PhysicsRayQueryParameters3D.create(origin, origin + forward * WALL_REACH,
+		GameLayers.WORLD, exclude)
+	var hit := space.intersect_ray(query)
+	if hit.is_empty():
+		return WALL_REACH
+	return origin.distance_to(hit["position"]) + _height()
+
+
+func _resting_length() -> float:
+	return _height() * rope_bodies
 
 
 # --- the rope -----------------------------------------------------------

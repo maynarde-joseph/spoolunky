@@ -2098,7 +2098,45 @@ func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
 			spider.climb.haul = 1.0
 		heavy_one.queue_free()
 
+	# Firing silk at something you have already caught puts a line on it rather
+	# than hauling you over to stand next to it — the same click, read the only
+	# way that makes sense for a thing already wrapped up and going nowhere.
+	silk.refill(silk.maximum)
+	var far := slab.global_position + Vector3(0, 0.4, -9.0)
+	live.global_position = far
+	await physics_frame
+	spider.climb.release()
+	spider.global_position = slab.global_position + Vector3(0, 0.85, 0)
+	spider.view.face(Vector3(0, 0, -1))
+	spider.view.pitch = 0.0
+	await _run_frames(4)
+	_check(tether.aimed_cargo() == live,
+		"the crosshair picks the bundle out from nine metres")
+	var anchors := _silk_count()
+	_check(tether.grab_aimed(), "and the grapple puts a line on it")
+	_check(tether.is_towing(), "so you are towing rather than standing on it")
+	_check(_silk_count() == anchors,
+		"with no line strung to go there (%d)" % _silk_count())
+
+	# A long shot pays out the whole distance and then winds back in, so it
+	# harpoons rather than yanking the thing to your feet.
+	var reeled := live.global_position.distance_to(spider.global_position)
+	_check(reeled > 5.0, "it is still out there to start with (%.2fm)" % reeled)
+	await _run_frames(150)
+	var closer := live.global_position.distance_to(spider.global_position)
+	_check(closer < reeled - 1.0, "and it reels in (%.2fm from %.2fm)" % [closer, reeled])
+	tether.cut()
+
+	# But a click that merely passes a bundle on its way to a wall is a grapple.
+	live.global_position = slab.global_position + Vector3(2.5, 0.4, -9.0)
+	await physics_frame
+	_check(tether.aimed_cargo() == null,
+		"a bundle off to one side is not what the click meant")
+	_check(not tether.grab_aimed(), "so the grapple stays a grapple")
+
 	# The line does not outlive what is on the end of it.
+	live.global_position = slab.global_position + Vector3(0, 0.4, 0)
+	await physics_frame
 	silk.refill(silk.maximum)
 	if _check(tether.hook(live), "one more, to be eaten off the line"):
 		live.consume()
@@ -2151,42 +2189,49 @@ func _test_wrapped_things_fall(spider: SpiderPlayer, builder: WebBuilder, level:
 	flier.queue_free()
 	await physics_frame
 
-	# Wrapped in a web, and then the web comes down around it.
+	# Wrapped in a web, and then the web comes down around it. Built by hand
+	# rather than by spinning one over it and hoping: what is being tested is
+	# what happens to a wrapped catch when its web goes, so the catch has to be
+	# wrapped and in a web before the test starts, not as a side effect.
 	var second := _spawn_species(level, "fly", high)
 	if not _check(second != null, "another fly, this one for a web"):
 		slab.queue_free()
 		return
 	await physics_frame
-	_select_pattern(builder, "orb_web")
-	var spun: Array[WebStructure] = []
-	var catcher := func(built: WebStructure) -> void: spun.append(built)
-	builder.web_built.connect(catcher)
-	var taken := 0
-	if _check(builder.begin_place(), "spinning one over it"):
-		builder.place_radius = clampf(1.2, builder._min_place_radius(),
-			builder._max_place_radius())
-		builder._update_placement()
-		builder.commit_place()
-		taken = spun.size()
-	builder.web_built.disconnect(catcher)
-	if not _check(taken == 1, "the web goes up (%d)" % taken):
+	_select_pattern(builder, "sheet_web")
+	builder.start()
+	for point in _square(high, 0.8):
+		builder.add_anchor(point)
+	builder.finish()
+	builder.stop()
+	await physics_frame
+	var holder := _newest_web(webs, "sheet_web") as WebNet
+	if not _check(holder != null, "a web to hang it in"):
 		second.queue_free()
 		slab.queue_free()
 		return
 
-	# A fly is inside what an orb web can hold, so it is wrapped outright and
-	# the silk goes with it. Either way it must not be left in the air.
+	second.on_snared(holder, high, 0.0)
+	second.wrap()
 	await physics_frame
-	_check(second.wrapped, "the fly ends up wrapped")
+	_check(second.wrapped and second.is_stuck(),
+		"the fly is wrapped and hanging in it")
+	var hung := second.global_position
+	await _run_frames(20)
+	_check(second.global_position.distance_to(hung) < 0.2,
+		"and stays put while the web holds it (%.2fm)"
+		% second.global_position.distance_to(hung))
+
+	# Now take the web away. Nothing is holding it up any more.
+	holder.demolish()
+	await physics_frame
 	var landed: bool = await _wait_until(func() -> bool: return second.is_on_floor(), 300)
-	_check(landed, "and a wrapped fly with no web under it comes down")
+	_check(landed, "with the web gone, a wrapped fly comes down")
 	_check(second.global_position.y < floor_y + 0.3,
 		"onto the floor (%.2f, floor at %.2f)" % [second.global_position.y, floor_y])
+	_check(second.wrapped, "still wrapped when it lands — it is still finished business")
 	second.queue_free()
 
-	for web in spun:
-		if is_instance_valid(web):
-			web.demolish()
 	slab.queue_free()
 	silk.refill(silk.maximum)
 	await physics_frame

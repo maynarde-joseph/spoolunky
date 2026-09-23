@@ -38,12 +38,13 @@ something down.
 | **Ctrl** / **Space** | lower / raise yourself on the line |
 | **Right Mouse** | let go of the line |
 | **Left Mouse** | **go there, trailing silk** — moving and building are the same act |
+| **Left Mouse** *on something you've caught* | put a line on it and drag it instead — same click, read the only way that makes sense |
 | **Q** *(hold)* | spin a web where you're aiming — hold longer for a bigger one |
 | **M** | webs: **placed** where you point / **thrown** as a bolt that opens where it lands |
 | **Wheel** or **Z** / **C** | change which web you spin |
 | **Right Mouse** | let go of a line |
 | **E** | wrap caught prey, then drain it (also re-arms a sprung snare) |
-| **Y** | **put a line on a bundle and drag it along** — again to drop it |
+| **Y** | **put a line on a bundle and drag it along** — again to drop what you're carrying |
 | **X** | pull down the web you're looking at, for half the silk back — or pick a device back up |
 | **G** | wire two things together — web or device, press on each end |
 | **N** | open the bag — place a device (wheel to pick, left mouse to put down) |
@@ -236,8 +237,12 @@ without walking over to look.
 A settled catch still tugs, so a full larder slowly wears the web out. Wrapping
 it (**E**) stops that completely — wrapping is preservation, not just securing.
 
-And once something is wrapped you don't have to eat it where it lies. **Y**
-puts a line on it and it comes with you — over walls, along silk, off the end
+And once something is wrapped you don't have to eat it where it lies. **Point
+at it and click** — the same button that grapples you across a room — and the
+silk goes out to *it* instead, because hauling yourself over to stand next to a
+thing that's already wrapped up and going nowhere isn't what you meant. A long
+shot pays out the whole distance and then winds back in, so it harpoons rather
+than yanking. It comes with you — over walls, along silk, off the end
 of a zipline. It's a rope, not a rod: walk towards it and the line sags and the
 bundle sits there; walk away and it swings in behind you and keeps swinging
 when you stop. Weight is the cost — dragging a wasp home is slower than

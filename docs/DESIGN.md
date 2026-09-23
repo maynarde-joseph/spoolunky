@@ -347,6 +347,18 @@ into cargo and makes "carry it home" a verb the game has. Everything the
 direction needs — a nest, a day you come back from, a catalogue you hand things
 to — needs that verb first.
 
+**Left mouse does it**, which is the part worth keeping. The button already
+means "silk connects me to that", and what it does has always depended on what
+you pointed at rather than on a mode you were in: a surface pulls you over to
+it, a line puts you on it. Something you have already caught is the third
+reading, and the only sensible one — hauling yourself across a room to stand
+next to a thing that is wrapped up and going nowhere is not what the click
+meant. A long shot pays out the whole distance and then winds back in, so
+firing at something across the room harpoons it rather than yanking it to your
+feet. The aim is deliberately tight, and capped the same way the line pick is,
+because a click that merely passed a bundle on its way to a wall is a grapple
+and has to stay one.
+
 It is a **rope, not a rod**, and that is the whole feel of it. Slack does
 nothing at all: walk towards the thing you are towing and the line sags onto
 the floor and the bundle sits where it is. Only past the length of the line
@@ -364,6 +376,15 @@ with a catch has been a choice at all.
 Only finished business can be hooked: a bundle, a wrapped catch, something that
 has worn itself out. A catch still fighting refuses the line, which gives
 wrapping a second reason to exist beyond preservation.
+
+That rule has a corollary the code was getting wrong in two places: **wrapped
+is finished business, and finished business obeys gravity.** Venom set the
+wrapped state without recording anywhere to hang from, and the stuck handler
+drags a body towards that point every frame — so anything poisoned in open air
+sailed off across the level towards the world origin wearing a cocoon. And a
+wrapped catch whose web came down stayed exactly where the web had been,
+hanging in the air. Both now become bundles the moment nothing is holding them
+up, which is what a bundle already was: dead weight that falls.
 
 ### Silk is the road network
 
