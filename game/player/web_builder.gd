@@ -154,6 +154,7 @@ var locked := false
 
 var _aim_was_third_person := false
 var _cooling := 0.0
+var _cooldown_span := 0.0
 
 ## How many rim corners found something to hold onto, and how much the web
 ## would actually cover once the room has had its say.
@@ -355,7 +356,10 @@ func shoot(chase: Prey = null) -> bool:
 	shot.fizzled.connect(func() -> void: _shot = null)
 	shot.launch_from(_resolve_container(), _view.aim_origin())
 	_shot = shot
-	_cooling = shot_cooldown
+	# Heavier silk takes longer to lay. Most patterns spin at 1.0, where this is
+	# simply the base wait.
+	_cooldown_span = shot_cooldown * maxf(pattern.spin_time, 0.1)
+	_cooling = _cooldown_span
 	return true
 
 
@@ -370,9 +374,9 @@ func cooldown_left() -> float:
 
 ## 0 to 1, for the readout. 1 means ready.
 func cooldown_progress() -> float:
-	if shot_cooldown <= 0.0:
+	if _cooldown_span <= 0.0:
 		return 1.0
-	return clampf(1.0 - _cooling / shot_cooldown, 0.0, 1.0)
+	return clampf(1.0 - _cooling / _cooldown_span, 0.0, 1.0)
 
 
 ## How close the bolt has to pass to something alive to take it.

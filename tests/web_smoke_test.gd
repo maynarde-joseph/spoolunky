@@ -747,16 +747,18 @@ func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 	_check(tight.durability < pattern.durability, "and tears sooner")
 	_check(slack.hold_strength < pattern.hold_strength, "spun slack, it holds less")
 	_check(slack.durability > pattern.durability, "and lasts longer")
-	_check(is_equal_approx(tight.silk_per_metre, slack.silk_per_metre),
+	_check(is_equal_approx(tight.spin_time, slack.spin_time),
 		"tension is free either way — it is purely a trade")
 	tuning.tension = WebTuning.NEUTRAL
 
-	# Weight: everything against silk.
+	# Weight: everything against how long it takes to spin.
 	tuning.weight = WebTuning.STEPS - 1
 	var heavy := tuning.apply_to(pattern)
 	_check(heavy.hold_strength > pattern.hold_strength
 		and heavy.durability > pattern.durability, "heavy silk is better in every way")
-	_check(heavy.silk_per_metre > pattern.silk_per_metre, "and that is what you pay for")
+	_check(heavy.spin_time > pattern.spin_time,
+		"and that is what you pay for: longer before the next one (%.2fx)"
+		% heavy.spin_time)
 	_check(heavy.strand_thickness > pattern.strand_thickness, "you can see the difference")
 	tuning.weight = WebTuning.NEUTRAL
 
@@ -923,8 +925,10 @@ func _test_sandbox_wiring(level: Node, spider: SpiderPlayer) -> void:
 
 
 func _test_demolish(builder: WebBuilder, webs: Node3D) -> void:
+	# Its own, rather than whatever the suite left standing: webs come down with
+	# their catch now, so leftovers are not something to count on.
+	var web := await _sheet_at(builder, webs, Vector3(90.0, 3.0, 40.0))
 	var count := _web_count(webs)
-	var web := _first_web(webs)
 	if not _check(web != null, "there is a web to pull down"):
 		return
 	web.demolish()

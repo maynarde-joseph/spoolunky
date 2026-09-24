@@ -99,11 +99,13 @@ func apply_to(pattern: WebPattern) -> WebPattern:
 	tuned.durability = pattern.durability * (1.0 - 0.35 * t) * (1.0 + 0.5 * w)
 
 	tuned.strand_thickness = pattern.strand_thickness * (1.0 + 0.5 * w)
-	tuned.silk_per_metre = pattern.silk_per_metre * (1.0 + 0.45 * w)
-	tuned.silk_per_square_metre = pattern.silk_per_square_metre * (1.0 + 0.45 * w)
+	# Heavy silk is better in every way and takes longer to lay. That wait is
+	# the whole cost of a web now, so it is where the weight dial has to bite —
+	# a dial that is simply better is not a dial.
+	tuned.spin_time = pattern.spin_time * (1.0 + 0.45 * w)
 
-	# A coarser mesh is literally fewer threads, so it costs less silk without
-	# needing a multiplier — the geometry does the pricing.
+	# A coarser mesh is literally fewer threads, so it is quicker to lay without
+	# needing a multiplier — the geometry does it.
 	if pattern.radial_count > 0:
 		tuned.radial_count = maxi(3, roundi(pattern.radial_count * (1.0 - 0.25 * m)))
 	if pattern.ring_count > 0:

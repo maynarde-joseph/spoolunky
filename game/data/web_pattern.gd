@@ -74,6 +74,14 @@ enum Trigger {
 ## Thickness of a single silk line, in metres, before size scaling.
 @export var strand_thickness := 0.008
 
+## How long one takes to spin, as a multiple of the base wait between webs.
+##
+## This is what a heavier web costs, now that silk is not a budget. It used to
+## cost more thread, which was a number in a pool; it costs more of the only
+## thing left that is finite about making one, which is the time before you can
+## make the next.
+@export var spin_time := 1.0
+
 
 @export_group("Behaviour")
 
