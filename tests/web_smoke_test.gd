@@ -898,14 +898,17 @@ func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	_check(wired_copies == 1, "the copy is wired to itself, not the original (%d)" % wired_copies)
 	_check(trip.links.has(snare), "the original rig is untouched")
 
-	# Too poor to afford it: nothing appears and nothing is charged.
-	var broke_webs := _web_count(webs)
+	# There is no being too poor for one any more, so what is left to check is
+	# that a second copy is a second copy: the same design, somewhere else,
+	# going up whole rather than borrowing from the first.
+	var before_second := _web_count(webs)
 	builder.aim_valid = true
 	builder.aim_point = spider.global_position + Vector3(0, 0.5, -11.0)
 	builder.aim_normal = Vector3.UP
-	_check(builder.aim_valid, "aiming somewhere valid for the broke attempt")
-	_check(not builder.place_design(), "a design you cannot afford is refused")
-	_check(_web_count(webs) == broke_webs, "and leaves no half-built rig behind")
+	_check(builder.place_design(), "the same design goes up again elsewhere")
+	await physics_frame
+	_check(_web_count(webs) == before_second + design.piece_count(),
+		"whole, with all %d of its pieces" % design.piece_count())
 
 	builder.placing_design = false
 	DesignLibrary.forget(design)

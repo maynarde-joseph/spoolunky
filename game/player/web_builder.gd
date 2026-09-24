@@ -733,6 +733,13 @@ func _update_placement() -> void:
 		place_centre += place_normal * (0.02 - clearance)
 	place_valid = true
 
+	# Fit the rim to the room. This used to happen by accident, as the argument
+	# to the call that priced the web, and deleting the price took the fitting
+	# with it — the ghost stayed a plain disc and every corner stopped looking
+	# for a wall. Geometry that something else was computing on the way past is
+	# geometry nobody owns, so it is called for its own sake here.
+	place_rim()
+
 
 ## Grows the web while the key is held, up to what the body can span.
 func _grow_placement(delta: float) -> void:
