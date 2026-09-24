@@ -104,7 +104,7 @@ func _build() -> void:
 	_larder = _heading("", 15, Color(1.0, 0.88, 0.7, 1.0))
 	page.add_child(_larder)
 
-	page.add_child(_heading("what you have eaten is what you spend	·	[E] back",
+	page.add_child(_heading("what you have eaten is what you spend    ·    [E] back",
 		13, Color(0.72, 0.75, 0.82, 1.0)))
 
 	var columns := HBoxContainer.new()
