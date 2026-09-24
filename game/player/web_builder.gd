@@ -63,6 +63,11 @@ const PLACE_SIDES := 16
 ## but a web that reaches almost nowhere on one side is a sliver, not a trap.
 const PLACE_MIN_SPAN := 0.18
 
+## How much a shot's quote errs dear, against what the weaver actually lays.
+## Measured at about two per cent in the open; this is room enough that the
+## quote is an upper bound rather than a hopeful average.
+const QUOTE_MARGIN := 1.12
+
 ## How far ahead the charge ghost sits when the crosshair has found nothing,
 ## so a throw at open sky still shows the size being wound up.
 const CHARGE_GHOST_RANGE := 6.0
@@ -353,12 +358,19 @@ func shot_cost(pattern: WebPattern) -> float:
 	return cost_of_circle(pattern, shot_radius())
 
 
-## What a round web of this radius costs.
+## What a round web of this radius costs, quoted high.
 ##
 ## This is not a second cost formula — it is the one the builder already uses,
 ## handed a circle. Writing a fresh one is exactly how a shot came to be priced
 ## at 49 silk and charged 167: the short version counted the area and the rim
 ## and forgot the spokes and the spiral, which are most of the thread in a web.
+##
+## The margin is on top because a quote is a guess by nature. The web is not a
+## circle — it is a sixteen-sided rim fitted to a room the bolt has not reached
+## yet — and the weaver lays slightly more thread than this reckoning counts.
+## A quote that can come in *under* is the same failure again in miniature: you
+## are told a number, charged more, and if the spool cannot cover the
+## difference the shot lands and builds nothing. So it errs dear.
 func cost_of_circle(pattern: WebPattern, radius: float) -> float:
 	if pattern == null or radius <= 0.0:
 		return 0.0
@@ -366,7 +378,7 @@ func cost_of_circle(pattern: WebPattern, radius: float) -> float:
 	var perimeter: float = TAU * radius
 	var spokes: float = float(pattern.radial_count) * radius
 	var spiral: float = float(pattern.ring_count) * TAU * radius * 0.5
-	return pattern.cost_for(perimeter + spokes + spiral, area)
+	return pattern.cost_for(perimeter + spokes + spiral, area) * QUOTE_MARGIN
 
 
 ## Landed. Something alive is wrapped where it stood; anything else gets a web

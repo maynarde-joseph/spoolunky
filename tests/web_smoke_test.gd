@@ -2295,8 +2295,14 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	_check(landed and built.size() == 1, "it makes a web where it lands (%d)" % built.size())
 	_check(_web_count(webs) == standing + 1, "which is standing there")
 	if built.size() == 1:
-		_check(built[0].silk_cost <= quoted + 0.5,
+		# The quote has to be an upper bound, not a hopeful average: being told
+		# one number and charged another is how the last one landed and built
+		# nothing. And not a wild one either, or the margin hides anything.
+		_check(built[0].silk_cost <= quoted,
 			"for no more than it was quoted (%.0f against %.0f)" % [built[0].silk_cost, quoted])
+		_check(built[0].silk_cost > quoted * 0.5,
+			"and the quote is not wildly over either (%.0f of %.0f)"
+			% [built[0].silk_cost, quoted])
 	if built.size() == 1:
 		built[0].demolish()
 	await physics_frame
