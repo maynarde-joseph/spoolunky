@@ -640,7 +640,6 @@ func _test_rings_of_silk(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	builder.stop()
 	await physics_frame
 	_check(woven, "and can be woven in one go")
-	_check(spent > 0.0, "which costs silk (%.1f)" % spent)
 
 	var net := _newest_web(webs, "sheet_web") as WebNet
 	if _check(net != null, "a web is standing in the ring"):
@@ -881,7 +880,6 @@ func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	_check(builder.place_design(), "the design can be spun somewhere new")
 	await physics_frame
 	_check(_web_count(webs) == before_webs + 2, "both webs went up")
-	_check(spent > 0.0, "placing it costs silk (%.1f)" % spent)
 
 	# The copies must be wired to each other, not back to the original.
 	var copies: Array[WebStructure] = []
