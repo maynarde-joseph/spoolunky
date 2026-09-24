@@ -62,7 +62,6 @@ func _run() -> void:
 ## real silk standing in the world before any web exists.
 func _shot_frame() -> void:
 	_clear()
-	_spider.silk.refill(9000.0)
 	_spider.view.third_person = true
 	_spider.view.distance = 11.0
 	_spider.global_position = Vector3(1.15, 0.55, 1.15)
@@ -96,7 +95,6 @@ func _clear() -> void:
 
 func _shot(weave: WebGeometry.Weave, name: String) -> void:
 	_clear()
-	_spider.silk.refill(9000.0)
 	var builder := _spider.web_builder
 	builder.weave = weave
 	for i in builder.patterns.size():

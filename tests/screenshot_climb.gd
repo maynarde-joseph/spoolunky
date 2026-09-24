@@ -82,7 +82,6 @@ func _shot_ceiling() -> void:
 
 ## Hanging from a thread under the bridge, seen from the spider and from beside it.
 func _shot_dragline() -> void:
-	_spider.silk.refill(_spider.silk.maximum)
 	Input.action_press("move_crouch")
 	await _frames(45)
 	Input.action_release("move_crouch")
@@ -106,7 +105,6 @@ func _shot_dragline() -> void:
 func _shot_zipline() -> void:
 	_spider.climb.release()
 	_spider.growth.feed(200.0, "shot")
-	_spider.silk.refill(9000.0)
 	var top := Vector3(-9.0, 7.5, 6.0)
 	var bottom := Vector3(9.0, 1.4, 6.0)
 	var builder := _spider.web_builder

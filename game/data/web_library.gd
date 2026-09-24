@@ -76,14 +76,14 @@ static func load_devices() -> Array[DeviceKind]:
 ## down, and a spider that hops is a spider that walks everywhere.
 static func default_stages() -> Array[GrowthStage]:
 	var stages: Array[GrowthStage] = []
-	stages.append(_stage("Spiderling", 0.0, 0.25, 2.4, 5.6, 40.0, 1.5, 3.2, 2.4, 1.0, 1, 0.6))
-	stages.append(_stage("House Spider", 24.0, 0.4, 3.0, 6.7, 75.0, 2.0, 4.8, 3.6, 1.35, 2, 0.9))
-	stages.append(_stage("Huntsman", 70.0, 0.7, 3.8, 7.8, 130.0, 2.6, 7.0, 5.2, 1.8, 3, 1.3))
-	stages.append(_stage("Gutter Spider", 160.0, 1.2, 4.8, 9.2, 210.0, 3.4, 9.5, 7.2, 2.4, 4, 1.9))
-	stages.append(_stage("Sewer Widow", 340.0, 2.0, 6.0, 10.9, 330.0, 4.4, 13.0, 10.0, 3.2, 5, 2.7))
-	stages.append(_stage("Park Recluse", 700.0, 3.4, 7.4, 12.9, 540.0, 5.6, 18.0, 14.0, 4.2, 6, 3.8))
-	stages.append(_stage("City Weaver", 1400.0, 5.6, 9.2, 14.8, 840.0, 7.0, 26.0, 20.0, 5.5, 7, 5.2))
-	stages.append(_stage("The Architect", 2800.0, 9.0, 11.0, 16.8, 1400.0, 9.0, 40.0, 30.0, 7.0, 9, 7.5))
+	stages.append(_stage("Spiderling", 0.0, 0.25, 2.4, 5.6, 3.2, 2.4, 1.0, 1, 0.6))
+	stages.append(_stage("House Spider", 24.0, 0.4, 3.0, 6.7, 4.8, 3.6, 1.35, 2, 0.9))
+	stages.append(_stage("Huntsman", 70.0, 0.7, 3.8, 7.8, 7.0, 5.2, 1.8, 3, 1.3))
+	stages.append(_stage("Gutter Spider", 160.0, 1.2, 4.8, 9.2, 9.5, 7.2, 2.4, 4, 1.9))
+	stages.append(_stage("Sewer Widow", 340.0, 2.0, 6.0, 10.9, 13.0, 10.0, 3.2, 5, 2.7))
+	stages.append(_stage("Park Recluse", 700.0, 3.4, 7.4, 12.9, 18.0, 14.0, 4.2, 6, 3.8))
+	stages.append(_stage("City Weaver", 1400.0, 5.6, 9.2, 14.8, 26.0, 20.0, 5.5, 7, 5.2))
+	stages.append(_stage("The Architect", 2800.0, 9.0, 11.0, 16.8, 40.0, 30.0, 7.0, 9, 7.5))
 	return stages
 
 
@@ -107,16 +107,14 @@ static func _compare_patterns(a: WebPattern, b: WebPattern) -> bool:
 
 
 static func _stage(display_name: String, biomass: float, height: float, speed: float,
-		jump: float, silk: float, regen: float, anchor_range: float,
-		strand: float, quality: float, bite: int, reach: float) -> GrowthStage:
+		jump: float, anchor_range: float, strand: float, quality: float,
+		bite: int, reach: float) -> GrowthStage:
 	var stage := GrowthStage.new()
 	stage.display_name = display_name
 	stage.biomass_required = biomass
 	stage.body_height = height
 	stage.move_speed = speed
 	stage.jump_velocity = jump
-	stage.silk_capacity = silk
-	stage.silk_regen = regen
 	stage.anchor_range = anchor_range
 	stage.max_strand_length = strand
 	stage.silk_quality = quality

@@ -13,4 +13,4 @@ cost = {
 "fly": 6
 }
 body_scale = 1.18
-silk_scale = 1.12
+quality_scale = 1.15

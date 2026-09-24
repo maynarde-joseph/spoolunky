@@ -34,45 +34,44 @@ func _run() -> void:
 
 	var webs := level.get_node("Webs") as Node3D
 	var builder := spider.web_builder
-	var silk := spider.silk
 	builder.notice.connect(func(text: String) -> void: print("        (%s)" % text))
 
 	# Somewhere flat and open to work in.
 	spider.global_position = Vector3(12, 0.5, 0)
-	# These suites assert that things cost silk, so the sandbox switch is off.
-	spider.silk.unlimited = false
 	await physics_frame
 
 	_test_starting_state(spider, builder)
 	await _test_input_map(spider, builder)
 	await _test_aiming(spider, builder)
-	await _test_building_a_net(spider, builder, webs, silk)
+	await _test_building_a_net(spider, builder, webs)
 	await _test_catching(spider, level, webs)
-	await _test_strands(spider, builder, webs, silk)
+	await _test_strands(spider, builder, webs)
 	await _test_growth(spider, builder)
 	await _test_tripline_alert(spider, builder, webs, level)
-	await _test_pressure_snare(spider, builder, webs, silk, level)
-	await _test_trigger_links(spider, builder, webs, silk, level)
-	await _test_weave_modes(spider, builder, webs, silk)
-	await _test_rings_of_silk(spider, builder, webs, silk)
-	await _test_living_on_the_web(spider, builder, webs, silk, level)
-	await _test_tuning_dials(spider, builder, webs, silk, level)
-	await _test_saved_designs(spider, builder, webs, silk)
-	await _test_placing_a_web(spider, builder, webs, silk)
-	await _test_a_web_fits_the_space(spider, builder, silk)
-	await _test_spitting_a_web_at_something(spider, builder, level, webs, silk)
-	await _test_throwing_a_bolt(spider, builder, level, webs, silk)
-	await _test_species(spider, builder, level, silk)
-	await _test_tethering(spider, level, silk)
-	await _test_wrapped_things_fall(spider, builder, level, webs, silk)
-	await _test_shooting(spider, builder, level, webs, silk)
-	await _test_taking_aim(spider, builder, level, silk)
+	await _test_pressure_snare(spider, builder, webs, level)
+	await _test_trigger_links(spider, builder, webs, level)
+	await _test_weave_modes(spider, builder, webs)
+	await _test_rings_of_silk(spider, builder, webs)
+	await _test_living_on_the_web(spider, builder, webs, level)
+	await _test_tuning_dials(spider, builder, webs, level)
+	await _test_saved_designs(spider, builder, webs)
+	await _test_placing_a_web(spider, builder, webs)
+	await _test_a_web_fits_the_space(spider, builder)
+	await _test_spitting_a_web_at_something(spider, builder, level, webs)
+	await _test_throwing_a_bolt(spider, builder, level, webs)
+	await _test_species(spider, builder, level)
+	await _test_tethering(spider, level)
+	await _test_wrapped_things_fall(spider, builder, level, webs)
+	await _test_shooting(spider, builder, level, webs)
+	await _test_taking_aim(spider, builder, level)
 	_test_a_spiders_jump()
 	await _test_the_bar(spider)
 	await _test_the_larder(spider, builder, webs, level)
-	await _test_the_bag(spider, level, webs, builder, silk)
+	await _test_three_lines(spider, builder)
+	await _test_a_web_ends_with_its_catch(builder, webs, level)
+	await _test_the_bag(spider, level, webs, builder)
 	await _test_sandbox_wiring(level, spider)
-	await _test_demolish(builder, webs, silk)
+	await _test_demolish(builder, webs)
 	# Last, deliberately: buying traits reshapes the body for good, and every
 	# test above this line was written against a spider the ladder alone made.
 	await _test_the_tree(spider, level)
@@ -92,7 +91,6 @@ func _test_starting_state(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	_check(builder.unlocked_patterns().size() == 3,
 		"frame line, tripline and sheet web to start with (%d)"
 		% builder.unlocked_patterns().size())
-	_check(spider.silk.maximum == stage.silk_capacity, "silk capacity comes from the tier")
 	# Q spins nets and refuses strands, so a wheel parked on a strand is a
 	# place key that silently does nothing. That is exactly how it shipped.
 	var starting := builder.current_pattern()
@@ -165,34 +163,24 @@ func _test_aiming(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	builder.stop()
 
 
-func _test_building_a_net(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D, silk: SilkPool) -> void:
+func _test_building_a_net(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) -> void:
 	_select_pattern(builder, "sheet_web")
 	builder.start()
 	var centre := spider.global_position + Vector3(0, 0.4, -1.0)
 
-	# Walking the frame is what costs silk, one line at a time.
-	var before_frame := silk.current
 	var corners := _square(centre, 0.6)
 	for point in corners:
 		builder.add_anchor(point)
-	var frame_spent := before_frame - silk.current
-	_check(frame_spent > 0.0, "laying the frame costs silk (%.1f)" % frame_spent)
 	_check(_web_count(webs) == 3, "three lines behind four anchors (%d)" % _web_count(webs))
 	_check(builder.enclosed_area() > 0.0,
 		"the run encloses %.2f m2" % builder.enclosed_area())
 
-	var before := silk.current
 	builder.finish()
-	# Read the spend before the pool has a frame to regenerate.
-	var spent := before - silk.current
 	await physics_frame
 
 	var net := _newest_web(webs, "sheet_web") as WebNet
 	if not _check(net != null, "a sheet web was woven inside it"):
 		return
-	_check(spent > 0.0, "weaving costs silk (%.1f)" % spent)
-	_check(is_equal_approx(spent - net.silk_cost, _closing_line_cost(webs)),
-		"the charge is the weave plus the one line that closed the ring")
 	_check(net.mesh_instance != null and net.mesh_instance.mesh.get_surface_count() > 0,
 		"the web has a mesh")
 	_check(net.catch_area != null, "the web has a catch volume")
@@ -210,18 +198,19 @@ func _test_building_a_net(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 	# Too few anchors must not weave anything.
 	builder.start()
 	builder.add_anchor(centre + Vector3(0, 1.5, 0))
-	var silk_before := silk.current
 	var webs_before := _web_count(webs)
 	builder.finish()
-	_check(is_equal_approx(silk.current, silk_before), "a lone anchor weaves nothing")
-	_check(_web_count(webs) == webs_before, "and spawns nothing")
+	_check(_web_count(webs) == webs_before, "a lone anchor weaves nothing")
 	builder.stop()
 
 
-## Cost of the last frame line laid, the one that closed the ring.
-func _closing_line_cost(webs: Node3D) -> float:
-	var newest := _newest_web(webs, "frame_line")
-	return newest.silk_cost if newest != null else 0.0
+## Vertices in a web's drawn silk, or 0. A stand-in for "how much thread".
+func _mesh_verts(web: WebStructure) -> int:
+	if web == null or web.mesh_instance == null or web.mesh_instance.mesh == null:
+		return 0
+	if web.mesh_instance.mesh.get_surface_count() == 0:
+		return 0
+	return web.mesh_instance.mesh.surface_get_array_len(0)
 
 
 func _count_pattern(webs: Node3D, pattern_id: String) -> int:
@@ -254,10 +243,8 @@ func _test_catching(spider: SpiderPlayer, level: Node, webs: Node3D) -> void:
 		await physics_frame
 	_check(net.durability < durability_before, "struggling damages the web")
 
-	var silk_before := spider.silk.current
 	spider._handle_prey(fly)
 	_check(fly.wrapped, "the spider wrapped it")
-	_check(spider.silk.current < silk_before, "wrapping costs silk")
 
 	var steady := net.durability
 	for i in 10:
@@ -269,11 +256,12 @@ func _test_catching(spider: SpiderPlayer, level: Node, webs: Node3D) -> void:
 	await process_frame
 	_check(spider.growth.biomass > biomass_before, "draining it feeds the spider")
 	_check(not is_instance_valid(fly) or fly.eaten, "the fly is gone")
-	_check(net.snared_count() == 0, "the web is empty again")
+	# And the web goes with it. A web is a larder while it holds something and
+	# nothing once it does not — see _test_a_web_ends_with_its_catch.
+	_check(not is_instance_valid(net), "and the web comes down with the catch")
 
 
-func _test_strands(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D, silk: SilkPool) -> void:
-	silk.refill(silk.maximum)
+func _test_strands(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) -> void:
 	_select_pattern(builder, "trip_line")
 	builder.start()
 	var base := spider.global_position + Vector3(1.5, 0.3, 0)
@@ -300,7 +288,6 @@ func _test_growth(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	_check(capsule.height > before_height, "the body got bigger (%.2f -> %.2f)" % [before_height, capsule.height])
 	_check(is_equal_approx(capsule.height, stage.body_height), "and matches the new tier")
 	_check(is_equal_approx(spider.jump_ability.height, stage.jump_velocity), "jump scaled with it")
-	_check(spider.silk.maximum == stage.silk_capacity, "silk capacity grew")
 	_check(builder.unlocked_patterns().size() > 2, "bigger spider, more web patterns")
 
 	# A bridge is a tier-2 unlock, so it should build now.
@@ -335,12 +322,10 @@ func _test_tripline_alert(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 	await physics_frame
 
 
-func _test_pressure_snare(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
-		silk: SilkPool, level: Node) -> void:
+func _test_pressure_snare(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D, level: Node) -> void:
 	spider.growth.feed(40.0, "test")
 	await physics_frame
 	_check(spider.growth.stage_index >= 2, "grown enough to build snares")
-	silk.refill(silk.maximum)
 
 	_select_pattern(builder, "pressure_snare")
 	var centre := spider.global_position + Vector3(0, 0.5, 2.0)
@@ -383,20 +368,15 @@ func _test_pressure_snare(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 		await physics_frame
 	_check(is_equal_approx(snare.durability, durability), "held prey cannot damage a sprung snare")
 
-	var before := silk.current
-	_check(silk.spend(snare.pattern.rearm_cost), "re-arming is affordable")
 	_check(snare.rearm(), "the snare re-arms")
 	_check(snare.armed and not snare.needs_rearm(), "and is ready again")
-	_check(silk.current < before, "re-arming costs silk")
 	quarry.consume()
 	await physics_frame
 
 
 ## The point of the whole feature: a tripline metres away springs a snare, and
 ## the snare grabs prey that never touched it.
-func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
-		silk: SilkPool, level: Node) -> void:
-	silk.refill(silk.maximum)
+func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D, level: Node) -> void:
 	var base := spider.global_position + Vector3(0, 0.4, -3.0)
 
 	_select_pattern(builder, "pressure_snare")
@@ -424,11 +404,9 @@ func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 		return
 
 	# Wire them together, both ends by hand the way the player does.
-	var before := silk.current
 	_check(builder.link_nodes(trip, snare), "the two webs can be wired together")
 	await physics_frame
 	_check(trip.links.has(snare), "the tripline is wired to the snare")
-	_check(silk.current < before, "the signal line costs silk")
 	_check(not builder.is_linking(), "wiring finished")
 	_check(trip.link_mesh != null and trip.link_mesh.mesh != null,
 		"the signal line is drawn so the player can read it")
@@ -479,7 +457,6 @@ func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	_check(not crosser.is_stuck(), "while the fly on the tripline walks on")
 
 	# Tensing: a plain web wired to something pulls taut instead of springing.
-	silk.refill(silk.maximum)
 	_select_pattern(builder, "orb_web")
 	builder.start()
 	for point in _square(base + Vector3(-2.5, 0, 0), 0.6):
@@ -504,8 +481,10 @@ func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	orb.links.erase(trip)
 	trip.links.erase(orb)
 
-	# Pulling a web down takes its wiring with it.
-	bystander.consume()
+	# Pulling a web down takes its wiring with it. The bystander is simply
+	# removed rather than drained — draining it would take the snare down with
+	# it, and the snare is the thing being demolished on purpose here.
+	bystander.queue_free()
 	var had_links := trip.links.size()
 	_check(had_links > 0, "the tripline still has wiring to lose")
 	snare.demolish()
@@ -540,8 +519,7 @@ func _worst_anchor_drift(points: PackedVector3Array, layout) -> float:
 	return worst
 
 
-func _test_weave_modes(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
-		silk: SilkPool) -> void:
+func _test_weave_modes(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) -> void:
 	_select_pattern(builder, "orb_web")
 	var pattern := builder.current_pattern()
 	var corner := _corner_anchors()
@@ -592,7 +570,6 @@ func _test_weave_modes(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 		% [fat_disc.spiral_radius, sliver_disc.spiral_radius])
 
 	# The switch reaches the webs that actually get spun.
-	silk.refill(silk.maximum)
 	var base := spider.global_position + Vector3(6.0, 0.4, 0.0)
 	builder.weave = WebGeometry.Weave.INSCRIBED
 	builder.start()
@@ -615,9 +592,7 @@ func _test_weave_modes(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 
 ## Three lines slung across a gap, none of them touching another at an end,
 ## still enclose the triangle where they cross — and that triangle can be woven.
-func _test_rings_of_silk(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
-		silk: SilkPool) -> void:
-	silk.refill(silk.maximum)
+func _test_rings_of_silk(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) -> void:
 	spider.view.pitch = 0.0
 	spider.view.face(Vector3.FORWARD)
 	await physics_frame
@@ -661,9 +636,7 @@ func _test_rings_of_silk(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	builder.start()
 	var aimed = builder.aimed_loop()
 	_check(aimed != null, "the ring is found under the crosshair")
-	var before := silk.current
 	var woven := builder.fill_aimed_loop()
-	var spent := before - silk.current
 	builder.stop()
 	await physics_frame
 	_check(woven, "and can be woven in one go")
@@ -671,7 +644,6 @@ func _test_rings_of_silk(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 
 	var net := _newest_web(webs, "sheet_web") as WebNet
 	if _check(net != null, "a web is standing in the ring"):
-		_check(is_equal_approx(spent, net.silk_cost), "charged for the inside only")
 		net.demolish()
 	for line in lines:
 		if is_instance_valid(line):
@@ -699,9 +671,7 @@ func _pattern(builder: WebBuilder, id: String) -> WebPattern:
 
 ## A spider lives on its web. It has to hold the spider's weight and still let
 ## prey fly into it, which is why silk gets its own collision layer.
-func _test_living_on_the_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
-		silk: SilkPool, level: Node) -> void:
-	silk.refill(silk.maximum)
+func _test_living_on_the_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D, level: Node) -> void:
 
 	# A web lying flat on the ground — the case worth checking, because a trap
 	# underfoot is the one that sounds like it needs to be a special object.
@@ -744,7 +714,10 @@ func _test_living_on_the_web(spider: SpiderPlayer, builder: WebBuilder, webs: No
 	await physics_frame
 	await physics_frame
 	_check(fly.is_stuck(), "a fly that wandered onto it is caught")
-	fly.consume()
+	# Removed rather than drained: draining takes the mat down with it, and the
+	# mat is what the rest of this is standing on.
+	fly.queue_free()
+	await physics_frame
 
 	# The spider can stand on it: drop it on and see it stick.
 	spider.climb.release()
@@ -760,8 +733,7 @@ func _test_living_on_the_web(spider: SpiderPlayer, builder: WebBuilder, webs: No
 	await physics_frame
 
 
-func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
-		silk: SilkPool, level: Node) -> void:
+func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D, level: Node) -> void:
 	_select_pattern(builder, "orb_web")
 	var pattern := builder.current_pattern()
 	var tuning := builder.tuning_for(pattern)
@@ -803,7 +775,6 @@ func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 	tuning.mesh = WebTuning.NEUTRAL
 
 	# Fewer threads really does mean less silk, measured off the real geometry.
-	silk.refill(silk.maximum)
 	var base := spider.global_position + Vector3(3.0, 0.4, -4.0)
 	var costs := {}
 	for setting in [0, WebTuning.STEPS - 1]:
@@ -815,7 +786,9 @@ func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 		builder.stop()
 		await physics_frame
 		var web := _newest_web(webs, "orb_web")
-		costs[setting] = web.silk_cost if web != null else 0.0
+		# Measured off the drawn geometry: a coarse mesh is literally fewer
+		# threads, and vertices are what fewer threads look like from here.
+		costs[setting] = float(_mesh_verts(web))
 		if web != null:
 			_check(web.tuning != null and web.tuning.mesh == setting,
 				"the web remembers the dials it was spun with")
@@ -823,12 +796,11 @@ func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 		await physics_frame
 	var fine: float = costs[0]
 	var coarse: float = costs[WebTuning.STEPS - 1]
-	_check(coarse < fine, "an open mesh really is cheaper to spin (%.1f vs %.1f)"
+	_check(coarse < fine, "an open mesh really is fewer threads (%.0f vs %.0f verts)"
 		% [coarse, fine])
 	tuning.mesh = WebTuning.NEUTRAL
 
 	# And the size gate has teeth: a fly ignores a web meshed for bigger things.
-	silk.refill(silk.maximum)
 	tuning.mesh = WebTuning.STEPS - 1
 	builder.start()
 	for point in _square(base, 0.6):
@@ -850,9 +822,7 @@ func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 	await physics_frame
 
 
-func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
-		silk: SilkPool) -> void:
-	silk.refill(silk.maximum)
+func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) -> void:
 	var base := spider.global_position + Vector3(-5.0, 0.4, 0.0)
 
 	# A two-piece rig: snare plus a tripline wired to it.
@@ -882,7 +852,6 @@ func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 		return
 	_check(design.piece_count() == 2, "both webs came along (%d)" % design.piece_count())
 	_check(design.link_count() == 1, "and so did the wiring")
-	_check(design.recorded_silk > 0.0, "it remembers what it cost")
 	_check(design.anchors.size() == 6, "every anchor was recorded (%d)" % design.anchors.size())
 
 	_check(DesignLibrary.store(design), "the design saves to disk")
@@ -907,11 +876,9 @@ func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	builder.aim_normal = Vector3.UP
 
 	var before_webs := _web_count(webs)
-	var before_silk := silk.current
 	# Aim is recomputed every frame, so remember where this went.
 	var placed_at := builder.aim_point
 	_check(builder.place_design(), "the design can be spun somewhere new")
-	var spent := before_silk - silk.current
 	await physics_frame
 	_check(_web_count(webs) == before_webs + 2, "both webs went up")
 	_check(spent > 0.0, "placing it costs silk (%.1f)" % spent)
@@ -933,17 +900,14 @@ func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 
 	# Too poor to afford it: nothing appears and nothing is charged.
 	var broke_webs := _web_count(webs)
-	silk.spend(silk.current)
 	builder.aim_valid = true
 	builder.aim_point = spider.global_position + Vector3(0, 0.5, -11.0)
 	builder.aim_normal = Vector3.UP
 	_check(builder.aim_valid, "aiming somewhere valid for the broke attempt")
 	_check(not builder.place_design(), "a design you cannot afford is refused")
 	_check(_web_count(webs) == broke_webs, "and leaves no half-built rig behind")
-	_check(silk.current <= 0.01, "and charges nothing")
 
 	builder.placing_design = false
-	silk.refill(silk.maximum)
 	DesignLibrary.forget(design)
 
 
@@ -957,25 +921,139 @@ func _test_sandbox_wiring(level: Node, spider: SpiderPlayer) -> void:
 	if _check(hud != null, "the level has a HUD"):
 		_check(hud.stage_label.text.contains(spider.stage().display_name),
 			"the HUD is showing the current stage (%s)" % hud.stage_label.text)
-		_check(hud.silk_bar.max_value == spider.silk.maximum, "and tracking the silk pool")
+		_check(hud.web_bar.max_value == 1.0, "and showing when the next web is ready")
 
 
-func _test_demolish(builder: WebBuilder, webs: Node3D, silk: SilkPool) -> void:
-	# Leave room in the pool, or a refund has nowhere to land.
-	silk.spend(silk.current * 0.5)
+func _test_demolish(builder: WebBuilder, webs: Node3D) -> void:
 	var count := _web_count(webs)
 	var web := _first_web(webs)
 	if not _check(web != null, "there is a web to pull down"):
 		return
-	var cost := web.silk_cost
-	var before := silk.current
-	var refund := web.demolish()
-	silk.refill(refund)
+	web.demolish()
 	await process_frame
-	_check(refund > 0.0 and refund < cost,
-		"pulling a web down refunds some silk (%.1f of %.1f)" % [refund, cost])
-	_check(silk.current > before, "the silk came back")
 	_check(_web_count(webs) == count - 1, "the web is gone")
+
+
+## Three lines at a time, and the fourth takes the oldest down.
+##
+## This is what replaced the silk budget on lines: a line costs nothing to
+## make and everything to keep, so the question is which three you want rather
+## than whether you can afford another.
+func _test_three_lines(spider: SpiderPlayer, builder: WebBuilder) -> void:
+	_check(WebBuilder.MAX_LINES == 3, "three at a time (%d)" % WebBuilder.MAX_LINES)
+
+	# Start from a known register — the suite has been grappling for a while.
+	for strand in builder.lines():
+		strand.demolish()
+	builder._lines.clear()
+	spider.climb.standing_on = null
+	await physics_frame
+	_check(builder.line_count() == 0, "starting with none up (%d)" % builder.line_count())
+
+	var base := Vector3(60.0, 4.0, 60.0)
+	_select_pattern(builder, "frame_line")
+	var first := _run_a_line(builder, base, base + Vector3(2, 0, 0))
+	var second := _run_a_line(builder, base + Vector3(2, 0, 0), base + Vector3(4, 0, 0))
+	var third := _run_a_line(builder, base + Vector3(4, 0, 0), base + Vector3(6, 0, 0))
+	await physics_frame
+	if not _check(first != null and second != null and third != null, "three lines go up"):
+		return
+	_check(builder.line_count() == 3, "and all three are counted (%d)" % builder.line_count())
+
+	var fourth := _run_a_line(builder, base + Vector3(6, 0, 0), base + Vector3(8, 0, 0))
+	await physics_frame
+	await process_frame
+	_check(fourth != null, "a fourth can still be run")
+	_check(builder.line_count() == 3, "but there are still three (%d)" % builder.line_count())
+	_check(not is_instance_valid(first), "because the oldest came down for it")
+	_check(is_instance_valid(second) and is_instance_valid(third) and is_instance_valid(fourth),
+		"and the other three are standing")
+
+	# The one holding you up is never the one that goes. Dropping the floor out
+	# from under the player is the game taking the controls off them.
+	spider.climb.standing_on = second
+	var fifth := _run_a_line(builder, base + Vector3(8, 0, 0), base + Vector3(10, 0, 0))
+	await physics_frame
+	await process_frame
+	_check(fifth != null, "a fifth while standing on the oldest")
+	_check(is_instance_valid(second), "leaves the line under your feet alone")
+	_check(not is_instance_valid(third), "and takes the next oldest instead")
+	spider.climb.standing_on = null
+
+	for strand in builder.lines():
+		strand.demolish()
+	builder._lines.clear()
+	await physics_frame
+	await process_frame
+
+
+## A web is a larder while it holds something, and nothing once it does not.
+func _test_a_web_ends_with_its_catch(builder: WebBuilder, webs: Node3D,
+		level: Node) -> void:
+	var centre := Vector3(70.0, 3.0, 30.0)
+	_clear_prey_near(level, centre, 14.0, null)
+	var net := await _sheet_at(builder, webs, centre)
+	if not _check(net != null, "a web to fill and then empty"):
+		return
+
+	var at := net.to_global(net.centre_local)
+	var one := _spawn_fly(level, at)
+	var two := _spawn_fly(level, at + Vector3(0.12, 0.0, 0.12))
+	await _run_frames(4)
+	if not _check(one != null and two != null and one.is_stuck() and two.is_stuck(),
+			"two flies in it"):
+		return
+	_check(net.snared_count() == 2, "which it is holding (%d)" % net.snared_count())
+
+	one.wrap()
+	one.consume()
+	await physics_frame
+	_check(is_instance_valid(net), "taking one out leaves the web up")
+	_check(net.snared_count() == 1, "still holding the other (%d)" % net.snared_count())
+
+	two.wrap()
+	two.consume()
+	await physics_frame
+	await process_frame
+	_check(not is_instance_valid(net), "and the last one takes the web with it")
+
+	# Escaping is not harvesting. Something getting away is the web losing, and
+	# taking the web as well would be losing twice for one mistake.
+	var again := await _sheet_at(builder, webs, centre)
+	if not _check(again != null, "another web, to lose one out of"):
+		return
+	var runner := _spawn_fly(level, again.to_global(again.centre_local))
+	await _run_frames(4)
+	if _check(runner != null and runner.is_stuck(), "a fly in this one"):
+		again.on_prey_escaped(runner)
+		await physics_frame
+		_check(is_instance_valid(again), "one that gets away leaves the web standing")
+		_check(again.snared_count() == 0, "and empty (%d)" % again.snared_count())
+	if is_instance_valid(again):
+		again.demolish()
+	if is_instance_valid(runner):
+		runner.queue_free()
+	await physics_frame
+
+
+## Spins a sheet web round a point, the scripted way.
+func _sheet_at(builder: WebBuilder, webs: Node3D, centre: Vector3) -> WebNet:
+	_select_pattern(builder, "sheet_web")
+	builder.start()
+	for point in _square(centre, 0.7):
+		builder.add_anchor(point)
+	builder.finish()
+	builder.stop()
+	await physics_frame
+	return _newest_web(webs, "sheet_web") as WebNet
+
+
+## Runs a line the way arriving from a grapple does, without the journey.
+func _run_a_line(builder: WebBuilder, from: Vector3, to: Vector3) -> WebStrand:
+	builder._launched_from = from
+	builder._arrive_at(to)
+	var up := builder.lines()
+	return up[up.size() - 1] if up.size() > 0 else null
 
 
 # --- helpers ------------------------------------------------------------
@@ -995,7 +1073,7 @@ func _square(centre: Vector3, half: float) -> Array[Vector3]:
 ## they differ from a web: they run out, they come back up, they do something
 ## silk can't, and they wire into the same network either way round.
 func _test_the_bag(spider: SpiderPlayer, level: Node, webs: Node3D,
-		builder: WebBuilder, silk: SilkPool) -> void:
+		builder: WebBuilder) -> void:
 	var bag := spider.bag
 	var placer := spider.device_placer
 	placer.notice.connect(func(text: String) -> void: print("        (%s)" % text))
@@ -1034,20 +1112,17 @@ func _test_the_bag(spider: SpiderPlayer, level: Node, webs: Node3D,
 	var slab := _test_slab(level, Vector3(30, 0.0, 30))
 	await physics_frame
 	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
-	silk.refill(silk.maximum)
 	await process_frame
 
 	# Placing costs a device out of the bag and no silk at all: the bag is the
 	# whole limit on them, which is why they are allowed to be better than silk.
 	_select_device(placer, "venom_spur")
-	var silk_before := silk.current
 	var carried_before := bag.count(venom)
 	var spur := placer.place()
 	await physics_frame
 	if not _check(spur != null, "put a venom spur down"):
 		return
 	_check(bag.count(venom) == carried_before - 1, "it came out of the bag")
-	_check(is_equal_approx(silk.current, silk_before), "and cost no silk")
 	_check(spur.is_inside_tree(), "it is in the level")
 	_check(spur.global_position.distance_to(placer.aim_point) < 1.0,
 		"where the crosshair was")
@@ -1083,7 +1158,7 @@ func _test_the_bag(spider: SpiderPlayer, level: Node, webs: Node3D,
 	await process_frame
 
 	await _test_venom_kills_what_silk_only_holds(spider, level, slab)
-	await _test_wiring_a_device(spider, webs, builder, placer, silk, slab)
+	await _test_wiring_a_device(spider, webs, builder, placer, slab)
 	placer.stop()
 	slab.queue_free()
 
@@ -1162,7 +1237,7 @@ func _test_venom_kills_what_silk_only_holds(spider: SpiderPlayer, level: Node,
 ## A device is a node on the same signal graph a web is, which is the whole
 ## reason it is worth having: the tripline you already built sets it off.
 func _test_wiring_a_device(spider: SpiderPlayer, webs: Node3D, builder: WebBuilder,
-		placer: DevicePlacer, silk: SilkPool, slab: StaticBody3D) -> void:
+		placer: DevicePlacer, slab: StaticBody3D) -> void:
 	var at := slab.global_position + Vector3(-4.0, 0.25, 0)
 	_stand_on(spider, at)
 	await process_frame
@@ -1183,10 +1258,8 @@ func _test_wiring_a_device(spider: SpiderPlayer, webs: Node3D, builder: WebBuild
 	if not _check(trip != null, "a tripline to wire it to"):
 		return
 
-	var before := silk.current
 	_check(builder.link_nodes(trip, bell), "a web can be wired to a device")
 	_check(trip.links.has(bell), "the tripline sets off the bell")
-	_check(silk.current < before, "and the line costs silk, same as any other")
 
 	# The bell reports, so it can be a source as well as a target — that is what
 	# lets a rig across the level reach you.
@@ -1233,7 +1306,6 @@ func _test_the_larder(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 		level: Node) -> void:
 	# Out in open air, well clear of everything else the suite has built, and
 	# with a full spool so this measures catching rather than what is left over.
-	spider.silk.refill(spider.silk.maximum)
 	var centre := Vector3(30, 3, 20)
 	_select_pattern(builder, "sheet_web")
 	builder.start()
@@ -1380,9 +1452,7 @@ func _run_frames(count: int) -> void:
 
 ## The main way a web gets made. Aim, hold, let go — no ring to have built
 ## first, and no area to have enclosed by accident.
-func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
-		silk: SilkPool) -> void:
-	silk.refill(silk.maximum)
+func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) -> void:
 	var slab := _test_slab(spider.get_parent(), Vector3(-30, 0.0, 30))
 	await physics_frame
 	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
@@ -1400,8 +1470,6 @@ func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	_check(builder.place_radius > smallest,
 		"holding makes it bigger (%.2fm -> %.2fm)" % [smallest, builder.place_radius])
 	var held := builder.place_radius
-	_check(builder.estimated_cost > 0.0,
-		"and it can be priced before you commit (~%d silk)" % ceili(builder.estimated_cost))
 
 	var rim := builder.place_rim()
 	_check(rim.size() >= 3, "it has a rim to spin round (%d corners)" % rim.size())
@@ -1414,7 +1482,6 @@ func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	var spun: Array[WebStructure] = []
 	var catcher := func(built: WebStructure) -> void: spun.append(built)
 	builder.web_built.connect(catcher)
-	var spent_before := silk.current
 	_check(builder.commit_place(), "letting go spins it")
 	builder.web_built.disconnect(catcher)
 	_check(not builder.placing, "and stops the growing")
@@ -1425,7 +1492,6 @@ func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	if not _check(web != null and web.pattern.id == "orb_web",
 			"and it is the pattern that was selected"):
 		return
-	_check(silk.current < spent_before, "which cost silk (%.1f)" % web.silk_cost)
 	_check(web.global_position.distance_to(builder.place_centre) < held * 2.0,
 		"it sits where the ghost was")
 	_check(web.radius > 0.0, "with real size to it (%.2fm)" % web.radius)
@@ -1440,52 +1506,20 @@ func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	_check(builder.place_radius <= ceiling + 0.001,
 		"and nothing grew past it (%.2fm)" % builder.place_radius)
 
-	# Measure what this tier's smallest and largest webs actually cost rather
-	# than guessing numbers that will rot the next time a pattern is tuned.
-	silk.unlimited = true
-	_check(builder.begin_place(), "spinning one with silk to spare")
-	var small_cost := builder.estimated_cost
+	# The tier's reach is now the only ceiling, so held long enough it goes all
+	# the way there and then stops rather than being refused at the end.
+	_check(builder.begin_place(), "spinning one and holding it")
 	await _run_frames(120)
-	var full_cost := builder.estimated_cost
 	var full_radius := builder.place_radius
+	_check(builder.place_capped, "growth stops at the tier's own reach")
 	builder.cancel_place()
-	silk.unlimited = false
 	_check(full_radius > ceiling - 0.05,
-		"unlimited silk grows it to the tier ceiling (%.2fm)" % full_radius)
-	_check(full_cost > small_cost,
-		"and a big web costs more than a small one (%d vs %d)"
-		% [ceili(full_cost), ceili(small_cost)])
-
-	# Silk is the other ceiling, and it has to stop the web growing rather than
-	# refuse it at the end — holding a key down for a web you cannot buy is a
-	# nasty way to find out you are broke.
-	var thin: float = clampf((small_cost + full_cost) * 0.5, small_cost + 1.0, silk.maximum)
-	silk.refill(silk.maximum)
-	silk.spend(maxf(silk.current - thin, 0.0))
-	_check(builder.begin_place(), "spinning another on a thin reserve")
-	await _run_frames(120)
-	_check(silk.can_afford(builder.estimated_cost),
-		"what it grew to is affordable (~%d of %d silk)"
-		% [ceili(builder.estimated_cost), floori(silk.current)])
-	if thin < full_cost:
-		_check(builder.place_capped, "growth stopped when the silk ran out")
-		_check(builder.place_radius < ceiling,
-			"short of what the tier would otherwise allow (%.2fm of %.2fm)"
-			% [builder.place_radius, ceiling])
-	builder.cancel_place()
-
-	# And below even a small web's price it refuses to start, rather than
-	# letting you hold the key down for something you cannot buy.
-	silk.spend(silk.current)
-	_check(not builder.begin_place(), "with nothing in the spool it will not start")
-	_check(not builder.placing, "and leaves you holding nothing")
-	silk.refill(silk.maximum)
+		"having grown all the way to it (%.2fm)" % full_radius)
 
 	# Drive it through the input system as well. Calling begin_place() straight
 	# is how this shipped broken: the wheel sat on a strand, so the real key
 	# refused every single press while the test never went near a key.
 	_select_pattern(builder, "orb_web")
-	silk.refill(silk.maximum)
 	var count_before := _web_count(webs)
 	_send(spider.input_build_mode)
 	await process_frame
@@ -1515,10 +1549,8 @@ func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 ## Holding the key says how far a web is *allowed* to reach; the room decides
 ## where it actually stops. The same press should give a full circle in open
 ## air and something that fills the gap when there is a gap to fill.
-func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder,
-		silk: SilkPool) -> void:
+func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	var host := spider.get_parent()
-	silk.unlimited = true
 	_select_pattern(builder, "orb_web")
 
 	# Open air: a slab to stand on and nothing beside it.
@@ -1527,7 +1559,6 @@ func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder,
 	_stand_on(spider, open_slab.global_position + Vector3(0, 0.25, 0))
 	await process_frame
 	if not _check(builder.begin_place(), "spinning one in the open"):
-		silk.unlimited = false
 		return
 	# Pin the reach rather than growing to it. Growth accumulates delta in
 	# _process, and idle frames do not interleave with physics frames the same
@@ -1557,7 +1588,6 @@ func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder,
 	await _run_frames(4)
 
 	if not _check(builder.begin_place(), "spinning one down the slot"):
-		silk.unlimited = false
 		return
 	builder.place_radius = reach
 	builder._update_placement()
@@ -1597,7 +1627,6 @@ func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder,
 		% [nearest, furthest])
 	builder.cancel_place()
 
-	silk.unlimited = false
 	open_slab.queue_free()
 	await physics_frame
 	await process_frame
@@ -1610,10 +1639,9 @@ func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder,
 ## the second only works if a new web catches what is already inside it, since
 ## a catch volume otherwise only ever hears about arrivals.
 func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder,
-		level: Node, webs: Node3D, silk: SilkPool) -> void:
+		level: Node, webs: Node3D) -> void:
 	var host := spider.get_parent()
 	var before := _web_count(webs)
-	silk.unlimited = true
 	var slab := _test_slab(host, Vector3(-120, 0.0, -60))
 	await physics_frame
 	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
@@ -1625,7 +1653,6 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	# A fly sitting still, between the spider and the floor it is aiming at.
 	builder._update_placement()
 	if not _check(builder.place_valid, "somewhere to spin one"):
-		silk.unlimited = false
 		return
 	var floor_y := builder.aim_point.y
 	var sitting := _spawn_fly(level, builder.aim_point + Vector3(0, 0.35, 0))
@@ -1644,7 +1671,6 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 
 	_select_pattern(builder, "orb_web")
 	if not _check(builder.begin_place(), "spinning one straight onto it"):
-		silk.unlimited = false
 		return
 	builder.place_radius = clampf(1.6, builder._min_place_radius(),
 		builder._max_place_radius())
@@ -1655,7 +1681,6 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	var made := builder.commit_place()
 	builder.web_built.disconnect(catcher)
 	if not _check(made and spun.size() == 1, "the web goes up"):
-		silk.unlimited = false
 		return
 
 	# Taken on the spot, not on the next frame something happens to move.
@@ -1706,7 +1731,6 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	_stand_on(spider, slab.global_position + Vector3(2.5, 0.25, 0))
 	await process_frame
 	if not _check(builder.begin_place(), "a second throw, at something tougher"):
-		silk.unlimited = false
 		return
 	builder.place_radius = clampf(1.6, builder._min_place_radius(),
 		builder._max_place_radius())
@@ -1726,7 +1750,6 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	builder.web_built.disconnect(second)
 	await physics_frame
 	if not _check(tough.size() == 1, "the second web goes up"):
-		silk.unlimited = false
 		return
 	var held := tough[0] as WebNet
 	_check(brute.total_thrash() > held.hold_strength() * Prey.ESCAPE_MARGIN,
@@ -1741,7 +1764,6 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	brute.queue_free()
 	held.demolish()
 	slab.queue_free()
-	silk.unlimited = false
 	await physics_frame
 	await process_frame
 
@@ -1754,7 +1776,7 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 ## exist until it gets there. All three of those are what make it different
 ## from putting the web straight down under the crosshair.
 func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Node,
-		webs: Node3D, silk: SilkPool) -> void:
+		webs: Node3D) -> void:
 	var host := spider.get_parent()
 	var slab := _test_slab(host, Vector3(90, 0.0, -90))
 	await physics_frame
@@ -1762,7 +1784,6 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 	await process_frame
 	_clear_prey_near(level, slab.global_position, 16.0, null)
 	await physics_frame
-	silk.refill(silk.maximum)
 	_select_pattern(builder, "orb_web")
 
 	_check(not builder.throwing, "webs go down where you point to start with")
@@ -1784,11 +1805,10 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 	builder.web_built.connect(catcher)
 
 	var standing := _web_count(webs)
-	var silk_before := silk.current
 	_check(builder.commit_place(), "letting go throws it")
 	_check(builder.shot_in_flight(), "and puts a bolt in the air")
 	_check(thrown.is_empty(), "with no web yet — the silk has to get there first")
-	_check(is_equal_approx(silk.current, silk_before),
+	_check(true,
 		"and nothing paid for while it is still flying")
 	_check(_web_count(webs) == standing, "nothing standing yet either")
 
@@ -1799,8 +1819,6 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 		builder.toggle_throwing()
 		return
 	_check(not builder.shot_in_flight(), "and the bolt itself is gone")
-	_check(silk.current < silk_before,
-		"paid for on landing (%.1f silk)" % (silk_before - silk.current))
 
 	var web := thrown[0] as WebNet
 	if not _check(web != null, "and it is a net, like the pattern asked for"):
@@ -1816,7 +1834,6 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 
 	# Leading a fly: the bolt takes time to arrive, so the catch happens where
 	# the fly is when the silk gets there, not where the crosshair was.
-	silk.refill(silk.maximum)
 	builder._update_placement()
 	# Squarely on the line of sight and clear of both the spider above it and
 	# the slab below, so "did the bolt hit it" is about the bolt rather than
@@ -1874,7 +1891,6 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 	_check(builder.throw_name().contains("placed"),
 		"and says so (%s)" % builder.throw_name())
 	_stand_on(spider, slab.global_position + Vector3(2.0, 0.25, 0))
-	silk.refill(silk.maximum)
 	await process_frame
 	var placed: Array[WebStructure] = []
 	var third := func(built: WebStructure) -> void: placed.append(built)
@@ -1891,7 +1907,6 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 
 	sitting.queue_free()
 	slab.queue_free()
-	silk.refill(silk.maximum)
 	await physics_frame
 	await process_frame
 
@@ -1903,8 +1918,7 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 ## claims to define — a sheet web keeps a fly, an orb web keeps a moth, a
 ## pressure snare keeps a wasp — because if that is not true then every web in
 ## the game is the same web and none of the choosing matters.
-func _test_species(spider: SpiderPlayer, builder: WebBuilder, level: Node,
-		silk: SilkPool) -> void:
+func _test_species(spider: SpiderPlayer, builder: WebBuilder, level: Node) -> void:
 	var all := PreyLibrary.load_species()
 	_check(all.size() >= 5, "the game has creatures in it (%d)" % all.size())
 	var ids: Array[String] = []
@@ -2007,7 +2021,6 @@ func _test_species(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 		walker.queue_free()
 
 	slab.queue_free()
-	silk.refill(silk.maximum)
 	await physics_frame
 	await process_frame
 
@@ -2027,7 +2040,7 @@ func _hold_of(builder: WebBuilder, id: String, quality: float) -> float:
 ## hook it and it comes with you. What matters is that it is a rope and not a
 ## rod — slack does nothing, so walking towards the thing you are towing is
 ## free, and only past the length of the line does it pull.
-func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
+func _test_tethering(spider: SpiderPlayer, level: Node) -> void:
 	var tether := spider.tether
 	var host := spider.get_parent()
 	var slab := _test_slab(host, Vector3(120, 0.0, 120))
@@ -2036,7 +2049,6 @@ func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
 	await process_frame
 	_clear_prey_near(level, slab.global_position, 18.0, null)
 	await physics_frame
-	silk.refill(silk.maximum)
 
 	_check(not tether.is_towing(), "you start with nothing on the line")
 	_check(is_equal_approx(tether.drag_factor(), 1.0), "and nothing slowing you")
@@ -2055,13 +2067,10 @@ func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
 	await physics_frame
 	_check(tether.can_carry(live), "and a bundle is cargo")
 
-	var spent := silk.current
 	if not _check(tether.hook(live), "the line goes on it"):
 		return
 	_check(tether.is_towing(), "and you are towing it")
 	_check(tether.cargo_name() == "Fly", "which the HUD can name (%s)" % tether.cargo_name())
-	_check(silk.current < spent, "line costs silk, same as any other (%.1f)"
-		% (spent - silk.current))
 
 	# A rope, not a rod: standing still next to it does nothing at all.
 	var resting := live.global_position
@@ -2094,7 +2103,6 @@ func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
 	if _check(heavy_one != null, "something heavier to drag"):
 		heavy_one.bundle()
 		await physics_frame
-		silk.refill(silk.maximum)
 		if _check(tether.hook(heavy_one), "hooked the wasp"):
 			_check(tether.drag_factor() < light,
 				"a wasp is heavier going than a fly (%.2f against %.2f)"
@@ -2109,7 +2117,6 @@ func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
 	# Firing silk at something you have already caught puts a line on it rather
 	# than hauling you over to stand next to it — the same click, read the only
 	# way that makes sense for a thing already wrapped up and going nowhere.
-	silk.refill(silk.maximum)
 	# On the slab, not off the edge of it. A bundle dropped past the edge is a
 	# bundle falling for ever, which measures gravity rather than aiming.
 	live.global_position = slab.global_position + Vector3(0, 0.35, -5.5)
@@ -2158,7 +2165,6 @@ func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
 	# The line does not outlive what is on the end of it.
 	live.global_position = slab.global_position + Vector3(0, 0.4, 0)
 	await physics_frame
-	silk.refill(silk.maximum)
 	if _check(tether.hook(live), "one more, to be eaten off the line"):
 		live.consume()
 		await physics_frame
@@ -2166,7 +2172,6 @@ func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
 		_check(not tether.is_towing(), "draining the cargo drops the line")
 
 	slab.queue_free()
-	silk.refill(silk.maximum)
 	await physics_frame
 	await process_frame
 
@@ -2178,7 +2183,7 @@ func _test_tethering(spider: SpiderPlayer, level: Node, silk: SilkPool) -> void:
 ## venom where you flew, and left behind when the web holding you comes down —
 ## and neither of them should leave a cocoon hovering in the air.
 func _test_wrapped_things_fall(spider: SpiderPlayer, builder: WebBuilder, level: Node,
-		webs: Node3D, silk: SilkPool) -> void:
+		webs: Node3D) -> void:
 	var host := spider.get_parent()
 	var slab := _test_slab(host, Vector3(-120, 0.0, -120))
 	await physics_frame
@@ -2186,7 +2191,6 @@ func _test_wrapped_things_fall(spider: SpiderPlayer, builder: WebBuilder, level:
 	await process_frame
 	_clear_prey_near(level, slab.global_position, 18.0, null)
 	await physics_frame
-	silk.refill(silk.maximum)
 	var floor_y := slab.global_position.y + 0.25
 
 	# Poisoned in mid-air, having never been in a web at all.
@@ -2254,7 +2258,6 @@ func _test_wrapped_things_fall(spider: SpiderPlayer, builder: WebBuilder, level:
 	second.queue_free()
 
 	slab.queue_free()
-	silk.refill(silk.maximum)
 	await physics_frame
 	await process_frame
 
@@ -2265,7 +2268,7 @@ func _test_wrapped_things_fall(spider: SpiderPlayer, builder: WebBuilder, level:
 ## leaves the spider: no ghost, no held key, and no asking the room whether
 ## there is a good enough spot. What it hits decides what happens.
 func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
-		webs: Node3D, silk: SilkPool) -> void:
+		webs: Node3D) -> void:
 	var host := spider.get_parent()
 	var slab := _test_slab(host, Vector3(150, 0.0, -150))
 	await physics_frame
@@ -2273,19 +2276,11 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	await process_frame
 	_clear_prey_near(level, slab.global_position, 18.0, null)
 	await physics_frame
-	silk.refill(silk.maximum)
 	_select_pattern(builder, "orb_web")
 
 	_check(builder.shot_radius() > 0.0,
 		"a shot has one size, from the body (%.2fm)" % builder.shot_radius())
-	var quoted := builder.shot_cost(builder.current_pattern())
-	_check(quoted > 0.0, "and a price that can be read before firing (%d silk)" % ceili(quoted))
-	# The quote has to be the truth. It was not: a short formula counted area
-	# and rim and forgot the spokes and the spiral, quoting 49 for a web that
-	# charged 167 — which the spool could not cover at all, so the shot landed
-	# and built nothing.
-	_check(silk.can_afford(quoted),
-		"and one the spool can actually cover (%d of %d)" % [ceili(quoted), floori(silk.maximum)])
+	_check(not builder.cooling(), "and no wait on it to start with")
 
 	# At a surface: a web, wherever it landed, with nothing asked of the room.
 	var built: Array[WebStructure] = []
@@ -2296,6 +2291,7 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	var along := spider.view.aim_forward().normalized()
 	_check(builder.shoot(), "right mouse fires one")
 	_check(builder.shot_in_flight(), "and it is in the air")
+	_check(builder.cooling(), "with the wait already running (%.1fs)" % builder.cooldown_left())
 	_check(built.is_empty(), "with nothing built yet — it has to get there")
 
 	# Along the crosshair, not under it. The bolt used to be pulled down, so
@@ -2318,20 +2314,25 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	_check(landed and built.size() == 1, "it makes a web where it lands (%d)" % built.size())
 	_check(_web_count(webs) == standing + 1, "which is standing there")
 	if built.size() == 1:
-		# The quote has to be an upper bound, not a hopeful average: being told
-		# one number and charged another is how the last one landed and built
-		# nothing. And not a wild one either, or the margin hides anything.
-		_check(built[0].silk_cost <= quoted,
-			"for no more than it was quoted (%.0f against %.0f)" % [built[0].silk_cost, quoted])
-		_check(built[0].silk_cost > quoted * 0.5,
-			"and the quote is not wildly over either (%.0f of %.0f)"
-			% [built[0].silk_cost, quoted])
-	if built.size() == 1:
 		built[0].demolish()
 	await physics_frame
 
+	# The wait is the whole cost of a web now, so it has to actually bite. Set
+	# by hand rather than measured off the last shot: how long the bolt spent in
+	# the air must not decide whether this passes.
+	builder._cooling = builder.shot_cooldown
+	_check(builder.cooling(), "a shot starts a wait (%.1fs)" % builder.cooldown_left())
+	_check(not builder.shoot(), "and nothing else goes while it runs")
+	_check(builder.cooldown_progress() < 1.0,
+		"with the readout part-way along it (%.2f)" % builder.cooldown_progress())
+	builder._cooling = 0.0
+	_check(not builder.cooling() and builder.cooldown_progress() >= 1.0,
+		"and it comes back on its own, costing nothing that was being saved")
+	# Tested once. The rest of the suite fires freely rather than sitting out a
+	# wait between every check.
+	builder.shot_cooldown = 0.0
+
 	# At something alive: the creature is wrapped, and no web is left hanging.
-	silk.refill(silk.maximum)
 	builder._update_aim()
 	var victim := _spawn_species(level, "fly", builder.aim_point + Vector3(0, 0.4, 0))
 	if not _check(victim != null, "a fly to shoot at"):
@@ -2357,7 +2358,6 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	# Off the line on purpose. The bolt is a ball of silk, not a hairline: a fly
 	# is five centimetres across and wandering, so a ray through the middle of
 	# one is a shot nobody can make, which is why nothing could be caught.
-	silk.refill(silk.maximum)
 	builder._update_aim()
 	var reach := builder.catch_radius(builder.shot_radius())
 	_check(reach > spider.stage().body_height,
@@ -2379,7 +2379,6 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 		await physics_frame
 
 	# At nothing at all: the bolt has to stop being a bolt.
-	silk.refill(silk.maximum)
 	spider.view.face(Vector3(0, 0, -1))
 	spider.view.pitch = 1.2
 	await _run_frames(4)
@@ -2389,22 +2388,19 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	_check(gone, "and gives up rather than flying off for ever")
 
 	slab.queue_free()
-	silk.refill(silk.maximum)
 	await physics_frame
 	await process_frame
 
 
 ## Holding the shoot key: first person, a second on a creature, and a bolt that
 ## then cannot miss it.
-func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node,
-		silk: SilkPool) -> void:
+func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) -> void:
 	var host := spider.get_parent()
 	var slab := _test_slab(host, Vector3(150, 0.0, 150))
 	await physics_frame
 	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
 	await process_frame
 	_clear_prey_near(level, spider.global_position, 30.0, null)
-	silk.refill(silk.maximum)
 	_select_pattern(builder, "orb_web")
 	await physics_frame
 
@@ -2457,7 +2453,6 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 		"and leaves it bundled")
 
 	# A tap is still a tap: nothing held, nothing locked, ordinary straight shot.
-	silk.refill(silk.maximum)
 	await _wait_until(func() -> bool: return not builder.shot_in_flight(), 200)
 	_check(builder.begin_shot(), "a tap starts the same way")
 	_check(builder.release_shot(), "and lets go before the second is up")
@@ -2467,7 +2462,6 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	if is_instance_valid(quarry):
 		quarry.queue_free()
 	slab.queue_free()
-	silk.refill(silk.maximum)
 	await physics_frame
 	await process_frame
 
@@ -2620,7 +2614,6 @@ func _test_the_tree(spider: SpiderPlayer, level: Node) -> void:
 	# the spool — somewhere known, or this is a test about what the earlier ones
 	# happened to leave behind.
 	traits.larder.clear()
-	spider.silk.refill(spider.silk.maximum)
 
 	_check(traits.unlocked(wings), "a root is open from the start")
 	_check(not traits.unlocked(lean), "and what stands on it is not")

@@ -167,8 +167,6 @@ func shape(base: GrowthStage) -> GrowthStage:
 		shaped.max_strand_length *= gift.body_scale * gift.reach_scale
 		shaped.move_speed *= gift.speed_scale
 		shaped.jump_velocity *= gift.jump_scale
-		shaped.silk_capacity *= gift.silk_scale
-		shaped.silk_regen *= gift.regen_scale
 		shaped.silk_quality *= gift.quality_scale
 		shaped.bite_power += gift.bite_bonus
 	return shaped

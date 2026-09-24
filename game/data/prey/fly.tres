@@ -9,7 +9,6 @@ display_name = "Fly"
 description = "The ordinary catch. A sheet web keeps one, which is the whole reason a sheet web is the first thing you learn."
 sort_order = 1
 biomass = 8.0
-silk_return = 7.0
 size_class = 1
 struggle_power = 1.0
 struggle_stamina = 5.0

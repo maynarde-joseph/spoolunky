@@ -39,9 +39,6 @@ extends Resource
 @export var link_to: PackedInt32Array = PackedInt32Array()
 
 ## What it cost to build the first time, for the HUD. The real cost is measured
-## again when it is placed, because bigger spiders spin heavier silk.
-@export var recorded_silk := 0.0
-
 ## Growth stage it was designed at, so the player knows why it looks expensive.
 @export var made_at_stage := 0
 
@@ -49,10 +46,6 @@ extends Resource
 ## placing it now — a bigger spider spins the same design in heavier silk.
 @export var made_at_quality := 1.0
 
-
-## What this design would roughly cost a spider spinning at [param quality].
-func cost_at(quality: float) -> float:
-	return recorded_silk * (quality / maxf(made_at_quality, 0.001))
 
 
 func piece_count() -> int:

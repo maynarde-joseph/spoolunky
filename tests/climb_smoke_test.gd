@@ -30,8 +30,6 @@ func _run() -> void:
 	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
 	await physics_frame
 	_spider.require_captured_mouse = false
-	# These suites assert that things cost silk, so the sandbox switch is off.
-	_spider.silk.unlimited = false
 	# Footsteps are not what this test is about, and a sound still being mixed
 	# when the tree is torn down shows up as a leak at exit.
 	var audio := _spider.get_node_or_null("Player Audios")
@@ -159,14 +157,12 @@ func _test_ceiling() -> void:
 
 
 func _test_dragline() -> void:
-	var silk_before := _spider.silk.current
 	var ceiling_height := _spider.global_position.y
 	Input.action_press("move_crouch")
 	await _run_frames(6)
 
 	_check(_spider.climb.is_hanging(), "Ctrl on the ceiling drops the spider onto a line")
 	_check(_spider.climb.line_anchor.y > ceiling_height, "the line is anchored above it")
-	_check(_spider.silk.current < silk_before, "the line costs silk")
 
 	var length_before := _spider.climb.line_length
 	await _run_frames(60)
@@ -181,11 +177,9 @@ func _test_dragline() -> void:
 
 	# Reel back up.
 	var down_at := _spider.global_position.y
-	var silk_at_bottom := _spider.silk.current
 	Input.action_press("move_jump")
 	await _run_frames(50)
 	_check(_spider.global_position.y > down_at + 0.1, "Space climbs back up the line")
-	_check(_spider.silk.current > silk_at_bottom, "reeling the line in recovers silk")
 	Input.action_release("move_jump")
 	await _run_frames(5)
 
@@ -234,7 +228,6 @@ func _test_ziplining() -> void:
 	# Bridges unlock at the second size tier, and build mode quietly falls back
 	# to something spinnable if you have not got there.
 	_spider.growth.feed(120.0, "test")
-	_spider.silk.refill(_spider.silk.maximum)
 	await _run_frames(10)
 
 	# A line running downhill across the room.
@@ -321,7 +314,6 @@ func _test_grappling() -> void:
 	_spider.climb.release()
 	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
 	_spider.velocity = Vector3.ZERO
-	_spider.silk.refill(_spider.silk.maximum)
 	await _run_frames(20)
 
 	var builder := _spider.web_builder
@@ -352,7 +344,6 @@ func _test_grappling() -> void:
 	var webs_before := 0
 	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
 		webs_before += 1
-	var silk_before := _spider.silk.current
 	_spider.view.face(Vector3.FORWARD)
 	await _run_frames(2)
 	builder.place()
@@ -366,7 +357,6 @@ func _test_grappling() -> void:
 		webs_after += 1
 	_check(builder.anchors.size() == 2, "a second anchor lands too")
 	_check(webs_after > webs_before, "with a line dragged between them")
-	_check(_spider.silk.current < silk_before, "which is what the silk went on")
 	builder.stop()
 
 
@@ -412,11 +402,9 @@ func _test_grappling_without_a_mode() -> void:
 	_spider.climb.release()
 	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
 	_spider.velocity = Vector3.ZERO
-	_spider.silk.refill(_spider.silk.maximum)
 	await _run_frames(20)
 
 	var lines_before := _silk_count()
-	var silk_before := _spider.silk.current
 	_spider.view.face(Vector3.FORWARD)
 	_spider.view.pitch = 0.0
 	await _run_frames(2)
@@ -435,7 +423,6 @@ func _test_grappling_without_a_mode() -> void:
 		% _spider.global_position.distance_to(started_at))
 	_check(_silk_count() > lines_before,
 		"and left a line behind it (%d -> %d)" % [lines_before, _silk_count()])
-	_check(_spider.silk.current < silk_before, "which is what the silk went on")
 	_check(builder.anchors.is_empty(),
 		"with no anchor list to keep track of (%d)" % builder.anchors.size())
 
@@ -456,7 +443,6 @@ func _test_grappling_a_long_way() -> void:
 	_spider.climb.release()
 	_spider.global_position = Vector3(60, 0.8, 0)
 	_spider.velocity = Vector3.ZERO
-	_spider.silk.refill(_spider.silk.maximum)
 	await _run_frames(30)
 
 	var reach := _spider.stage().reach
@@ -499,7 +485,6 @@ func _test_lines_are_roads() -> void:
 	var builder := _spider.web_builder
 	builder.stop()
 	_spider.climb.release()
-	_spider.silk.refill(_spider.silk.maximum)
 	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
 	_spider.velocity = Vector3.ZERO
 	await _run_frames(20)

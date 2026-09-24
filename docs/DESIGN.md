@@ -10,7 +10,7 @@
 
 A first-person predator sim about **building traps, not chasing prey**.
 
-You do not fight. You engineer. Your one verb is *silk*: you spend it to build
+You do not fight. You engineer. Your one verb is *silk*: you use it to build
 webs, bridges, triplines and snares, and you get it back by eating whatever
 those webs catch. Every meal makes you bigger, and being bigger is what opens
 the way out — not because the room rejects you, but because the drain lid is
@@ -52,8 +52,9 @@ half of the game is not a side feature: **your webs are both your larder and
 your road network.**
 
 **Feed.** Caught prey struggles and damages the web. You have a window to get
-there, **wrap** it (cheap silk, stops the struggling, preserves the web) and
-then **drain** it (turns it into biomass + silk). Leave it too long and it
+there, **wrap** it (stops the struggling, preserves the web) and then
+**drain** it (turns it into biomass, and takes the web with it if that was the
+last thing in there — §5). Leave it too long and it
 tears free and the web with it — so the race back is real.
 
 Securing a catch should ask something of the player rather than being one
@@ -61,7 +62,7 @@ keypress. Wrapping is the beat that wants it: something to fight against while
 the thing under you thrashes, harder the bigger it is. Not built yet.
 
 **Grow.** Biomass raises your size tier. Size is the single stat that gates
-everything: silk capacity, span length, what you can bite, what you can lift,
+everything: span length, what you can bite, what you can lift,
 what gaps you fit through.
 
 ---
@@ -125,7 +126,7 @@ Three branches, three deep:
 
 | | **Bulk** | **Flight** | **Venom** |
 |---|---|---|---|
-| I | Heavy Frame — bigger, more silk | Wing Buds — a fall becomes a glide | Paralytic Bite — subdue one class up |
+| I | Heavy Frame — bigger, stronger silk | Wing Buds — a fall becomes a glide | Paralytic Bite — subdue one class up |
 | II | Broad Back — bigger still, harder bite | Hollow Frame — **smaller**, faster, longer reach | Digestive Flood — far more out of a kill |
 | III | Girder Legs — rope for silk | Storm Rider — ride a draught | Hunting Fangs — kill with no web behind it |
 
@@ -301,25 +302,61 @@ are elsewhere.
 
 ---
 
-## 5. Silk — the economy
+## 5. What is actually scarce
 
-Silk is the only currency and the only meaningful constraint.
+**There is no silk economy.** There was one, and it was the wrong instrument.
+A budget makes the player afraid to spend, and the fear is worst exactly when
+they have just missed — the moment the game most needs them to try again. It
+also has to be *explained*: a number on screen, a regeneration rate, a refund
+percentage, a quote before every web. All of that to answer one question the
+player never asked.
 
-* **Capacity** scales with size tier.
-* **Regeneration** is slow and passive (a trickle), so you can always
-  eventually rebuild — never softlocked, just slowed.
-* **Feeding** is the real source: draining prey returns silk proportional to
-  its biomass.
-* **Demolishing** your own web refunds ~50%, so experimenting is cheap. Pulling
-  a web down leaves its frame lines standing — you only get back what you spent
-  on the weave.
-* **Repairing** a damaged web costs a fraction of the original.
+Three things are scarce instead, and none of them is a number you save up.
 
-Every buildable thing has a cost in metres of strand and square metres of
-sheet, so a big web is expensive both to build and to hold in your head. The
-interesting decision is always *"one good web or three cheap ones?"*
+### Lines: three at a time
+
+Grappling leaves a line behind. You may have **three**, and a fourth takes the
+oldest down. The question stops being "can I afford another" — which has a
+boring answer, yes, eventually — and becomes **"which three do I want"**, which
+is a question about the room you are standing in.
+
+Three is small enough to hold in your head while moving, which is the only time
+it matters. The line currently **holding you up is never the one that goes**:
+it is skipped however old it is and the next one goes instead. Dropping the
+floor out from under the player is the game taking the controls off them, and
+that is the one thing it must not do.
+
+### Webs: a wait, not a bill
+
+Shooting a web starts a short cooldown, and that is its whole cost. A wait
+costs you nothing you were saving, it comes back on its own, and a miss is over
+in a few seconds rather than in however long it takes to refill.
+
+It also killed a whole class of bug. Pricing a web before it exists means
+quoting a number for a shape the bolt has not reached yet, which produced two
+separate failures: one quoting 49 and charging 167, another quoting 89 and
+charging 91. A wait is the same length whatever the web turns out to be.
+
+### Webs end with their catch
+
+A web is a **larder while it holds something and nothing once it does not**.
+Take the last catch out and the web comes down with it; put another one up if
+you want one there.
+
+This keeps the larder (§6) exactly as it was — leaving a web to fill is still
+the plan, and walking away still pays — while making the reward the moment you
+spend. That is the right moment for a cost: you pay when you are being
+rewarded, not when you are trying something.
+
+**Escaping is not harvesting.** Something tearing loose leaves the web
+standing. Losing a catch is the web losing; taking the web as well would be
+losing twice for one mistake.
 
 ### Silk types (unlocked by tier)
+
+Not a currency, and never was — a list of what silk can *be*, which is still
+the plan. Only the first two exist today.
+
 | Type | Unlock | Property |
 |------|--------|----------|
 | Dragline | 1 | structural, non-sticky — bridges, safety lines |
@@ -327,6 +364,14 @@ interesting decision is always *"one good web or three cheap ones?"*
 | Sheet silk | 2 | cheap area coverage, weak hold |
 | Tension silk | 3 | stores energy — powers snares and trapdoors |
 | Cable silk | 5 | heavy structural, long spans, needs deep anchors |
+
+### What this cost
+
+Stated plainly: draining prey no longer returns anything but biomass, webs have
+no refund, and the dragline, the tether and wrapping a catch are all simply
+abilities now. Devices (§6) were designed as "the thing that isn't silk, and is
+limited by the bag instead" — that contrast is gone, and they are now one
+finite thing among several rather than the only one.
 
 ---
 
@@ -343,7 +388,7 @@ three or more closed anchors make a *net*.
 | **Trip Line** | 2 anchors | 1 | Doesn't hold. Pings you when something crosses it and briefly slows it. Dirt cheap — the scouting tool. |
 | **Sheet Web** | 3+ anchors | 1 | Basic catcher. Cheap per area, weak hold, tears fast. The bread-and-butter web. |
 | **Orb Web** | 3+ anchors | 2 | The classic. Expensive, strong hold, high durability, catches fliers well. |
-| **Pressure Snare** | 3+ anchors | 3 | Built under tension. Triggers on contact: yanks the prey off the ground and holds it rigid for several seconds — long enough to cross a room. Must be re-armed with silk after each catch. |
+| **Pressure Snare** | 3+ anchors | 3 | Built under tension. Triggers on contact: yanks the prey off the ground and holds it rigid for several seconds — long enough to cross a room. Must be set again after each catch. |
 | **Funnel Lure** | 3+ anchors | 4 | Emits a scent/vibration field that pulls wandering prey toward it. Turns a dead corner into a lane. |
 | **Silk Bridge** | 2 anchors | 3 | Walkable strand. Traversal, not trapping. |
 | **Trapdoor** | 3+ anchors | 5 | A camouflaged hatch over a hole; prey walks over it and drops into whatever you built underneath. |
@@ -1018,13 +1063,13 @@ hold in their head on the first screen.
 | **Space** | Jump. Also the only way off silk, which is sticky |
 | **Shift** | Sprint |
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
-| **Left Mouse** | **Go there, trailing silk.** A surface pulls you over; a line puts you on it; something you already caught comes to you instead |
-| **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss expires after two seconds |
+| **Left Mouse** | **Go there, trailing a line.** A surface pulls you over; a line puts you on it; something you already caught comes to you instead. Three lines at a time — a fourth takes the oldest down (§5) |
+| **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss expires after two seconds. Then a short wait before the next (§5) |
 | **Right Mouse** *(hold)* | **Take aim.** Drops to first person; hold a creature in the cross for a second and the bolt that leaves cannot miss it |
 | **1–9 / wheel** | Pick a pocket on the bar |
 | **E** | The tree — spend what you have eaten |
 | **F** | Wrap the prey you are looking at, then drain it |
-| **X** | Pull down the web you are looking at |
+| **X** | Pull down the web or line you are looking at |
 | **L** | Camera: third person or first person |
 | **H** | Toggle help · **T** Release mouse · **Esc** Quit |
 
@@ -1110,14 +1155,19 @@ Crawlspace zone, wasps as a predator, verticality, streaming between zones.
   getting back fast is the skill that replaces patience.
 * **Leaving must pay.** The corollary, and the one that is easiest to break by
   accident: if walking away costs you the catch, every other system pushing the
-  player outward is wasted. A web holds what it caught.
+  player outward is wasted. A web holds what it caught — and only ends when
+  *you* empty it, never when something gets away.
 * **Never chase, either.** Running after prey on foot means the trap did not
   do its job. Riding across the level because a trap went off is not chasing,
   it is answering.
 * **Size must be felt, not read.** No stat screen moment should be needed to
   notice you grew — the camera, the geometry and the webs should say it.
-* **Cheap to experiment.** Refunds, repairs and passive regen keep the player
-  building rather than hoarding.
+* **Cheap to experiment.** Nothing is saved up, so nothing can be wasted. The
+  limits are a count and a wait (§5), both of which come back on their own —
+  a player who has just missed must never be poorer for it.
+* **Never a budget.** A resource bar makes the player afraid to spend, and the
+  fear is worst exactly when the game most needs them to try again. Limit by
+  *how many at once* or *how soon again*, never by *how much is left*.
 * **Readable lanes.** Prey movement must be legible from a distance; the player
   should be able to point at a spot and say "that's where it walks".
 * **Growth only ever opens.** No gate wants the player smaller, and nothing

@@ -6,7 +6,7 @@
 script = ExtResource("1_trait")
 id = "broad_back"
 display_name = "Broad Back"
-description = "Room inside you for more silk, and enough behind a bite to hold something larger."
+description = "Thread that comes off you thicker, and enough behind a bite to hold something larger."
 branch = 0
 depth = 1
 requires = PackedStringArray("heavy_frame")
@@ -15,5 +15,5 @@ cost = {
 "moth": 3
 }
 body_scale = 1.22
-silk_scale = 1.15
+quality_scale = 1.2
 bite_bonus = 1

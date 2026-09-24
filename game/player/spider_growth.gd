@@ -116,8 +116,8 @@ func _on_traits_changed() -> void:
 	# change means "resize yourself" to everything listening. Only say it when
 	# the body really did move.
 	if before == null or not is_equal_approx(before.body_height, _shaped.body_height) \
-			or not is_equal_approx(before.silk_capacity, _shaped.silk_capacity) \
 			or not is_equal_approx(before.move_speed, _shaped.move_speed) \
+			or not is_equal_approx(before.silk_quality, _shaped.silk_quality) \
 			or before.bite_power != _shaped.bite_power:
 		stage_changed.emit(current_stage(), stage_index)
 

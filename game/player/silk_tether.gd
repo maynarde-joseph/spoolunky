@@ -36,8 +36,6 @@ const WALL_REACH := 4096.0
 ## something across the room does not snap it to your feet; it comes in.
 @export var reel_speed := 7.0
 
-@export var silk_per_metre := 0.8
-
 ## Overstretch this many times the rope's length and the silk gives way. High
 ## on purpose: the line is meant to drag things through corners, not to be a
 ## tripwire that punishes a long grapple.
@@ -59,7 +57,6 @@ const WALL_REACH := 4096.0
 var cargo: Node3D = null
 
 var _spider: SpiderPlayer
-var _silk: SilkPool
 var _growth: SpiderGrowth
 var _view: SpiderCamera
 var _climb: SpiderClimb
@@ -75,10 +72,9 @@ var _view_node: MeshInstance3D
 ## a child is ready before its parent is and the spider's own pieces are not
 ## assigned yet at that point — which reads as a null silk pool the first time
 ## anything asks the line to cost something.
-func setup(spider: SpiderPlayer, silk: SilkPool, growth: SpiderGrowth,
+func setup(spider: SpiderPlayer, growth: SpiderGrowth,
 		view: SpiderCamera, climb: SpiderClimb) -> void:
 	_spider = spider
-	_silk = silk
 	_growth = growth
 	_view = view
 	_climb = climb
@@ -126,26 +122,20 @@ func toggle() -> bool:
 	return hook(target)
 
 
-## Puts a line on something. Costs silk by the length of it, like everything.
+## Puts a line on something.
 func hook(target: Node3D) -> bool:
 	if target == null or not is_instance_valid(target) or cargo != null:
 		return false
-	if _silk == null or _spider == null:
+	if _spider == null:
 		return false
 	if not can_carry(target):
 		notice.emit("Not something you can drag along")
 		return false
-	# Paid out to wherever it is, and charged for what that took. A long shot
-	# costs what a long line costs, and then reels in.
+	# Paid out to wherever it is. A long shot is a long line, and then it reels.
 	_rope_length = maxf(_resting_length(), _hand().distance_to(target.global_position))
-	var cost := _rope_length * silk_per_metre * _quality()
-	if not _silk.spend(cost):
-		notice.emit("Not enough line for that — %d silk" % ceili(cost))
-		return false
-
 	cargo = target
 	_reset_rope(_hand(), target.global_position)
-	notice.emit("Hooked the %s (%d silk)" % [_label(target), roundi(cost)])
+	notice.emit("Hooked the %s" % _label(target))
 	hooked.emit(target)
 	return true
 

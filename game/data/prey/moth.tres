@@ -9,7 +9,6 @@ display_name = "Moth"
 description = "Flies high and cannot resist a lure, so it is caught by where you put the web rather than by how good it is. A sheet will not keep one."
 sort_order = 2
 biomass = 16.0
-silk_return = 14.0
 size_class = 2
 struggle_power = 2.0
 struggle_stamina = 6.0

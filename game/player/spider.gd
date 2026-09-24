@@ -4,8 +4,9 @@ extends Player
 ## The spider.
 ##
 ## Extends the character-controller template's player with the four things
-## that make this game a spider game: a silk supply, a body that grows when it
-## eats, build mode, and the ability to walk up a wall as if it were the floor.
+## that make this game a spider game: a body that grows when it eats, webs it
+## can shoot, lines it can run, and the ability to walk up a wall as if it were
+## the floor.
 ##
 ## Growth is applied physically rather than as a stat line — the collider, the
 ## eye height, the stride and the camera's near plane all move with the size
@@ -42,7 +43,6 @@ signal skill_tree_toggled()
 @export var input_ride := "web_ride"
 @export var input_toggle_camera := "toggle_camera"
 @export var input_device_mode := "device_mode"
-@export var input_silk_unlimited := "silk_unlimited"
 @export var input_throw_mode := "web_throw_mode"
 @export var input_tether := "web_tether"
 @export var input_shoot := "web_shoot"
@@ -57,11 +57,10 @@ signal skill_tree_toggled()
 @export var kill_plane := -60.0
 
 ## Ignore build and feeding input while the mouse is free, so clicking around a
-## menu doesn't spend silk. Turn off for automated tests and headless runs,
+## menu doesn't spin a web. Turn off for automated tests and headless runs,
 ## where the display server cannot capture the mouse at all.
 @export var require_captured_mouse := true
 
-@onready var silk: SilkPool = $Silk
 @onready var growth: SpiderGrowth = $Growth
 @onready var web_builder: WebBuilder = $WebBuilder
 @onready var climb: SpiderClimb = $Climb
@@ -101,10 +100,10 @@ func _ready() -> void:
 
 	view.setup(self, get_node_or_null("Head/FirstPersonCameraReference"))
 	view.face(-global_basis.z)
-	climb.setup(self, silk, growth, view)
-	web_builder.setup(self, silk, growth, view, climb)
+	climb.setup(self, growth, view)
+	web_builder.setup(self, growth, view, climb)
 	device_placer.setup(self, bag, growth, view)
-	tether.setup(self, silk, growth, view, climb)
+	tether.setup(self, growth, view, climb)
 	growth.shaped_by(traits)
 	web_builder.notice.connect(_on_notice)
 	device_placer.notice.connect(_on_notice)
@@ -252,9 +251,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		skill_tree_toggled.emit()
 	elif _hotbar_input(event):
 		pass
-	elif event.is_action_pressed(input_silk_unlimited):
-		notice.emit("Silk: %s" % ("unlimited (sandbox)" if silk.toggle_unlimited()
-			else "costs again"))
 	elif event.is_action_pressed(input_toggle_camera):
 		view.toggle_mode()
 		notice.emit("Camera: %s" % ("third person" if view.third_person else "first person"))
@@ -371,11 +367,8 @@ func _interact() -> void:
 
 	var web := web_builder.aimed_web()
 	if web != null and web.needs_rearm():
-		if silk.spend(web.pattern.rearm_cost):
-			web.rearm()
-			notice.emit("Snare re-armed (%d silk)" % roundi(web.pattern.rearm_cost))
-		else:
-			notice.emit("Not enough silk to re-arm")
+		web.rearm()
+		notice.emit("Snare set again")
 		return
 
 	notice.emit("Nothing in reach")
@@ -392,12 +385,8 @@ func _handle_prey(prey: Prey) -> void:
 		return
 
 	if prey.is_stuck():
-		var cost := prey.wrap_cost()
-		if silk.spend(cost):
-			prey.wrap()
-			notice.emit("Wrapped the %s (%d silk)" % [prey.species, roundi(cost)])
-		else:
-			notice.emit("Not enough silk to wrap — %d needed" % ceili(cost))
+		prey.wrap()
+		notice.emit("Wrapped the %s" % prey.species)
 		return
 
 	# Much bigger than it? Then you can simply take it. Fangs halve what
@@ -416,17 +405,15 @@ func _drain(prey: Prey) -> void:
 	var kind := prey.kind
 	var yield_scale := traits.drain_scale() if traits != null else 1.0
 	var food := prey.biomass * yield_scale
-	var silk_back := prey.silk_value() * yield_scale
 	prey.consume()
 	# Biomass grows you along the ladder; the creature itself goes in the
 	# larder, where the tree spends it. One drink, two currencies, which is what
 	# keeps eating right whichever way you are evolving.
 	if traits != null:
 		traits.record(kind)
-	silk.refill(silk_back)
 	var tiers := growth.feed(food, species)
 	if tiers <= 0:
-		notice.emit("Drained the %s  +%d biomass  +%d silk" % [species, roundi(food), roundi(silk_back)])
+		notice.emit("Drained the %s  +%d biomass" % [species, roundi(food)])
 
 
 # --- growth -------------------------------------------------------------
@@ -482,9 +469,6 @@ func _apply_stage(new_stage: GrowthStage, previous_height: float) -> void:
 	if water_probe != null:
 		water_probe.position = Vector3(0, height * 0.5, 0)
 		water_probe.target_position = Vector3(0, -height, 0)
-
-	silk.set_capacity(new_stage.silk_capacity)
-	silk.regen_per_second = new_stage.silk_regen
 
 	# Growing from the middle of the capsule would bury the feet in the floor.
 	if previous_height < height:

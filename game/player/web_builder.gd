@@ -18,18 +18,20 @@ enum Problem {
 	TOO_FAR,         ## further from the last anchor than this size can span
 	TOO_CLOSE,       ## practically on top of the last anchor
 	FULL,            ## pattern has taken all the anchors it allows
-	NO_SILK,         ## the web as drawn costs more than we carry
 	LOCKED,          ## pattern needs a bigger spider
 }
 
 ## Where finished webs are parented. Defaults to a "Webs" node in the level.
 @export var web_container_path: NodePath
 
-## Flat silk cost of running a signal line between two webs.
-@export var link_base_cost := 1.5
-
-## Silk per metre of signal line.
-@export var link_silk_per_metre := 0.5
+## How many lines the spider may have up at once.
+##
+## This is what replaced the silk budget on lines. A line costs nothing to make
+## and everything to keep, so the question stops being "can I afford this" and
+## becomes "which three do I want" — which is a decision about the room you are
+## in rather than about a number. Three is small enough to hold in your head
+## while you are moving, which is the only time it matters.
+const MAX_LINES := 3
 
 ## Most anchors one run round a frame may have.
 @export var max_chain := 12
@@ -47,6 +49,16 @@ enum Problem {
 ## How big a shot web is, as a multiple of body height. One size, taken from
 ## the spider rather than chosen by holding a key down.
 @export var shot_radius_bodies := 1.8
+
+## Seconds between web shots.
+##
+## This is the whole cost of a web now. Silk used to be the thing that stopped
+## you papering a room with them, and a budget is a poor tool for that job: it
+## made a web something to be afraid of spending, and the fear was worst
+## exactly when you had just missed. A wait is the opposite kind of limit — it
+## costs you nothing you were saving, it comes back on its own, and a miss is
+## over in a few seconds.
+@export var shot_cooldown := 3.5
 
 ## How long a creature has to be kept in the crosshair before the shot becomes
 ## a certainty, in seconds.
@@ -79,11 +91,6 @@ const PLACE_SIDES := 16
 ## Closest a rim corner may sit to the middle. Silk can hug a corner tightly,
 ## but a web that reaches almost nowhere on one side is a sliver, not a trap.
 const PLACE_MIN_SPAN := 0.18
-
-## How much a shot's quote errs dear, against what the weaver actually lays.
-## Measured at about two per cent in the open; this is room enough that the
-## quote is an upper bound rather than a hopeful average.
-const QUOTE_MARGIN := 1.12
 
 ## How far ahead the charge ghost sits when the crosshair has found nothing,
 ## so a throw at open sky still shows the size being wound up.
@@ -124,7 +131,7 @@ var place_centre := Vector3.ZERO
 var place_normal := Vector3.UP
 var place_valid := false
 
-## Stopped growing because the next size over is more silk than we have.
+## Stopped growing because the body cannot span any wider.
 var place_capped := false
 
 ## Whether letting go throws a bolt of silk that opens where it lands, rather
@@ -146,6 +153,7 @@ var lock_progress := 0.0
 var locked := false
 
 var _aim_was_third_person := false
+var _cooling := 0.0
 
 ## How many rim corners found something to hold onto, and how much the web
 ## would actually cover once the room has had its say.
@@ -160,16 +168,17 @@ var aim_valid := false
 var aim_point := Vector3.ZERO
 var aim_normal := Vector3.UP
 var problem := Problem.NONE
-var estimated_cost := 0.0
 
 var _spider: CharacterBody3D
-var _silk: SilkPool
 var _growth: SpiderGrowth
 var _view: SpiderCamera
 var _climb: SpiderClimb
 
 ## Frame strands laid on the way round the current chain.
 var _chain: Array[WebStrand] = []
+
+## Every line the grapple has left up, oldest first.
+var _lines: Array[WebStrand] = []
 var _pending_anchor := Vector3.ZERO
 var _awaiting_grapple := false
 
@@ -201,10 +210,9 @@ func _ready() -> void:
 
 
 ## Wires the builder to the spider that owns it.
-func setup(spider: CharacterBody3D, silk: SilkPool, growth: SpiderGrowth,
+func setup(spider: CharacterBody3D, growth: SpiderGrowth,
 		view: SpiderCamera, climb: SpiderClimb = null) -> void:
 	_spider = spider
-	_silk = silk
 	_growth = growth
 	_view = view
 	_climb = climb
@@ -213,6 +221,7 @@ func setup(spider: CharacterBody3D, silk: SilkPool, growth: SpiderGrowth,
 
 
 func _process(delta: float) -> void:
+	_cooling = maxf(0.0, _cooling - delta)
 	if placing:
 		_grow_placement(delta)
 	elif placing_design:
@@ -247,13 +256,6 @@ func begin_place() -> bool:
 	place_capped = false
 	place_radius = _min_place_radius()
 	_update_placement()
-	# You can never start something you could not finish: growth stops when
-	# the silk runs out, so refusing here is the same rule at its floor.
-	if place_valid and not _silk.can_afford(estimated_cost):
-		placing = false
-		notice.emit("Not enough silk for even a small web — %d needed"
-			% ceili(estimated_cost))
-		return false
 	state_changed.emit()
 	return true
 
@@ -282,21 +284,16 @@ func commit_place() -> bool:
 	if web == null:
 		notice.emit("No room for a web there")
 		return false
-	if not _silk.can_afford(web.silk_cost):
-		notice.emit("Not enough silk — %d needed" % ceili(web.silk_cost))
-		web.free()
-		return false
 
 	web.tuning = dials.copy()
-	_silk.spend(web.silk_cost)
 	web.place_in(_resolve_container())
 	_loop_source = -1
 	web_built.emit(web)
 	if web.bundled_on_arrival > 0 and web.snared_count() == 0:
 		# The silk went round what it hit. There is nothing left to hang on a
 		# wall, so the web goes with it rather than sitting there empty.
-		notice.emit("%s thrown over %d — wrapped and dropped (%d silk)"
-			% [pattern.display_name, web.bundled_on_arrival, roundi(web.silk_cost)])
+		notice.emit("%s thrown over %d — wrapped and dropped"
+			% [pattern.display_name, web.bundled_on_arrival])
 		# web_built has already gone out with this one, so anything that kept
 		# hold of it is looking at a web that is about to stop existing. Every
 		# listener in the game checks is_instance_valid before touching a web;
@@ -306,18 +303,16 @@ func commit_place() -> bool:
 		web.queue_free()
 		return true
 	if web.bundled_on_arrival > 0:
-		notice.emit("%s thrown over %d, and still holding %d (%d silk)"
-			% [pattern.display_name, web.bundled_on_arrival, web.snared_count(),
-			roundi(web.silk_cost)])
+		notice.emit("%s thrown over %d, and still holding %d"
+			% [pattern.display_name, web.bundled_on_arrival, web.snared_count()])
 	elif web.caught_on_arrival > 0:
-		notice.emit("%s caught %d on the way up, still fighting (%d silk)"
-			% [pattern.display_name, web.caught_on_arrival, roundi(web.silk_cost)])
+		notice.emit("%s caught %d on the way up, still fighting"
+			% [pattern.display_name, web.caught_on_arrival])
 	elif place_anchored > 0:
-		notice.emit("%s spun into the gap, %.2f m2 on %d anchors (%d silk)"
-			% [pattern.display_name, place_area, place_anchored, roundi(web.silk_cost)])
+		notice.emit("%s spun into the gap, %.2f m2 on %d anchors"
+			% [pattern.display_name, place_area, place_anchored])
 	else:
-		notice.emit("%s spun, %.2f m2 (%d silk)"
-			% [pattern.display_name, place_area, roundi(web.silk_cost)])
+		notice.emit("%s spun, %.2f m2" % [pattern.display_name, place_area])
 	return true
 
 
@@ -337,6 +332,9 @@ func commit_place() -> bool:
 func shoot(chase: Prey = null) -> bool:
 	if shot_in_flight() or _view == null:
 		return false
+	if cooling():
+		notice.emit("Spinning more — %.1fs" % cooldown_left())
+		return false
 	var pattern := current_pattern()
 	if pattern == null:
 		pattern = _first_spinnable()
@@ -344,14 +342,9 @@ func shoot(chase: Prey = null) -> bool:
 		notice.emit("Nothing to spin")
 		return false
 
-	# Worked out once, at the trigger, and carried by the bolt. A web that
-	# shrank in flight because silk ticked over would be a different web from
-	# the one that was paid for.
+	# Worked out once, at the trigger, and carried by the bolt, so a web cannot
+	# change size in flight.
 	var radius := shot_radius()
-	var cost := shot_cost(pattern)
-	if not _silk.can_afford(cost):
-		notice.emit("Not enough silk — %d needed" % ceili(cost))
-		return false
 
 	var shot := SilkShot.fire(_view.aim_origin(), _view.aim_forward(),
 		_stage().body_height, _exclusions())
@@ -362,7 +355,24 @@ func shoot(chase: Prey = null) -> bool:
 	shot.fizzled.connect(func() -> void: _shot = null)
 	shot.launch_from(_resolve_container(), _view.aim_origin())
 	_shot = shot
+	_cooling = shot_cooldown
 	return true
+
+
+## True while the spider is still spinning the next one.
+func cooling() -> bool:
+	return _cooling > 0.0
+
+
+func cooldown_left() -> float:
+	return _cooling
+
+
+## 0 to 1, for the readout. 1 means ready.
+func cooldown_progress() -> float:
+	if shot_cooldown <= 0.0:
+		return 1.0
+	return clampf(1.0 - _cooling / shot_cooldown, 0.0, 1.0)
 
 
 ## How close the bolt has to pass to something alive to take it.
@@ -375,52 +385,16 @@ func catch_radius(web_radius: float) -> float:
 	return maxf(web_radius * 1.25, _stage().body_height * 2.5)
 
 
-## One size, from the body that threw it — and then cut down until the spool
-## can pay for it.
+## One size, from the body that threw it.
 ##
-## Holding a key to choose the size is the thing being removed, so the size
-## comes from the spider. But a size the spider cannot afford must come out
-## *smaller*, not be refused: the player did not pick it, so the player cannot
-## be the one who got it wrong.
+## There was a whole apparatus here once for quoting a web's price and stepping
+## the size down until the spool could pay — two bugs' worth of arithmetic, one
+## of them quoting 49 and charging 167. A web costs a wait now, and a wait is
+## the same length whatever size the web is, so all of that is gone and the
+## size is just the spider.
 func shot_radius() -> float:
-	var ideal := clampf(_stage().body_height * shot_radius_bodies,
+	return clampf(_stage().body_height * shot_radius_bodies,
 		_min_place_radius(), _max_place_radius())
-	var pattern := current_pattern()
-	if pattern == null or _silk == null:
-		return ideal
-	var smallest := _min_place_radius()
-	var radius := ideal
-	var step: float = maxf(smallest * 0.2, 0.02)
-	while radius > smallest and not _silk.can_afford(cost_of_circle(pattern, radius)):
-		radius -= step
-	return maxf(radius, smallest)
-
-
-func shot_cost(pattern: WebPattern) -> float:
-	return cost_of_circle(pattern, shot_radius())
-
-
-## What a round web of this radius costs, quoted high.
-##
-## This is not a second cost formula — it is the one the builder already uses,
-## handed a circle. Writing a fresh one is exactly how a shot came to be priced
-## at 49 silk and charged 167: the short version counted the area and the rim
-## and forgot the spokes and the spiral, which are most of the thread in a web.
-##
-## The margin is on top because a quote is a guess by nature. The web is not a
-## circle — it is a sixteen-sided rim fitted to a room the bolt has not reached
-## yet — and the weaver lays slightly more thread than this reckoning counts.
-## A quote that can come in *under* is the same failure again in miniature: you
-## are told a number, charged more, and if the spool cannot cover the
-## difference the shot lands and builds nothing. So it errs dear.
-func cost_of_circle(pattern: WebPattern, radius: float) -> float:
-	if pattern == null or radius <= 0.0:
-		return 0.0
-	var area: float = PI * radius * radius
-	var perimeter: float = TAU * radius
-	var spokes: float = float(pattern.radial_count) * radius
-	var spiral: float = float(pattern.ring_count) * TAU * radius * 0.5
-	return pattern.cost_for(perimeter + spokes + spiral, area) * QUOTE_MARGIN
 
 
 ## Landed. Something alive is wrapped where it stood; anything else gets a web
@@ -435,9 +409,6 @@ func _on_shot_landed(at: Vector3, normal: Vector3, prey: Node3D, pattern: WebPat
 	# promise broken on the one shot that made a promise.
 	if caught != null and is_instance_valid(caught) and (sure or caught.can_be_snared()):
 		if caught.bundle():
-			# Wrapping something takes the silk that went round it, not the
-			# silk a whole web would have cost.
-			_silk.spend(cost_of_circle(pattern, radius) * 0.5)
 			notice.emit("Wrapped the %s" % caught.species)
 			return
 	_open_web_at(at, normal, prey, radius)
@@ -569,10 +540,6 @@ func _throw_place() -> bool:
 	var pattern := current_pattern()
 	if pattern == null or _view == null:
 		return false
-	if not _silk.can_afford(estimated_cost):
-		notice.emit("Not enough silk to throw one — %d needed" % ceili(estimated_cost))
-		return false
-
 	var charged := place_radius
 	var shot := SilkShot.fire(_view.aim_origin(), _view.aim_forward(),
 		_stage().body_height, _exclusions())
@@ -616,25 +583,18 @@ func _open_web_at(at: Vector3, normal: Vector3, prey: Node3D, charged: float) ->
 	if web == null:
 		notice.emit("It landed somewhere a web will not hold")
 		return
-	if not _silk.can_afford(web.silk_cost):
-		notice.emit("Not enough silk to open it — %d needed" % ceili(web.silk_cost))
-		web.free()
-		return
 
 	web.tuning = dials.copy()
-	_silk.spend(web.silk_cost)
 	web.place_in(_resolve_container())
 	_loop_source = -1
 	web_built.emit(web)
 	if web.bundled_on_arrival > 0 and web.snared_count() == 0:
-		notice.emit("Caught it mid-air — wrapped and dropped (%d silk)"
-			% roundi(web.silk_cost))
+		notice.emit("Caught it mid-air — wrapped and dropped")
 		web.unlink_all()
 		web.queue_free()
 		return
 	web.play_arrival(ARRIVAL_SPRING)
-	notice.emit("%s opened out, %.2f m2 (%d silk)"
-		% [pattern.display_name, place_area, roundi(web.silk_cost)])
+	notice.emit("%s opened out, %.2f m2" % [pattern.display_name, place_area])
 
 
 ## Switches between putting the web down where you point and throwing a bolt
@@ -746,7 +706,6 @@ func place_charge_centre() -> Vector3:
 ## crosshair, turned to face you, so what you see is what you get.
 func _update_placement() -> void:
 	place_valid = false
-	estimated_cost = 0.0
 	if _view == null:
 		return
 	if not _cast_surface(UNLIMITED_REACH):
@@ -769,27 +728,16 @@ func _update_placement() -> void:
 	if clearance < 0.02:
 		place_centre += place_normal * (0.02 - clearance)
 	place_valid = true
-	var pattern := current_pattern()
-	if pattern != null:
-		estimated_cost = _estimate_cost(pattern, place_rim())
 
 
-## Grows the web while the key is held, and stops when the next size over
-## costs more silk than we have. Running out is the ceiling rather than an
-## error at the end: the ghost simply stops getting bigger, with the price on
-## screen, instead of letting you hold down a key for a web you cannot buy.
+## Grows the web while the key is held, up to what the body can span.
 func _grow_placement(delta: float) -> void:
 	if place_capped or place_radius >= _max_place_radius():
+		place_capped = true
 		_update_placement()
 		return
-	var previous := place_radius
 	place_radius = minf(place_radius + _place_growth_rate() * delta,
 		_max_place_radius())
-	_update_placement()
-	if _silk.can_afford(estimated_cost) or previous <= _min_place_radius():
-		return
-	place_radius = previous
-	place_capped = true
 	_update_placement()
 
 
@@ -866,7 +814,6 @@ func stop() -> void:
 	building = false
 	_end_chain()
 	problem = Problem.NONE
-	estimated_cost = 0.0
 	state_changed.emit()
 
 
@@ -927,9 +874,64 @@ func _arrive_at(point: Vector3) -> void:
 		add_anchor(point)
 		return
 	if _launched_from.distance_to(point) > 0.01:
-		_lay_line(_launched_from, point)
+		_remember_line(_lay_line(_launched_from, point))
 	_loop_source = -1
 	state_changed.emit()
+
+
+## How many lines are up.
+func line_count() -> int:
+	_forget_dead()
+	return _lines.size()
+
+
+## The lines that are up, oldest first.
+func lines() -> Array[WebStrand]:
+	_forget_dead()
+	return _lines.duplicate()
+
+
+## Files a line the grapple just left, and takes the oldest down if that put us
+## over the limit.
+##
+## Only grappled lines are counted. The parked frame-walking builder lays its
+## own lines through the same function and is allowed a whole frame's worth,
+## because a frame is one thing being built rather than a network being kept.
+func _remember_line(strand: WebStrand) -> void:
+	if strand == null:
+		return
+	_lines.append(strand)
+	_forget_dead()
+	var underfoot := _climb.holding_line() if _climb != null else null
+	while _lines.size() > MAX_LINES:
+		var oldest := _oldest_droppable(underfoot)
+		if oldest < 0:
+			return
+		var going: WebStrand = _lines[oldest]
+		_lines.remove_at(oldest)
+		going.demolish()
+		notice.emit("The oldest line came down")
+	state_changed.emit()
+
+
+## Drops lines that are already gone — torn, or pulled down by hand.
+func _forget_dead() -> void:
+	var living: Array[WebStrand] = []
+	for strand in _lines:
+		if is_instance_valid(strand) and not strand.is_queued_for_deletion():
+			living.append(strand)
+	_lines = living
+
+
+## The oldest line that is not the one holding the spider up. Dropping the
+## floor out from under the player is the game taking the controls off them,
+## which is the one thing it must not do — so the line underfoot is skipped
+## however old it is, and the next one goes instead.
+func _oldest_droppable(underfoot: WebStrand) -> int:
+	for i in _lines.size():
+		if _lines[i] != underfoot:
+			return i
+	return -1
 
 
 ## Where a dragged line starts: the end of a scripted run, or simply where the
@@ -975,11 +977,6 @@ func _lay_line(from: Vector3, to: Vector3) -> WebStrand:
 	if strand == null:
 		notice.emit("That line has nowhere to go")
 		return null
-	if not _silk.can_afford(strand.silk_cost):
-		notice.emit("Not enough silk for that line — %d needed" % ceili(strand.silk_cost))
-		strand.free()
-		return null
-	_silk.spend(strand.silk_cost)
 	strand.tuning = dials.copy()
 	strand.place_in(_resolve_container())
 	_chain.append(strand)
@@ -1011,7 +1008,7 @@ func undo() -> void:
 	if not _chain.is_empty():
 		var strand: WebStrand = _chain.pop_back()
 		if is_instance_valid(strand):
-			_silk.refill(strand.demolish())
+			strand.demolish()
 	anchors.remove_at(anchors.size() - 1)
 	state_changed.emit()
 
@@ -1051,18 +1048,13 @@ func finish() -> void:
 		notice.emit("Nothing to weave in there")
 		_end_chain()
 		return
-	if not _silk.can_afford(web.silk_cost):
-		notice.emit("Not enough silk to weave it — %d needed" % ceili(web.silk_cost))
-		web.free()
-		return
 
 	web.tuning = dials.copy()
-	_silk.spend(web.silk_cost)
 	web.place_in(_resolve_container())
 	_end_chain()
 	state_changed.emit()
 	web_built.emit(web)
-	notice.emit("%s woven (%d silk)" % [pattern.display_name, roundi(web.silk_cost)])
+	notice.emit("%s woven" % pattern.display_name)
 
 
 ## Area the current chain encloses, or zero if it does not enclose anything.
@@ -1289,17 +1281,7 @@ func place_design() -> bool:
 			return _abandon(spun, "That design won't hold together there")
 		web.tuning = dials
 		spun.append(web)
-		total += web.silk_cost
 
-	for i in design.link_count():
-		var span: float = centres[design.link_from[i]].distance_to(centres[design.link_to[i]])
-		total += link_base_cost + span * link_silk_per_metre * quality
-
-	if not _silk.can_afford(total):
-		return _abandon(spun, "Not enough silk for %s — %d needed"
-			% [design.display_name, ceili(total)])
-
-	_silk.spend(total)
 	var container := _resolve_container()
 	for web in spun:
 		web.place_in(container)
@@ -1396,17 +1378,12 @@ func fill_aimed_loop() -> bool:
 	if web == null:
 		notice.emit("Nothing to weave in there")
 		return false
-	if not _silk.can_afford(web.silk_cost):
-		notice.emit("Not enough silk to weave it — %d needed" % ceili(web.silk_cost))
-		web.free()
-		return false
 	web.tuning = dials.copy()
-	_silk.spend(web.silk_cost)
 	web.place_in(_resolve_container())
 	_loop_source = -1
 	state_changed.emit()
 	web_built.emit(web)
-	notice.emit("%s woven into the ring (%d silk)" % [pattern.display_name, roundi(web.silk_cost)])
+	notice.emit("%s woven into the ring" % pattern.display_name)
 	return true
 
 
@@ -1467,15 +1444,8 @@ func link_nodes(source: SilkNode, target: SilkNode) -> bool:
 		notice.emit("Those two are already wired together")
 		return false
 
-	var span := source.signal_point().distance_to(target.signal_point())
-	var cost := link_base_cost + span * link_silk_per_metre * _quality()
-	if not _silk.spend(cost):
-		notice.emit("Not enough silk for the line — %d needed" % ceili(cost))
-		return false
-
 	source.link_to(target)
-	notice.emit("%s now sets off the %s (%d silk)"
-		% [source.label(), target.label(), roundi(cost)])
+	notice.emit("%s now sets off the %s" % [source.label(), target.label()])
 	return true
 
 
@@ -1590,18 +1560,17 @@ func aimed_web() -> WebStructure:
 	return best
 
 
-## Pulls down the web under the crosshair. Returns the silk recovered.
-func demolish_aimed() -> float:
+## Pulls down the web under the crosshair. True if there was one.
+func demolish_aimed() -> bool:
 	var web := aimed_web()
 	if web == null:
 		notice.emit("Nothing to pull down")
-		return 0.0
+		return false
 	var label := web.pattern.display_name
-	var refund := web.demolish()
-	_silk.refill(refund)
+	web.demolish()
 	_loop_source = -1
-	notice.emit("%s pulled down (+%d silk)" % [label, roundi(refund)])
-	return refund
+	notice.emit("%s pulled down" % label)
+	return true
 
 
 # --- aiming -------------------------------------------------------------
@@ -1610,7 +1579,6 @@ func _update_aim() -> void:
 	var pattern := current_pattern()
 	aim_valid = false
 	problem = Problem.NO_SURFACE
-	estimated_cost = 0.0
 	if pattern == null:
 		return
 	if not _is_unlocked(pattern):
@@ -1646,11 +1614,7 @@ func _update_aim() -> void:
 		problem = Problem.TOO_CLOSE
 		return
 
-	var dragged := drag_pattern()
-	if dragged != null:
-		estimated_cost = dragged.cost_for(span, 0.0)
-		if not _silk.can_afford(estimated_cost):
-			problem = Problem.NO_SILK
+
 
 
 ## Design placement only needs somewhere solid to sit against, not the anchor
@@ -1658,16 +1622,12 @@ func _update_aim() -> void:
 func _update_design_aim() -> void:
 	aim_valid = false
 	problem = Problem.NO_SURFACE
-	estimated_cost = 0.0
 	var design := current_design()
 	if design == null:
 		return
 	if not _cast_surface(_stage().anchor_range):
 		return
 	problem = Problem.NONE
-	estimated_cost = design.cost_at(_quality())
-	if estimated_cost > _silk.current:
-		problem = Problem.NO_SILK
 
 
 ## Raycast down the crosshair for a surface. Fills in the aim fields.
@@ -1691,32 +1651,6 @@ func _cast_surface(reach: float) -> bool:
 	return true
 
 
-## Rough silk figure for the HUD. The real cost is measured off the finished
-## layout when the web is actually spun.
-func _estimate_cost(pattern: WebPattern, points: PackedVector3Array) -> float:
-	if points.size() < 2:
-		return pattern.silk_base_cost
-	if pattern.shape == WebPattern.Shape.STRAND:
-		var length := points[0].distance_to(points[1])
-		if pattern.walkable:
-			length *= 2.4
-		return pattern.cost_for(length, 0.0)
-	if points.size() < 3:
-		var rim := 0.0
-		for i in range(points.size() - 1):
-			rim += points[i].distance_to(points[i + 1])
-		return pattern.cost_for(rim, 0.0)
-
-	var perimeter := 0.0
-	for i in points.size():
-		perimeter += points[i].distance_to(points[(i + 1) % points.size()])
-	var area := _polygon_area(points)
-	var mean_radius: float = sqrt(maxf(area, 0.0001) / PI)
-	var spokes: float = float(pattern.radial_count) * mean_radius
-	var spiral: float = float(pattern.ring_count) * TAU * mean_radius * 0.5
-	return pattern.cost_for(perimeter + spokes + spiral, area)
-
-
 func _polygon_area(points: PackedVector3Array) -> float:
 	var normal := WebGeometry.plane_normal(points)
 	var total := Vector3.ZERO
@@ -1737,8 +1671,6 @@ func problem_text() -> String:
 			return "Too close to the last anchor"
 		Problem.FULL:
 			return "Anchors full — press F to spin"
-		Problem.NO_SILK:
-			return "Not enough silk — %d needed" % ceili(estimated_cost)
 		Problem.LOCKED:
 			return "%s needs a bigger spider" % _pattern_name()
 	return ""
@@ -1956,8 +1888,6 @@ func _draw_place_ghost() -> void:
 	var pattern := current_pattern()
 	var tint: Color = pattern.color if pattern != null else Color(1, 1, 1, 1)
 	tint.a = 1.0
-	if not _silk.can_afford(estimated_cost):
-		tint = Color(1.0, 0.4, 0.35, 1.0)
 	var spoke := Color(tint.r, tint.g, tint.b, 0.35)
 	var hub := place_charge_centre() if throwing else place_centre
 	_preview_mesh.surface_begin(Mesh.PRIMITIVE_LINES, _preview_material)

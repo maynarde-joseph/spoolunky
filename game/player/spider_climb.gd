@@ -72,12 +72,6 @@ signal notice(text: String)
 ## Pay-out and reel-in speed, in body heights per second.
 @export var line_speed_bodies := 8.0
 
-## Silk per metre of line, before the size tier's silk quality.
-@export var line_silk_per_metre := 0.8
-
-## Fraction of the silk cost recovered by reeling the line back in.
-@export_range(0.0, 1.0, 0.05) var line_reel_refund := 0.5
-
 ## Sideways push while hanging, for swinging yourself somewhere useful.
 @export var swing_force := 4.0
 
@@ -153,6 +147,10 @@ var tangent_velocity := Vector3.ZERO
 ## Standing on silk rather than on the world, which is quicker underfoot.
 var on_silk := false
 
+## The one line the spider is standing on, if it is standing on a line rather
+## than on a web's floor or on the world.
+var standing_on: WebStrand = null
+
 ## What speed is multiplied by while dragging something. Written by the tether;
 ## one means empty-handed.
 var haul := 1.0
@@ -163,7 +161,6 @@ var haul := 1.0
 var glide := 0.0
 
 var _spider: CharacterController3D
-var _silk: SilkPool
 var _growth: SpiderGrowth
 var _view: SpiderCamera
 var _facing := Vector3.FORWARD
@@ -181,10 +178,9 @@ var _line_instance: MeshInstance3D
 var _line_material: StandardMaterial3D
 
 
-func setup(spider: CharacterController3D, silk: SilkPool, growth: SpiderGrowth,
+func setup(spider: CharacterController3D, growth: SpiderGrowth,
 		view: SpiderCamera) -> void:
 	_spider = spider
-	_silk = silk
 	_growth = growth
 	_view = view
 	_facing = -spider.global_basis.z
@@ -205,6 +201,19 @@ func is_attached() -> bool:
 
 func is_hanging() -> bool:
 	return mode == Mode.HANGING
+
+
+## The line currently keeping the spider up — the one it is riding, or the one
+## it is standing on. Null when the world is doing the holding.
+##
+## The builder asks before it takes an old line down, because dropping the
+## floor out from under the player is the game taking the controls off them.
+func holding_line() -> WebStrand:
+	if mode == Mode.RIDING and is_instance_valid(ride_web):
+		return ride_web
+	if standing_on != null and is_instance_valid(standing_on):
+		return standing_on
+	return null
 
 
 func is_riding() -> bool:
@@ -307,6 +316,7 @@ func release() -> void:
 	if mode != Mode.AIRBORNE:
 		_set_mode(Mode.AIRBORNE)
 	ride_web = null
+	standing_on = null
 	ride_speed = 0.0
 	line_length = 0.0
 	if _spider != null:
@@ -324,6 +334,7 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 
 	if hit.is_empty() or _grace > 0.0:
 		on_silk = false
+		standing_on = null
 		_set_mode(Mode.AIRBORNE)
 		_move_airborne(delta, input_axis)
 		return
@@ -346,6 +357,7 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	# the only force is the one holding the spider onto it.
 	wish = _wish_direction(input_axis, _current_up)
 	var thread := _strand_under(hit.get("collider")) if on_silk else null
+	standing_on = thread
 	if thread != null:
 		wish = _along_thread(thread, wish)
 	var speed := _surface_speed(want_sprint)
@@ -582,10 +594,6 @@ func _can_hang_from(surface_hit: Dictionary) -> bool:
 func _drop_line(surface_hit: Dictionary) -> void:
 	var height := _body_height()
 	var start_length := height * 0.9
-	var cost := start_length * line_silk_per_metre * _growth.current_stage().silk_quality
-	if not _silk.spend(cost):
-		_warn("Not enough silk for a line")
-		return
 	line_anchor = surface_hit.get("position", _spider.global_position + _current_up * height * 0.5)
 	line_length = start_length
 	_spider.velocity = Vector3.ZERO
@@ -608,24 +616,19 @@ func _step_hanging(delta: float, input_axis: Vector2, want_out: bool, want_in: b
 		return
 
 	var height := _body_height()
-	var quality := _growth.current_stage().silk_quality
 	var travel := height * line_speed_bodies * delta
 
 	if want_out:
 		var room: float = height * max_line_bodies - line_length
 		var amount := minf(travel, maxf(room, 0.0))
-		var cost := amount * line_silk_per_metre * quality
 		if amount <= 0.0:
 			_warn("The line is fully paid out")
-		elif _silk.spend(cost):
-			line_length += amount
 		else:
-			_warn("Out of silk for the line")
+			line_length += amount
 	elif want_in:
 		var amount := minf(travel, line_length - height * 0.9)
 		if amount > 0.0:
 			line_length -= amount
-			_silk.refill(amount * line_silk_per_metre * quality * line_reel_refund)
 		else:
 			# Back at the top — grab whatever the line is anchored to.
 			var wish_up := _wish_direction(input_axis, Vector3.UP)
@@ -713,8 +716,7 @@ func _step_grappling(delta: float) -> void:
 
 
 ## Short hops keep the tier's own speed; long ones are flung fast enough to
-## arrive in about the same time, so distance costs you silk rather than
-## patience.
+## arrive in about the same time, so a long way across is not a long wait.
 func _grapple_speed(height: float) -> float:
 	var speed := grapple_speed * height
 	if _grapple_span > 0.0 and grapple_max_travel > 0.0:
@@ -840,6 +842,7 @@ func _launch_off_line() -> void:
 	var axis := _ride_axis()
 	var thrown := axis * ride_speed
 	ride_web = null
+	standing_on = null
 	ride_speed = 0.0
 	ride_distance = 0.0
 	_grace = release_grace

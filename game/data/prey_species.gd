@@ -30,9 +30,6 @@ extends Resource
 ## Biomass gained by draining it.
 @export var biomass := 8.0
 
-## Silk recovered by draining it.
-@export var silk_return := 7.0
-
 ## How big it is. Checked against a pattern's mesh, which decides whether the
 ## web notices it at all, and against the spider's bite power, which decides
 ## whether it can be drained without being subdued first. 1 is fly-sized.

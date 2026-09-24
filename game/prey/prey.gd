@@ -43,9 +43,6 @@ var species := "Fly"
 ## Biomass gained by draining it.
 var biomass := 8.0
 
-## Silk recovered by draining it.
-var silk_return := 7.0
-
 ## How big it is, against a web's mesh and the spider's bite power. 1 is
 ## fly-sized.
 var size_class := 1
@@ -134,7 +131,6 @@ func apply_species(from: PreySpecies) -> void:
 	name = from.display_name.replace(" ", "")
 	species = from.display_name
 	biomass = from.biomass
-	silk_return = from.silk_return
 	size_class = from.size_class
 	struggle_power = from.struggle_power
 	struggle_stamina = from.struggle_stamina
@@ -254,11 +250,6 @@ func is_secured() -> bool:
 	return _state == State.BUNDLED or (is_stuck() and not is_fighting())
 
 
-## Silk needed to bundle this up so it stops wrecking the web.
-func wrap_cost() -> float:
-	return 1.0 + biomass * 0.25
-
-
 ## Killed outright by venom: it stops fighting, and it can be drained whatever
 ## size it is, which is what makes a venom spur worth carrying.
 func envenom() -> bool:
@@ -292,8 +283,10 @@ func envenom() -> bool:
 func bundle() -> bool:
 	if eaten or _state == State.BUNDLED:
 		return false
+	# Bundling something that was in a web takes it out of that web, by your
+	# hand, which is what ends a web once it is the last one in there.
 	if is_instance_valid(_web):
-		_web.on_prey_escaped(self)
+		_web.on_prey_taken(self)
 	_web = null
 	wrapped = true
 	_struggle = 0.0
@@ -349,17 +342,13 @@ func wrap() -> void:
 	_set_cocoon(true)
 
 
-func silk_value() -> float:
-	return silk_return * (1.5 if wrapped else 1.0)
-
-
 ## Drained by the spider.
 func consume() -> void:
 	if eaten:
 		return
 	eaten = true
 	if is_instance_valid(_web):
-		_web.on_prey_escaped(self)
+		_web.on_prey_taken(self)
 	eaten_by_spider.emit(self)
 	queue_free()
 

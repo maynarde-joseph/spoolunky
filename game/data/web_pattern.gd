@@ -75,18 +75,6 @@ enum Trigger {
 @export var strand_thickness := 0.008
 
 
-@export_group("Cost")
-
-## Flat silk cost just for starting one.
-@export var silk_base_cost := 2.0
-
-## Silk per metre of strand (rim + spokes + rings).
-@export var silk_per_metre := 1.0
-
-## Extra silk per square metre of enclosed area. Nets only.
-@export var silk_per_square_metre := 2.0
-
-
 @export_group("Behaviour")
 
 @export var trigger: Trigger = Trigger.PASSIVE
@@ -108,9 +96,6 @@ enum Trigger {
 
 ## SNARE only: how long prey is held completely rigid when the trap springs.
 @export var snap_hold_time := 4.0
-
-## SNARE only: silk needed to re-arm after it has fired.
-@export var rearm_cost := 4.0
 
 ## LURE only: radius in metres over which prey is drawn in.
 @export var lure_radius := 0.0
@@ -150,10 +135,3 @@ enum Trigger {
 func is_unlocked_at(stage_index: int) -> bool:
 	return stage_index >= unlock_stage
 
-
-## Silk needed for a web with the given total strand length and enclosed area.
-func cost_for(strand_length: float, area: float) -> float:
-	var cost := silk_base_cost + strand_length * silk_per_metre
-	if shape == Shape.NET:
-		cost += area * silk_per_square_metre
-	return cost

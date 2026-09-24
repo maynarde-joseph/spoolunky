@@ -148,10 +148,6 @@ device_mode={
 "deadzone": 0.2,
 "events": []
 }
-silk_unlimited={
-"deadzone": 0.2,
-"events": []
-}
 web_throw_mode={
 "deadzone": 0.2,
 "events": []

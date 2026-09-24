@@ -68,8 +68,7 @@ const BRANCH_NAMES := ["Bulk", "Flight", "Venom"]
 
 @export_group("Silk")
 
-@export var silk_scale := 1.0
-@export var regen_scale := 1.0
+## Multiplies every web's hold strength and durability.
 @export var quality_scale := 1.0
 
 
@@ -104,8 +103,6 @@ func effect_line() -> String:
 	_note(parts, "speed", speed_scale)
 	_note(parts, "jump", jump_scale)
 	_note(parts, "silk reach", reach_scale)
-	_note(parts, "silk", silk_scale)
-	_note(parts, "spinning", regen_scale)
 	_note(parts, "strength", quality_scale)
 	_note(parts, "feeding", drain_scale)
 	if bite_bonus != 0:

@@ -1,8 +1,8 @@
 class_name SpiderHUD
 extends CanvasLayer
 
-## Everything the player needs to read at a glance: how much silk is left,
-## how close the next size is, and what build mode is about to do.
+## Everything the player needs to read at a glance: how many lines are up,
+## whether the next web is ready, and how close the next size is.
 
 const HOTBAR_SLOT := 54.0
 const HOTBAR_GAP := 6.0
@@ -12,9 +12,10 @@ WASD / Space / Shift   move, jump, sprint
 walk into a wall       climb it — walls and ceilings are floors to you
 silk is sticky         stand on it and it holds you; jump to come off
 
-Left Mouse             grapple there, trailing silk
+Left Mouse             grapple there, trailing a line — three at a time,
+                       and a fourth takes the oldest down
 Right Mouse            tap: shoot a web — it sticks where it lands, and
-                       wraps whatever it lands on
+                       wraps whatever it lands on. Then a short wait
 Right Mouse  (hold)    aim in first person; hold a creature in the cross
                        for a second and the shot cannot miss
 1-9 / wheel            pick a pocket
@@ -35,8 +36,8 @@ var _tree: TraitTree
 
 @onready var stage_label: Label = $Stats/StageLabel
 @onready var state_label: Label = $Stats/StateLabel
-@onready var silk_label: Label = $Stats/SilkLabel
-@onready var silk_bar: ProgressBar = $Stats/SilkBar
+@onready var lines_label: Label = $Stats/LinesLabel
+@onready var web_bar: ProgressBar = $Stats/WebBar
 @onready var biomass_label: Label = $Stats/BiomassLabel
 @onready var biomass_bar: ProgressBar = $Stats/BiomassBar
 @onready var pattern_label: Label = $Build/PatternLabel
@@ -65,6 +66,7 @@ func _process(delta: float) -> void:
 	if _spider == null:
 		return
 	_refresh_state()
+	_refresh_limits()
 	_refresh_hotbar()
 	_refresh_build_panel()
 
@@ -99,22 +101,25 @@ func _bind() -> void:
 	if _spider.traits != null:
 		_tree.setup(_spider.traits)
 		_spider.traits.gained.connect(_on_trait_gained)
-	_spider.silk.changed.connect(_on_silk_changed)
 	_spider.growth.biomass_changed.connect(_on_biomass_changed)
 	_spider.grew.connect(_on_grew)
 
-	_on_silk_changed(_spider.silk.current, _spider.silk.maximum)
 	_on_biomass_changed(_spider.growth.biomass, _spider.growth.progress())
 	_on_grew(_spider.stage(), _spider.growth.stage_index)
 
 
-func _on_silk_changed(current: float, maximum: float) -> void:
-	silk_bar.max_value = maxf(maximum, 0.001)
-	silk_bar.value = current
-	if _spider != null and _spider.silk.unlimited:
-		silk_label.text = "Silk   ∞   [J] to make it cost again"
-	else:
-		silk_label.text = "Silk   %d / %d" % [floori(current), roundi(maximum)]
+## The two things that are actually finite now: how many lines are up, and
+## whether the next web is spun yet. Read off the builder every frame rather
+## than pushed at it, because neither has a moment worth signalling.
+func _refresh_limits() -> void:
+	var builder := _spider.web_builder
+	if builder == null:
+		return
+	web_bar.max_value = 1.0
+	web_bar.value = builder.cooldown_progress()
+	var web := "Web ready" if not builder.cooling() else "Web  %.1fs" % builder.cooldown_left()
+	lines_label.text = "Lines  %d / %d      %s" % [
+		builder.line_count(), WebBuilder.MAX_LINES, web]
 
 
 func _on_biomass_changed(biomass: float, progress: float) -> void:
@@ -284,9 +289,9 @@ func _refresh_build_panel() -> void:
 		# Area, not diameter: once the rim has fitted itself to the room the
 		# web is rarely a circle, and "how much does it cover" is the thing
 		# actually being decided.
-		pattern_label.text = "%s     %.2f m²     ~%d silk" % [
+		pattern_label.text = "%s     %.2f m²" % [
 			spinning.display_name if spinning != null else "—",
-			builder.place_area, ceili(builder.estimated_cost)]
+			builder.place_area]
 		# A throw has not found its room yet, so area and corners are not things
 		# to report — the size being wound up is the only thing being decided.
 		if builder.throwing:
@@ -303,7 +308,7 @@ func _refresh_build_panel() -> void:
 			return
 		hint_label.text = "Let go to spin it — keep holding to let it reach further"
 		if builder.place_capped:
-			hint_label.text = "Let go to spin it — that is as far as your silk reaches"
+			hint_label.text = "Let go to spin it — that is as wide as you can span"
 		if not builder.place_valid:
 			problem_label.text = "Nothing to spin it against"
 		elif builder.place_target != null:
@@ -323,7 +328,7 @@ func _refresh_build_panel() -> void:
 	if builder.placing_design:
 		var design := builder.current_design()
 		if design != null:
-			pattern_label.text = "%s     ~%d silk" % [design.summary(), ceili(builder.estimated_cost)]
+			pattern_label.text = design.summary()
 			hint_label.text = builder.hint_text()
 			problem_label.text = builder.problem_text()
 		return
@@ -369,8 +374,6 @@ func _refresh_build_panel() -> void:
 	var label := pattern.display_name
 	if dragged != null and dragged != pattern:
 		label += "  ·  dragging %s" % dragged.display_name
-	if builder.estimated_cost > 0.0:
-		label += "     next line ~%d silk" % ceili(builder.estimated_cost)
 	pattern_label.text = label
 	hint_label.text = builder.hint_text()
 	problem_label.text = builder.problem_text()

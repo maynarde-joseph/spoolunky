@@ -14,6 +14,9 @@ signal torn(web: WebStructure)
 ## Something has become stuck in this web.
 signal prey_caught(web: WebStructure, prey: Node3D)
 
+## The last catch was taken out by the spider, so the web is coming down.
+signal emptied(web: WebStructure)
+
 ## Something has pulled itself free.
 signal prey_lost(web: WebStructure, prey: Node3D)
 
@@ -28,7 +31,6 @@ signal state_changed(web: WebStructure)
 var pattern: WebPattern
 
 ## Silk that went into it, used to work out the demolition refund.
-var silk_cost := 0.0
 
 ## The builder's silk quality at the time of spinning. Bigger spider, better web.
 var quality := 1.0
@@ -249,21 +251,38 @@ func tear() -> void:
 	queue_free()
 
 
-## Take the web down on purpose. Returns the silk refunded.
-func demolish(refund_fraction := 0.5) -> float:
-	var refund := silk_cost * refund_fraction * (durability / maxf(max_durability, 0.001))
+## Take the web down on purpose.
+func demolish() -> void:
 	unlink_all()
 	for prey in _snared.duplicate():
 		_release(prey, true)
 	torn.emit(self)
 	queue_free()
-	return maxf(refund, 0.0)
 
 
-## Called by prey that has torn itself loose under its own steam.
+## Called by prey that has torn itself loose under its own steam. The web
+## survives this: something getting away is the web losing, and taking the web
+## away as well would be losing twice for one mistake.
 func on_prey_escaped(prey: Node3D) -> void:
 	if _snared.has(prey):
 		_release(prey, false)
+
+
+## Called when the spider takes a catch out — drained it, or wrapped it up and
+## carried it off. Emptying a web by hand is what ends it.
+##
+## A web is a larder while it has something in it, and nothing once it does
+## not: you leave it to fill, you come back and clear it out, and clearing it
+## out costs you the web. That is the price of a catch, and it is a better one
+## than a silk bill because it is paid at the moment you are being rewarded
+## rather than at the moment you are trying something.
+func on_prey_taken(prey: Node3D) -> void:
+	var was_holding := _snared.has(prey)
+	if was_holding:
+		_release(prey, false)
+	if was_holding and _snared.is_empty():
+		emptied.emit(self)
+		tear()
 
 
 ## Re-arm a sprung snare. Returns false if it did not need it.
@@ -276,7 +295,7 @@ func rearm() -> bool:
 	return true
 
 
-## True when the player can usefully spend silk on this web.
+## True when the web has fired and is waiting to be set again.
 func needs_rearm() -> bool:
 	return pattern != null and pattern.trigger == WebPattern.Trigger.SNARE and not armed
 

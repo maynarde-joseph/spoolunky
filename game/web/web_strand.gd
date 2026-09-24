@@ -28,7 +28,6 @@ static func spin(pattern: WebPattern, a: Vector3, b: Vector3, quality: float) ->
 	strand.anchors = PackedVector3Array([a, b])
 	strand.max_durability = pattern.durability * quality
 	strand.durability = strand.max_durability
-	strand.silk_cost = pattern.cost_for(strands.length, 0.0)
 
 	strand._build_visual(strands)
 

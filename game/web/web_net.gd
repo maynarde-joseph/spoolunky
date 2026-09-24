@@ -45,7 +45,6 @@ static func spin(pattern: WebPattern, world_points: PackedVector3Array, quality:
 	net.anchors = world_points.duplicate()
 	net.max_durability = pattern.durability * quality
 	net.durability = net.max_durability
-	net.silk_cost = pattern.cost_for(layout.strands.length, layout.area)
 
 	net._build_visual(layout.strands)
 

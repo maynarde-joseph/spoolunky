@@ -62,15 +62,15 @@ theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 15
 text = "On the ground"
 
-[node name="SilkLabel" type="Label" parent="Stats"]
+[node name="LinesLabel" type="Label" parent="Stats"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.88, 0.93, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.85)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 15
-text = "Silk"
+text = "Lines"
 
-[node name="SilkBar" type="ProgressBar" parent="Stats"]
+[node name="WebBar" type="ProgressBar" parent="Stats"]
 custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 theme_override_styles/background = SubResource("StyleBoxFlat_track")

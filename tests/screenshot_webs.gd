@@ -26,7 +26,6 @@ func _run() -> void:
 	spider.growth.feed(200.0, "shot")
 	await physics_frame
 	var builder := spider.web_builder
-	spider.silk.refill(9000.0)
 
 	_spin(builder, "orb_web", Vector3(12, 1.0, 0.0), 0.75)
 	_spin(builder, "sheet_web", Vector3(10.0, 1.0, 0.0), 0.6)
@@ -69,7 +68,6 @@ func _run() -> void:
 
 	# Third shot: a wired trap chain — tripline into a snare, with prey waiting.
 	builder.stop()
-	spider.silk.refill(9000.0)
 	# Off to one side, clear of the pattern line-up, so the wire is readable.
 	_spin(builder, "pressure_snare", Vector3(-11.0, 1.2, -1.8), 0.7)
 	_strand(builder, "trip_line", Vector3(-11.0, 0.35, 1.8), Vector3(-11.0, 2.0, 1.8))
@@ -101,7 +99,6 @@ func _run() -> void:
 	# Fourth shot: the same pattern spun on three different mesh settings, with
 	# the dials showing in the HUD.
 	builder.stop()
-	spider.silk.refill(9000.0)
 	var orb := builder.patterns[0]
 	for pattern in builder.patterns:
 		if pattern.id == "orb_web":
@@ -134,7 +131,6 @@ func _run() -> void:
 			builder.designs = [design]
 			builder.design_index = 0
 			builder.placing_design = true
-			spider.silk.refill(9000.0)
 			camera.global_position = Vector3(-6.0, 2.4, 6.5)
 			camera.look_at(Vector3(-10.5, 0.2, 2.0), Vector3.UP)
 			for i in 10:

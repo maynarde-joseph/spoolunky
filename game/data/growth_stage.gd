@@ -30,15 +30,6 @@ extends Resource
 @export var jump_velocity := 4.5
 
 
-@export_group("Silk")
-
-## Maximum silk this body can hold.
-@export var silk_capacity := 45.0
-
-## Silk regenerated per second while not building.
-@export var silk_regen := 1.6
-
-
 @export_group("Web building")
 
 ## How far away an anchor can be shot, in metres.
