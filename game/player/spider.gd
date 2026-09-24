@@ -20,6 +20,10 @@ signal grew(stage: GrowthStage, index: int)
 ## Fell out of the world and got put back.
 signal respawned()
 
+## The player asked for the tree. The HUD owns the screen; this only says
+## that the key was pressed.
+signal skill_tree_toggled()
+
 @export var input_build_mode := "web_build_mode"
 @export var input_place_anchor := "web_place"
 @export var input_cancel_anchor := "web_cancel"
@@ -41,6 +45,8 @@ signal respawned()
 @export var input_silk_unlimited := "silk_unlimited"
 @export var input_throw_mode := "web_throw_mode"
 @export var input_tether := "web_tether"
+@export var input_shoot := "web_shoot"
+@export var input_skill_tree := "skill_tree"
 
 ## How much the view opens up at speed. Pure sugar, and most of what makes a
 ## zipline feel fast.
@@ -233,6 +239,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.toggle_throwing()
 	elif event.is_action_pressed(input_tether):
 		tether.toggle()
+	# Right mouse is the web. Point and press: no ghost, no held key, no mode.
+	elif event.is_action_pressed(input_shoot):
+		web_builder.shoot()
+	elif event.is_action_pressed(input_skill_tree):
+		skill_tree_toggled.emit()
+	elif _hotbar_input(event):
+		pass
 	elif event.is_action_pressed(input_silk_unlimited):
 		notice.emit("Silk: %s" % ("unlimited (sandbox)" if silk.toggle_unlimited()
 			else "costs again"))
@@ -258,6 +271,24 @@ func _unhandled_input(event: InputEvent) -> void:
 	else:
 		return
 	get_viewport().set_input_as_handled()
+
+
+## The bar: nine numbered pockets and the wheel. Returns whether the event was
+## one of them, so the caller can stop looking.
+func _hotbar_input(event: InputEvent) -> bool:
+	if bag == null:
+		return false
+	if event.is_action_pressed("hotbar_next"):
+		bag.scroll(1)
+		return true
+	if event.is_action_pressed("hotbar_prev"):
+		bag.scroll(-1)
+		return true
+	for slot in SpiderInventory.SLOTS:
+		if event.is_action_pressed("hotbar_%d" % (slot + 1)):
+			bag.select(slot)
+			return true
+	return false
 
 
 func _process(delta: float) -> void:

@@ -44,6 +44,10 @@ enum Problem {
 ## biggest this size tier can spin.
 @export var place_grow_time := 1.1
 
+## How big a shot web is, as a multiple of body height. One size, taken from
+## the spider rather than chosen by holding a key down.
+@export var shot_radius_bodies := 3.0
+
 ## Pattern dragged between anchors when the chosen one is a net.
 const FRAME_PATTERN := "frame_line"
 
@@ -283,6 +287,80 @@ func commit_place() -> bool:
 	return true
 
 
+# --- aim and shoot ------------------------------------------------------
+
+## The web verb, and the only one the player has.
+##
+## No ghost, no held key, no check for somewhere valid to put it. Point, press,
+## and a bolt of silk leaves the spider. It makes a web where it lands, wraps
+## whatever it lands *on* if that thing is alive, and stops being a shot if it
+## finds neither — because a shot at open sky that never expires is a node
+## quietly flying out of the level for ever.
+##
+## The older way of making a web — hold to grow a ghost that fits the room — is
+## still in this file below, still tested, and no longer reachable from the
+## keyboard. It was the better idea on paper and the worse one to play.
+func shoot() -> bool:
+	if shot_in_flight() or _view == null:
+		return false
+	var pattern := current_pattern()
+	if pattern == null:
+		pattern = _first_spinnable()
+	if pattern == null:
+		notice.emit("Nothing to spin")
+		return false
+
+	var cost := shot_cost(pattern)
+	if not _silk.can_afford(cost):
+		notice.emit("Not enough silk — %d needed" % ceili(cost))
+		return false
+
+	var shot := SilkShot.fire(_view.aim_origin(), _view.aim_forward(),
+		_stage().body_height, _exclusions())
+	shot.landed.connect(_on_shot_landed.bind(pattern))
+	shot.fizzled.connect(func() -> void: _shot = null)
+	shot.launch_from(_resolve_container(), _view.aim_origin())
+	_shot = shot
+	return true
+
+
+## One size, from the body that threw it. Holding a key to choose is the thing
+## being removed, so the size comes from the spider instead of the player.
+func shot_radius() -> float:
+	return clampf(_stage().body_height * shot_radius_bodies,
+		_min_place_radius(), _max_place_radius())
+
+
+func shot_cost(pattern: WebPattern) -> float:
+	if pattern == null:
+		return 0.0
+	var radius := shot_radius()
+	return pattern.silk_base_cost + pattern.silk_per_square_metre * PI * radius * radius
+
+
+## Landed. Something alive is wrapped where it stood; anything else gets a web
+## built against it. No validity test either way — a shot that reached
+## something has already earned its web.
+func _on_shot_landed(at: Vector3, normal: Vector3, prey: Node3D, pattern: WebPattern) -> void:
+	_shot = null
+	var caught := prey as Prey
+	if caught != null and is_instance_valid(caught) and caught.can_be_snared():
+		if caught.bundle():
+			_silk.spend(shot_cost(pattern) * 0.5)
+			notice.emit("Wrapped the %s" % caught.species)
+			return
+	_open_web_at(at, normal, prey, shot_radius())
+
+
+## Whatever this tier can actually spin, for when nothing is selected — the
+## wheel is gone, so the builder picks for itself.
+func _first_spinnable() -> WebPattern:
+	for pattern in patterns:
+		if pattern.shape == WebPattern.Shape.NET and _growth.stage_index >= pattern.unlock_stage:
+			return pattern
+	return null
+
+
 ## Sends a bolt of silk off to open out wherever it lands. The size the throw
 ## was charged to travels with it, so holding still decides how big the web is
 ## — you just find out where it went a moment later.
@@ -334,10 +412,6 @@ func _open_web_at(at: Vector3, normal: Vector3, prey: Node3D, charged: float) ->
 
 	var dials := tuning_for(pattern)
 	var rim := place_rim()
-	var smallest := _min_place_radius()
-	if place_area < smallest * smallest:
-		notice.emit("It landed somewhere too tight to open out")
-		return
 	var web := WebNet.spin(dials.apply_to(pattern), rim, _quality(), weave, true)
 	if web == null:
 		notice.emit("It landed somewhere a web will not hold")

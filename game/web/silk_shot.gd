@@ -22,8 +22,14 @@ signal fizzled()
 ## How far it will travel before giving up, in metres.
 @export var range_limit := 90.0
 
+## And how long, in seconds. A shot that finds nothing has to stop being a
+## shot: without this, silk fired at open sky is a node quietly flying away
+## from the level for ever.
+@export var lifetime := 2.0
+
 var _velocity := Vector3.ZERO
 var _travelled := 0.0
+var _age := 0.0
 var _exclude: Array[RID] = []
 var _size := 0.05
 var _spent := false
@@ -51,6 +57,10 @@ func launch_from(container: Node3D, at: Vector3) -> void:
 func _physics_process(delta: float) -> void:
 	if _spent:
 		return
+	_age += delta
+	if lifetime > 0.0 and _age >= lifetime:
+		_give_up()
+		return
 	_velocity += Vector3.DOWN * gravity_pull * delta
 	var step := _velocity * delta
 	var distance := step.length()
@@ -71,9 +81,13 @@ func _physics_process(delta: float) -> void:
 	global_position += step
 	_travelled += distance
 	if _travelled >= range_limit:
-		_spent = true
-		fizzled.emit()
-		queue_free()
+		_give_up()
+
+
+func _give_up() -> void:
+	_spent = true
+	fizzled.emit()
+	queue_free()
 
 
 func _land(hit: Dictionary) -> void:

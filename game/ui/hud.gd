@@ -4,35 +4,31 @@ extends CanvasLayer
 ## Everything the player needs to read at a glance: how much silk is left,
 ## how close the next size is, and what build mode is about to do.
 
-const HELP_TEXT := """[ Spoolunky — sandbox ]
+const HOTBAR_SLOT := 54.0
+const HOTBAR_GAP := 6.0
+
+const HELP_TEXT := """[ Spoolunky ]
 WASD / Space / Shift   move, jump, sprint
 walk into a wall       climb it — walls and ceilings are floors to you
 silk is sticky         stand on it and it holds you; jump to come off
-Left Mouse on a bundle put a line on it and drag it along instead of going there
-Y                      same, and drops what you are carrying
-F or middle mouse      ride a silk line like a zipline (again to let go)
-Ctrl                   drop onto a dragline (from a wall or ceiling)
-  Ctrl / Space           lower / raise yourself on the line
-  Right Mouse            let go
-Left Mouse             go there, trailing silk — every line is a zipline
-Q (hold)               spin a web where you are aiming; hold longer for bigger
-M                      webs: placed where you point / thrown as a bolt
-Wheel or Z / C         change which web you spin
-E                      wrap prey, then drain it (also re-arms a snare)
+
+Left Mouse             grapple there, trailing silk
+Right Mouse            shoot a web — it sticks where it lands, and wraps
+                       whatever it lands on
+1-9 / wheel            pick a pocket
+E                      traits
+F                      wrap prey, then drain it
 X                      pull down the web you're looking at
-G                      wire two things together — press on each end
-N                      bag: place a device (wheel to pick, LMB down, X back up)
-B                      keep the rig you're looking at as a design
-V                      place a saved design (wheel to pick, LMB to spin)
-; and [ ]              pick a tuning dial, then turn it   ('  resets)
-K                      switch weave: stretched / inscribed
-L                      camera: third person / first person
-R                      free-fly (debug)   T  free the mouse   Esc  quit
-J                      silk: unlimited / costs again (sandbox)
-H                      hide this"""
+
+L  camera   T  free the mouse   H  hide this   Esc  quit"""
 
 ## Leave empty to find the spider by its group.
 @export var spider_path: NodePath
+
+var _spider: SpiderPlayer
+var _toast_timer := 0.0
+var _hotbar: HBoxContainer
+var _pockets: Array[Panel] = []
 
 @onready var stage_label: Label = $Stats/StageLabel
 @onready var state_label: Label = $Stats/StateLabel
@@ -47,13 +43,12 @@ H                      hide this"""
 @onready var toast_label: Label = $Toast
 @onready var help_label: Label = $Help
 
-var _spider: SpiderPlayer
-var _toast_timer := 0.0
 
 
 func _ready() -> void:
 	help_label.text = HELP_TEXT
 	toast_label.modulate.a = 0.0
+	_build_hotbar()
 	problem_label.text = ""
 	dial_label.text = ""
 	_bind.call_deferred()
@@ -66,6 +61,7 @@ func _process(delta: float) -> void:
 	if _spider == null:
 		return
 	_refresh_state()
+	_refresh_hotbar()
 	_refresh_build_panel()
 
 
@@ -124,6 +120,87 @@ func _on_grew(stage: GrowthStage, index: int) -> void:
 	stage_label.text = "Stage %d — %s" % [index + 1, stage.display_name]
 	if _spider != null:
 		_on_biomass_changed(_spider.growth.biomass, _spider.growth.progress())
+
+
+# --- the bar ------------------------------------------------------------
+
+## Nine pockets along the bottom, and that is the whole inventory — what you
+## are carrying is what is on screen, with no second screen behind it.
+##
+## Built in code rather than laid out in the scene because it is nine of the
+## same thing: a row that is authored by hand is a row where slot 7 is two
+## pixels out and nobody notices for a month.
+func _build_hotbar() -> void:
+	_hotbar = HBoxContainer.new()
+	_hotbar.name = "Hotbar"
+	_hotbar.add_theme_constant_override("separation", int(HOTBAR_GAP))
+	_hotbar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_hotbar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_hotbar.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_hotbar.position = Vector2(0.0, -24.0)
+	add_child(_hotbar)
+
+	for i in SpiderInventory.SLOTS:
+		var pocket := Panel.new()
+		pocket.name = "Slot%d" % (i + 1)
+		pocket.custom_minimum_size = Vector2(HOTBAR_SLOT, HOTBAR_SLOT)
+
+		var number := Label.new()
+		number.name = "Number"
+		number.text = str(i + 1)
+		number.add_theme_font_size_override("font_size", 11)
+		number.modulate = Color(1, 1, 1, 0.45)
+		number.position = Vector2(4.0, 1.0)
+		pocket.add_child(number)
+
+		var count := Label.new()
+		count.name = "Count"
+		count.add_theme_font_size_override("font_size", 13)
+		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		count.set_anchors_preset(Control.PRESET_FULL_RECT)
+		pocket.add_child(count)
+
+		_hotbar.add_child(pocket)
+		_pockets.append(pocket)
+
+
+## What is in each pocket, and which one is in hand. Redrawn from the bag
+## rather than kept in step with it, so there is nothing to fall out of sync.
+func _refresh_hotbar() -> void:
+	if _hotbar == null or _spider == null or _spider.bag == null:
+		return
+	var bag := _spider.bag
+	var slots := bag.slots()
+	for i in _pockets.size():
+		var pocket: Panel = _pockets[i]
+		var kind: DeviceKind = slots[i] if i < slots.size() else null
+		var chosen := i == bag.selected
+
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.06, 0.07, 0.09, 0.72)
+		style.border_color = Color(0.95, 0.96, 1.0, 0.85) if chosen else Color(1, 1, 1, 0.22)
+		var edge := 3 if chosen else 1
+		style.border_width_left = edge
+		style.border_width_right = edge
+		style.border_width_top = edge
+		style.border_width_bottom = edge
+		style.corner_radius_top_left = 3
+		style.corner_radius_top_right = 3
+		style.corner_radius_bottom_left = 3
+		style.corner_radius_bottom_right = 3
+		pocket.add_theme_stylebox_override("panel", style)
+
+		var count := pocket.get_node_or_null(NodePath("Count")) as Label
+		if count == null:
+			continue
+		if kind == null:
+			count.text = ""
+			continue
+		# No icons yet, so an initial and a number: enough to tell a spur from
+		# a lure at a glance, which is all a bar has to do.
+		count.text = "%s\n%d" % [kind.display_name.substr(0, 1), bag.count(kind)]
+		count.modulate = kind.colour
 
 
 ## One line saying what the spider is standing on, or hanging from.

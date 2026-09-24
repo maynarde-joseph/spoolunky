@@ -65,6 +65,8 @@ func _run() -> void:
 	await _test_species(spider, builder, level, silk)
 	await _test_tethering(spider, level, silk)
 	await _test_wrapped_things_fall(spider, builder, level, webs, silk)
+	await _test_shooting(spider, builder, level, webs, silk)
+	await _test_the_bar(spider)
 	await _test_the_larder(spider, builder, webs, level)
 	await _test_the_bag(spider, level, webs, builder, silk)
 	await _test_sandbox_wiring(level, spider)
@@ -97,7 +99,8 @@ func _test_starting_state(spider: SpiderPlayer, builder: WebBuilder) -> void:
 func _test_input_map(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	for action in ["web_build_mode", "web_place", "web_cancel", "web_finish",
 			"web_next_pattern", "web_prev_pattern", "web_remove", "interact",
-			"device_mode", "web_throw_mode", "web_tether", "toggle_help"]:
+			"device_mode", "web_throw_mode", "web_tether", "web_shoot",
+			"skill_tree", "hotbar_1", "hotbar_9", "hotbar_next", "toggle_help"]:
 		_check(InputMap.has_action(action), "input action '%s' is set up" % action)
 
 	# A headless display server cannot capture the mouse, so lift that gate.
@@ -2249,6 +2252,115 @@ func _test_wrapped_things_fall(spider: SpiderPlayer, builder: WebBuilder, level:
 	silk.refill(silk.maximum)
 	await physics_frame
 	await process_frame
+
+
+# --- aim and shoot ------------------------------------------------------
+
+## The web verb, and now the only one the player has. Point, press, and a bolt
+## leaves the spider: no ghost, no held key, and no asking the room whether
+## there is a good enough spot. What it hits decides what happens.
+func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
+		webs: Node3D, silk: SilkPool) -> void:
+	var host := spider.get_parent()
+	var slab := _test_slab(host, Vector3(150, 0.0, -150))
+	await physics_frame
+	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+	_clear_prey_near(level, slab.global_position, 18.0, null)
+	await physics_frame
+	silk.refill(silk.maximum)
+	_select_pattern(builder, "orb_web")
+
+	_check(builder.shot_radius() > 0.0,
+		"a shot has one size, from the body (%.2fm)" % builder.shot_radius())
+	_check(builder.shot_cost(builder.current_pattern()) > 0.0,
+		"and a price that can be read before firing (%d silk)"
+		% ceili(builder.shot_cost(builder.current_pattern())))
+
+	# At a surface: a web, wherever it landed, with nothing asked of the room.
+	var built: Array[WebStructure] = []
+	var catcher := func(web: WebStructure) -> void: built.append(web)
+	builder.web_built.connect(catcher)
+	var standing := _web_count(webs)
+	_check(builder.shoot(), "right mouse fires one")
+	_check(builder.shot_in_flight(), "and it is in the air")
+	_check(built.is_empty(), "with nothing built yet — it has to get there")
+	var landed: bool = await _wait_until(func() -> bool: return not built.is_empty(), 240)
+	builder.web_built.disconnect(catcher)
+	_check(landed and built.size() == 1, "it makes a web where it lands (%d)" % built.size())
+	_check(_web_count(webs) == standing + 1, "which is standing there")
+	if built.size() == 1:
+		built[0].demolish()
+	await physics_frame
+
+	# At something alive: the creature is wrapped, and no web is left hanging.
+	silk.refill(silk.maximum)
+	builder._update_aim()
+	var victim := _spawn_species(level, "fly", builder.aim_point + Vector3(0, 0.4, 0))
+	if not _check(victim != null, "a fly to shoot at"):
+		slab.queue_free()
+		return
+	await physics_frame
+	_check(not victim.wrapped, "going about its business")
+	var after: Array[WebStructure] = []
+	var second := func(web: WebStructure) -> void: after.append(web)
+	builder.web_built.connect(second)
+	var before_shot := _web_count(webs)
+	_check(builder.shoot(), "a second shot, at the fly")
+	var hit: bool = await _wait_until(func() -> bool: return victim.wrapped, 240)
+	builder.web_built.disconnect(second)
+	_check(hit, "hitting it wraps it where it stood")
+	_check(victim.is_bundled(), "and drops it as a bundle")
+	await physics_frame
+	await process_frame
+	_check(_web_count(webs) == before_shot,
+		"with no web left hanging (%d, started %d)" % [_web_count(webs), before_shot])
+	victim.queue_free()
+
+	# At nothing at all: the bolt has to stop being a bolt.
+	silk.refill(silk.maximum)
+	spider.view.face(Vector3(0, 0, -1))
+	spider.view.pitch = 1.2
+	await _run_frames(4)
+	_check(builder.shoot(), "a third, fired at the sky")
+	_check(builder.shot_in_flight(), "which is away")
+	var gone: bool = await _wait_until(func() -> bool: return not builder.shot_in_flight(), 300)
+	_check(gone, "and gives up rather than flying off for ever")
+
+	slab.queue_free()
+	silk.refill(silk.maximum)
+	await physics_frame
+	await process_frame
+
+
+## Nine pockets, and the bar is the whole inventory.
+func _test_the_bar(spider: SpiderPlayer) -> void:
+	var bag := spider.bag
+	_check(SpiderInventory.SLOTS == 9, "nine slots (%d)" % SpiderInventory.SLOTS)
+	_check(bag.slots().size() == 9, "and the bar always has nine of them")
+	_check(bag.selected == 0, "starting on the first")
+
+	var filled := 0
+	for kind in bag.slots():
+		if kind != null:
+			filled += 1
+	_check(filled == bag.carried().size(),
+		"what you carry is what is on the bar (%d)" % filled)
+	_check(bag.in_hand() == bag.slots()[0], "and the first pocket is in hand")
+
+	bag.select(3)
+	_check(bag.selected == 3, "a number key picks a pocket outright")
+	bag.select(20)
+	_check(bag.selected == 3, "and an impossible one is ignored, not wrapped")
+
+	bag.scroll(1)
+	_check(bag.selected == 4, "the wheel steps along it")
+	bag.select(8)
+	bag.scroll(1)
+	_check(bag.selected == 0, "and wraps round the end")
+	bag.scroll(-1)
+	_check(bag.selected == 8, "both ways")
+	bag.select(0)
 
 
 ## Puts the wheel back on something spinnable, the way a fresh spider starts.

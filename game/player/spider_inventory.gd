@@ -7,6 +7,11 @@ extends Node
 ## they are allowed to do things silk cannot. The bag is therefore the honest
 ## limit on them: no silk cost, no cooldown, just "you have two left".
 
+## How many slots the bar shows. Fixed, and the bar is the whole inventory:
+## what you are carrying is what is on screen, and there is no second screen
+## behind it.
+const SLOTS := 9
+
 ## The bag changed — something was placed, picked up or found.
 signal changed()
 
@@ -23,6 +28,9 @@ signal found(kind: DeviceKind)
 
 ## Every kind that exists, in the order the placer cycles them.
 var kinds: Array[DeviceKind] = []
+
+## Which of the bar's slots is in hand, 0 to SLOTS - 1.
+var selected := 0
 
 var _counts := {}
 
@@ -94,12 +102,52 @@ func has_room_for(kind: DeviceKind) -> bool:
 
 
 ## One line for the HUD: what is in the bag, with the selected one marked.
-func summary(selected: DeviceKind = null) -> String:
+## The bar, slot by slot, with nulls for the empty ones. Carried things fill
+## from the left in a stable order, so a slot means the same thing from one
+## glance to the next.
+func slots() -> Array[DeviceKind]:
+	var bar: Array[DeviceKind] = []
+	bar.resize(SLOTS)
+	var at := 0
+	for kind in kinds:
+		if at >= SLOTS:
+			break
+		if count(kind) > 0:
+			bar[at] = kind
+			at += 1
+	return bar
+
+
+## What is in hand, or null if that slot is empty.
+func in_hand() -> DeviceKind:
+	var bar := slots()
+	return bar[selected] if selected >= 0 and selected < bar.size() else null
+
+
+## Picks a slot outright. Out-of-range is ignored rather than wrapped, because
+## a number key is an exact request.
+func select(slot: int) -> void:
+	if slot < 0 or slot >= SLOTS or slot == selected:
+		return
+	selected = slot
+	changed.emit()
+
+
+## Wheels along the bar, wrapping. Empty slots are included: the bar is a fixed
+## row of pockets, not a list that closes up.
+func scroll(by: int) -> void:
+	if by == 0:
+		return
+	selected = posmod(selected + by, SLOTS)
+	changed.emit()
+
+
+func summary(selected_kind: DeviceKind = null) -> String:
 	var held := carried()
 	if held.is_empty():
 		return "Bag empty"
 	var parts := PackedStringArray()
 	for kind in held:
 		var text := "%s ×%d" % [kind.display_name, count(kind)]
-		parts.append("[%s]" % text if kind == selected else " %s " % text)
+		parts.append("[%s]" % text if kind == selected_kind else " %s " % text)
 	return "   ".join(parts)
