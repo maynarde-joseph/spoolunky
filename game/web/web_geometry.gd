@@ -266,25 +266,46 @@ static func draw_line_into(mesh: ImmediateMesh, material: Material, a: Vector3,
 
 static func _write_quad(mesh: ImmediateMesh, a: Vector3, b: Vector3, offset: Vector3,
 		color: Color) -> void:
+	# Normals, same as the built mesh lays down. They used to be left off here
+	# because the silk was drawn unshaded and nothing read them; it is lit now,
+	# and a dragline without them is a dragline lit by nothing.
+	var normal := (b - a).cross(offset).normalized()
 	var p0 := a - offset
 	var p1 := a + offset
 	var p2 := b + offset
 	var p3 := b - offset
 	for point in [p0, p1, p2, p0, p2, p3]:
 		mesh.surface_set_color(color)
+		mesh.surface_set_normal(normal)
 		mesh.surface_add_vertex(point)
 
 
-## The one material every web shares. Unshaded so silk stays bright in a dark
-## corner, double sided so it reads from behind, vertex coloured so each
-## pattern can tint itself without a material per web.
+## The material every web is drawn with. Dark and glossy rather than pale and
+## flat, because a white thread in a white room is not a thread — and because
+## that is what silk is in life: a dark filament that flashes where the light
+## catches it, which is a reading that works against any wall.
+##
+## Shaded, so it can have a highlight at all. What unshaded was protecting was
+## a web in an unlit corner, and an emission floor keeps that without giving up
+## the shine. Vertex coloured, so each pattern still tints its own silk; double
+## sided, so it reads from behind.
 static func silk_material() -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.vertex_color_use_as_albedo = true
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	material.albedo_color = Color(1, 1, 1, 1)
+	# Dielectric rather than metal. Metal takes its colour from what is around
+	# it to reflect, and a greybox room has nothing in it — a tight specular
+	# works off the one lamp in the ceiling, which is all these rooms have.
+	material.metallic = 0.0
+	material.metallic_specular = 0.9
+	material.roughness = 0.16
+	# The floor. Faint, and the same for every pattern: in the dark a web is a
+	# web, and which kind it is comes back the moment light reaches it.
+	material.emission_enabled = true
+	material.emission = Color(0.56, 0.64, 0.82, 1.0)
+	material.emission_energy_multiplier = 0.22
 	material.disable_receive_shadows = true
 	material.no_depth_test = false
 	return material

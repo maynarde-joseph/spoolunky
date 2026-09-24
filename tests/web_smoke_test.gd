@@ -2290,9 +2290,27 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	var catcher := func(web: WebStructure) -> void: built.append(web)
 	builder.web_built.connect(catcher)
 	var standing := _web_count(webs)
+	var from := spider.view.aim_origin()
+	var along := spider.view.aim_forward().normalized()
 	_check(builder.shoot(), "right mouse fires one")
 	_check(builder.shot_in_flight(), "and it is in the air")
 	_check(built.is_empty(), "with nothing built yet — it has to get there")
+
+	# Along the crosshair, not under it. The bolt used to be pulled down, so
+	# aiming at a thing and hitting it was only true at close range and the
+	# crosshair quietly stopped meaning anything past that.
+	var drift := 0.0
+	var watched := 0
+	for i in 12:
+		await physics_frame
+		var bolt := builder._shot
+		if bolt == null or not is_instance_valid(bolt):
+			break
+		watched += 1
+		var offset := bolt.global_position - from
+		drift = maxf(drift, (offset - along * offset.dot(along)).length())
+	_check(watched > 0, "the bolt can be watched in flight (%d frames)" % watched)
+	_check(drift < 0.01, "and holds the line it was fired along (%.4fm off it)" % drift)
 	var landed: bool = await _wait_until(func() -> bool: return not built.is_empty(), 240)
 	builder.web_built.disconnect(catcher)
 	_check(landed and built.size() == 1, "it makes a web where it lands (%d)" % built.size())

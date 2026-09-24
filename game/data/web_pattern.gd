@@ -47,8 +47,9 @@ enum Trigger {
 ## Position in the build wheel. Lower comes first.
 @export var sort_order := 0
 
-## Draw colour of the finished silk.
-@export var color := Color(0.92, 0.94, 0.98, 0.75)
+## Draw colour of the finished silk. Dark: the material puts the shine and the
+## glow on top, and a pale thread disappears against a pale wall.
+@export var color := Color(0.10, 0.11, 0.13, 0.9)
 
 
 @export_group("Shape")

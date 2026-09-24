@@ -8,6 +8,12 @@ extends Node3D
 ## travels, so it can miss, and it takes a moment, so a moving target has to be
 ## led — which is a different skill from pointing at a spot, and the reason it
 ## is worth having both.
+##
+## It holds the line it was fired along. It used to be pulled down a little,
+## which meant the honest thing — aim at a wall, hit the wall — was only true
+## up close, and the crosshair quietly stopped meaning anything past that.
+## Leading something that is moving is a skill; compensating for a drop the
+## crosshair does not show you is just a wrong crosshair.
 
 ## Landed. The point and the surface normal are where it opened out, and the
 ## prey is whatever it hit, if it hit something alive rather than a wall.
@@ -17,7 +23,6 @@ signal landed(at: Vector3, normal: Vector3, prey: Node3D)
 signal fizzled()
 
 @export var speed := 26.0
-@export var gravity_pull := 2.4
 
 ## How far it will travel before giving up, in metres.
 @export var range_limit := 90.0
@@ -61,7 +66,6 @@ func _physics_process(delta: float) -> void:
 	if lifetime > 0.0 and _age >= lifetime:
 		_give_up()
 		return
-	_velocity += Vector3.DOWN * gravity_pull * delta
 	var step := _velocity * delta
 	var distance := step.length()
 	if distance < 0.0001:
@@ -110,7 +114,10 @@ func _build_visual() -> void:
 	mesh.radial_segments = 8
 	mesh.rings = 4
 	var material := WebGeometry.silk_material()
-	material.albedo_color = Color(0.95, 0.96, 1.0, 0.9)
+	# A bead you can follow, and a brighter one than the thread it becomes: in
+	# flight it is the only thing on screen that has to be tracked.
+	material.albedo_color = Color(0.10, 0.11, 0.14, 1.0)
+	material.emission_energy_multiplier = 0.9
 	var view := MeshInstance3D.new()
 	view.name = "Ball"
 	view.mesh = mesh
