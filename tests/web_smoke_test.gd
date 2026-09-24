@@ -2273,9 +2273,14 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 
 	_check(builder.shot_radius() > 0.0,
 		"a shot has one size, from the body (%.2fm)" % builder.shot_radius())
-	_check(builder.shot_cost(builder.current_pattern()) > 0.0,
-		"and a price that can be read before firing (%d silk)"
-		% ceili(builder.shot_cost(builder.current_pattern())))
+	var quoted := builder.shot_cost(builder.current_pattern())
+	_check(quoted > 0.0, "and a price that can be read before firing (%d silk)" % ceili(quoted))
+	# The quote has to be the truth. It was not: a short formula counted area
+	# and rim and forgot the spokes and the spiral, quoting 49 for a web that
+	# charged 167 — which the spool could not cover at all, so the shot landed
+	# and built nothing.
+	_check(silk.can_afford(quoted),
+		"and one the spool can actually cover (%d of %d)" % [ceili(quoted), floori(silk.maximum)])
 
 	# At a surface: a web, wherever it landed, with nothing asked of the room.
 	var built: Array[WebStructure] = []
@@ -2289,6 +2294,9 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	builder.web_built.disconnect(catcher)
 	_check(landed and built.size() == 1, "it makes a web where it lands (%d)" % built.size())
 	_check(_web_count(webs) == standing + 1, "which is standing there")
+	if built.size() == 1:
+		_check(built[0].silk_cost <= quoted + 0.5,
+			"for no more than it was quoted (%.0f against %.0f)" % [built[0].silk_cost, quoted])
 	if built.size() == 1:
 		built[0].demolish()
 	await physics_frame

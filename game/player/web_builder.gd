@@ -46,7 +46,7 @@ enum Problem {
 
 ## How big a shot web is, as a multiple of body height. One size, taken from
 ## the spider rather than chosen by holding a key down.
-@export var shot_radius_bodies := 3.0
+@export var shot_radius_bodies := 1.8
 
 ## Pattern dragged between anchors when the chosen one is a net.
 const FRAME_PATTERN := "frame_line"
@@ -310,6 +310,10 @@ func shoot() -> bool:
 		notice.emit("Nothing to spin")
 		return false
 
+	# Worked out once, at the trigger, and carried by the bolt. A web that
+	# shrank in flight because silk ticked over would be a different web from
+	# the one that was paid for.
+	var radius := shot_radius()
 	var cost := shot_cost(pattern)
 	if not _silk.can_afford(cost):
 		notice.emit("Not enough silk — %d needed" % ceili(cost))
@@ -317,39 +321,69 @@ func shoot() -> bool:
 
 	var shot := SilkShot.fire(_view.aim_origin(), _view.aim_forward(),
 		_stage().body_height, _exclusions())
-	shot.landed.connect(_on_shot_landed.bind(pattern))
+	shot.landed.connect(_on_shot_landed.bind(pattern, radius))
 	shot.fizzled.connect(func() -> void: _shot = null)
 	shot.launch_from(_resolve_container(), _view.aim_origin())
 	_shot = shot
 	return true
 
 
-## One size, from the body that threw it. Holding a key to choose is the thing
-## being removed, so the size comes from the spider instead of the player.
+## One size, from the body that threw it — and then cut down until the spool
+## can pay for it.
+##
+## Holding a key to choose the size is the thing being removed, so the size
+## comes from the spider. But a size the spider cannot afford must come out
+## *smaller*, not be refused: the player did not pick it, so the player cannot
+## be the one who got it wrong.
 func shot_radius() -> float:
-	return clampf(_stage().body_height * shot_radius_bodies,
+	var ideal := clampf(_stage().body_height * shot_radius_bodies,
 		_min_place_radius(), _max_place_radius())
+	var pattern := current_pattern()
+	if pattern == null or _silk == null:
+		return ideal
+	var smallest := _min_place_radius()
+	var radius := ideal
+	var step: float = maxf(smallest * 0.2, 0.02)
+	while radius > smallest and not _silk.can_afford(cost_of_circle(pattern, radius)):
+		radius -= step
+	return maxf(radius, smallest)
 
 
 func shot_cost(pattern: WebPattern) -> float:
-	if pattern == null:
+	return cost_of_circle(pattern, shot_radius())
+
+
+## What a round web of this radius costs.
+##
+## This is not a second cost formula — it is the one the builder already uses,
+## handed a circle. Writing a fresh one is exactly how a shot came to be priced
+## at 49 silk and charged 167: the short version counted the area and the rim
+## and forgot the spokes and the spiral, which are most of the thread in a web.
+func cost_of_circle(pattern: WebPattern, radius: float) -> float:
+	if pattern == null or radius <= 0.0:
 		return 0.0
-	var radius := shot_radius()
-	return pattern.silk_base_cost + pattern.silk_per_square_metre * PI * radius * radius
+	var area: float = PI * radius * radius
+	var perimeter: float = TAU * radius
+	var spokes: float = float(pattern.radial_count) * radius
+	var spiral: float = float(pattern.ring_count) * TAU * radius * 0.5
+	return pattern.cost_for(perimeter + spokes + spiral, area)
 
 
 ## Landed. Something alive is wrapped where it stood; anything else gets a web
 ## built against it. No validity test either way — a shot that reached
 ## something has already earned its web.
-func _on_shot_landed(at: Vector3, normal: Vector3, prey: Node3D, pattern: WebPattern) -> void:
+func _on_shot_landed(at: Vector3, normal: Vector3, prey: Node3D, pattern: WebPattern,
+		radius: float) -> void:
 	_shot = null
 	var caught := prey as Prey
 	if caught != null and is_instance_valid(caught) and caught.can_be_snared():
 		if caught.bundle():
-			_silk.spend(shot_cost(pattern) * 0.5)
+			# Wrapping something takes the silk that went round it, not the
+			# silk a whole web would have cost.
+			_silk.spend(cost_of_circle(pattern, radius) * 0.5)
 			notice.emit("Wrapped the %s" % caught.species)
 			return
-	_open_web_at(at, normal, prey, shot_radius())
+	_open_web_at(at, normal, prey, radius)
 
 
 ## Whatever this tier can actually spin, for when nothing is selected — the
