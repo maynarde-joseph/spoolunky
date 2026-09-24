@@ -13,8 +13,10 @@ walk into a wall       climb it — walls and ceilings are floors to you
 silk is sticky         stand on it and it holds you; jump to come off
 
 Left Mouse             grapple there, trailing silk
-Right Mouse            shoot a web — it sticks where it lands, and wraps
-                       whatever it lands on
+Right Mouse            tap: shoot a web — it sticks where it lands, and
+                       wraps whatever it lands on
+Right Mouse  (hold)    aim in first person; hold a creature in the cross
+                       for a second and the shot cannot miss
 1-9 / wheel            pick a pocket
 E                      the tree — spend what you have eaten
 F                      wrap prey, then drain it
@@ -274,6 +276,9 @@ func _refresh_build_panel() -> void:
 		return
 
 	dial_label.text = ""
+	if builder.aiming:
+		_refresh_aim_panel(builder)
+		return
 	if builder.placing:
 		var spinning := builder.current_pattern()
 		# Area, not diameter: once the rim has fitted itself to the room the
@@ -370,6 +375,31 @@ func _refresh_build_panel() -> void:
 	hint_label.text = builder.hint_text()
 	problem_label.text = builder.problem_text()
 	dial_label.text = "%s      %s" % [_dial_readout(builder), _weave_readout(builder)]
+
+
+## What holding the shoot key is doing: what is in the crosshair, and how far
+## through the second it is.
+func _refresh_aim_panel(builder: WebBuilder) -> void:
+	var target := builder.aim_locked_on
+	if target == null or not is_instance_valid(target):
+		pattern_label.text = "Taking aim"
+		hint_label.text = "Let go to shoot"
+		problem_label.text = "Hold a creature in the cross for a second to be sure of it"
+		return
+	pattern_label.text = target.species
+	if builder.locked:
+		hint_label.text = "Locked — let go and it is yours"
+		problem_label.text = _lock_bar(1.0)
+		return
+	hint_label.text = "Keep it there…"
+	problem_label.text = _lock_bar(builder.lock_progress)
+
+
+## The second, drawn. Ten blocks: enough to read the rate at a glance, and
+## short enough not to become the thing you watch instead of the fly.
+func _lock_bar(progress: float) -> String:
+	var lit := clampi(roundi(progress * 10.0), 0, 10)
+	return "%s%s" % ["|".repeat(lit), ".".repeat(10 - lit)]
 
 
 ## Place mode takes the panel over while it is up, because the bag and the

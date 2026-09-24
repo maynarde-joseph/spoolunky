@@ -242,9 +242,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.toggle_throwing()
 	elif event.is_action_pressed(input_tether):
 		tether.toggle()
-	# Right mouse is the web. Point and press: no ghost, no held key, no mode.
+	# Right mouse is the web. A tap fires straight away; holding it drops you
+	# into first person to aim, and a second held on a creature promises it.
 	elif event.is_action_pressed(input_shoot):
-		web_builder.shoot()
+		web_builder.begin_shot()
+	elif event.is_action_released(input_shoot):
+		web_builder.release_shot()
 	elif event.is_action_pressed(input_skill_tree):
 		skill_tree_toggled.emit()
 	elif _hotbar_input(event):
@@ -296,6 +299,7 @@ func _hotbar_input(event: InputEvent) -> bool:
 
 func _process(delta: float) -> void:
 	_watch_for_release()
+	_take_aim(delta)
 	climb.haul = tether.drag_factor()
 	climb.glide = traits.glide() if traits != null else 0.0
 	view.update(stage().body_height)
@@ -332,6 +336,19 @@ func _watch_for_release() -> void:
 		return
 	_placing_from_key = false
 	web_builder.commit_place()
+
+
+## Feeds the lock while the shoot key is held, and lets go on your behalf if
+## the key-up never arrived. Aiming can only start from the key, so a lost
+## release would otherwise leave the spider staring down its own crosshair for
+## ever — and the mouse being freed mid-aim is enough to lose one.
+func _take_aim(delta: float) -> void:
+	if not web_builder.aiming:
+		return
+	if _accepts_input() and Input.is_action_pressed(input_shoot):
+		web_builder.track(delta)
+		return
+	web_builder.release_shot()
 
 
 ## Somewhere for a device across the level to put a message.

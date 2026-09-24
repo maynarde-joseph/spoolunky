@@ -66,6 +66,8 @@ func _run() -> void:
 	await _test_tethering(spider, level, silk)
 	await _test_wrapped_things_fall(spider, builder, level, webs, silk)
 	await _test_shooting(spider, builder, level, webs, silk)
+	await _test_taking_aim(spider, builder, level, silk)
+	_test_a_spiders_jump()
 	await _test_the_bar(spider)
 	await _test_the_larder(spider, builder, webs, level)
 	await _test_the_bag(spider, level, webs, builder, silk)
@@ -2352,6 +2354,30 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 		"with no web left hanging (%d, started %d)" % [_web_count(webs), before_shot])
 	victim.queue_free()
 
+	# Off the line on purpose. The bolt is a ball of silk, not a hairline: a fly
+	# is five centimetres across and wandering, so a ray through the middle of
+	# one is a shot nobody can make, which is why nothing could be caught.
+	silk.refill(silk.maximum)
+	builder._update_aim()
+	var reach := builder.catch_radius(builder.shot_radius())
+	_check(reach > spider.stage().body_height,
+		"the bolt catches within %.2fm, wider than the spider itself" % reach)
+	var start := spider.view.aim_origin()
+	var sideways := spider.view.aim_forward().cross(Vector3.UP)
+	if sideways.length_squared() < 0.001:
+		sideways = Vector3.RIGHT
+	sideways = sideways.normalized()
+	var beside := start + (builder.aim_point - start) * 0.5 + sideways * reach * 0.6
+	_clear_prey_near(level, beside, 6.0, null)
+	var grazed := _spawn_species(level, "fly", beside)
+	if _check(grazed != null, "a fly beside the line, not on it"):
+		await physics_frame
+		_check(builder.shoot(), "a shot past it")
+		var near: bool = await _wait_until(func() -> bool: return grazed.wrapped, 240)
+		_check(near, "passing near enough is enough — it is wrapped")
+		grazed.queue_free()
+		await physics_frame
+
 	# At nothing at all: the bolt has to stop being a bolt.
 	silk.refill(silk.maximum)
 	spider.view.face(Vector3(0, 0, -1))
@@ -2366,6 +2392,112 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	silk.refill(silk.maximum)
 	await physics_frame
 	await process_frame
+
+
+## Holding the shoot key: first person, a second on a creature, and a bolt that
+## then cannot miss it.
+func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node,
+		silk: SilkPool) -> void:
+	var host := spider.get_parent()
+	var slab := _test_slab(host, Vector3(150, 0.0, 150))
+	await physics_frame
+	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+	_clear_prey_near(level, spider.global_position, 30.0, null)
+	silk.refill(silk.maximum)
+	_select_pattern(builder, "orb_web")
+	await physics_frame
+
+	var quarry := _spawn_species(level, "fly", spider.global_position + Vector3(3.0, 1.0, 0.0))
+	if not _check(quarry != null, "a fly to take aim at"):
+		slab.queue_free()
+		return
+	# Still, for the aiming half. What is being checked here is the lock, not
+	# whether a test can hold a crosshair on a wandering insect.
+	var wander := quarry.move_speed
+	quarry.move_speed = 0.0
+	await physics_frame
+
+	var was_third := spider.view.third_person
+	_check(builder.begin_shot(), "holding right mouse starts taking aim")
+	_check(builder.aiming, "which is a state you are in")
+	_check(not spider.view.third_person,
+		"and it puts you in first person — the cross and the silk leave from one place")
+	_check(builder.aim_locked_on == null, "with nothing in the cross yet")
+
+	# No frames between here and letting go: a physics frame would see the key
+	# is not really held down in a headless run and let go on the spider's
+	# behalf, which is the safety net doing its job and ruining the test.
+	_aim_at(spider, quarry.global_position)
+	spider.view.update(spider.stage().body_height)
+	builder.track(0.05)
+	_check(builder.aim_locked_on == quarry, "putting the cross on it starts the clock")
+	_check(not builder.locked, "which does not finish at once")
+	var part := builder.lock_progress
+
+	for i in 30:
+		_aim_at(spider, quarry.global_position)
+		spider.view.update(spider.stage().body_height)
+		builder.track(0.05)
+	_check(builder.lock_progress > part, "holding it there fills the second")
+	_check(builder.locked, "and a second later it is locked on")
+
+	# Now look somewhere else entirely and fire. A locked bolt is promised its
+	# catch, and the promise is kept by the flight rather than by the aim.
+	quarry.move_speed = wander
+	spider.view.face(Vector3(0, 0, 1))
+	spider.view.pitch = 0.4
+	spider.view.update(spider.stage().body_height)
+	_check(builder.release_shot(), "letting go fires it")
+	_check(not builder.aiming, "and aiming is over")
+	_check(spider.view.third_person == was_third, "with the camera put back where it was")
+	var took: bool = await _wait_until(func() -> bool: return quarry.wrapped, 360)
+	_check(took, "the bolt goes and finds it, whichever way you were looking")
+	_check(not is_instance_valid(quarry) or quarry.is_bundled(),
+		"and leaves it bundled")
+
+	# A tap is still a tap: nothing held, nothing locked, ordinary straight shot.
+	silk.refill(silk.maximum)
+	await _wait_until(func() -> bool: return not builder.shot_in_flight(), 200)
+	_check(builder.begin_shot(), "a tap starts the same way")
+	_check(builder.release_shot(), "and lets go before the second is up")
+	_check(not builder.locked and builder.aim_locked_on == null,
+		"with nothing locked, so it is the plain shot it always was")
+
+	if is_instance_valid(quarry):
+		quarry.queue_free()
+	slab.queue_free()
+	silk.refill(silk.maximum)
+	await physics_frame
+	await process_frame
+
+
+## A spider's jump, not a person's scaled down.
+func _test_a_spiders_jump() -> void:
+	var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
+	var ladder := WebLibrary.default_stages()
+	if not _check(ladder.size() > 1, "there is a ladder to jump up"):
+		return
+	var first := ladder[0]
+	var rise: float = first.jump_velocity * first.jump_velocity / (2.0 * gravity)
+	_check(rise > first.body_height * 5.0,
+		"a spiderling clears %.1f of its own body lengths (%.2fm)"
+		% [rise / first.body_height, rise])
+
+	var climbing := true
+	for i in ladder.size() - 1:
+		if ladder[i + 1].jump_velocity <= ladder[i].jump_velocity:
+			climbing = false
+	_check(climbing, "and every tier jumps harder than the one below it")
+
+	# Bigger things jump fewer of their own lengths. That is not a concession,
+	# it is what square-cube does to anything that jumps.
+	var last := ladder[ladder.size() - 1]
+	var last_rise: float = last.jump_velocity * last.jump_velocity / (2.0 * gravity)
+	_check(last_rise / last.body_height < rise / first.body_height,
+		"while the biggest clears fewer of its own (%.1f against %.1f)"
+		% [last_rise / last.body_height, rise / first.body_height])
+
 
 
 ## Nine pockets, and the bar is the whole inventory.

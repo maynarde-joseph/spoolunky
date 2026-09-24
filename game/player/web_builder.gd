@@ -48,6 +48,23 @@ enum Problem {
 ## the spider rather than chosen by holding a key down.
 @export var shot_radius_bodies := 1.8
 
+## How long a creature has to be kept in the crosshair before the shot becomes
+## a certainty, in seconds.
+@export var lock_seconds := 1.0
+
+## The cosine of the angle that still counts as pointing at something: how
+## close you have to get to start tracking it.
+@export var lock_cone := 0.98
+
+## And the looser one that keeps a lock once it has started. Holding a cross
+## exactly on a wandering fly for a whole second is not a thing anyone can do,
+## and it is not what the second is for — the second is for choosing, not for
+## steadiness.
+@export var lock_hold_cone := 0.93
+
+## How far away something can be locked, in body heights.
+@export var lock_reach_bodies := 60.0
+
 ## Pattern dragged between anchors when the chosen one is a net.
 const FRAME_PATTERN := "frame_line"
 
@@ -117,6 +134,18 @@ var throwing := false
 
 ## A bolt in flight, so a second press cannot send another.
 var _shot: SilkShot = null
+
+## True while the shoot key is held down: first person, and looking for
+## something worth being certain about.
+var aiming := false
+
+## What the crosshair is holding, how far through the second it is, and whether
+## that second is up.
+var aim_locked_on: Prey = null
+var lock_progress := 0.0
+var locked := false
+
+var _aim_was_third_person := false
 
 ## How many rim corners found something to hold onto, and how much the web
 ## would actually cover once the room has had its say.
@@ -305,7 +334,7 @@ func commit_place() -> bool:
 ## The older way of making a web — hold to grow a ghost that fits the room — is
 ## still in this file below, still tested, and no longer reachable from the
 ## keyboard. It was the better idea on paper and the worse one to play.
-func shoot() -> bool:
+func shoot(chase: Prey = null) -> bool:
 	if shot_in_flight() or _view == null:
 		return false
 	var pattern := current_pattern()
@@ -326,11 +355,24 @@ func shoot() -> bool:
 
 	var shot := SilkShot.fire(_view.aim_origin(), _view.aim_forward(),
 		_stage().body_height, _exclusions())
-	shot.landed.connect(_on_shot_landed.bind(pattern, radius))
+	shot.catch_radius = catch_radius(radius)
+	if chase != null and is_instance_valid(chase):
+		shot.chase(chase)
+	shot.landed.connect(_on_shot_landed.bind(pattern, radius, chase != null))
 	shot.fizzled.connect(func() -> void: _shot = null)
 	shot.launch_from(_resolve_container(), _view.aim_origin())
 	_shot = shot
 	return true
+
+
+## How close the bolt has to pass to something alive to take it.
+##
+## Bigger than the web it is carrying, and never smaller than a couple of body
+## lengths. Nothing could be caught by shooting at it before this existed: the
+## bolt was a hairline ray and a fly is five centimetres across, so the shot
+## was asking for a precision no amount of practice would have reached.
+func catch_radius(web_radius: float) -> float:
+	return maxf(web_radius * 1.25, _stage().body_height * 2.5)
 
 
 ## One size, from the body that threw it — and then cut down until the spool
@@ -385,10 +427,13 @@ func cost_of_circle(pattern: WebPattern, radius: float) -> float:
 ## built against it. No validity test either way — a shot that reached
 ## something has already earned its web.
 func _on_shot_landed(at: Vector3, normal: Vector3, prey: Node3D, pattern: WebPattern,
-		radius: float) -> void:
+		radius: float, sure: bool) -> void:
 	_shot = null
 	var caught := prey as Prey
-	if caught != null and is_instance_valid(caught) and caught.can_be_snared():
+	# A locked shot takes it whatever state it is in. Being told you are certain
+	# and then watching the silk bounce off something already half-caught is the
+	# promise broken on the one shot that made a promise.
+	if caught != null and is_instance_valid(caught) and (sure or caught.can_be_snared()):
 		if caught.bundle():
 			# Wrapping something takes the silk that went round it, not the
 			# silk a whole web would have cost.
@@ -396,6 +441,114 @@ func _on_shot_landed(at: Vector3, normal: Vector3, prey: Node3D, pattern: WebPat
 			notice.emit("Wrapped the %s" % caught.species)
 			return
 	_open_web_at(at, normal, prey, radius)
+
+
+# --- taking aim ---------------------------------------------------------
+
+## The shoot key went down. Drop into first person and start watching for
+## something worth locking onto.
+##
+## A tap is still a tap: the second only matters if you spend it, so the fast
+## shot is unchanged and the slow one is a thing you choose.
+func begin_shot() -> bool:
+	if aiming or _view == null:
+		return false
+	aiming = true
+	aim_locked_on = null
+	lock_progress = 0.0
+	locked = false
+	# Third person puts the camera behind and beside the spider, so the cross
+	# and the silk leave from different places. That is survivable when you are
+	# pointing at a wall and hopeless when you are pointing at a fly.
+	_aim_was_third_person = _view.third_person
+	if _view.third_person:
+		_view.toggle_mode()
+		# Move the rig now rather than next frame. Aiming reads where the camera
+		# is, and a rig that has not caught up yet is the same bug that once had
+		# a harpoon test measuring third-person parallax instead of a shot.
+		_view.update(_stage().body_height)
+	state_changed.emit()
+	return true
+
+
+## Held down. Feeds the lock, or lets it slip and looks for something else.
+func track(delta: float) -> void:
+	if not aiming:
+		return
+	if aim_locked_on != null and is_instance_valid(aim_locked_on) \
+			and not aim_locked_on.eaten and _on_target(aim_locked_on, lock_hold_cone):
+		lock_progress = clampf(lock_progress + delta / maxf(lock_seconds, 0.05), 0.0, 1.0)
+		if lock_progress >= 1.0 and not locked:
+			locked = true
+			notice.emit("Locked on the %s" % aim_locked_on.species)
+		return
+	aim_locked_on = _aimed_creature()
+	lock_progress = 0.0
+	locked = false
+
+
+## Let go. A lock sends a bolt that will not miss; anything else is the
+## ordinary straight shot.
+func release_shot() -> bool:
+	if not aiming:
+		return false
+	aiming = false
+	var promised: Prey = aim_locked_on if locked else null
+	var back_to_third := _aim_was_third_person
+	aim_locked_on = null
+	lock_progress = 0.0
+	locked = false
+	var fired := shoot(promised)
+	if back_to_third and _view != null and not _view.third_person:
+		_view.toggle_mode()
+	state_changed.emit()
+	return fired
+
+
+## Gives up aiming without firing, for when the key was never released because
+## something else took the input away.
+func cancel_shot() -> void:
+	if not aiming:
+		return
+	aiming = false
+	aim_locked_on = null
+	lock_progress = 0.0
+	locked = false
+	if _aim_was_third_person and _view != null and not _view.third_person:
+		_view.toggle_mode()
+	state_changed.emit()
+
+
+## The creature nearest the middle of the screen, or null.
+func _aimed_creature() -> Prey:
+	var best: Prey = null
+	var best_dot := lock_cone
+	for node in get_tree().get_nodes_in_group("prey"):
+		var creature := node as Prey
+		if creature == null or not is_instance_valid(creature) or creature.eaten:
+			continue
+		var alignment := _alignment(creature)
+		if alignment > best_dot:
+			best_dot = alignment
+			best = creature
+	return best
+
+
+func _on_target(creature: Prey, cone: float) -> bool:
+	return _alignment(creature) >= cone
+
+
+## How squarely the crosshair sits on something: 1 is dead on, -1 is behind
+## you, and anything out of range is as good as behind you.
+func _alignment(creature: Prey) -> float:
+	if _view == null:
+		return -1.0
+	var offset := creature.global_position - _view.aim_origin()
+	var distance := offset.length()
+	if distance < 0.0001 or distance > _stage().body_height * lock_reach_bodies:
+		return -1.0
+	return (offset / distance).dot(_view.aim_forward())
+
 
 
 ## Whatever this tier can actually spin, for when nothing is selected — the
@@ -423,6 +576,7 @@ func _throw_place() -> bool:
 	var charged := place_radius
 	var shot := SilkShot.fire(_view.aim_origin(), _view.aim_forward(),
 		_stage().body_height, _exclusions())
+	shot.catch_radius = catch_radius(charged)
 	shot.landed.connect(func(at: Vector3, normal: Vector3, prey: Node3D) -> void:
 		_open_web_at(at, normal, prey, charged))
 	shot.fizzled.connect(func() -> void: notice.emit("The silk went wide"))

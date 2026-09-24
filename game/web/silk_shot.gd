@@ -24,6 +24,18 @@ signal fizzled()
 
 @export var speed := 26.0
 
+## How wide the ball of silk counts as, for catching something alive.
+##
+## The world is hit with a ray and anything alive with a swept ball of this
+## size, which is the split that makes the shot playable. A wall is a wall and
+## deserves no forgiveness — a web has to land on the surface it is built
+## against. A fly is five centimetres across and wandering, and a hairline ray
+## will never touch one, which is why nothing could be caught by shooting at
+## it. The web being thrown is bigger than the thing being thrown at, so "did
+## the web cover it" is the honest question, not "did a line through the middle
+## of it happen to touch".
+@export var catch_radius := 0.6
+
 ## How far it will travel before giving up, in metres.
 @export var range_limit := 90.0
 
@@ -38,6 +50,7 @@ var _age := 0.0
 var _exclude: Array[RID] = []
 var _size := 0.05
 var _spent := false
+var _chasing: Prey = null
 
 
 static func fire(from: Vector3, direction: Vector3, body_height: float,
@@ -53,6 +66,16 @@ static func fire(from: Vector3, direction: Vector3, body_height: float,
 	return shot
 
 
+## Locks the bolt onto something. A shot that was aimed for a full second is
+## promised its catch, so the promise is kept by the flight rather than by the
+## arithmetic at the trigger: it steers, all the way, and a fly cannot outrun
+## silk. Give it longer too — finding something that moves takes more time than
+## reaching a wall that does not.
+func chase(creature: Prey) -> void:
+	_chasing = creature
+	lifetime = maxf(lifetime, 4.0)
+
+
 func launch_from(container: Node3D, at: Vector3) -> void:
 	container.add_child(self)
 	global_position = at
@@ -66,18 +89,29 @@ func _physics_process(delta: float) -> void:
 	if lifetime > 0.0 and _age >= lifetime:
 		_give_up()
 		return
+	_steer()
 	var step := _velocity * delta
 	var distance := step.length()
 	if distance < 0.0001:
 		return
 
-	# Swept, not teleported: a bolt moving at speed would otherwise pass
-	# straight through anything thinner than one frame of travel.
+	# The world, exactly. Swept, not teleported: a bolt moving at speed would
+	# otherwise pass straight through anything thinner than one frame of travel.
 	var space := get_world_3d().direct_space_state
 	var query := PhysicsRayQueryParameters3D.create(global_position,
 		global_position + step,
-		GameLayers.WORLD | GameLayers.PREY | GameLayers.WEB_WALK, _exclude)
+		GameLayers.WORLD | GameLayers.WEB_WALK, _exclude)
 	var hit := space.intersect_ray(query)
+	var reach := 1.0
+	if not hit.is_empty():
+		var landing: Vector3 = hit.get("position", global_position)
+		reach = clampf((landing - global_position).length() / distance, 0.0, 1.0)
+
+	# And anything alive, generously — but never through the wall in front of it.
+	var creature := _creature_along(step, reach)
+	if creature != null:
+		_land_on(creature)
+		return
 	if not hit.is_empty():
 		_land(hit)
 		return
@@ -86,6 +120,55 @@ func _physics_process(delta: float) -> void:
 	_travelled += distance
 	if _travelled >= range_limit:
 		_give_up()
+
+
+## Bends the flight onto what it was locked to. All the way, not partly: a bolt
+## that merely leans toward a fly is a bolt that misses it, and the whole point
+## of holding the crosshair for a second is that you were promised otherwise.
+func _steer() -> void:
+	if _chasing == null:
+		return
+	if not is_instance_valid(_chasing) or _chasing.eaten:
+		# Something else got it mid-flight. Carry straight on rather than
+		# vanishing: the silk is spent either way, and it may still find a wall.
+		_chasing = null
+		return
+	var toward := _chasing.global_position - global_position
+	if toward.length_squared() < 0.000001:
+		return
+	_velocity = toward.normalized() * _velocity.length()
+
+
+## The nearest creature the ball passes within [member catch_radius] of during
+## this frame's step, and never past what the world stopped it at.
+func _creature_along(step: Vector3, reach: float) -> Prey:
+	var span: float = maxf(step.length_squared(), 0.000001)
+	var best: Prey = null
+	var soonest := 2.0
+	for node in get_tree().get_nodes_in_group("prey"):
+		var creature := node as Prey
+		if creature == null or not is_instance_valid(creature) or creature.eaten:
+			continue
+		var offset := creature.global_position - global_position
+		# Ahead of the bolt, not beside or behind it. Without this the first
+		# frame of every shot sweeps up whatever happens to be standing next to
+		# the spider, including things it was pointedly not aimed at.
+		if offset.dot(step) < 0.0:
+			continue
+		var along := clampf(offset.dot(step) / span, 0.0, reach)
+		if along >= soonest:
+			continue
+		if (offset - step * along).length() > catch_radius:
+			continue
+		soonest = along
+		best = creature
+	return best
+
+
+func _land_on(creature: Prey) -> void:
+	_spent = true
+	landed.emit(creature.global_position, Vector3.UP, creature)
+	queue_free()
 
 
 func _give_up() -> void:

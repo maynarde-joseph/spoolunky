@@ -1019,7 +1019,8 @@ hold in their head on the first screen.
 | **Shift** | Sprint |
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
 | **Left Mouse** | **Go there, trailing silk.** A surface pulls you over; a line puts you on it; something you already caught comes to you instead |
-| **Right Mouse** | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss expires after two seconds |
+| **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss expires after two seconds |
+| **Right Mouse** *(hold)* | **Take aim.** Drops to first person; hold a creature in the cross for a second and the bolt that leaves cannot miss it |
 | **1–9 / wheel** | Pick a pocket on the bar |
 | **E** | The tree — spend what you have eaten |
 | **F** | Wrap the prey you are looking at, then drain it |
@@ -1038,6 +1039,29 @@ nothing that works was thrown away to find out.
 There is deliberately **no glide key**. A spider with wings glides, the same
 way a spider with legs walks: the trait changes how you come down, and holding
 something down is not part of it.
+
+### Shooting has to be catchable
+
+The bolt is a **ball of silk with a width**, not a ray. The world is still hit
+exactly — a web has to land on the surface it is built against, and a wall
+deserves no forgiveness — but anything alive is hit with a swept ball a good
+deal wider than the web being thrown. A fly is five centimetres across and
+wandering; asking a player to put a hairline through one is asking for a
+precision no amount of practice reaches, and for a while the honest report was
+"I spent a few minutes shooting and could not catch anything".
+
+The **one-second lock** is the other half of the same problem, and it is a
+choice rather than a fix. A tap is the fast, fallible shot and is unchanged.
+Holding puts you in first person — third person has the cross and the silk
+leaving from different places, which is survivable against a wall and hopeless
+against an insect — and a second spent holding a creature buys certainty. The
+bolt then steers all the way in, because a promise kept by the arithmetic at
+the trigger is a promise broken by the first gust of wandering.
+
+The cone that *acquires* a target is tighter than the cone that *keeps* one.
+Holding a cross exactly on a wandering fly for a whole second is not a thing
+anyone can do, and it is not what the second is for: the second is for
+choosing, not for steadiness.
 
 ---
 
