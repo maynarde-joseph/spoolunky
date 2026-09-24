@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SpiderTrait" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_trait.gd" id="1_trait"]
+
+[resource]
+script = ExtResource("1_trait")
+id = "heavy_frame"
+display_name = "Heavy Frame"
+description = "Thicker plates and a wider stance. You take up more room."
+branch = 0
+depth = 0
+cost = {
+"fly": 6
+}
+body_scale = 1.18
+silk_scale = 1.12

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SpiderTrait" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_trait.gd" id="1_trait"]
+
+[resource]
+script = ExtResource("1_trait")
+id = "storm_rider"
+display_name = "Storm Rider"
+description = "Wings that catch a draught. Vents and grates stop being walls and start being weather."
+branch = 1
+depth = 2
+requires = PackedStringArray("hollow_frame")
+cost = {
+"moth": 4,
+"wasp": 2
+}
+speed_scale = 1.15
+jump_scale = 1.35
+glide = 0.28

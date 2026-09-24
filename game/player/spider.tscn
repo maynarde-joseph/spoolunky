@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="PackedScene" path="res://addons/character-controller/example/main/player.tscn" id="1_base"]
 [ext_resource type="Script" path="res://game/player/spider.gd" id="2_spider"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://game/player/spider_inventory.gd" id="9_bag"]
 [ext_resource type="Script" path="res://game/player/device_placer.gd" id="10_place"]
 [ext_resource type="Script" path="res://game/player/silk_tether.gd" id="11_tether"]
+[ext_resource type="Script" path="res://game/player/spider_traits.gd" id="12_traits"]
 
 [node name="Spider" instance=ExtResource("1_base")]
 collision_layer = 2
@@ -43,3 +44,6 @@ script = ExtResource("10_place")
 
 [node name="Tether" type="Node3D" parent="."]
 script = ExtResource("11_tether")
+
+[node name="Traits" type="Node" parent="."]
+script = ExtResource("12_traits")

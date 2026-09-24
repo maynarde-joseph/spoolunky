@@ -16,12 +16,23 @@ extends Node3D
 ## units, plus a second number to keep in sync. Most gates in the world should
 ## not even be this: a gap you fit through or you do not is the collider's
 ## business, and needs no script at all.
+##
+## Size is one key and not the only one. A gate can also name a trait that
+## opens it — a lean body that folds through the slats, a spit that dissolves
+## matted web — so a spider that went up the tree some way other than Bulk is
+## not stuck behind a door it can never be big enough for. Both keys open the
+## same gate, and the gate never says which one you are missing: it dips and
+## settles back, and the answer is what you try next.
 
 signal opened()
 
 ## Body height that shifts it. The tier table in the design doc is the source:
 ## 0.4 is a House Spider, 0.7 a Huntsman, 1.2 a Gutter Spider.
 @export var opens_at := 0.4
+
+## A trait id that also opens it, whatever size you are. Empty for a gate that
+## only size can shift.
+@export var opens_for := ""
 
 ## How far it sags under something too small, as a fraction of its thickness.
 @export var nudge := 0.35
@@ -39,10 +50,11 @@ var _leaned_on := false
 
 ## Builds one filling the hole between [param lo] and [param hi].
 static func make(parent: Node3D, lo: Vector3, hi: Vector3, size_to_open: float,
-		gate_name: String) -> Threshold:
+		gate_name: String, trait_key := "") -> Threshold:
 	var gate := Threshold.new()
 	gate.name = gate_name
 	gate.opens_at = size_to_open
+	gate.opens_for = trait_key
 	parent.add_child(gate)
 	gate._build(lo, hi)
 	return gate
@@ -75,7 +87,7 @@ func _physics_process(delta: float) -> void:
 	var spider := _spider()
 	if spider == null:
 		return
-	if spider.stage().body_height >= opens_at:
+	if spider.stage().body_height >= opens_at or _carries_the_key(spider):
 		_give_way()
 		return
 	# Too small. Dip under them while they are on it, and settle back after.
@@ -84,6 +96,11 @@ func _physics_process(delta: float) -> void:
 		wanted = _rest - Vector3.UP * _thickness * nudge
 	_plug.global_position = _plug.global_position.lerp(
 		wanted, clampf(nudge_speed * delta, 0.0, 1.0))
+
+
+## Whether the spider evolved its way past this one instead of growing into it.
+func _carries_the_key(spider: SpiderPlayer) -> bool:
+	return opens_for != "" and spider.traits != null and spider.traits.has(opens_for)
 
 
 ## Whether the spider is actually putting weight on it rather than passing by.

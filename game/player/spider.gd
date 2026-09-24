@@ -70,9 +70,11 @@ signal skill_tree_toggled()
 @onready var bag: SpiderInventory = $Bag
 @onready var device_placer: DevicePlacer = $DevicePlacer
 @onready var tether: SilkTether = $Tether
+@onready var traits: SpiderTraits = $Traits
 
 var _spawn_transform: Transform3D
 var _stage: GrowthStage
+var _tier := -1
 var _pitch := 0.0
 var _base_fov := 0.0
 
@@ -103,6 +105,7 @@ func _ready() -> void:
 	web_builder.setup(self, silk, growth, view, climb)
 	device_placer.setup(self, bag, growth, view)
 	tether.setup(self, silk, growth, view, climb)
+	growth.shaped_by(traits)
 	web_builder.notice.connect(_on_notice)
 	device_placer.notice.connect(_on_notice)
 	climb.notice.connect(_on_notice)
@@ -294,6 +297,7 @@ func _hotbar_input(event: InputEvent) -> bool:
 func _process(delta: float) -> void:
 	_watch_for_release()
 	climb.haul = tether.drag_factor()
+	climb.glide = traits.glide() if traits != null else 0.0
 	view.update(stage().body_height)
 	_rush(delta)
 	if body != null:
@@ -379,8 +383,11 @@ func _handle_prey(prey: Prey) -> void:
 			notice.emit("Not enough silk to wrap — %d needed" % ceili(cost))
 		return
 
-	# Much bigger than it? Then you can simply take it.
-	if current.bite_power >= prey.size_class * 2:
+	# Much bigger than it? Then you can simply take it. Fangs halve what
+	# "much" means: anything inside your bite power goes down where it stands,
+	# which is the whole point of the venom branch — a kill that needs no web.
+	var margin := 1 if traits != null and traits.has_fangs() else 2
+	if current.bite_power >= prey.size_class * margin:
 		_drain(prey)
 		return
 
@@ -389,9 +396,16 @@ func _handle_prey(prey: Prey) -> void:
 
 func _drain(prey: Prey) -> void:
 	var species := prey.species
-	var food := prey.biomass
-	var silk_back := prey.silk_value()
+	var kind := prey.kind
+	var yield_scale := traits.drain_scale() if traits != null else 1.0
+	var food := prey.biomass * yield_scale
+	var silk_back := prey.silk_value() * yield_scale
 	prey.consume()
+	# Biomass grows you along the ladder; the creature itself goes in the
+	# larder, where the tree spends it. One drink, two currencies, which is what
+	# keeps eating right whichever way you are evolving.
+	if traits != null:
+		traits.record(kind)
 	silk.refill(silk_back)
 	var tiers := growth.feed(food, species)
 	if tiers <= 0:
@@ -405,8 +419,11 @@ func _on_stage_changed(new_stage: GrowthStage, index: int) -> void:
 	_stage = new_stage
 	_apply_stage(new_stage, previous_height)
 	grew.emit(new_stage, index)
-	if index > 0:
+	# A trait reshapes the body and comes through here too, so the announcement
+	# hangs off the tier actually moving rather than off this being called.
+	if index > _tier and index > 0:
 		notice.emit("You are a %s now" % new_stage.display_name)
+	_tier = index
 
 
 ## Resizes the body to match a size tier.

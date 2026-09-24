@@ -71,6 +71,9 @@ func _run() -> void:
 	await _test_the_bag(spider, level, webs, builder, silk)
 	await _test_sandbox_wiring(level, spider)
 	await _test_demolish(builder, webs, silk)
+	# Last, deliberately: buying traits reshapes the body for good, and every
+	# test above this line was written against a spider the ladder alone made.
+	await _test_the_tree(spider, level)
 
 	_finish()
 
@@ -2442,6 +2445,206 @@ func _newest_web(webs: Node3D, pattern_id: String) -> WebStructure:
 		if web != null and not web.is_queued_for_deletion() and web.pattern.id == pattern_id:
 			found = web
 	return found
+
+
+## The evolutionary tree: the larder as a currency, and a trait as a body.
+func _test_the_tree(spider: SpiderPlayer, level: Node) -> void:
+	var traits := spider.traits
+	if not _check(traits != null, "the spider has an evolutionary tree"):
+		return
+	_check(traits.tree.size() == 9, "nine traits in it (%d)" % traits.tree.size())
+	for which in SpiderTrait.BRANCH_NAMES.size():
+		_check(traits.branch(which).size() == 3,
+			"%s runs three deep" % SpiderTrait.BRANCH_NAMES[which])
+
+	var wings := traits.by_id("wing_buds")
+	var lean := traits.by_id("hollow_frame")
+	var bulk := traits.by_id("heavy_frame")
+	if not _check(wings != null and lean != null and bulk != null,
+			"wings, a lean frame and a heavy one"):
+		return
+	_check(wings.effect_line() != "" and bulk.effect_line().contains("size"),
+		"each one says what it does, off its own numbers (%s)" % bulk.effect_line())
+
+	# The suite has been eating and building for a while. Start the ledger — and
+	# the spool — somewhere known, or this is a test about what the earlier ones
+	# happened to leave behind.
+	traits.larder.clear()
+	spider.silk.refill(spider.silk.maximum)
+
+	_check(traits.unlocked(wings), "a root is open from the start")
+	_check(not traits.unlocked(lean), "and what stands on it is not")
+	_check(not traits.affordable(wings), "an empty larder affords nothing")
+	_check(traits.shortfall(wings).get("fly", 0) == int(wings.cost["fly"]),
+		"and it says what you are short: %d flies" % int(wings.cost["fly"]))
+	_check(not traits.buy(wings), "so it cannot be taken")
+	_check(not traits.has("wing_buds"), "and nothing happened")
+
+	# Eating fills the larder — through the real path, not by hand.
+	var lunch := _spawn_species(level, "fly", spider.global_position + Vector3(0.3, 0.0, 0.0))
+	await physics_frame
+	if _check(lunch != null, "there is a fly to eat"):
+		spider._handle_prey(lunch)
+		_check(traits.eaten("fly") == 1,
+			"draining one puts it in the larder (%d)" % traits.eaten("fly"))
+
+	var wanted := int(wings.cost["fly"])
+	_feed_larder(traits, "fly", wanted - traits.eaten("fly"))
+	_check(traits.eaten("fly") == wanted, "eat enough and the trait is paid for")
+	_check(traits.affordable(wings), "wings can be afforded")
+	_check(not traits.affordable(bulk),
+		"but not a heavy frame as well — it wants %d" % int(bulk.cost["fly"]))
+
+	_check(traits.buy(wings), "so the wings are taken")
+	_check(traits.has("wing_buds"), "and the spider has them")
+	_check(traits.eaten("fly") == 0,
+		"which spent the flies (%d left)" % traits.eaten("fly"))
+	_check(not traits.buy(wings), "the same trait cannot be taken twice")
+	_check(not traits.affordable(bulk),
+		"and the same fly cannot buy both branches")
+	_check(traits.unlocked(lean), "what stood on the wings is open now")
+
+	# Wings are a lighter fall, with no key to hold.
+	_check(traits.glide() > 0.0, "wings cancel some of a fall (%.2f)" % traits.glide())
+	var gliding := _fall_gain(spider, traits.glide())
+	var plummeting := _fall_gain(spider, 0.0)
+	_check(gliding < plummeting,
+		"so a fall picks up less speed (%.2f against %.2f m/s per tenth)"
+		% [gliding, plummeting])
+	_check(gliding > 0.0, "and it is still a fall — wings flatten it, not stop it")
+
+	# A trait is a body, not a stat line: buying one resizes the spider the
+	# same way growing a tier does, through the same signal.
+	var tier := spider.growth.stage_index
+	var tall := spider.stage().body_height
+	var capsule := spider.collision.shape as CapsuleShape3D
+	_feed_larder(traits, "midge", int(lean.cost["midge"]))
+	_feed_larder(traits, "moth", int(lean.cost["moth"]))
+	_check(traits.buy(lean), "a hollow frame can be taken once the wings are there")
+	await physics_frame
+	_check(spider.stage().body_height < tall,
+		"which makes the spider smaller (%.3f -> %.3f)" % [tall, spider.stage().body_height])
+	_check(is_equal_approx(capsule.height, spider.stage().body_height),
+		"and the collider went with it")
+	_check(spider.growth.stage_index == tier,
+		"without moving it down a tier — you grew lean, not younger")
+	_check(spider.growth.base_stage().body_height > spider.stage().body_height,
+		"so it stands under its own tier (%.3f under %.3f)"
+		% [spider.stage().body_height, spider.growth.base_stage().body_height])
+	_check(spider.stage().move_speed > spider.growth.base_stage().move_speed,
+		"and is quicker than its tier for it")
+
+	# Bulk is the other end of the same ruler.
+	_feed_larder(traits, "fly", int(bulk.cost["fly"]))
+	var small := spider.stage().body_height
+	_check(traits.buy(bulk), "a heavy frame can be taken alongside it")
+	await physics_frame
+	_check(spider.stage().body_height > small,
+		"and puts the size back on (%.3f -> %.3f)" % [small, spider.stage().body_height])
+
+	await _test_fangs(spider, traits, level)
+	_test_the_tree_on_screen(level, traits)
+
+
+## Venom's gift: a kill that needs no web behind it.
+func _test_fangs(spider: SpiderPlayer, traits: SpiderTraits, level: Node) -> void:
+	var fangs := traits.by_id("hunting_fangs")
+	if not _check(fangs != null, "the tree has fangs at the end of venom"):
+		return
+	_check(not traits.has_fangs(), "a spider without them needs a web")
+
+	# Something inside the bite either way, so this is about the fangs and not
+	# about the bite power they also carry.
+	var bite := spider.stage().bite_power
+	var quarry: PreySpecies = null
+	for kind in PreyLibrary.load_species():
+		if kind.size_class <= bite and kind.size_class * 2 > bite + fangs.bite_bonus:
+			quarry = kind
+			break
+	if not _check(quarry != null,
+			"there is a creature inside a bite of %d but not by half" % bite):
+		return
+
+	var at := spider.global_position + Vector3(0.35, 0.0, 0.0)
+	_clear_prey_near(level, at, 3.0, null)
+	var caught := _spawn_species(level, quarry.id, at)
+	await physics_frame
+	if not _check(caught != null, "there is a %s to try it on" % quarry.display_name):
+		return
+	_check(not caught.is_stuck(), "which is not in a web")
+	spider._handle_prey(caught)
+	_check(is_instance_valid(caught) and not caught.eaten,
+		"and cannot be taken bare-fanged, however small it is")
+
+	var line: Array[String] = ["paralytic", "digestive", "hunting_fangs"]
+	for step in line:
+		var gift := traits.by_id(step)
+		for species_id in gift.cost:
+			_feed_larder(traits, str(species_id), int(gift.cost[species_id]))
+		_check(traits.buy(gift), "the venom line goes up in order — %s" % gift.display_name)
+	await physics_frame
+	_check(traits.has_fangs(), "and ends in fangs")
+
+	spider._handle_prey(caught)
+	_check(not is_instance_valid(caught) or caught.eaten,
+		"with which the %s goes down where it stands" % quarry.display_name)
+
+
+## The screen the tree is spent on.
+func _test_the_tree_on_screen(level: Node, traits: SpiderTraits) -> void:
+	var hud := level.get_node_or_null("HUD") as SpiderHUD
+	if not _check(hud != null, "the level has a HUD to hang the tree off"):
+		return
+	var screen := hud.get_node_or_null(NodePath("TraitTree")) as TraitTree
+	if not _check(screen != null, "which built a tree screen"):
+		return
+	_check(not screen.open and not screen.visible, "shut until it is asked for")
+	_check(screen._cards.size() == traits.tree.size(),
+		"with a card for every trait (%d)" % screen._cards.size())
+
+	var taken := screen._cards.get("wing_buds") as Panel
+	var shut := screen._cards.get("girder_legs") as Panel
+	if _check(taken != null and shut != null, "owned and locked ones both on it"):
+		var cost := taken.get_node_or_null(NodePath("Lines/Cost")) as Label
+		_check(cost != null and cost.text.contains("yours"),
+			"an owned trait says so instead of a price (%s)"
+			% (cost.text if cost != null else "—"))
+		var locked := shut.get_node_or_null(NodePath("Lines/Cost")) as Label
+		_check(locked != null and locked.text.begins_with("needs"),
+			"and a locked one names what it stands on (%s)"
+			% (locked.text if locked != null else "—"))
+
+	screen.show_tree()
+	_check(screen.open and screen.visible, "[E] opens it")
+	_check(screen._larder.text != "", "with the larder across the top (%s)" % screen._larder.text)
+	screen.close()
+	_check(not screen.open and not screen.visible, "and [E] again puts it away")
+
+
+## Puts creatures straight into the larder, for a test that is about spending
+## them rather than about catching them.
+func _feed_larder(traits: SpiderTraits, species_id: String, how_many: int) -> void:
+	var kind := PreyLibrary.find(species_id)
+	for i in maxi(how_many, 0):
+		traits.record(kind)
+
+
+## Speed one tenth of a second of falling adds, at a given glide. Measured well
+## above the level so nothing is underfoot to cut the fall short.
+func _fall_gain(spider: SpiderPlayer, glide: float) -> float:
+	var climb := spider.climb
+	var was_glide := climb.glide
+	var was_where := spider.global_position
+	climb.glide = glide
+	climb.release()
+	spider.global_position = Vector3(12.0, 400.0, 0.0)
+	spider.velocity = Vector3(0.0, -1.0, 0.0)
+	climb._move_airborne(0.1, Vector2.ZERO)
+	var gained := -1.0 - spider.velocity.y
+	climb.glide = was_glide
+	spider.global_position = was_where
+	spider.velocity = Vector3.ZERO
+	return gained
 
 
 func _find_web(webs: Node3D, pattern_id: String) -> WebStructure:

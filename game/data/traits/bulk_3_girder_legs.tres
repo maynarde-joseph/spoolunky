@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SpiderTrait" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_trait.gd" id="1_trait"]
+
+[resource]
+script = ExtResource("1_trait")
+id = "girder_legs"
+display_name = "Girder Legs"
+description = "Legs like scaffolding. The silk that comes off them is rope."
+branch = 0
+depth = 2
+requires = PackedStringArray("broad_back")
+cost = {
+"wasp": 3,
+"beetle": 6
+}
+body_scale = 1.25
+quality_scale = 1.2
+bite_bonus = 1

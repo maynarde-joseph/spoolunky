@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="SpiderTrait" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_trait.gd" id="1_trait"]
+
+[resource]
+script = ExtResource("1_trait")
+id = "wing_buds"
+display_name = "Wing Buds"
+description = "Two stubs of membrane. Not enough to fly. Enough that a fall becomes a descent."
+branch = 1
+depth = 0
+cost = {
+"fly": 5
+}
+glide = 0.5

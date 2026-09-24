@@ -103,6 +103,69 @@ So every gate reads the same direction: you could not do this before, you can
 now. A door you are too big for is never the design; a door that needs more of
 you than you have yet, always is.
 
+### 3.1 The tree — what you spend the eating on
+
+The rejection above has one real cost, and it took a while to see it: if the
+only thing eating does is move you up a fixed ladder, there is **no decision in
+the game at all**. You eat, you get bigger, the next door opens. That is a
+progress bar with a spider on it.
+
+So eating pays twice. A drained creature gives **biomass**, which still carries
+you up the ladder exactly as before — and it also goes into the **larder**, a
+tally of what you have eaten, by species. The larder is a currency, and it is
+spent on the tree.
+
+That keeps the one thing the rejection was protecting. Eating is never the
+wrong move, because every creature is both growth *and* currency; there is no
+build that wants you to stop. What changes is that **what you become** is a
+choice, and a beetle spent on Broad Back is a beetle not spent on Hunting
+Fangs.
+
+Three branches, three deep:
+
+| | **Bulk** | **Flight** | **Venom** |
+|---|---|---|---|
+| I | Heavy Frame — bigger, more silk | Wing Buds — a fall becomes a glide | Paralytic Bite — subdue one class up |
+| II | Broad Back — bigger still, harder bite | Hollow Frame — **smaller**, faster, longer reach | Digestive Flood — far more out of a kill |
+| III | Girder Legs — rope for silk | Storm Rider — ride a draught | Hunting Fangs — kill with no web behind it |
+
+**Size is one branch, not the trunk.** Bulk *is* the old ladder, made into a
+decision instead of a consequence. Flight is the other end of the same ruler:
+Hollow Frame makes you 28% shorter than your tier, so you are not a smaller
+spider, you are a **lean** one — a Huntsman that fits where Huntsmen do not.
+
+This is how "being small is sometimes good" gets in without reopening the
+argument above. You never *avoid* eating to stay small; you eat exactly as much
+and spend it differently. The escalation fantasy survives intact for anyone who
+wants it, because Bulk is right there and it is the straight road.
+
+**A trait is a body, not a stat line.** Mechanically the whole tree is one
+function: the size tier the game reads is the ladder's tier with every owned
+trait multiplied into it. That is why almost nothing else in the code had to
+learn traits exist — the climb component, the web builder, the thresholds and
+the HUD were all already asking how tall the spider is and how far its silk
+goes, and they now get an answer with the traits folded in. Buying one is
+announced down the same channel as growing a tier, so the body resizes through
+the code that already did that.
+
+**Gates take either key.** A threshold names a size *and* may name a trait, and
+either opens it — the vent flap gives to a House Spider or to a Hollow Frame
+that folds between the slats; the dust cap gives to weight or to a Digestive
+Flood; the storm grate gives to a Gutter Spider or to a Storm Rider riding the
+draught through the slots. The gate never says which key you are missing. It
+dips and settles back, the same as always, and the answer is what you go and
+try.
+
+**The screen.** Opened on **E**, which frees the mouse — so the same act that
+lets you click the tree is what stops you firing silk into it. Locked traits
+are shown rather than hidden, with what they stand on and what they cost,
+because "you can always see the next thing and what you are short of" is the
+one property of the genre this game is not that was worth keeping.
+
+**What is deliberately not in it:** no respec, no points, no levels, and no
+trait that is a flat number with no body behind it. If a trait cannot be
+described as a change to the animal, it does not belong on the tree.
+
 ---
 
 ## 4. The world
@@ -159,6 +222,12 @@ it heavy enough" and "is it big enough" become the same comparison in different
 units, and the only thing gained is a second number to keep in sync. `body_height`
 is already the one value everything physical hangs off. A gate names a size and
 compares.
+
+**Size is one key and not the only one.** A gate may also name a trait that
+opens it (§3.1), so a spider that went up Flight or Venom instead of Bulk is
+never stuck behind a door it can only grow into. Both keys open the same gate
+and the gate still says nothing about which one you are missing — it dips and
+settles back, and the answer is what you go and try.
 
 And most gates should not even be that. **A gap you fit through or you do not
 is the collider's business**, not a rule's — the spider's own shape against the
@@ -938,36 +1007,37 @@ is: each new zone opens with you as the smallest thing in it.
 
 ## 9. Controls (current build)
 
+The verbs are *move*, *go there*, and *make a web*. The bindings had grown to
+twenty-five for those three things, so they were cut back to what a player can
+hold in their head on the first screen.
+
 | Input | Action |
 |-------|--------|
 | **WASD** | Move — on whatever surface you are stuck to |
 | **Mouse** | Look |
-| **Space** | Jump off the surface |
+| **Space** | Jump. Also the only way off silk, which is sticky |
 | **Shift** | Sprint |
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
-| **Ctrl** | Drop onto a dragline (from a wall or ceiling) |
-| **Ctrl / Space** | Lower / raise yourself on the line |
-| **Right Mouse** | Let go of the line |
-| **Left Mouse** | **Go there, trailing silk.** No mode. Moving and building are one act |
-| **Q** *(hold)* | Spin a web where you are aiming; held longer, it grows |
-| **Mouse Wheel / Z / C** | Cycle which web you spin |
-| **Right Mouse** | Let go of a line |
-| **E** | Interact — wrap prey, then drain it; re-arm a sprung snare |
-| **X** | Demolish the web you are looking at (50% silk back) |
-| **G** | Wire two things together — web or device, press on each end |
-| **N** | Open the bag — place a device (wheel to pick, left mouse to put down) |
-| **X** | …and take one back up (a device under the crosshair wins over a web) |
-| **B** | Keep the rig you are looking at as a design |
-| **V** | Place a saved design — wheel to pick, left mouse to spin it |
-| **F** or **middle mouse** | Clip onto a silk line and ride it — again to let go |
+| **Left Mouse** | **Go there, trailing silk.** A surface pulls you over; a line puts you on it; something you already caught comes to you instead |
+| **Right Mouse** | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss expires after two seconds |
+| **1–9 / wheel** | Pick a pocket on the bar |
+| **E** | The tree — spend what you have eaten |
+| **F** | Wrap the prey you are looking at, then drain it |
+| **X** | Pull down the web you are looking at |
 | **L** | Camera: third person or first person |
-| **K** | Switch weave: stretched or inscribed |
-| **;** | Pick which tuning dial the keys point at |
-| **[** / **]** | Turn that dial down / up |
-| **'** | Put a pattern's dials back to standard |
-| **H** | Toggle help |
-| **R** | Free-fly (debug, from the character template) |
-| **T** | Release mouse · **Esc** Quit |
+| **H** | Toggle help · **T** Release mouse · **Esc** Quit |
+
+### Parked, not deleted
+
+The hold-to-size placer, the tuning dials, the weave modes, saved designs,
+trigger wiring, the bag mode and the tether all still exist, still compile and
+are still tested — their input actions are simply bound to nothing. Each is one
+line in `project.godot` to bring back once the simpler feel is proven, and
+nothing that works was thrown away to find out.
+
+There is deliberately **no glide key**. A spider with wings glides, the same
+way a spider with legs walks: the trait changes how you come down, and holding
+something down is not part of it.
 
 ---
 
@@ -1028,7 +1098,12 @@ Crawlspace zone, wasps as a predator, verticality, streaming between zones.
   should be able to point at a spot and say "that's where it walks".
 * **Growth only ever opens.** No gate wants the player smaller, and nothing
   ever rewards not eating. A game whose progression is eating must never give
-  a reason to stop.
+  a reason to stop. The tree (§3.1) is how a small body became possible without
+  breaking this: you spend the eating differently, you never do less of it.
+* **A trait is a change to the animal.** If it cannot be described as something
+  the spider grew, it does not belong on the tree. No flat percentages with
+  nothing behind them, no respec, no points — and nothing that is only a number
+  on a screen the player has to go and read.
 * **Gates are physical, and say nothing.** A threshold is a thing in the world
   that responds to your body — a sprung lid, a weak flap, a drop you can now
   survive. If it needs a line of dialogue or an objective marker to be

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SpiderTrait" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_trait.gd" id="1_trait"]
+
+[resource]
+script = ExtResource("1_trait")
+id = "hunting_fangs"
+display_name = "Hunting Fangs"
+description = "Fangs that do not need a web behind them. Anything you can subdue, you can take where it stands."
+branch = 2
+depth = 2
+requires = PackedStringArray("digestive")
+cost = {
+"wasp": 4,
+"beetle": 4
+}
+bite_bonus = 1
+drain_scale = 1.2
+fangs = true

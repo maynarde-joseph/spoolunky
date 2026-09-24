@@ -16,7 +16,7 @@ Left Mouse             grapple there, trailing silk
 Right Mouse            shoot a web — it sticks where it lands, and wraps
                        whatever it lands on
 1-9 / wheel            pick a pocket
-E                      traits
+E                      the tree — spend what you have eaten
 F                      wrap prey, then drain it
 X                      pull down the web you're looking at
 
@@ -29,6 +29,7 @@ var _spider: SpiderPlayer
 var _toast_timer := 0.0
 var _hotbar: HBoxContainer
 var _pockets: Array[Panel] = []
+var _tree: TraitTree
 
 @onready var stage_label: Label = $Stats/StageLabel
 @onready var state_label: Label = $Stats/StateLabel
@@ -49,6 +50,7 @@ func _ready() -> void:
 	help_label.text = HELP_TEXT
 	toast_label.modulate.a = 0.0
 	_build_hotbar()
+	_build_tree()
 	problem_label.text = ""
 	dial_label.text = ""
 	_bind.call_deferred()
@@ -69,6 +71,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_help"):
 		help_label.visible = not help_label.visible
 		get_viewport().set_input_as_handled()
+	# Opening the tree frees the mouse, and a free mouse is exactly what stops
+	# the spider reading its keys — so the way back out has to be handled here.
+	elif _tree != null and _tree.open and event.is_action_pressed("skill_tree"):
+		_tree.close()
+		get_viewport().set_input_as_handled()
 
 
 func show_message(text: String) -> void:
@@ -86,6 +93,10 @@ func _bind() -> void:
 		return
 
 	_spider.notice.connect(show_message)
+	_spider.skill_tree_toggled.connect(_on_tree_asked_for)
+	if _spider.traits != null:
+		_tree.setup(_spider.traits)
+		_spider.traits.gained.connect(_on_trait_gained)
 	_spider.silk.changed.connect(_on_silk_changed)
 	_spider.growth.biomass_changed.connect(_on_biomass_changed)
 	_spider.grew.connect(_on_grew)
@@ -120,6 +131,23 @@ func _on_grew(stage: GrowthStage, index: int) -> void:
 	stage_label.text = "Stage %d — %s" % [index + 1, stage.display_name]
 	if _spider != null:
 		_on_biomass_changed(_spider.growth.biomass, _spider.growth.progress())
+
+
+# --- the tree -----------------------------------------------------------
+
+func _build_tree() -> void:
+	_tree = TraitTree.new()
+	_tree.name = "TraitTree"
+	add_child(_tree)
+
+
+func _on_tree_asked_for() -> void:
+	if _tree != null:
+		_tree.toggle()
+
+
+func _on_trait_gained(gift: SpiderTrait) -> void:
+	show_message("%s — %s" % [gift.display_name, gift.effect_line()])
 
 
 # --- the bar ------------------------------------------------------------

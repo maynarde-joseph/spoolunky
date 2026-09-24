@@ -90,9 +90,10 @@ func _attic() -> void:
 	_bulb(zone, Vector3(-76.0, 51.0, 2.0), 34.0, 2.4)
 
 	# The way out: a vent flap over the crawlspace mouth. A spiderling walks
-	# over it; a house spider puts it through.
+	# over it; a house spider puts it through — or a hollow-framed one folds
+	# between the slats, which is the first place the tree pays for itself.
 	Threshold.make(zone, Vector3(SHAFT_LO.x, ATTIC_LO.y - 0.7, SHAFT_LO.z),
-		Vector3(SHAFT_HI.x, ATTIC_LO.y, SHAFT_HI.z), 0.4, "VentFlap")
+		Vector3(SHAFT_HI.x, ATTIC_LO.y, SHAFT_HI.z), 0.4, "VentFlap", "hollow_frame")
 
 
 # --- 4.2 The Walls & Crawlspace ------------------------------------------
@@ -126,9 +127,10 @@ func _crawlspace() -> void:
 	_bulb(zone, Vector3(-74.0, 14.0, 0.0), 18.0, 0.5)
 
 	# A cap of matted dust and old web over the pipe. You go through it when
-	# there is enough of you to fall through.
+	# there is enough of you to fall through — or when you can dissolve it,
+	# which is what a digestive flood is for.
 	Threshold.make(zone, Vector3(-77.0, SHAFT_LO.y - 0.6, -3.0),
-		Vector3(-71.0, SHAFT_LO.y, 3.0), 0.7, "DustCap")
+		Vector3(-71.0, SHAFT_LO.y, 3.0), 0.7, "DustCap", "digestive")
 
 
 # --- 4.3 The Gutter & Sewer ----------------------------------------------
@@ -173,9 +175,10 @@ func _sewer() -> void:
 	_bulb(zone, Vector3(-40.0, SEWER_HI.y - 3.0, 0.0), 24.0, 0.5)
 	_bulb(zone, Vector3(-12.0, SEWER_HI.y - 3.0, 0.0), 26.0, 0.9)
 
-	# A hinged pressure lid, sprung for something the size of a rat.
+	# A hinged pressure lid, sprung for something the size of a rat. Weight
+	# opens it; so does riding the draught coming up through the slots.
 	Threshold.make(zone, Vector3(GRATE_X - 3.0, PARK_LO.y - 0.8, GRATE_Z - 3.0),
-		Vector3(GRATE_X + 3.0, PARK_LO.y, GRATE_Z + 3.0), 1.2, "StormGrate")
+		Vector3(GRATE_X + 3.0, PARK_LO.y, GRATE_Z + 3.0), 1.2, "StormGrate", "storm_rider")
 
 
 # --- 4.4 The Park --------------------------------------------------------

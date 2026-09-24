@@ -37,6 +37,7 @@ func _run() -> void:
 	_test_thresholds()
 	await _test_the_spider_lands(spider)
 	_test_the_way_down(spider)
+	_test_the_other_key(world, spider)
 
 	_finish(world)
 
@@ -105,6 +106,8 @@ func _test_thresholds() -> void:
 	for gate in gates:
 		opens.append(gate.opens_at)
 		_check(not gate.open, "%s starts shut" % gate.name)
+		_check(gate.opens_for != "",
+			"and has a second key on it — %s opens %s" % [gate.opens_for, gate.name])
 	opens.sort()
 	_check(opens[0] < opens[1] and opens[1] < opens[2],
 		"and they want you bigger each time (%.1f, %.1f, %.1f)"
@@ -141,6 +144,27 @@ func _test_the_way_down(spider: SpiderPlayer) -> void:
 				break
 		gate._physics_process(0.016)
 		_check(gate.open, "%s gives at %.2f" % [gate.name, spider.stage().body_height])
+
+
+## Size is one key and not the only one. A gate no spider will ever be big
+## enough for still gives, if it went up the tree some other way.
+func _test_the_other_key(world: Node, spider: SpiderPlayer) -> void:
+	var traits := spider.traits
+	if not _check(traits != null, "the spider has a tree to go up"):
+		return
+
+	# Far from everything, and sized past the end of the ladder, so the only
+	# thing that can open it is the trait.
+	var gate := Threshold.make(world as Node3D, Vector3(200.0, 200.0, 200.0),
+		Vector3(206.0, 200.4, 206.0), 999.0, "TestHatch", "wing_buds")
+	gate._physics_process(0.016)
+	_check(not gate.open, "a gate past the end of the ladder stays shut")
+	_check(not traits.has("wing_buds"), "with no trait to open it either")
+
+	traits.owned["wing_buds"] = true
+	gate._physics_process(0.016)
+	_check(gate.open, "and gives to the trait instead of to the size")
+	traits.owned.erase("wing_buds")
 
 
 # --- helpers -------------------------------------------------------------

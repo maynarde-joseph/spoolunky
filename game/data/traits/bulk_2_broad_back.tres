@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SpiderTrait" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_trait.gd" id="1_trait"]
+
+[resource]
+script = ExtResource("1_trait")
+id = "broad_back"
+display_name = "Broad Back"
+description = "Room inside you for more silk, and enough behind a bite to hold something larger."
+branch = 0
+depth = 1
+requires = PackedStringArray("heavy_frame")
+cost = {
+"beetle": 4,
+"moth": 3
+}
+body_scale = 1.22
+silk_scale = 1.15
+bite_bonus = 1

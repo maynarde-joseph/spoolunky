@@ -157,6 +157,11 @@ var on_silk := false
 ## one means empty-handed.
 var haul := 1.0
 
+## How much of a fall wings cancel, 0 for none. Written by the spider from its
+## traits. There is no glide key: a spider with wings glides, the same way a
+## spider with legs walks, which is one fewer thing to hold down.
+var glide := 0.0
+
 var _spider: CharacterController3D
 var _silk: SilkPool
 var _growth: SpiderGrowth
@@ -360,10 +365,16 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 func _move_airborne(delta: float, input_axis: Vector2) -> void:
 	var wish := _wish_direction(input_axis, Vector3.UP)
 	var velocity := _spider.velocity
-	velocity.y -= _spider.gravity * delta
+	var spread := clampf(glide, 0.0, 0.9)
+	# Wings only work against a fall. On the way up they are neither help nor
+	# hindrance, so a jump is the same height with them as without — the trait
+	# changes how you come down, which is the part worth having.
+	var lift: float = spread if velocity.y < 0.0 else 0.0
+	velocity.y -= _spider.gravity * (1.0 - lift) * delta
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
-	var target := wish * _spider.speed
-	horizontal = horizontal.lerp(target, clampf(acceleration * _spider.air_control * delta, 0.0, 1.0))
+	var target := wish * _spider.speed * (1.0 + spread)
+	var steering: float = _spider.air_control * (1.0 + spread * 3.0)
+	horizontal = horizontal.lerp(target, clampf(acceleration * steering * delta, 0.0, 1.0))
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
 	_spider.velocity = velocity

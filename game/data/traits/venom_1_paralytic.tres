@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SpiderTrait" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_trait.gd" id="1_trait"]
+
+[resource]
+script = ExtResource("1_trait")
+id = "paralytic"
+display_name = "Paralytic Bite"
+description = "It stops struggling before you have finished biting it."
+branch = 2
+depth = 0
+cost = {
+"fly": 4,
+"midge": 6
+}
+bite_bonus = 1

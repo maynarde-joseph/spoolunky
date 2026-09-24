@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SpiderTrait" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_trait.gd" id="1_trait"]
+
+[resource]
+script = ExtResource("1_trait")
+id = "digestive"
+display_name = "Digestive Flood"
+description = "You dissolve a creature rather than drain it, and get far more out of it. Old silk and matted dust go the same way."
+branch = 2
+depth = 1
+requires = PackedStringArray("paralytic")
+cost = {
+"moth": 5
+}
+drain_scale = 1.5

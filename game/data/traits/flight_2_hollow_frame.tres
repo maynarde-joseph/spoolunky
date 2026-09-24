@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SpiderTrait" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_trait.gd" id="1_trait"]
+
+[resource]
+script = ExtResource("1_trait")
+id = "hollow_frame"
+display_name = "Hollow Frame"
+description = "You grow lean instead of large — slighter than others your age, and quicker with it."
+branch = 1
+depth = 1
+requires = PackedStringArray("wing_buds")
+cost = {
+"midge": 8,
+"moth": 3
+}
+body_scale = 0.72
+speed_scale = 1.25
+reach_scale = 1.2
