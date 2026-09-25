@@ -1075,6 +1075,13 @@ func _test_a_shot_fits_a_corner(spider: SpiderPlayer, builder: WebBuilder,
 	_select_pattern(builder, "orb_web")
 	builder.shot_cooldown = 0.0
 	builder._cooling = 0.0
+	# First person, so the bolt leaves along exactly the line being aimed. In
+	# third person the cross and the muzzle are apart, and a bolt meant for the
+	# wall ahead can arrive at the one beside it instead.
+	var was_third := spider.view.third_person
+	if was_third:
+		spider.view.toggle_mode()
+		spider.view.update(spider.stage().body_height)
 
 	# A flat wall first, for the number a corner has to beat.
 	var flat_at := Vector3(-140.0, 0.0, -140.0)
@@ -1108,15 +1115,20 @@ func _test_a_shot_fits_a_corner(spider: SpiderPlayer, builder: WebBuilder,
 		% [corner_anchored, flat_anchored, WebBuilder.PLACE_SIDES])
 	_check(corner_anchored > 0,
 		"so the web really is fitted to the gap rather than pasted on stone")
+	if was_third and not spider.view.third_person:
+		spider.view.toggle_mode()
 
 
 ## Fires one and reports how many of the web's corners found something.
 func _shoot_and_read_rim(builder: WebBuilder, webs: Node3D) -> int:
 	var built: Array[WebStructure] = []
 	var catcher := func(web: WebStructure) -> void: built.append(web)
+	# Nothing else in the air: shoot() refuses while a bolt is still flying, and
+	# the test before this one ends on a tap whose silk is still out there.
+	await _wait_until(func() -> bool: return not builder.shot_in_flight(), 240)
 	builder.web_built.connect(catcher)
 	builder._cooling = 0.0
-	if not builder.shoot():
+	if not _check(builder.shoot(), "a bolt goes off toward the wall"):
 		builder.web_built.disconnect(catcher)
 		return -1
 	await _wait_until(func() -> bool: return not built.is_empty(), 240)
