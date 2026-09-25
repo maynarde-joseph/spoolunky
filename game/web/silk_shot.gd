@@ -15,9 +15,11 @@ extends Node3D
 ## Leading something that is moving is a skill; compensating for a drop the
 ## crosshair does not show you is just a wrong crosshair.
 
-## Landed. The point and the surface normal are where it opened out, and the
-## prey is whatever it hit, if it hit something alive rather than a wall.
-signal landed(at: Vector3, normal: Vector3, prey: Node3D)
+## Landed. The point and the surface normal are where it opened out, the prey
+## is whatever it hit if that was something alive, and the heading is the way
+## the bolt was travelling — which is what decides the web's plane, because a
+## web faces the way the silk came from.
+signal landed(at: Vector3, normal: Vector3, prey: Node3D, heading: Vector3)
 
 ## Gave up without hitting anything worth opening on.
 signal fizzled()
@@ -74,6 +76,14 @@ static func fire(from: Vector3, direction: Vector3, body_height: float,
 func chase(creature: Prey) -> void:
 	_chasing = creature
 	lifetime = maxf(lifetime, 4.0)
+
+
+## Which way it is travelling. A chasing bolt bends, so this is read at the
+## moment it lands rather than remembered from the trigger.
+func heading() -> Vector3:
+	if _velocity.length_squared() < 0.000001:
+		return Vector3.FORWARD
+	return _velocity.normalized()
 
 
 func launch_from(container: Node3D, at: Vector3) -> void:
@@ -167,7 +177,7 @@ func _creature_along(step: Vector3, reach: float) -> Prey:
 
 func _land_on(creature: Prey) -> void:
 	_spent = true
-	landed.emit(creature.global_position, Vector3.UP, creature)
+	landed.emit(creature.global_position, Vector3.UP, creature, heading())
 	queue_free()
 
 
@@ -186,7 +196,7 @@ func _land(hit: Dictionary) -> void:
 	if prey != null:
 		# Open out on the thing rather than on the skin of it.
 		at = prey.global_position
-	landed.emit(at, normal, prey)
+	landed.emit(at, normal, prey, heading())
 	queue_free()
 
 

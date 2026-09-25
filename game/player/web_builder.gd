@@ -404,8 +404,8 @@ func shot_radius() -> float:
 ## Landed. Something alive is wrapped where it stood; anything else gets a web
 ## built against it. No validity test either way — a shot that reached
 ## something has already earned its web.
-func _on_shot_landed(at: Vector3, normal: Vector3, prey: Node3D, pattern: WebPattern,
-		radius: float, sure: bool) -> void:
+func _on_shot_landed(at: Vector3, normal: Vector3, prey: Node3D, heading: Vector3,
+		pattern: WebPattern, radius: float, sure: bool) -> void:
 	_shot = null
 	var caught := prey as Prey
 	# A locked shot takes it whatever state it is in. Being told you are certain
@@ -415,7 +415,7 @@ func _on_shot_landed(at: Vector3, normal: Vector3, prey: Node3D, pattern: WebPat
 		if caught.bundle():
 			notice.emit("Wrapped the %s" % caught.species)
 			return
-	_open_web_at(at, normal, prey, radius)
+	_open_web_at(at, normal, _facing_from(heading, normal), prey, radius)
 
 
 # --- taking aim ---------------------------------------------------------
@@ -548,8 +548,9 @@ func _throw_place() -> bool:
 	var shot := SilkShot.fire(_view.aim_origin(), _view.aim_forward(),
 		_stage().body_height, _exclusions())
 	shot.catch_radius = catch_radius(charged)
-	shot.landed.connect(func(at: Vector3, normal: Vector3, prey: Node3D) -> void:
-		_open_web_at(at, normal, prey, charged))
+	shot.landed.connect(func(at: Vector3, normal: Vector3, prey: Node3D,
+			heading: Vector3) -> void:
+		_open_web_at(at, normal, _facing_from(heading, normal), prey, charged))
 	shot.fizzled.connect(func() -> void: notice.emit("The silk went wide"))
 	# Straight from where aiming starts, with no head start down the barrel. An
 	# offset looks tidier and tunnels: aiming starts at the spider's own body in
@@ -564,19 +565,31 @@ func _throw_place() -> bool:
 
 ## A bolt landed. Open it out there, at the size it was charged to, fitted to
 ## whatever it found — which is the same fitting a placed web gets.
-func _open_web_at(at: Vector3, normal: Vector3, prey: Node3D, charged: float) -> void:
+func _open_web_at(at: Vector3, surface: Vector3, facing: Vector3, prey: Node3D,
+		charged: float) -> void:
 	_shot = null
 	var pattern := current_pattern()
 	if pattern == null:
 		return
 	place_radius = charged
-	place_normal = normal
-	place_centre = at + normal * clampf(charged * 0.2, 0.02, 0.4)
+	# The plane the silk arrived through, not the plane of the wall it hit.
+	#
+	# Aligning a shot's web to the surface normal is what made corners worse
+	# than the old placer: flat against a wall, the sixteen rim rays run
+	# *parallel* to that wall and find nothing, so every web came out a plain
+	# disc plastered on flat stone. Facing it back the way the bolt came is what
+	# the held placer always did — it faced the player — and in a corner that is
+	# the plane where the rays reach both walls and the rim fits the gap.
+	place_normal = facing
+	# Clearance is the surface's business, along the surface's own normal: the
+	# plane can be near enough parallel to a wall, and pushing along it then
+	# moves the web sideways rather than off the stone.
+	place_centre = at + surface * _silk_clearance()
 	if prey != null:
-		# Over the thing rather than off the skin of it, the same way the placed
-		# web centres on prey: a catch volume is a thin slab around the web's own
-		# plane, so half a metre of clearance would catch nothing.
-		place_normal = -_view.aim_forward() if _view != null else normal
+		# Over the thing rather than off the skin of it: a catch volume is a thin
+		# slab around the web's own plane, so any clearance at all would catch
+		# nothing. The plane is still the bolt's, not wherever the camera is
+		# pointing now — it may have turned while the silk was in the air.
 		place_centre = at
 	place_valid = true
 	place_target = prey
@@ -652,9 +665,9 @@ func place_rim() -> PackedVector3Array:
 	# exactly on the surface it found buries half of itself in the wall. Stop
 	# just shy of it instead, by enough to clear the strand.
 	var pattern := current_pattern()
-	var inset := 0.02
+	var inset := 0.002
 	if pattern != null:
-		inset = maxf(pattern.strand_thickness * _quality() * 5.0, 0.02)
+		inset = maxf(pattern.strand_thickness * sqrt(_quality()) * 0.75, 0.002)
 	place_anchored = 0
 	for i in PLACE_SIDES:
 		var angle := TAU * float(i) / float(PLACE_SIDES)
@@ -726,11 +739,12 @@ func _update_placement() -> void:
 	if place_target != null:
 		place_centre = place_target.global_position
 	else:
-		place_centre = aim_point + place_normal * clampf(place_radius * 0.2, 0.02, 0.4)
+		place_centre = aim_point
 	# Never let the middle of a web sit inside whatever the crosshair found.
+	var least := _silk_clearance()
 	var clearance := place_normal.dot(place_centre - aim_point)
-	if clearance < 0.02:
-		place_centre += place_normal * (0.02 - clearance)
+	if clearance < least:
+		place_centre += place_normal * (least - clearance)
 	place_valid = true
 
 	# Fit the rim to the room. This used to happen by accident, as the argument
@@ -943,6 +957,35 @@ func _oldest_droppable(underfoot: WebStrand) -> int:
 		if _lines[i] != underfoot:
 			return i
 	return -1
+
+
+## How far silk sits off the surface it is anchored to.
+##
+## Enough that a strand drawn with real thickness does not bury half of itself
+## in the stone, and no more. It used to be eight per cent of the body on the
+## anchor and a fifth of the web's radius on top of that, which put a
+## Huntsman's web a third of a metre off the wall it was supposedly stuck to —
+## the gap you could see from across the room.
+func _silk_clearance() -> float:
+	var pattern := current_pattern()
+	if pattern == null:
+		return 0.004
+	return clampf(pattern.strand_thickness * sqrt(_quality()) * 1.5, 0.003, 0.03)
+
+
+## The plane a web thrown along [param heading] opens in. Faces back the way the
+## silk came, unless that is so nearly edge-on to the surface that the web would
+## stand out of it like a flag, in which case it leans onto the surface instead.
+func _facing_from(heading: Vector3, surface: Vector3) -> Vector3:
+	var back := -heading
+	if back.length_squared() < 0.000001:
+		return surface
+	back = back.normalized()
+	var square := back.dot(surface)
+	if square < 0.2:
+		# A grazing hit. Lean it toward the wall so the rim has stone to find.
+		back = (back + surface * (0.2 - square) * 2.0).normalized()
+	return back
 
 
 ## Where a dragged line starts: the end of a scripted run, or simply where the
@@ -1656,8 +1699,9 @@ func _cast_surface(reach: float) -> bool:
 		return false
 	aim_point = hit["position"]
 	aim_normal = hit.get("normal", Vector3.UP)
-	# Lift off the surface a touch so silk doesn't z-fight the wall.
-	aim_point += aim_normal * _stage().body_height * 0.08
+	# Off the surface by the width of a strand, so silk does not z-fight the
+	# wall — and by no more than that, so it reads as stuck to it.
+	aim_point += aim_normal * _silk_clearance()
 	aim_valid = true
 	return true
 

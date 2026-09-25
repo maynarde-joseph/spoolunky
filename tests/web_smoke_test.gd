@@ -64,6 +64,8 @@ func _run() -> void:
 	await _test_wrapped_things_fall(spider, builder, level, webs)
 	await _test_shooting(spider, builder, level, webs)
 	await _test_taking_aim(spider, builder, level)
+	await _test_a_shot_fits_a_corner(spider, builder, webs)
+	await _test_silk_sits_on_what_it_sticks_to(spider, builder)
 	_test_a_spiders_jump()
 	await _test_the_bar(spider)
 	await _test_the_larder(spider, builder, webs, level)
@@ -1059,6 +1061,108 @@ func _run_a_line(builder: WebBuilder, from: Vector3, to: Vector3) -> WebStrand:
 	builder._arrive_at(to)
 	var up := builder.lines()
 	return up[up.size() - 1] if up.size() > 0 else null
+
+
+## A shot fits its rim to the room, the way the held placer always did.
+##
+## The bolt is the visual; the web it opens is the placer's geometry. Aligning
+## that web to the surface it hit made corners strictly worse than the old
+## system, because a web flat against a wall casts all sixteen rim rays parallel
+## to that wall and none of them find anything.
+func _test_a_shot_fits_a_corner(spider: SpiderPlayer, builder: WebBuilder,
+		webs: Node3D) -> void:
+	var host := spider.get_parent()
+	_select_pattern(builder, "orb_web")
+	builder.shot_cooldown = 0.0
+	builder._cooling = 0.0
+
+	# A flat wall first, for the number a corner has to beat.
+	var flat_at := Vector3(-140.0, 0.0, -140.0)
+	var flat_floor := _test_slab(host, flat_at, Vector3(10, 0.5, 10))
+	_test_slab(host, flat_at + Vector3(4.0, 2.0, 0.0), Vector3(0.4, 4.0, 10.0))
+	await physics_frame
+	_stand_on(spider, flat_floor.global_position + Vector3(-1.0, 0.25, 0.0))
+	spider.view.face(Vector3.RIGHT)
+	spider.view.pitch = 0.0
+	await _run_frames(4)
+	var flat_anchored := await _shoot_and_read_rim(builder, webs)
+
+	# Then an inside corner: walls close on both sides of the one it hits, near
+	# enough that a web of this size can actually reach them. A shot is 1.26m
+	# across at this tier, so walls four metres out would make this test pass on
+	# nothing at all.
+	var corner_at := Vector3(-170.0, 0.0, -140.0)
+	var corner_floor := _test_slab(host, corner_at, Vector3(10, 0.5, 10))
+	_test_slab(host, corner_at + Vector3(4.0, 2.0, 0.0), Vector3(0.4, 4.0, 10.0))
+	_test_slab(host, corner_at + Vector3(0.0, 2.0, 1.0), Vector3(10, 4.0, 0.4))
+	_test_slab(host, corner_at + Vector3(0.0, 2.0, -1.0), Vector3(10, 4.0, 0.4))
+	await physics_frame
+	_stand_on(spider, corner_floor.global_position + Vector3(-1.0, 0.25, 0.0))
+	spider.view.face(Vector3.RIGHT)
+	spider.view.pitch = 0.0
+	await _run_frames(4)
+	var corner_anchored := await _shoot_and_read_rim(builder, webs)
+
+	_check(corner_anchored > flat_anchored,
+		"a shot into a corner finds more to hold on to than one at a flat wall (%d against %d of %d)"
+		% [corner_anchored, flat_anchored, WebBuilder.PLACE_SIDES])
+	_check(corner_anchored > 0,
+		"so the web really is fitted to the gap rather than pasted on stone")
+
+
+## Fires one and reports how many of the web's corners found something.
+func _shoot_and_read_rim(builder: WebBuilder, webs: Node3D) -> int:
+	var built: Array[WebStructure] = []
+	var catcher := func(web: WebStructure) -> void: built.append(web)
+	builder.web_built.connect(catcher)
+	builder._cooling = 0.0
+	if not builder.shoot():
+		builder.web_built.disconnect(catcher)
+		return -1
+	await _wait_until(func() -> bool: return not built.is_empty(), 240)
+	builder.web_built.disconnect(catcher)
+	var anchored := builder.place_anchored
+	for web in built:
+		if is_instance_valid(web):
+			web.demolish()
+	await physics_frame
+	return anchored
+
+
+## Silk stuck to a wall should look stuck to it.
+func _test_silk_sits_on_what_it_sticks_to(spider: SpiderPlayer,
+		builder: WebBuilder) -> void:
+	var host := spider.get_parent()
+	var slab := _test_slab(host, Vector3(200.0, 0.0, 200.0))
+	await physics_frame
+	var top := slab.global_position.y + 0.25
+	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+	_select_pattern(builder, "frame_line")
+	builder._update_aim()
+
+	# Straight down at the slab: the anchor is on it, not hovering over it.
+	var lift := builder.aim_point.y - top
+	_check(lift >= 0.0,
+		"an anchor never sinks into the surface it found (%.4fm)" % lift)
+	_check(lift < 0.05,
+		"and sits on it rather than above it (%.4fm off, was a third of a metre)"
+		% lift)
+	_check(lift > 0.0,
+		"clear of it by something, so silk does not z-fight the stone (%.4fm)" % lift)
+
+	# The same for a web's rim: a corner stops a strand short, not a hand's width.
+	_select_pattern(builder, "orb_web")
+	if _check(builder.begin_place(), "a web to measure against the floor"):
+		builder.place_radius = clampf(1.0, builder._min_place_radius(),
+			builder._max_place_radius())
+		builder._update_placement()
+		var off := builder.place_centre.y - top
+		_check(off >= 0.0 and off < 0.08,
+			"and a web sits on the floor it was spun against (%.4fm)" % off)
+		builder.cancel_place()
+	slab.queue_free()
+	await physics_frame
 
 
 # --- helpers ------------------------------------------------------------
