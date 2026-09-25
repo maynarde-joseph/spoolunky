@@ -38,7 +38,52 @@ static func span(parent: Node3D, lo: Vector3, hi: Vector3, part_name: String) ->
 	var size := high - low
 	if size.x <= 0.0 or size.y <= 0.0 or size.z <= 0.0:
 		return null
+	var body := _box(parent, size, part_name)
+	body.global_position = (low + high) * 0.5
+	return body
 
+
+## A walkable surface running from one point to another, so a prototype can
+## have a slope. Thickness is vertical and width is across the fall line, which
+## is what makes it a ramp rather than a wall.
+##
+## Rotation is the one thing [method span] cannot do, and a world where nothing
+## sits on the diagonal is a world that never tests the diagonal — every surface
+## square to an axis is a surface whose normal is exactly (1,0,0).
+static func ramp(parent: Node3D, from: Vector3, to: Vector3, width: float,
+		thickness: float, part_name: String) -> StaticBody3D:
+	return _turned(parent, from, to, Vector3(width, thickness, 0.0), part_name)
+
+
+## A wall running from one point to another, thin across and tall. The two ends
+## give its line on the ground; it stands [param height] up from them.
+static func fence(parent: Node3D, from: Vector3, to: Vector3, height: float,
+		thickness: float, part_name: String) -> StaticBody3D:
+	var flat_from := Vector3(from.x, from.y + height * 0.5, from.z)
+	var flat_to := Vector3(to.x, to.y + height * 0.5, to.z)
+	return _turned(parent, flat_from, flat_to, Vector3(thickness, height, 0.0), part_name)
+
+
+## The shared part: a box of [param cross] section (z is filled in from the
+## distance) whose length runs from one point to the other.
+static func _turned(parent: Node3D, from: Vector3, to: Vector3, cross: Vector3,
+		part_name: String) -> StaticBody3D:
+	var along := to - from
+	var length := along.length()
+	if length <= 0.001 or cross.x <= 0.0 or cross.y <= 0.0:
+		return null
+	var body := _box(parent, Vector3(cross.x, cross.y, length), part_name)
+	# looking_at puts -Z along the direction, which is the box's own length. A
+	# direction that is already straight up leaves no room for UP to be the
+	# other axis, so that case picks a different one.
+	var up := Vector3.UP
+	if absf(along.normalized().dot(Vector3.UP)) > 0.99:
+		up = Vector3.FORWARD
+	body.global_transform = Transform3D(Basis.looking_at(along, up), (from + to) * 0.5)
+	return body
+
+
+static func _box(parent: Node3D, size: Vector3, part_name: String) -> StaticBody3D:
 	var body := StaticBody3D.new()
 	body.name = part_name
 	body.collision_layer = GameLayers.WORLD
@@ -59,7 +104,6 @@ static func span(parent: Node3D, lo: Vector3, hi: Vector3, part_name: String) ->
 	body.add_child(view)
 
 	parent.add_child(body)
-	body.global_position = (low + high) * 0.5
 	return body
 
 

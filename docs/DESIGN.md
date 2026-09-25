@@ -302,6 +302,27 @@ are elsewhere.
 
 ---
 
+### 4.6 The testbed — a gym, not a place
+
+`game/world/testbed.tscn` is the workshop, and it is what the project opens.
+Nine stations on one flat floor, fifty-two metres by forty, all in sight of the
+middle: corners for web fitting, three slots wide to narrow, a wall-overhang-
+ceiling run with slopes at twenty through eighty degrees, grapple anchors at
+one/three/seven/thirteen metres, a roof with a hole for draglines, two posts of
+different heights for a zipline, the three size gates side by side, a prey pen,
+and a hole in the floor for falling out of the world.
+
+It exists because the real world (§4.1–4.5) is two hundred and eighty metres
+across and mostly corridor, so checking whether a web fits a corner meant a
+walk, and checking a *different* corner meant another one.
+
+**The rule for adding to it:** a station tests one thing and says on it what
+that thing is — the signs are the documentation, because a gym you have to read
+a file to use is a gym nobody uses. If you cannot tell what a station is for by
+standing in front of it, it needs a better shape, not a longer sign.
+
+---
+
 ## 5. What is actually scarce
 
 **There is no silk economy.** There was one, and it was the wrong instrument.

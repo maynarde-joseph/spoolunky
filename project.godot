@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="spoolunky"
-run/main_scene="uid://c2t6smyr8xtty"
+run/main_scene="res://game/world/testbed.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 

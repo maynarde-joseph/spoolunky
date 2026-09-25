@@ -11,6 +11,7 @@ extends SceneTree
 ## opening it is for.
 
 const WORLD_PATH := "res://game/world/world.tscn"
+const TESTBED_PATH := "res://game/world/testbed.tscn"
 
 var _checks := 0
 var _failures := 0
@@ -39,7 +40,72 @@ func _run() -> void:
 	_test_the_way_down(spider)
 	_test_the_other_key(world, spider)
 
-	_finish(world)
+	current_scene = null
+	world.free()
+	await _test_the_testbed()
+
+	_finish(null)
+
+
+## The gym. Not the game, so what is checked is that it holds together: it
+## loads, the spider lands on its floor, every station is there with a sign on
+## it, and the three gates are the three sizes. A testbed that errors on load is
+## worse than no testbed, because you find out while looking for something else.
+func _test_the_testbed() -> void:
+	var scene := load(TESTBED_PATH)
+	if not _check(scene != null, "the testbed scene loads"):
+		return
+	var bed: Node = scene.instantiate()
+	root.add_child(bed)
+	current_scene = bed
+	await physics_frame
+	await process_frame
+
+	var spider := root.get_tree().get_first_node_in_group("spider") as SpiderPlayer
+	if not _check(spider != null, "with a spider in it"):
+		_drop(bed)
+		return
+
+	var stations := 0
+	var signs := 0
+	for node in _all_under(bed):
+		if node is Label3D:
+			signs += 1
+			if not (node as Label3D).text.is_empty():
+				stations += 1
+	_check(stations == 9, "nine stations, each with a sign on it (%d)" % stations)
+	_check(signs == stations, "and no sign without words on it")
+
+	var gates := _thresholds()
+	var sizes: Array[float] = []
+	for gate in gates:
+		sizes.append(gate.opens_at)
+	sizes.sort()
+	_check(gates.size() == 3, "the three gates are all here (%d)" % gates.size())
+	if gates.size() == 3:
+		_check(is_equal_approx(sizes[0], 0.4) and is_equal_approx(sizes[1], 0.7)
+			and is_equal_approx(sizes[2], 1.2),
+			"at the sizes the tier table says (%.1f, %.1f, %.1f)"
+			% [sizes[0], sizes[1], sizes[2]])
+
+	# It has to hold the spider up, and it has to be small.
+	for i in 180:
+		await physics_frame
+	_check(spider.global_position.y > -4.0,
+		"the spider lands on the floor rather than through it (%.2f)"
+		% spider.global_position.y)
+	_check(absf(spider.global_position.x) < 30.0 and absf(spider.global_position.z) < 24.0,
+		"and stays on it (%.0f, %.0f)" % [spider.global_position.x, spider.global_position.z])
+	var across := SpiderTestbed.FLOOR_HI - SpiderTestbed.FLOOR_LO
+	_check(across.x < 60.0 and across.z < 50.0,
+		"the whole gym is %.0f by %.0f, which is the point of it" % [across.x, across.z])
+	_drop(bed)
+
+
+func _drop(bed: Node) -> void:
+	current_scene = null
+	if is_instance_valid(bed):
+		bed.free()
 
 
 ## Five places, none of them inside another. Overlapping bounds would make
