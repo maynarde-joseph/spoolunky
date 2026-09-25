@@ -35,6 +35,9 @@ const GATES := Vector3(-16.0, 0.0, 13.0)
 const PEN := Vector3(0.0, 0.0, 13.0)
 const PIT := Vector3(16.0, 0.0, 13.0)
 
+## Loose items, two metres in front of where you start.
+const PICKUPS := Vector3(0.0, 0.0, -6.5)
+
 
 func _ready() -> void:
 	build()
@@ -51,6 +54,7 @@ func build() -> void:
 	_gates()
 	_prey_pen()
 	_the_pit()
+	_pickups()
 	_sun()
 
 
@@ -218,6 +222,28 @@ func _the_pit() -> void:
 	Greybox.span(here, Vector3(PIT_LO.x, 2.4, 12.6), Vector3(PIT_HI.x, 2.8, 13.4), "Gantry")
 	Greybox.span(here, Vector3(PIT_LO.x - 0.4, 0.0, 12.6),
 		Vector3(PIT_LO.x, 2.4, 13.4), "GantryPost")
+
+
+## One of everything carryable, lying on the floor where you start.
+##
+## Devices are the only thing in the game that is found rather than made, so the
+## only way to know picking one up works is to have one to pick up. Look at one
+## and press X — the same key that pulls a web down, because a device under the
+## crosshair wins over a web behind it.
+func _pickups() -> void:
+    var here := _station(PICKUPS, "PICKUPS\nlook at one, press X")
+    var kinds := WebLibrary.load_devices()
+    if kinds.is_empty():
+        return
+    # Spread wider than the pick tolerance, or looking at one is looking at two.
+    var step := 1.5
+    var first: float = -step * float(kinds.size() - 1) * 0.5
+    for i in kinds.size():
+        var at := Vector3(first + step * float(i), 0.0, PICKUPS.z)
+        # Sized to the first tier, which is the size a new spider sees them at.
+        var item := SilkDevice.make(kinds[i], at, Vector3.UP, 0.25)
+        if item != null:
+            item.place_in(here)
 
 
 ## A named folder with a sign over it. The sign is the documentation: a gym you

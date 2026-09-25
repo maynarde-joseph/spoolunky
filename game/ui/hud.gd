@@ -7,6 +7,9 @@ extends CanvasLayer
 const HOTBAR_SLOT := 54.0
 const HOTBAR_GAP := 6.0
 
+## How far the bar sits off the bottom edge.
+const HOTBAR_MARGIN := 16.0
+
 const HELP_TEXT := """[ Spoolunky ]
 WASD / Space / Shift   move, jump, sprint
 walk into a wall       climb it — walls and ceilings are floors to you
@@ -18,7 +21,8 @@ Right Mouse            tap: shoot a web — it sticks where it lands, and
                        wraps whatever it lands on. Then a short wait
 Right Mouse  (hold)    aim in first person; hold a creature in the cross
                        for a second and the shot cannot miss
-1-9 / wheel            pick a pocket
+1-9 / wheel            pick a pocket on the bar
+X                      pick up the item you are looking at
 E                      the tree — spend what you have eaten
 F                      wrap prey, then drain it
 X                      pull down the web you're looking at
@@ -169,10 +173,23 @@ func _build_hotbar() -> void:
 	_hotbar = HBoxContainer.new()
 	_hotbar.name = "Hotbar"
 	_hotbar.add_theme_constant_override("separation", int(HOTBAR_GAP))
-	_hotbar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_hotbar.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_hotbar.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_hotbar.position = Vector2(0.0, -24.0)
+	# An explicit rect, not a preset and then a nudge. A centre-bottom preset
+	# zeroes the offsets, so setting position afterwards put the row's *left
+	# edge* at the middle of the screen and hung three quarters of it below the
+	# glass. The bar was there the whole time; you just could not see it.
+	#
+	# Nine fixed pockets is a fixed width, so the width is arithmetic rather than
+	# something a container has to be asked for.
+	var wide := float(SpiderInventory.SLOTS) * HOTBAR_SLOT \
+		+ float(SpiderInventory.SLOTS - 1) * HOTBAR_GAP
+	_hotbar.anchor_left = 0.5
+	_hotbar.anchor_right = 0.5
+	_hotbar.anchor_top = 1.0
+	_hotbar.anchor_bottom = 1.0
+	_hotbar.offset_left = -wide * 0.5
+	_hotbar.offset_right = wide * 0.5
+	_hotbar.offset_top = -(HOTBAR_SLOT + HOTBAR_MARGIN)
+	_hotbar.offset_bottom = -HOTBAR_MARGIN
 	add_child(_hotbar)
 
 	for i in SpiderInventory.SLOTS:

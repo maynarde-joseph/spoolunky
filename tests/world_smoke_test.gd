@@ -73,7 +73,7 @@ func _test_the_testbed() -> void:
 			signs += 1
 			if not (node as Label3D).text.is_empty():
 				stations += 1
-	_check(stations == 9, "nine stations, each with a sign on it (%d)" % stations)
+	_check(stations >= 10, "every station is signed, and there are %d of them" % stations)
 	_check(signs == stations, "and no sign without words on it")
 
 	var gates := _thresholds()
@@ -96,6 +96,16 @@ func _test_the_testbed() -> void:
 		% spider.global_position.y)
 	_check(absf(spider.global_position.x) < 30.0 and absf(spider.global_position.z) < 24.0,
 		"and stays on it (%.0f, %.0f)" % [spider.global_position.x, spider.global_position.z])
+	# Something to pick up, in the group the pick actually searches.
+	var loose := root.get_tree().get_nodes_in_group("silk_devices").size()
+	_check(loose >= 3, "with loose items lying about to be picked up (%d)" % loose)
+	var near := 0
+	for node in root.get_tree().get_nodes_in_group("silk_devices"):
+		var item := node as Node3D
+		if item != null and item.global_position.distance_to(SpiderTestbed.SPAWN) < 6.0:
+			near += 1
+	_check(near >= 3, "within reach of where you start (%d of them)" % near)
+
 	var across := SpiderTestbed.FLOOR_HI - SpiderTestbed.FLOOR_LO
 	_check(across.x < 60.0 and across.z < 50.0,
 		"the whole gym is %.0f by %.0f, which is the point of it" % [across.x, across.z])
