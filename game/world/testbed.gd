@@ -231,19 +231,19 @@ func _the_pit() -> void:
 ## and press X — the same key that pulls a web down, because a device under the
 ## crosshair wins over a web behind it.
 func _pickups() -> void:
-    var here := _station(PICKUPS, "PICKUPS\nlook at one, press X")
-    var kinds := WebLibrary.load_devices()
-    if kinds.is_empty():
-        return
-    # Spread wider than the pick tolerance, or looking at one is looking at two.
-    var step := 1.5
-    var first: float = -step * float(kinds.size() - 1) * 0.5
-    for i in kinds.size():
-        var at := Vector3(first + step * float(i), 0.0, PICKUPS.z)
-        # Sized to the first tier, which is the size a new spider sees them at.
-        var item := SilkDevice.make(kinds[i], at, Vector3.UP, 0.25)
-        if item != null:
-            item.place_in(here)
+	var here := _station(PICKUPS, "PICKUPS\nlook at one, press X")
+	var kinds := WebLibrary.load_devices()
+	if kinds.is_empty():
+		return
+	# Spread wider than the pick tolerance, or looking at one is looking at two.
+	var step := 1.5
+	var first: float = -step * float(kinds.size() - 1) * 0.5
+	for i in kinds.size():
+		var at := Vector3(first + step * float(i), 0.0, PICKUPS.z)
+		# Sized to the first tier, which is the size a new spider sees them at.
+		var item := SilkDevice.make(kinds[i], at, Vector3.UP, 0.25)
+		if item != null:
+			item.place_in(here)
 
 
 ## A named folder with a sign over it. The sign is the documentation: a gym you

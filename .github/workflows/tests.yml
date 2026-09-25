@@ -21,6 +21,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # A second, before the twenty it takes to fetch an engine. Godot treats
+      # space indentation as a parse error, which makes the offending class
+      # unresolvable and reports the failure at whatever names it instead — so
+      # the cheapest check in the project goes first.
+      - name: Indentation
+        run: python3 tools/check_tabs.py
+
       # Work out which build to fetch rather than pinning a URL that rots the
       # moment 4.6 moves from beta to stable. Stable wins if it exists; the
       # pre-release repo is the fallback.
