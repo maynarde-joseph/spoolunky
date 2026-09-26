@@ -13,10 +13,12 @@ The full pitch — the loop, the size tiers, the zones, the trap catalogue — i
 game/
   data/      web patterns, devices and size tiers (plain resources — edit the numbers)
   web/       procedural silk geometry and the webs themselves
-  player/    the spider: silk supply, growth, build mode, the bag, climbing
+  player/    the spider, one node per job: growth, climbing, the camera, the
+             builder, the tether, the bag, the traits, eating and stamina
   prey/      things to catch, and something to spawn them
   ui/        HUD
-tests/       headless smoke test and a screenshot tool
+tests/       three headless suites and a screenshot tool
+  support/   what the suites share: the verdict, and the arena a web check runs in
 addons/character-controller/   the movement template the spider is built on
 ```
 
