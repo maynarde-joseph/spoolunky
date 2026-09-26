@@ -185,14 +185,17 @@ func update(body_height: float, delta := 0.0) -> void:
 	if third_person:
 		var aim := clampf(aim_blend, 0.0, 1.0)
 		var lift: float = pivot_height + aim_rise * aim
-		# Up the surface, not up the world. On a wall the world's up runs along
-		# the wall, so lifting the pivot that way slid the camera up the face
-		# instead of standing it off — and on a ceiling it put the arm through
-		# the ceiling.
-		var pivot := _body.global_position + look_basis.y * lift * body_height
-		# Over the shoulder while aiming: along the look direction's own right,
-		# so it swings with the camera.
-		var sideways := look.cross(look_basis.y)
+		# Up the *surface*, which is the frame's up — not the world's, and not the
+		# look basis's. The world's up runs along a wall, so lifting the pivot
+		# that way slid the camera up the face instead of standing it off, and on
+		# a ceiling put the arm through the ceiling. The look basis's up tilts
+		# with the pitch, which would slide the pivot forward and back every time
+		# the player glanced up or down.
+		var standing := _frame.y
+		var pivot := _body.global_position + standing * lift * body_height
+		# Over the shoulder while aiming: across the look direction, so it swings
+		# with the camera rather than with the body.
+		var sideways := look.cross(standing)
 		if sideways.length_squared() > 0.000001:
 			pivot += sideways.normalized() * aim_shoulder * aim * body_height
 		var reach: float = distance * lerpf(1.0, aim_distance_scale, aim)

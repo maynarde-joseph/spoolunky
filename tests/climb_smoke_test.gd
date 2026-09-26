@@ -432,6 +432,29 @@ func _test_a_steady_view() -> void:
 	_check(rig.camera.global_position.distance_to(settled) < 0.0001,
 		"and no delta means place it exactly, for callers that cannot wait")
 
+	# The arm stands off along the *surface's* up. Taking it from the look basis
+	# instead slides the pivot forward and back every time you glance up or down,
+	# which tilts everything worked out from the crosshair — including the plane a
+	# thrown web opens in, which is how this was caught.
+	rig.aim_blend = 0.0
+	var upright := true
+	var worst := 0.0
+	for tip in [0.0, -0.6, 0.5, 1.1]:
+		rig.pitch = tip
+		rig.update(height)
+		var pivot := rig.camera.global_position + rig.forward() * rig.distance * height
+		var offset := pivot - _spider.global_position
+		if offset.length_squared() < 0.000001:
+			continue
+		var along := offset.normalized().dot(rig.frame_up())
+		worst = maxf(worst, absf(1.0 - along))
+		if along < 0.999:
+			upright = false
+	rig.pitch = 0.0
+	rig.update(height)
+	_check(upright,
+		"and it stands off straight up the surface at any pitch (%.4f off)" % worst)
+
 	# A climbing spider carries a permanent pull into whatever it is standing on
 	# — that is what keeps it on a ceiling — so its velocity is several metres a
 	# second while it stands perfectly still. The view used to open up off that
