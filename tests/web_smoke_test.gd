@@ -3149,7 +3149,15 @@ func _eat(spider: SpiderPlayer, prey: Prey, frames: int) -> float:
 	var before := spider.growth.biomass
 	prey.move_speed = 0.0
 	Input.action_press("interact")
+	# Two presses, because that is what the player does. A creature still fighting
+	# a web is wrapped by the first press and drunk by the second — and by the time
+	# some of these tests run the suite has left fifty-odd webs standing, so a fly
+	# spawned next to the spider lands in one of them and is stuck, not loose. The
+	# larder check spent a round failing on exactly that.
 	spider._handle_prey(prey)
+	if spider.feeding == null and is_instance_valid(prey) and not prey.eaten:
+		await physics_frame
+		spider._handle_prey(prey)
 	for i in frames:
 		await physics_frame
 		if not is_instance_valid(prey) or prey.eaten:
