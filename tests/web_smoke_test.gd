@@ -231,7 +231,7 @@ func _test_catching() -> void:
 		await physics_frame
 	check(net.durability < durability_before, "struggling damages the web")
 
-	spider._handle_prey(fly)
+	spider.jaws.handle(fly)
 	check(fly.wrapped, "the spider wrapped it")
 
 	var steady := net.durability
@@ -240,7 +240,7 @@ func _test_catching() -> void:
 	check(is_equal_approx(net.durability, steady), "a wrapped fly stops wrecking the web")
 
 	var biomass_before := spider.growth.biomass
-	spider._handle_prey(fly)
+	spider.jaws.handle(fly)
 	await process_frame
 	check(spider.growth.biomass > biomass_before, "draining it feeds the spider")
 	check(not is_instance_valid(fly) or fly.eaten, "the fly is gone")
@@ -2316,7 +2316,7 @@ func _test_a_meal_takes_time() -> void:
 
 	# One press is a mouthful, not a meal.
 	Input.action_press("interact")
-	spider._handle_prey(meal)
+	spider.jaws.handle(meal)
 	check(spider.feeding == meal,
 		"holding the key starts drinking the %s" % meal.species)
 	await physics_frame
@@ -2425,7 +2425,7 @@ func _test_something_hunts_you() -> void:
 		dinner.bundle()
 		await physics_frame
 		Input.action_press("interact")
-		spider._handle_prey(dinner)
+		spider.jaws.handle(dinner)
 		await physics_frame
 		check(spider.feeding == dinner, "mid-meal")
 		var before := spider.health
@@ -2468,7 +2468,7 @@ func _test_something_hunts_you() -> void:
 	wasp.move_speed = 0.0
 	await physics_frame
 	spider.health = 1.0
-	spider._mending = 0.0
+	spider.vitals.quiet = 0.0
 	var low := spider.health
 	await run_frames(120)
 	check(spider.health > low, "stamina mends on its own (%.1f from %.1f)"
@@ -3233,7 +3233,7 @@ func _test_fangs() -> void:
 	if not check(caught != null, "there is a %s to try it on" % quarry.display_name):
 		return
 	check(not caught.is_stuck(), "which is not in a web")
-	spider._handle_prey(caught)
+	spider.jaws.handle(caught)
 	check(is_instance_valid(caught) and not caught.eaten,
 		"and cannot be taken bare-fanged, however small it is")
 
@@ -3257,7 +3257,7 @@ func _test_fangs() -> void:
 	# sixteen of the thirty and then stopped. Whether a drain completes is what
 	# the feeding tests are for, on a clean slab; what this one is about is fangs.
 	Input.action_press("interact")
-	spider._handle_prey(caught)
+	spider.jaws.handle(caught)
 	var started: bool = spider.feeding == caught
 	Input.action_release("interact")
 	await process_frame

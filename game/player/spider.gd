@@ -56,33 +56,6 @@ signal skill_tree_toggled()
 ## zipline feel fast.
 @export var speed_fov_gain := 18.0
 
-## What the spider can take before it is driven off, at a bite power of one.
-##
-## Scaled by the tier, so the same wasp that nearly kills a spiderling is a
-## nuisance to a Huntsman — the ladder is the difficulty curve, and this is where
-## that is actually felt rather than read.
-@export var stamina := 10.0
-
-## Stamina back per second, once nothing has bitten you for [member mend_delay].
-@export var mend_rate := 1.6
-
-## Quiet seconds before it starts coming back.
-@export var mend_delay := 3.0
-
-## Biomass swallowed per second, at a bite power of one.
-##
-## A meal is a few seconds you spend standing still, and that is the whole point
-## of it: eating used to be one click and instantly over, which meant nowhere was
-## safer than anywhere else and a web was decoration.
-##
-## Scaled by the *square root* of bite power rather than by bite power, so a meal
-## stays a few seconds the whole way up the ladder. Scaled linearly it cancelled
-## out against the bigger prey a bigger spider eats and then overtook it — an
-## Architect swallowed a beetle in under a second, and the loop this exists to
-## create quietly dissolved at the top of the game.
-@export var feed_rate := 3.4
-@export var input_interact := "interact"
-
 ## Falling below this puts the spider back where it started.
 @export var kill_plane := -60.0
 
@@ -100,6 +73,8 @@ signal skill_tree_toggled()
 @onready var device_placer: DevicePlacer = $DevicePlacer
 @onready var tether: SilkTether = $Tether
 @onready var traits: SpiderTraits = $Traits
+@onready var jaws: SpiderFeeding = $Feeding
+@onready var vitals: SpiderVitals = $Vitals
 
 var _spawn_transform: Transform3D
 var _stage: GrowthStage
@@ -134,21 +109,28 @@ func _ready() -> void:
 	web_builder.setup(self, growth, view, climb)
 	device_placer.setup(self, bag, growth, view)
 	tether.setup(self, growth, view, climb)
+	jaws.setup(self, growth, traits, view, tether)
+	vitals.setup(self, climb, tether, jaws)
 	growth.shaped_by(traits)
 	web_builder.notice.connect(_on_notice)
 	device_placer.notice.connect(_on_notice)
 	climb.notice.connect(_on_notice)
 	tether.notice.connect(_on_notice)
+	jaws.notice.connect(_on_notice)
+	vitals.notice.connect(_on_notice)
+	# Passed through rather than listened for directly: what bit the spider is the
+	# spider's news to announce, and the HUD and the tests already watch it here.
+	vitals.hurt.connect(func(amount: float, left: float) -> void: hurt.emit(amount, left))
+	vitals.routed.connect(func() -> void: routed.emit())
 	climb.jumped.connect(_on_jumped)
 	climb.line_dropped.connect(_on_line_dropped)
 	climb.line_cut.connect(_on_line_cut)
 	growth.stage_changed.connect(_on_stage_changed)
 	growth.apply_initial()
-	health = max_stamina()
 
 
 func _physics_process(delta: float) -> void:
-	var active := _accepts_input()
+	var active := accepts_input()
 	var input_axis := Vector2.ZERO
 	var jump_tapped := false
 	var jump_held := false
@@ -214,12 +196,14 @@ func _device_tool_active() -> bool:
 	return device_placer != null and device_placer.active
 
 
-func _accepts_input() -> bool:
+## Whether keys should reach the spider at all. Public because the feeding
+## component has to ask the same question before it drinks.
+func accepts_input() -> bool:
 	return not require_captured_mouse or Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not _accepts_input():
+	if not accepts_input():
 		return
 
 	if event.is_action_pressed(input_device_mode):
@@ -242,8 +226,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.cycle(1)
 	elif event.is_action_pressed(input_prev_pattern):
 		web_builder.cycle(-1)
-	elif event.is_action_pressed(input_interact):
-		_interact()
+	elif event.is_action_pressed(jaws.input_interact):
+		jaws.interact()
 	elif event.is_action_pressed(input_remove_web):
 		# Taking a device back is reversible and pulling a web down is not, so a
 		# device under the crosshair always wins — including when the bag is too
@@ -327,8 +311,8 @@ func _hotbar_input(event: InputEvent) -> bool:
 func _process(delta: float) -> void:
 	_watch_for_release()
 	_take_aim(delta)
-	_feed(delta)
-	_mend(delta)
+	jaws.drink(delta)
+	vitals.mend(delta)
 	climb.haul = tether.drag_factor()
 	climb.glide = traits.glide() if traits != null else 0.0
 	view.update(stage().body_height)
@@ -388,7 +372,7 @@ func _watch_for_release() -> void:
 func _take_aim(delta: float) -> void:
 	if not web_builder.aiming:
 		return
-	if _accepts_input() and Input.is_action_pressed(input_shoot):
+	if accepts_input() and Input.is_action_pressed(input_shoot):
 		web_builder.track(delta)
 		return
 	web_builder.release_shot()
@@ -404,192 +388,43 @@ func stage() -> GrowthStage:
 	return growth.current_stage()
 
 
-# --- taking a beating ---------------------------------------------------
+# --- taking a beating, and eating -----------------------------------------
+#
+# Both live in their own component now, the way climbing and growing and the
+# tether already did. What is left here is the face they are reached through: the
+# HUD asks the spider how it is doing, a wasp bites the spider, and a test holds
+# the key against the spider. None of them should have to know which node the
+# answer comes from.
 
-## What the spider can take at this size. Bigger is tougher, which is the whole
-## reward for growing: the thing that was hunting you last tier is food now.
+## What is left, against [method max_stamina].
+var health: float:
+	get: return vitals.health if vitals != null else 0.0
+	set(value):
+		if vitals != null:
+			vitals.health = value
+
+
+## What holding the feed key is draining, if anything.
+var feeding: Prey:
+	get: return jaws.meal if jaws != null else null
+
+
 func max_stamina() -> float:
-	return stamina * maxf(stage().bite_power, 1)
+	return vitals.max_stamina()
 
 
 ## 0 to 1.
 func condition() -> float:
-	var top := max_stamina()
-	return clampf(health / top, 0.0, 1.0) if top > 0.0 else 0.0
+	return vitals.condition()
 
 
 func is_hurt() -> bool:
-	return condition() < 0.999
+	return vitals.is_hurt()
 
 
-## Something bit you. Interrupts whatever you were drinking, because a meal you
-## are being attacked during is exactly the meal you should not be finishing.
-##
-## [param from] is what did it, so being driven off can throw you away from it.
+## Something bit you.
 func take_bite(amount: float, from: Node3D = null) -> void:
-	if amount <= 0.0:
-		return
-	_mending = mend_delay
-	health = maxf(health - amount, 0.0)
-	if feeding != null:
-		_end_feed("Bitten — you lost the mouthful")
-	hurt.emit(amount, condition())
-	if health <= 0.0:
-		_route(from)
-
-
-## Driven off. Not death and not a reload: you lose the catch and the ground you
-## had made, and you are thrown clear with nothing left to take another hit with
-## for a few seconds. The cost of losing a fight is the trip home, which is
-## enough — a sandbox with no save has no business killing you.
-func _route(from: Node3D) -> void:
-	if tether != null and tether.is_towing():
-		tether.cut()
-	var away := Vector3.UP
-	if from != null and is_instance_valid(from):
-		var off := global_position - from.global_position
-		if off.length_squared() > 0.000001:
-			away = off.normalized()
-	climb.release()
-	velocity = (away + Vector3.UP * 1.4).normalized() * stage().jump_velocity * 1.3
-	routed.emit()
-	notice.emit("Driven off — you dropped everything and ran")
-
-
-## Comes back on its own after a quiet spell, so a bad trip costs you time
-## rather than a restart.
-func _mend(delta: float) -> void:
-	if _mending > 0.0:
-		_mending = maxf(0.0, _mending - delta)
-		return
-	var top := max_stamina()
-	if health < top:
-		health = minf(top, health + mend_rate * maxf(stage().bite_power, 1) * delta)
-
-
-# --- feeding ------------------------------------------------------------
-
-func _interact() -> void:
-	var prey := _aimed_prey()
-	if prey != null:
-		_handle_prey(prey)
-		return
-
-	var web := web_builder.aimed_web()
-	if web != null and web.needs_rearm():
-		web.rearm()
-		notice.emit("Snare set again")
-		return
-
-	notice.emit("Nothing in reach")
-
-
-func _handle_prey(prey: Prey) -> void:
-	var current := stage()
-	if prey.size_class > current.bite_power and not prey.subdued:
-		notice.emit("The %s is too big for you — grow first" % prey.species)
-		return
-
-	if prey.wrapped:
-		_begin_feed(prey)
-		return
-
-	if prey.is_stuck():
-		prey.wrap()
-		notice.emit("Wrapped the %s" % prey.species)
-		return
-
-	# Much bigger than it? Then you can simply take it. Fangs halve what
-	# "much" means: anything inside your bite power goes down where it stands,
-	# which is the whole point of the venom branch — a kill that needs no web.
-	var margin := 1 if traits != null and traits.has_fangs() else 2
-	if current.bite_power >= prey.size_class * margin:
-		_begin_feed(prey)
-		return
-
-	notice.emit("The %s isn't caught — get it into a web" % prey.species)
-
-
-## Starts a meal. It finishes when the creature is empty or when you let go.
-func _begin_feed(prey: Prey) -> bool:
-	if prey == null or not is_instance_valid(prey) or prey.eaten:
-		return false
-	feeding = prey
-	_meal = 0.0
-	_meal_species = prey.species
-	# Said on the way in, because a tap now takes a mouthful rather than the
-	# whole creature, and without this a tap would look like nothing happened.
-	notice.emit("Feeding on the %s — hold to drink" % prey.species)
-	return true
-
-
-## A mouthful a frame, while the key is held.
-##
-## What is being drained is either what the crosshair is on or **whatever is on
-## your line**, at any distance: silk is a straw, and drinking down your own
-## dragline is what makes eating on the move possible at all. That is the whole
-## loop — take it, tether it, run, and drink on the way.
-func _feed(delta: float) -> void:
-	if feeding == null:
-		return
-	if not is_instance_valid(feeding) or feeding.eaten:
-		_end_feed()
-		return
-	if not _accepts_input() or not Input.is_action_pressed(input_interact):
-		_end_feed()
-		return
-	if not _in_reach(feeding):
-		_end_feed("Out of reach — it has to be on your line or under the cross")
-		return
-
-	var yield_scale := traits.drain_scale() if traits != null else 1.0
-	var swallowed := feeding.drain(feed_rate * _gulp() * delta)
-	if swallowed <= 0.0:
-		return
-	var food := swallowed * yield_scale
-	_meal += food
-	# Banked as it comes, not at the end, so half a meal is half a meal. Fed
-	# quietly: a notice a frame would bury everything else the HUD has to say.
-	if growth.feed(food, _meal_species) > 0:
-		_meal = 0.0
-	# The larder counts creatures, not mouthfuls, so it is paid on the last one.
-	if feeding.eaten:
-		if traits != null:
-			traits.record(feeding.kind)
-		_end_feed()
-
-
-## How much faster a bigger mouth drinks: the square root of its bite, so the
-## curve flattens instead of running away. See [member feed_rate].
-func _gulp() -> float:
-	return sqrt(maxf(stage().bite_power, 1))
-
-
-## Whether a meal is close enough to keep drinking. On the line counts at any
-## length; anything else has to be within reach of the fangs.
-func _in_reach(prey: Prey) -> bool:
-	if tether != null and tether.cargo == prey:
-		return true
-	var span := global_position.distance_to(prey.global_position)
-	return span <= maxf(stage().reach * 2.5, stage().body_height * 4.0)
-
-
-func _end_feed(reason := "") -> void:
-	var species := _meal_species
-	var got := _meal
-	var finished := feeding == null or not is_instance_valid(feeding) or feeding.eaten
-	feeding = null
-	_meal = 0.0
-	if reason != "":
-		notice.emit(reason)
-		return
-	if got < 0.05:
-		return
-	if finished:
-		notice.emit("Drained the %s  +%d biomass" % [species, roundi(got)])
-	else:
-		notice.emit("Half a %s  +%d biomass — the rest is still there"
-			% [species, roundi(got)])
+	vitals.take_bite(amount, from)
 
 
 # --- growth -------------------------------------------------------------
@@ -605,12 +440,11 @@ func _on_stage_changed(new_stage: GrowthStage, index: int) -> void:
 		# Growing mends you. It is the payoff for a hard trip and it is what makes
 		# a tier read as relief rather than as a bigger number — you come out of
 		# the fight that nearly finished you, eat, and stand up whole.
-		health = max_stamina()
+		vitals.fill()
 		notice.emit("You are a %s now" % new_stage.display_name)
 	elif health > 0.0:
-		# A trait reshaped the body without moving the tier. Keep the same share
-		# of a possibly different maximum rather than the same absolute number.
-		health = minf(health, max_stamina())
+		# A trait reshaped the body without moving the tier.
+		vitals.cap_to_max()
 	_tier = index
 
 
@@ -663,42 +497,6 @@ func _apply_stage(new_stage: GrowthStage, previous_height: float) -> void:
 
 
 # --- helpers ------------------------------------------------------------
-
-## What holding the feed key is draining, if anything.
-var feeding: Prey = null
-
-## What is left, against [method max_stamina].
-var health := 0.0
-var _mending := 0.0
-
-## How much has come out of this meal, for the readout and the notice.
-var _meal := 0.0
-var _meal_species := ""
-
-
-## The prey nearest the middle of the screen, within reach.
-func _aimed_prey() -> Prey:
-	var origin := view.aim_origin()
-	var forward := view.aim_forward()
-	var current := stage()
-	var range_limit: float = maxf(current.reach * 2.5, current.body_height * 4.0)
-
-	var best: Prey = null
-	var best_dot := 0.82
-	for node in get_tree().get_nodes_in_group("prey"):
-		var prey := node as Prey
-		if prey == null or not is_instance_valid(prey) or prey.eaten:
-			continue
-		var offset := prey.global_position - origin
-		var distance := offset.length()
-		if distance > range_limit or distance < 0.0001:
-			continue
-		var alignment := offset.normalized().dot(forward)
-		if alignment > best_dot:
-			best_dot = alignment
-			best = prey
-	return best
-
 
 func _on_line_dropped(_anchor: Vector3) -> void:
 	notice.emit("On a line — Ctrl down, Space up, right mouse to let go")

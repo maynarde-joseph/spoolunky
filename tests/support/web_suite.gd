@@ -152,7 +152,7 @@ func drop_everything() -> void:
 	if spider == null:
 		return
 	if spider.feeding != null:
-		spider._end_feed()
+		spider.jaws.stop()
 	if spider.tether != null and spider.tether.cargo != null:
 		spider.tether.cut()
 	spider.climb.release()
@@ -169,7 +169,7 @@ func rewind_growth() -> void:
 	spider.growth.biomass = 0.0
 	spider.growth.apply_initial()
 	spider.health = spider.max_stamina()
-	spider._mending = 0.0
+	spider.vitals.quiet = 0.0
 	if traits != null:
 		traits.owned.clear()
 		traits.larder.clear()
@@ -413,10 +413,10 @@ func eat(prey: Prey, frames: int) -> float:
 	var before := spider.growth.biomass
 	prey.move_speed = 0.0
 	Input.action_press("interact")
-	spider._handle_prey(prey)
+	spider.jaws.handle(prey)
 	if spider.feeding == null and is_instance_valid(prey) and not prey.eaten:
 		await physics_frame
-		spider._handle_prey(prey)
+		spider.jaws.handle(prey)
 	var on_the_line: bool = spider.tether != null and spider.tether.cargo == prey
 	for i in frames:
 		if not on_the_line and is_instance_valid(prey) and not prey.eaten:
