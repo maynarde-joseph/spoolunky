@@ -42,6 +42,27 @@ const MAX_LINES := 3
 ## is what made getting about a chore.
 @export var grapple_reach := 0.0
 
+## How far silk reaches, in multiples of what one thread can span.
+##
+## Grappling and throwing both used to be effectively unlimited — anywhere you
+## could see — and the report back was that the whole game felt too long ranged,
+## which is what happens when nothing is out of reach: there is no distance left
+## for growing to close. So reach is the body's, like everything else. A
+## spiderling gets about thirteen metres and the Architect a hundred and twenty,
+## off the same [member GrowthStage.max_strand_length] that already says how far
+## one thread can go, and the room you could not cross yesterday is the reward
+## for eating.
+@export var silk_span := 4.0
+
+## What a web spun at the far end of that reach is worth, against one spun at
+## your feet.
+##
+## The other half of making distance mean something. A hard edge to the reach
+## says where you may not throw; this says what it costs to throw far, which is
+## the part that can be played around. Long shots still land — they land
+## thinner.
+@export_range(0.1, 1.0, 0.05) var far_quality := 0.55
+
 ## How long holding the place key takes to grow a web from its smallest to the
 ## biggest this size tier can spin.
 @export var place_grow_time := 1.1
@@ -343,10 +364,12 @@ func shoot() -> bool:
 	# change size in flight.
 	var radius := shot_radius()
 
-	var shot := SilkShot.fire(_view.aim_origin(), _view.aim_forward(),
+	var from := _view.aim_origin()
+	var shot := SilkShot.fire(from, _view.aim_forward(),
 		_stage().body_height, _exclusions())
 	shot.catch_radius = catch_radius(radius)
-	shot.landed.connect(_on_shot_landed.bind(pattern, radius))
+	shot.limit_to(silk_reach())
+	shot.landed.connect(_on_shot_landed.bind(pattern, radius, from))
 	shot.fizzled.connect(func() -> void: _shot = null)
 	shot.launch_from(_resolve_container(), _view.aim_origin())
 	_shot = shot
@@ -355,6 +378,17 @@ func shoot() -> bool:
 	_cooldown_span = shot_cooldown * maxf(pattern.spin_time, 0.1)
 	_cooling = _cooldown_span
 	return true
+
+
+## How far silk goes: one thread's span, times [member silk_span].
+##
+## The same number for grappling and for throwing, deliberately. Two verbs that
+## both mean "put silk over there" with two different invisible limits is the
+## fastest way to make a reach unreadable.
+func silk_reach() -> float:
+	if grapple_reach > 0.0:
+		return grapple_reach
+	return maxf(_stage().max_strand_length * silk_span, _stage().body_height * 4.0)
 
 
 ## True while the spider is still spinning the next one.
@@ -399,14 +433,28 @@ func shot_radius() -> float:
 ## built against it. No validity test either way — a shot that reached
 ## something has already earned its web.
 func _on_shot_landed(at: Vector3, normal: Vector3, prey: Node3D, heading: Vector3,
-		pattern: WebPattern, radius: float) -> void:
+		pattern: WebPattern, radius: float, from: Vector3) -> void:
 	_shot = null
 	var caught := prey as Prey
 	if caught != null and is_instance_valid(caught) and caught.can_be_snared():
 		if caught.bundle():
 			notice.emit("Wrapped the %s" % caught.species)
 			return
-	_open_web_at(at, normal, _facing_from(heading, normal), prey, radius)
+	_open_web_at(at, normal, _facing_from(heading, normal), prey, radius,
+		throw_quality(from.distance_to(at)))
+
+
+## What a web is worth, thrown this far.
+##
+## Falls off across the reach and stops at [member far_quality] — it never
+## reaches zero, because a throw that lands and builds nothing is a throw that
+## reads as broken rather than as expensive.
+func throw_quality(distance: float) -> float:
+	var reach := silk_reach()
+	if reach <= 0.0:
+		return _quality()
+	var out := clampf(distance / reach, 0.0, 1.0)
+	return _quality() * lerpf(1.0, far_quality, out)
 
 
 # --- taking aim ---------------------------------------------------------
@@ -532,12 +580,15 @@ func _throw_place() -> bool:
 	if pattern == null or _view == null:
 		return false
 	var charged := place_radius
-	var shot := SilkShot.fire(_view.aim_origin(), _view.aim_forward(),
+	var from := _view.aim_origin()
+	var shot := SilkShot.fire(from, _view.aim_forward(),
 		_stage().body_height, _exclusions())
 	shot.catch_radius = catch_radius(charged)
+	shot.limit_to(silk_reach())
 	shot.landed.connect(func(at: Vector3, normal: Vector3, prey: Node3D,
 			heading: Vector3) -> void:
-		_open_web_at(at, normal, _facing_from(heading, normal), prey, charged))
+		_open_web_at(at, normal, _facing_from(heading, normal), prey, charged,
+			throw_quality(from.distance_to(at))))
 	shot.fizzled.connect(func() -> void: notice.emit("The silk went wide"))
 	# Straight from where aiming starts, with no head start down the barrel. An
 	# offset looks tidier and tunnels: aiming starts at the spider's own body in
@@ -553,7 +604,7 @@ func _throw_place() -> bool:
 ## A bolt landed. Open it out there, at the size it was charged to, fitted to
 ## whatever it found — which is the same fitting a placed web gets.
 func _open_web_at(at: Vector3, surface: Vector3, facing: Vector3, prey: Node3D,
-		charged: float) -> void:
+		charged: float, quality := -1.0) -> void:
 	_shot = null
 	var pattern := current_pattern()
 	if pattern == null:
@@ -583,7 +634,8 @@ func _open_web_at(at: Vector3, surface: Vector3, facing: Vector3, prey: Node3D,
 
 	var dials := tuning_for(pattern)
 	var rim := place_rim()
-	var web := WebNet.spin(dials.apply_to(pattern), rim, _quality(), weave, true)
+	var spun: float = quality if quality > 0.0 else _quality()
+	var web := WebNet.spin(dials.apply_to(pattern), rim, spun, weave, true)
 	if web == null:
 		notice.emit("It landed somewhere a web will not hold")
 		return
@@ -1627,13 +1679,9 @@ func _update_aim() -> void:
 		return
 
 	var stage := _stage()
-	# A scripted run stays inside the tier's reach; free grappling does not,
-	# which is the whole point of it.
-	var reach := UNLIMITED_REACH
-	if building:
-		reach = stage.anchor_range
-	elif grapple_reach > 0.0:
-		reach = grapple_reach
+	# A scripted run stays inside the tier's anchor range; free grappling gets
+	# the silk reach, which is the same distance a throw travels.
+	var reach := stage.anchor_range if building else silk_reach()
 	if not _cast_surface(reach):
 		return
 	problem = Problem.NONE
@@ -1642,8 +1690,8 @@ func _update_aim() -> void:
 		problem = Problem.FULL
 		return
 	# A scripted run measures from its last anchor and is held to the span
-	# limit. Free grappling measures from the spider and is limited only by how
-	# far it can see, which is what makes getting about feel quick.
+	# limit. Free grappling measures from the spider, and the cast above already
+	# held it to the reach.
 	if building and anchors.is_empty():
 		return
 
@@ -1706,7 +1754,10 @@ func _polygon_area(points: PackedVector3Array) -> float:
 func problem_text() -> String:
 	match problem:
 		Problem.NO_SURFACE:
-			return "No surface in reach"
+			# With the number, because the number is the thing that grows. "No
+			# surface in reach" reads as a broken click; "nothing within thirteen
+			# metres" reads as somewhere to come back to when you are bigger.
+			return "Nothing within %.0fm — grow to reach further" % silk_reach()
 		Problem.TOO_FAR:
 			return "Too far to span — %.1fm limit" % _stage().max_strand_length
 		Problem.TOO_CLOSE:

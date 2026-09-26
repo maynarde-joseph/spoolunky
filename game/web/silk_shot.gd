@@ -67,6 +67,19 @@ static func fire(from: Vector3, direction: Vector3, body_height: float,
 	return shot
 
 
+## Holds the throw to a distance, and gives it just enough life to fly it.
+##
+## A bolt used to be given a flat ninety metres and two seconds, which at any
+## size above a house spider is further than the eye can pick a target out — so
+## "how far can I throw silk" had no answer you could feel. It is the same reach
+## the grapple has now, which is the body's own.
+func limit_to(distance: float) -> void:
+	range_limit = maxf(distance, 0.1)
+	var pace := _velocity.length()
+	if pace > 0.001:
+		lifetime = range_limit / pace + 0.2
+
+
 ## Which way it is travelling. Read off the bolt rather than remembered from the
 ## trigger, so a web opens facing the way the silk actually arrived.
 func heading() -> Vector3:

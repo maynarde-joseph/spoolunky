@@ -51,6 +51,7 @@ func _run() -> void:
 	await _test_lines_are_roads()
 	await _test_sloppy_normals()
 	await _test_momentum_survives_a_grapple()
+	await _test_a_steady_view()
 
 	_release_all()
 	current_scene = null
@@ -137,6 +138,22 @@ func _test_wall() -> void:
 	_check(_spider.global_basis.y.dot(_spider.climb.body_up()) > 0.8,
 		"and the camera came with it")
 
+	# And so did the frame the mouse works in. This is what makes the controls
+	# mean the same thing on a wall as on the floor: yaw turns you *along* the
+	# wall. Pinned to the world it was the pitch axis that did that, and yaw only
+	# squashed against the face — so the mouse meant something different on every
+	# surface, which is exactly how it felt.
+	_check(_spider.view.frame_up().dot(Vector3.RIGHT) > 0.8,
+		"the mouse frame rolled onto the wall as well (%.2v)" % _spider.view.frame_up())
+	var was := _spider.view.forward()
+	_spider.view.yaw += PI / 2.0
+	var turned := _spider.view.forward()
+	_spider.view.yaw -= PI / 2.0
+	_check(turned.dot(was) < 0.5,
+		"a quarter turn of the mouse really turns (%.2f)" % turned.dot(was))
+	_check(absf(turned.dot(_spider.climb.surface_normal)) < 0.2,
+		"and stays on the wall rather than burying itself in it (%.2v)" % turned)
+
 
 func _test_ceiling() -> void:
 	# Keep walking up; the wall runs into the ceiling.
@@ -155,6 +172,23 @@ func _test_ceiling() -> void:
 	_check(_spider.global_basis.y.dot(Vector3.DOWN) > 0.8, "hanging upside down")
 	Input.action_release("move_forward")
 	await _run_frames(20)
+
+	# The bug the surface frame exists to kill. Upside down, with the world still
+	# drawn the right way up, the camera's right and the body's right pointed
+	# opposite ways — so pressing D walked you left. Nothing in the game said so;
+	# it just felt wrong on every ceiling.
+	_check(_spider.view.frame_up().dot(Vector3.DOWN) > 0.8,
+		"the mouse frame came over onto the ceiling (%.2v)" % _spider.view.frame_up())
+	var beside := _spider.global_position
+	Input.action_press("move_right")
+	await _run_frames(25)
+	Input.action_release("move_right")
+	await _run_frames(2)
+	var sideways := _spider.global_position - beside
+	_check(_spider.climb.surface_normal.dot(Vector3.DOWN) > 0.9,
+		"strafing does not shake you off the ceiling")
+	_check(sideways.dot(_spider.view.right()) > 0.05,
+		"and D still goes the way the camera calls right, upside down (%.2v)" % sideways)
 
 
 func _test_dragline() -> void:
@@ -361,6 +395,55 @@ func _test_grappling() -> void:
 	builder.stop()
 
 
+## Two things that read as rough movement and are not movement at all.
+func _test_a_steady_view() -> void:
+	_release_all()
+	_spider.climb.release()
+	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
+	_spider.velocity = Vector3.ZERO
+	_spider.view.face(Vector3(0, 0, -1))
+	_spider.view.pitch = 0.0
+	await _run_frames(45)
+
+	var height: float = _spider.stage().body_height
+	var rig := _spider.view
+	_check(rig.follow_speed > 0.0,
+		"the arm eases rather than being pinned (%.0f/s)" % rig.follow_speed)
+
+	# Physics runs on a fixed tick and rendering does not, so an arm placed
+	# straight from the body's position holds still for a few frames and then
+	# jumps — every tick, the whole time you are moving. That reads as rough
+	# movement when the movement is fine.
+	rig.update(height)
+	var settled := rig.camera.global_position
+	var shoved := settled + Vector3(0, 0, 4.0) * height
+	rig.camera.global_position = shoved
+	rig.update(height, 1.0 / 60.0)
+	var eased := rig.camera.global_position
+	_check(eased.distance_to(shoved) > 0.0001,
+		"a frame of easing moves it back toward where it belongs")
+	_check(eased.distance_to(settled) > 0.0001,
+		"but not the whole way in one frame (%.3fm still to go)"
+		% eased.distance_to(settled))
+	# Told to snap, it snaps — which is what a caller wants when it needs the rig
+	# to be right this instant rather than shortly.
+	rig.camera.global_position = shoved
+	rig.update(height)
+	_check(rig.camera.global_position.distance_to(settled) < 0.0001,
+		"and no delta means place it exactly, for callers that cannot wait")
+
+	# A climbing spider carries a permanent pull into whatever it is standing on
+	# — that is what keeps it on a ceiling — so its velocity is several metres a
+	# second while it stands perfectly still. The view used to open up off that
+	# total, which left it breathing at rest.
+	_check(_spider.velocity.length() > height * 2.0,
+		"standing still still means a stiff pull into the floor (%.2fm/s)"
+		% _spider.velocity.length())
+	_check(_spider.climb.tangent_velocity.length() < _spider.stage().move_speed * 0.5,
+		"while going nowhere along it (%.2fm/s)"
+		% _spider.climb.tangent_velocity.length())
+
+
 # --- scaffolding --------------------------------------------------------
 
 ## A grapple keeps what it was carrying along the surface, and a skid is where
@@ -495,26 +578,36 @@ func _test_grappling_without_a_mode() -> void:
 		"with no anchor list to keep track of (%d)" % builder.anchors.size())
 
 
-## Reach is not a size tier any more. A spiderling can go anywhere it can see,
-## and a long grapple has to stay quick or unlimited range just buys a longer
-## commute — so this checks both the distance and the time.
+## A grapple goes much further than a scripted build run may span, and it has an
+## end, and the end is the body's.
+##
+## It used to have no end at all — anywhere you could see — and the report back
+## was that the game felt too long ranged, which is what happens when nothing is
+## out of reach: there is no distance left for growing to close. A long grapple
+## also has to stay quick, or a big reach only buys a longer commute, so this
+## checks the distance, the cut-off and the time.
 func _test_grappling_a_long_way() -> void:
 	var builder := _spider.web_builder
 	builder.stop()
 
-	# A landing pad and a wall to aim at, far outside the room and far beyond
-	# anything the tier would have allowed.
-	_add_slab(_room, Vector3(60, 0, 0), Vector3(3.0, 0.2, 3.0))
-	_add_slab(_room, Vector3(100, 3, 0), Vector3(0.4, 6.0, 6.0))
-	await _run_frames(4)
-
 	_spider.climb.release()
 	_spider.global_position = Vector3(60, 0.8, 0)
 	_spider.velocity = Vector3.ZERO
-	await _run_frames(30)
 
-	var reach := _spider.stage().reach
+	var arm := _spider.stage().reach
 	var tier_range := _spider.stage().anchor_range
+	var silk := builder.silk_reach()
+	# A landing pad, a wall near the end of what silk reaches, and another one
+	# past it. Both far outside the room and far beyond what a build run spans.
+	_add_slab(_room, Vector3(60, 0, 0), Vector3(3.0, 0.2, 3.0))
+	_add_slab(_room, Vector3(60 + silk * 0.8, 3, 0), Vector3(0.4, 6.0, 6.0))
+	_add_slab(_room, Vector3(60 + silk + 14.0, 3, 0), Vector3(0.4, 6.0, 6.0))
+	await _run_frames(34)
+
+	_check(silk > tier_range * 2.0,
+		"silk reaches %.1fm, well past the %.1fm a build run may span"
+		% [silk, tier_range])
+
 	_spider.view.face(Vector3.RIGHT)
 	_spider.view.pitch = 0.0
 	await _run_frames(2)
@@ -522,12 +615,15 @@ func _test_grappling_a_long_way() -> void:
 	builder._update_aim()
 	var span := _spider.global_position.distance_to(builder.aim_point)
 	_check(builder.aim_valid, "a wall %.0fm away is still something to aim at" % span)
-	_check(span > tier_range * 3.0,
-		"and it is far past this tier's own reach (%.1fm vs %.1fm)" % [span, tier_range])
+	_check(span > tier_range * 2.0,
+		"and it is far past this tier's own span limit (%.1fm vs %.1fm)"
+		% [span, tier_range])
+	_check(span < silk + 1.0,
+		"while inside what silk reaches (%.1fm of %.1fm)" % [span, silk])
 
 	var started_at := _spider.global_position
 	builder.place()
-	_check(_spider.climb.is_grappling(), "the grapple starts anyway")
+	_check(_spider.climb.is_grappling(), "the grapple starts")
 
 	var frames := 0
 	for i in 600:
@@ -538,13 +634,45 @@ func _test_grappling_a_long_way() -> void:
 	var seconds := float(frames) / 60.0
 	_check(not _spider.climb.is_grappling(), "and finishes")
 	var travelled := _spider.global_position.distance_to(started_at)
-	_check(travelled > tier_range * 3.0,
-		"the spider crossed %.1fm, far more than the tier allowed" % travelled)
+	_check(travelled > tier_range * 2.0,
+		"the spider crossed %.1fm, far more than a build run would have allowed"
+		% travelled)
 	_check(seconds < 2.5, "and it took %.2fs, not a commute" % seconds)
 	# Reaching for things did not change — only going places did.
-	_check(reach < travelled * 0.2,
+	_check(arm < travelled * 0.2,
 		"while handling things is still arm's length (%.1fm reach vs %.1fm travelled)"
-		% [reach, travelled])
+		% [arm, travelled])
+
+	# The far wall is the point of the limit. Nothing to aim at, and the readout
+	# says how far short it fell rather than just refusing the click.
+	_spider.climb.release()
+	_spider.global_position = Vector3(60, 0.8, 0)
+	_spider.velocity = Vector3.ZERO
+	await _run_frames(30)
+	var lines := _silk_count()
+	_spider.view.face(Vector3.LEFT)
+	_spider.view.pitch = 0.0
+	await _run_frames(2)
+	builder._update_aim()
+	_check(not builder.aim_valid, "there is nothing to grapple to behind you")
+	_check(builder.problem_text().contains("%.0fm" % silk),
+		"and the readout names the reach (%s)" % builder.problem_text())
+	# Clicking says so out loud rather than failing silently, which is what turns
+	# a limit into somewhere to come back to when you are bigger.
+	var said: Array[String] = []
+	var listen := func(text: String) -> void: said.append(text)
+	builder.notice.connect(listen)
+	builder.place()
+	await _run_frames(4)
+	builder.notice.disconnect(listen)
+	_check(not _spider.climb.is_grappling(), "so the click takes you nowhere")
+	_check(_silk_count() == lines,
+		"and leaves no line behind (%d)" % _silk_count())
+	var told := false
+	for text in said:
+		if text.contains("%.0fm" % silk):
+			told = true
+	_check(told, "while telling you why (%s)" % ", ".join(said))
 
 
 ## Silk is the road network: you can stand on any line, it is quicker under

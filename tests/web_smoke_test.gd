@@ -64,6 +64,7 @@ func _run() -> void:
 	await _test_wrapped_things_fall(spider, builder, level, webs)
 	await _test_shooting(spider, builder, level, webs)
 	await _test_taking_aim(spider, builder, level)
+	await _test_how_far_silk_goes(spider, builder, level)
 	await _test_a_shot_fits_a_corner(spider, builder, webs)
 	await _test_silk_sits_on_what_it_sticks_to(spider, builder)
 	_test_a_spiders_jump()
@@ -2666,6 +2667,99 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) ->
 
 	if is_instance_valid(quarry):
 		quarry.queue_free()
+	slab.queue_free()
+	await physics_frame
+	await process_frame
+
+
+## How far silk goes, and what it costs to throw it that far.
+##
+## Grappling and throwing were both effectively unlimited — anywhere you could
+## see — which made the whole game read as too long ranged. That is what happens
+## when nothing is out of reach: there is no distance left for growing to close,
+## and a room you cannot cross is the only thing that makes crossing it a reward.
+func _test_how_far_silk_goes(spider: SpiderPlayer, builder: WebBuilder,
+		level: Node) -> void:
+	var host := spider.get_parent()
+	var slab := _test_slab(host, Vector3(-150, 0.0, 150), Vector3(20, 0.5, 20))
+	await physics_frame
+	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+	_clear_prey_near(level, slab.global_position, 24.0, null)
+	_select_pattern(builder, "orb_web")
+	await physics_frame
+
+	var stage := spider.stage()
+	var reach := builder.silk_reach()
+	_check(reach < WebBuilder.UNLIMITED_REACH,
+		"silk has an end to it now (%.1fm)" % reach)
+	_check(is_equal_approx(reach, stage.max_strand_length * builder.silk_span),
+		"and it is one thread's span, %.1f times over (%.1fm of %.1fm)"
+		% [builder.silk_span, reach, stage.max_strand_length])
+	# The same number for both verbs. Two ways of putting silk over there, each
+	# with its own invisible limit, is the fastest way to make a reach unreadable.
+	_check(reach > stage.body_height * 8.0,
+		"which is a good way further than the spider is long")
+
+	# It grows. That is the whole point of hanging it off the body: the room you
+	# could not cross yesterday is what eating bought you.
+	var ladder := WebLibrary.default_stages()
+	if _check(ladder.size() > 1, "there is a ladder of sizes"):
+		var opens := true
+		for i in ladder.size() - 1:
+			if ladder[i + 1].max_strand_length <= ladder[i].max_strand_length:
+				opens = false
+		_check(opens, "and every tier reaches further than the one below it")
+		_check(ladder[ladder.size() - 1].max_strand_length
+			> ladder[0].max_strand_length * 5.0,
+			"by %.0f times over the whole ladder"
+			% (ladder[ladder.size() - 1].max_strand_length
+				/ ladder[0].max_strand_length))
+
+	# Past the end of it there is nothing to grapple to, and the readout says so
+	# with the number in it — "no surface in reach" reads as a broken click,
+	# where a distance reads as somewhere to come back to when you are bigger.
+	var far := _test_slab(host, slab.global_position
+		+ Vector3(0, 0.0, -(reach + 12.0)), Vector3(8, 6.0, 0.5))
+	await physics_frame
+	spider.view.face(Vector3(0, 0, -1))
+	spider.view.pitch = 0.0
+	await _run_frames(4)
+	builder._update_aim()
+	_check(builder.problem == WebBuilder.Problem.NO_SURFACE,
+		"a wall past the reach is not something to grapple to")
+	_check(builder.problem_text().contains("%.0fm" % reach),
+		"and the readout names the distance (%s)" % builder.problem_text())
+	far.queue_free()
+	await physics_frame
+
+	# Inside it, the same wall is fair game.
+	var near := _test_slab(host, slab.global_position
+		+ Vector3(0, 0.0, -reach * 0.5), Vector3(8, 6.0, 0.5))
+	await physics_frame
+	builder._update_aim()
+	_check(builder.problem == WebBuilder.Problem.NONE,
+		"the same wall half that far away is (%s)" % builder.problem_text())
+	near.queue_free()
+	await physics_frame
+
+	# And distance costs something inside the reach as well, which is the part
+	# that can be played around: a hard edge says where you may not throw, this
+	# says what throwing far is worth. Long shots land — they land thinner.
+	var close_up := builder.throw_quality(0.0)
+	var far_off := builder.throw_quality(reach)
+	_check(is_equal_approx(close_up, stage.silk_quality),
+		"a web spun at your feet is worth full quality (%.2f)" % close_up)
+	_check(far_off < close_up,
+		"one thrown the whole way is thinner (%.2f against %.2f)"
+		% [far_off, close_up])
+	_check(is_equal_approx(far_off, close_up * builder.far_quality),
+		"by exactly the falloff (%.2f)" % builder.far_quality)
+	_check(far_off > 0.0,
+		"and never nothing — a throw that builds no web reads as broken")
+	_check(builder.throw_quality(reach * 2.0) >= far_off,
+		"with no extra penalty past the end, because there is no past the end")
+
 	slab.queue_free()
 	await physics_frame
 	await process_frame

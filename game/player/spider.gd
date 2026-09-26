@@ -138,8 +138,10 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed(input_fly_mode_action_name):
 			fly_ability.set_active(not fly_ability.is_actived())
 
-	# Keep the rig current before anything asks it which way forward is.
-	view.update(stage().body_height)
+	# Rolls the look frame onto this tick's surface and turns the body to follow,
+	# so the walk below is worked out in the frame the player is looking through.
+	# The arm itself is placed in _process, where it can be eased across the
+	# render frames between ticks instead of stepping with them.
 	climb.update_orientation(delta)
 
 	if climb.handles_movement():
@@ -298,7 +300,7 @@ func _process(delta: float) -> void:
 	_take_aim(delta)
 	climb.haul = tether.drag_factor()
 	climb.glide = traits.glide() if traits != null else 0.0
-	view.update(stage().body_height)
+	view.update(stage().body_height, delta)
 	_rush(delta)
 	if body != null:
 		body.visible = view.third_person
@@ -306,6 +308,12 @@ func _process(delta: float) -> void:
 
 
 ## Opens the view up as you pick up speed.
+##
+## Off the speed along the surface, not off [member velocity]. A climbing spider
+## carries a permanent few metres a second of pull into whatever it is standing
+## on — that is what keeps it there — so the total velocity is several m/s even
+## standing still, and reading the rush off it left the view breathing at rest
+## and lurching whenever move_and_slide resolved a step.
 func _rush(delta: float) -> void:
 	var camera := get_viewport().get_camera_3d()
 	if camera == null:
@@ -313,7 +321,7 @@ func _rush(delta: float) -> void:
 	if _base_fov <= 0.0:
 		_base_fov = camera.fov
 	var reference: float = maxf(stage().move_speed * 2.5, 0.001)
-	var rush := clampf(velocity.length() / reference - 0.2, 0.0, 1.0)
+	var rush := clampf(_horizontal_velocity.length() / reference - 0.2, 0.0, 1.0)
 	camera.fov = lerpf(camera.fov, _base_fov + rush * speed_fov_gain,
 		clampf(delta * 6.0, 0.0, 1.0))
 

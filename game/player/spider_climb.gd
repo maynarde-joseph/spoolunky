@@ -287,6 +287,12 @@ func _surface_forward(up: Vector3) -> Vector3:
 func update_orientation(delta: float) -> void:
 	if _spider == null:
 		return
+	# The frame the mouse works in rolls onto whatever is underfoot, so that
+	# turning means turning and looking up means looking up whichever surface
+	# the spider is on. Done before the facing is read, so this frame's walk is
+	# worked out in this frame's view.
+	if _view != null:
+		_view.roll_onto(_current_up, delta)
 	# The body turns to follow the camera; the camera never follows the body.
 	_facing = _surface_forward(_current_up)
 	if mode == Mode.GRAPPLING:

@@ -1025,22 +1025,61 @@ This is the traversal answer to a world built vertically: you get *down* fast
 and precisely, and back up at the cost of silk. It is also the best place in
 the game to build from — hanging under a doorway, spinning a web across it.
 
-### The camera: world-space look, and both distances
+### The camera: a look frame that rolls with the surface
 
-**Decided: look direction lives in world yaw and pitch, never in the body's
-frame — and the camera defaults to third person, with first person on a key.**
+**Decided: yaw and pitch live in the frame of whatever the spider is standing
+on, rolled onto it by parallel transport — and the camera defaults to third
+person, with first person on a key.**
 
-The important half is the first one. Look used to be derived from the body: yaw
-turned you around whatever surface you were stuck to. On the floor that is
-identical to normal mouse look, so it seemed fine — but the moment you walk onto
-a wall it silently remaps the mouse axes, and "left" stops meaning left. That is
-why looking around on a wall felt wrong, and it is fixed by keeping the view in
-world terms and letting the body follow the camera instead of the reverse.
+This is the third answer to the same question and the first right one, so here is
+the whole argument.
+
+*Taking the view from the body* came first: yaw turned you around whatever
+surface you were stuck to. On the floor that is identical to normal mouse look,
+so it seemed fine — but it rebuilt the frame from the body every time the body
+rolled, which yanked the view sideways mid-stride.
+
+*Pinning the view to the world* was the fix, and it broke something worse.
+Movement is worked out **in the surface plane**, so on a wall the axis that
+turned you along the wall was the mouse's *pitch*, while yaw only squashed
+against the face — the mouse meant a different thing on every surface. And on a
+ceiling, with the world still drawn the right way up, the camera's right and the
+body's right pointed opposite ways: pressing **D** walked you left. Nothing in
+the game said so. It just felt wrong on every ceiling, which is exactly the
+report that came back.
+
+*A frame that rolls with the surface* has neither problem, because the mouse and
+the walking are finally in the same space. Yaw always turns; pitch always looks
+up and down; strafe always goes where the screen says right. The roll is done by
+**parallel transport** — the frame's forward is carried onto the new up and
+flattened, never rebuilt — so walking onto a wall turns the view with you instead
+of spinning it, and you keep looking at what you were looking at. It is eased
+over about a seventh of a second, while the *movement* frame snaps, because
+walking wants no lag and a wall arriving instantly is a smear.
+
+The world does turn over as you crawl onto a ceiling, which the world-space model
+deliberately avoided. That was the right thing to avoid for the wrong reason: the
+cost of keeping the horizon level was not a lost sensation, it was scrambled
+controls.
 
 Movement follows from the same decision: forward is *the way the camera is
 looking, flattened onto whatever you are standing on*. Walk at a wall while
-looking at it and you climb it, because looking into a surface leaves nothing to
-flatten and it falls back to the camera's up.
+looking at it and you climb it, because the transport carries "the way I was
+going" onto "up the wall".
+
+**The arm is eased, never pinned.** Physics runs on a fixed tick and rendering
+does not, so a camera placed straight from the body's position holds still for a
+few frames and then jumps — every tick, the whole time you are moving. That reads
+as rough *movement* when the movement is fine. It eases at 22 a second, and snaps
+if it is ever further out than the arm is long, so a respawn does not sweep the
+camera across the world. What is never eased is where you are *looking*: the arm
+may lag a step behind the body, the mouse may not.
+
+The same mistake in a second place: the speed the view opens up for was read off
+the body's whole velocity, and a climbing spider carries a permanent few metres a
+second of pull into whatever it is standing on — that is what keeps it on a
+ceiling. So the view breathed while standing still. It reads the speed *along the
+surface* now.
 
 The second half reverses an earlier call, twice reversed now, so here is the
 reasoning rather than a quiet edit. Third person wins because **the size ladder
@@ -1052,10 +1091,41 @@ look at and invisible in first person.
 First person stays, on **L**, because it is better for lining up an anchor and
 for the sensation of speed on a line.
 
-The world no longer flips upside down on a ceiling, and there is no toggle for
-it any more, because under a world-space look model there is nothing to flip —
-the camera was never derived from the body in the first place. That sensation is
-gone, and it was a real one. It cost less than scrambled controls.
+The world turns over as you crawl onto a ceiling, and there is no toggle for it,
+because the look frame *is* the surface's — that is what makes the controls mean
+one thing everywhere.
+
+### How far silk goes
+
+**Decided: one reach for grappling and throwing alike, four times what a single
+thread can span — so it is the body's, and it grows.**
+
+Both verbs were effectively unlimited: grapple to anything you could see, throw
+a web wherever you were pointing. The report back was that the whole game felt
+too long ranged, and that is what happens when nothing is out of reach — there is
+no distance left for growing to close, and a room you *cannot* cross is the only
+thing that makes crossing it a reward.
+
+The hard part is not shortening it. It is shortening it without making getting
+about a chore, which is exactly what the old per-tier anchor range did and why it
+was taken out. Three things keep it from turning back into that:
+
+* **It is one number, for both verbs.** Two ways of putting silk over there, each
+  with its own invisible limit, is the fastest way to make a reach unreadable.
+* **It is generous, and it is the body's.** Four times `max_strand_length`: about
+  ten metres for a spiderling, a hundred and twenty for the Architect, and
+  roughly three times what a scripted build run may span at any tier. So a click
+  still crosses a room; the rooms just get bigger than you for a while.
+* **The refusal names the distance.** "No surface in reach" reads as a broken
+  click. "Nothing within 10m — grow to reach further" reads as somewhere to come
+  back to, which is the whole point of hanging it off the body.
+
+And distance costs something *inside* the reach too, because a hard edge only
+says where you may not throw. A thrown web's quality falls off across the reach
+to 55% at the far end — so long shots land, they land thinner. That is the part
+that can be played around: close the distance for a web that will hold, or take
+the cheap shot from here and accept a weak one. It never reaches zero, because a
+throw that builds nothing reads as broken rather than as expensive.
 
 ### A grapple keeps what it was carrying
 
@@ -1130,8 +1200,8 @@ hold in their head on the first screen.
 | **Space** | Jump. Also the only way off silk, which is sticky |
 | **Shift** | Sprint |
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
-| **Left Mouse** | **Go there, trailing a line.** A surface pulls you over; a line puts you on it; something you already caught comes to you instead. Three lines at a time — a fourth takes the oldest down (§5) |
-| **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss expires after two seconds. Then a short wait before the next (§5) |
+| **Left Mouse** | **Go there, trailing a line.** A surface pulls you over; a line puts you on it; something you already caught comes to you instead. As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5) |
+| **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). Then a short wait before the next (§5) |
 | **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The camera comes in over the shoulder while you hold |
 | **1–9 / wheel** | Pick a pocket on the bar |
 | **E** | The tree — spend what you have eaten |
