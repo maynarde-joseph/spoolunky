@@ -3158,7 +3158,15 @@ func _eat(spider: SpiderPlayer, prey: Prey, frames: int) -> float:
 	if spider.feeding == null and is_instance_valid(prey) and not prey.eaten:
 		await physics_frame
 		spider._handle_prey(prey)
+	var on_the_line: bool = spider.tether != null and spider.tether.cargo == prey
 	for i in frames:
+		# Held at the spider's side unless it is on the line, where the whole point
+		# is that distance does not matter. A meal takes seconds now, and in seconds
+		# a bundle falls and a beetle walks off — out of fang reach and out of the
+		# meal. These checks are about eating; the one that is about reach tethers
+		# its catch and is left alone here.
+		if not on_the_line and is_instance_valid(prey) and not prey.eaten:
+			prey.global_position = spider.global_position + Vector3(0.3, 0.1, 0.0)
 		await physics_frame
 		if not is_instance_valid(prey) or prey.eaten:
 			break
