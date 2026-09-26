@@ -1679,7 +1679,16 @@ func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder) -> vo
 	var open_slab := _test_slab(host, Vector3(-60, 0.0, -60))
 	await physics_frame
 	_stand_on(spider, open_slab.global_position + Vector3(0, 0.25, 0))
+	# Straight down at the floor, set rather than inherited. Two things have to be
+	# true for "open air" to mean anything: the crosshair needs a surface under it
+	# or there is no placement at all, and the web's plane has to end up parallel
+	# to the floor or its own rim rays find the floor. Looking down does both. This
+	# used to ride on whatever the previous test happened to leave the camera
+	# pointing at, which is not something a check should depend on.
+	spider.view.face(Vector3(0, 0, -1))
+	spider.view.pitch = -PI / 2.0
 	await process_frame
+	await _run_frames(4)
 	if not _check(builder.begin_place(), "spinning one in the open"):
 		return
 	# Pin the reach rather than growing to it. Growth accumulates delta in

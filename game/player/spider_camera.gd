@@ -87,6 +87,11 @@ var _anchor: Node3D
 var _body: Node3D
 ## The surface frame yaw and pitch are measured in. Y is the surface's up.
 var _frame := Basis.IDENTITY
+## The up the frame is rolling toward, so a teleport can go straight to it.
+var _wanted_up := Vector3.UP
+## Where the body was when the arm was last placed, for telling travel from a
+## teleport.
+var _last_body := Vector3.ZERO
 ## Cleared once the arm has been placed, so the first frame does not ease in
 ## from wherever the node happened to start.
 var _placed := false
@@ -112,16 +117,25 @@ func setup(body: Node3D, first_person_anchor: Node3D) -> void:
 func roll_onto(up: Vector3, delta: float) -> void:
 	if up.length_squared() < 0.000001:
 		return
-	var wanted := up.normalized()
+	_wanted_up = up.normalized()
 	var y := _frame.y
 	if y.length_squared() < 0.000001:
 		y = Vector3.UP
 	else:
 		y = y.normalized()
-	if y.dot(wanted) < 0.99999:
-		y = y.slerp(wanted, clampf(roll_speed * delta, 0.0, 1.0)).normalized()
+	if y.dot(_wanted_up) < 0.99999:
+		y = y.slerp(_wanted_up, clampf(roll_speed * delta, 0.0, 1.0)).normalized()
 	else:
-		y = wanted
+		y = _wanted_up
+	_carry_frame(y)
+
+
+## Rebuilds the frame around a new up, carrying the old forward across.
+func _carry_frame(up: Vector3) -> void:
+	var y := up
+	if y.length_squared() < 0.000001:
+		return
+	y = y.normalized()
 	var z := _frame.z - y * _frame.z.dot(y)
 	if z.length_squared() < 0.000001:
 		# The roll passed through a right angle, so the old back is the new up.
@@ -178,6 +192,17 @@ func toggle_mode() -> void:
 func update(body_height: float, delta := 0.0) -> void:
 	if camera == null or _body == null:
 		return
+	# Travel rolls the view; being *moved* does not. A spider that was respawned,
+	# dropped into a level or put somewhere by a test would otherwise spend the
+	# next fifth of a second rolling the view onto its new surface — and anything
+	# read off the crosshair in that time, a thrown web's plane among it, comes
+	# out tilted.
+	var jumped := _placed \
+		and _last_body.distance_to(_body.global_position) > snap_distance * maxf(body_height, 0.01)
+	if jumped or not _placed:
+		_carry_frame(_wanted_up)
+	_last_body = _body.global_position
+
 	var look_basis := _look_basis()
 	var look := -look_basis.z
 
@@ -205,7 +230,7 @@ func update(body_height: float, delta := 0.0) -> void:
 		place = _anchor.global_position
 
 	var slip := camera.global_position.distance_to(place)
-	if not _placed or delta <= 0.0 or follow_speed <= 0.0 \
+	if not _placed or jumped or delta <= 0.0 or follow_speed <= 0.0 \
 			or slip > snap_distance * maxf(body_height, 0.01):
 		camera.global_position = place
 		_placed = true
