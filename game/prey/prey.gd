@@ -18,6 +18,7 @@ signal eaten_by_spider(prey: Prey)
 
 enum State {
 	WANDER,    ## going about its business
+	HUNTING,   ## coming for a spider it outclasses
 	STUCK,     ## caught in silk, fighting it
 	WRAPPED,   ## bundled up, going nowhere
 	FLEEING,   ## just tore loose, getting out
@@ -40,8 +41,14 @@ const SCENE_PATH := "res://game/prey/prey.tscn"
 ## Shown in HUD messages.
 var species := "Fly"
 
-## Biomass gained by draining it.
+## Biomass left in it. Draining takes this down rather than taking it all at
+## once, so a meal interrupted is a meal half eaten and the rest is still on the
+## end of your line.
 var biomass := 8.0
+
+## What it held when it was whole, for the readout — "half a wasp" only means
+## something against a whole one.
+var full_biomass := 8.0
 
 ## How big it is, against a web's mesh and the spider's bite power. 1 is
 ## fly-sized.
@@ -78,6 +85,13 @@ var wander_interval := 3.0
 ## How strongly it drifts toward a funnel lure it can smell.
 var lure_susceptibility := 0.8
 
+## Whether it comes for a spider it outclasses, and what that costs when it gets
+## there. See [member PreySpecies.aggression] for the rule.
+var aggression := 0.0
+var hunt_range := 6.0
+var bite_damage := 3.0
+var bite_interval := 1.1
+
 
 var wrapped := false
 var eaten := false
@@ -98,6 +112,9 @@ var _flee_timer := 0.0
 var _recatch_cooldown := 0.0
 var _marked_timer := 0.0
 var _lure_timer := 0.0
+var _hunt_timer := 0.0
+var _bite_timer := 0.0
+var _quarry: Node3D = null
 var _life := 0.0
 var _marker: MeshInstance3D
 var _cocoon: MeshInstance3D
@@ -131,6 +148,7 @@ func apply_species(from: PreySpecies) -> void:
 	name = from.display_name.replace(" ", "")
 	species = from.display_name
 	biomass = from.biomass
+	full_biomass = from.biomass
 	size_class = from.size_class
 	struggle_power = from.struggle_power
 	struggle_stamina = from.struggle_stamina
@@ -141,6 +159,10 @@ func apply_species(from: PreySpecies) -> void:
 	wander_height = from.wander_height
 	wander_interval = from.wander_interval
 	lure_susceptibility = from.lure_susceptibility
+	aggression = from.aggression
+	hunt_range = from.hunt_range
+	bite_damage = from.bite_damage
+	bite_interval = from.bite_interval
 	_applied = true
 	if is_inside_tree():
 		_build_body()
@@ -167,9 +189,14 @@ func _physics_process(delta: float) -> void:
 			_set_marked(false)
 	_flap()
 
+	if _bite_timer > 0.0:
+		_bite_timer -= delta
+
 	match _state:
 		State.BUNDLED:
 			_fall(delta)
+		State.HUNTING:
+			_process_hunt(delta)
 		State.STUCK, State.WRAPPED:
 			_process_stuck(delta)
 		State.FLEEING:
@@ -204,6 +231,11 @@ func on_snared(web: WebStructure, point: Vector3, snap_time: float) -> void:
 	_struggle = 0.0
 	_fight_left = struggle_stamina
 	_state = State.STUCK
+	# Whatever it was coming for, it is not coming for it now. This is the whole
+	# reason a web is somewhere to stand and eat: something that meant to reach
+	# you goes into the silk first, and even a web too weak to keep it has bought
+	# you the seconds it spends tearing out — and paid for them in durability.
+	_quarry = null
 	velocity = Vector3.ZERO
 	_set_marked(false)
 	snared.emit(self)
@@ -342,11 +374,44 @@ func wrap() -> void:
 	_set_cocoon(true)
 
 
-## Drained by the spider.
+## Takes a mouthful. Returns what was actually in it, which is less than was
+## asked for on the last swallow.
+##
+## Eating used to be one keypress and instant, which is what made a web
+## pointless: if a meal costs nothing but a click, there is no reason to drag
+## anything anywhere, and nowhere is safer than anywhere else. A meal that takes
+## a few seconds is a few seconds you are standing still for, and that is what
+## gives the trip home a point.
+func drain(amount: float) -> float:
+	if eaten or amount <= 0.0:
+		return 0.0
+	var taken: float = minf(amount, biomass)
+	biomass -= taken
+	if biomass <= 0.001:
+		biomass = 0.0
+		consume()
+	return taken
+
+
+## How much of it is left, 0 to 1.
+func drained() -> float:
+	if full_biomass <= 0.0:
+		return 0.0
+	return clampf(1.0 - biomass / full_biomass, 0.0, 1.0)
+
+
+## Whether anything has been taken out of it without finishing it.
+func part_eaten() -> bool:
+	return not eaten and biomass < full_biomass - 0.001
+
+
+## Finished. Emptied by draining, or taken outright by something that does not
+## need to sip — venom, a device, a test.
 func consume() -> void:
 	if eaten:
 		return
 	eaten = true
+	biomass = 0.0
 	if is_instance_valid(_web):
 		_web.on_prey_taken(self)
 	eaten_by_spider.emit(self)
@@ -396,9 +461,93 @@ func _process_stuck(delta: float) -> void:
 		broke_free.emit(self)
 
 
+## Whether this would come for that spider, or be eaten by it.
+##
+## One comparison, and it is the whole difficulty curve: a creature inside the
+## spider's bite is food, a creature outside it and aggressive is a problem. Grow
+## and the same wasp changes sides.
+func would_hunt(spider: Node3D) -> bool:
+	if aggression <= 0.0 or eaten or wrapped:
+		return false
+	if spider == null or not is_instance_valid(spider):
+		return false
+	if _state == State.STUCK or _state == State.WRAPPED or _state == State.BUNDLED:
+		return false
+	var bite: int = spider.stage().bite_power if spider.has_method("stage") else 99
+	return size_class > bite
+
+
+## Looks for a spider small enough to be worth attacking. Cheap, and only every
+## so often, because there is exactly one spider and no need to check per frame.
+func _look_for_a_spider() -> void:
+	_hunt_timer = 0.9
+	if aggression <= 0.0:
+		return
+	var spiders := get_tree().get_nodes_in_group("spider")
+	if spiders.is_empty():
+		return
+	var spider := spiders[0] as Node3D
+	if not would_hunt(spider):
+		return
+	if global_position.distance_to(spider.global_position) > hunt_range:
+		return
+	if randf() > aggression:
+		return
+	_quarry = spider
+	_state = State.HUNTING
+
+
+## Coming for you. Steers at the spider and bites when it arrives.
+##
+## Losing track of it is deliberate: anything that stops being worth attacking —
+## because it grew, or got away, or because silk took hold of the hunter — drops
+## straight back to wandering rather than following you round the level for ever.
+func _process_hunt(delta: float) -> void:
+	if not would_hunt(_quarry):
+		_quarry = null
+		_state = State.WANDER
+		_pick_target()
+		return
+	var span := global_position.distance_to(_quarry.global_position)
+	if span > hunt_range * 1.8:
+		_quarry = null
+		_state = State.WANDER
+		_pick_target()
+		return
+
+	_target = _quarry.global_position
+	# Faster than it wanders: something that has decided to attack you should
+	# read as having decided, and a hunter you can simply walk away from is not
+	# pressure, it is scenery.
+	_steer(delta, move_speed * 1.5)
+
+	# Off the spider's size, not the hunter's: what has to be true is that it has
+	# reached *you*, and a wasp closing on a spiderling covers the last few
+	# centimetres in one frame.
+	var girth: float = kind.body_radius if kind != null else 0.05
+	var bite_reach: float = maxf(girth * 6.0, _quarry_reach())
+	if span > bite_reach or _bite_timer > 0.0:
+		return
+	_bite_timer = bite_interval
+	if _quarry.has_method("take_bite"):
+		_quarry.take_bite(bite_damage, self)
+
+
+## How close counts as having reached the spider, from the spider's own size.
+func _quarry_reach() -> float:
+	if _quarry == null or not is_instance_valid(_quarry) or not _quarry.has_method("stage"):
+		return 0.4
+	return maxf(_quarry.stage().body_height * 1.6, 0.35)
+
+
 func _process_wander(delta: float) -> void:
 	_wander_timer -= delta
 	_lure_timer -= delta
+	_hunt_timer -= delta
+	if _hunt_timer <= 0.0:
+		_look_for_a_spider()
+		if _state == State.HUNTING:
+			return
 	if _lure_timer <= 0.0:
 		_lure_timer = 0.75
 		_sniff_for_lures()

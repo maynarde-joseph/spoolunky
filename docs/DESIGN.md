@@ -34,6 +34,61 @@ body is enough.
         └────────── bigger body = longer lines = bigger prey ←────────┘
 ```
 
+### The hunt loop, and why a web is worth building
+
+The loop above is the *trap* loop. There is a second one that runs faster, and
+for a long time it made the first one pointless:
+
+```
+  HUNT             HAUL                HOME               DRINK
+ shoot or bite  →  tether it and   →  your own web,   →  hold the key.
+ something         run for it          which catches      A few seconds
+ out in the open                       what follows you   you are standing still
+```
+
+The problem it fixes: eating used to be one keypress and instantly over, and the
+biomass was identical whether the creature had been caught in a web you built or
+wrapped by a bolt you threw at it. So the fastest way to eat was to walk up to
+something and click, and the entire trap layer — tuning, triggers, saved designs,
+devices — was decoration. **A web has to be worth building, and paying more for
+one only makes it a better lottery ticket.**
+
+Three changes, and they only work together:
+
+* **A meal takes a few seconds.** Hold the key and biomass flows; let go and you
+  got part of it, with the rest still on the end of your line. So eating is time
+  spent standing still, which is the first thing in the game that has ever made
+  *where* you are matter.
+* **Things bite back.** A creature inside your bite power is food; one outside it
+  and aggressive comes looking for you. Being bitten costs you the mouthful, and
+  running out of stamina drives you off — you drop what you were carrying and get
+  thrown clear.
+* **Your web is somewhere to stand and eat.** Anything that comes at you through
+  silk goes into the silk first. Not a fortress: whether it *holds* is the same
+  `hold_strength × ESCAPE_MARGIN` sum every other catch uses, so a wasp sticks in
+  a sheet web for about two seconds and then tears out, wearing the web down as
+  it goes. What a web buys is those seconds, and it spends itself buying them.
+
+So the web stops competing with the gun. It is not a better way to acquire food —
+it is **the place you can eat what you acquired**, which is a job nothing else in
+the game does. That is §8's old line, *"your web is your cover, not just your
+larder,"* finally holding a mechanism.
+
+Eating also works **down your own line**, at any length. Silk is a straw: a catch
+on your tether can be drunk while you run with it. That is what keeps the haul
+from being dead time, and it means the choice is never "wait or don't" but *how
+exposed you are willing to be while you drink*.
+
+**Being driven off is not death.** No reload, no lost tier: you lose the catch and
+the trip, and your stamina creeps back after a few quiet seconds. A sandbox with
+no save has no business killing the player, and the cost of losing a fight — the
+journey home, done again — is enough. Stamina is the one bar in the game, and it
+is deliberately not a *budget* in the §11 sense: you never spend it, and being
+careful with it never makes you poorer for having tried something.
+
+Growing mends you completely, which is what makes a tier read as relief rather
+than as a bigger number: the thing that was hunting you last tier is dinner now.
+
 **Scout.** Prey moves along readable lanes: flies circle a lightbulb, ants walk
 a skirting board, rats hug walls, pigeons land on the same three ledges.
 Learning the lane is the puzzle.
@@ -1203,6 +1258,13 @@ IK that reach for the surface and take its angle.
 
 Everything you can eat can also eat you at the wrong size. The tension curve
 is: each new zone opens with you as the smallest thing in it.
+
+**How that is actually decided:** one comparison. A creature whose `size_class`
+is inside the spider's `bite_power` is food; one outside it, with `aggression`
+above zero, hunts instead. So there is no separate bestiary of predators — the
+wasp that drives a spiderling off a corpse is a Huntsman's dinner, and growing
+*flips the relationship* rather than swapping the cast. Wasps hunt hard and fast;
+beetles hunt slowly and on the ground; midges never hunt anything.
 
 ---
 

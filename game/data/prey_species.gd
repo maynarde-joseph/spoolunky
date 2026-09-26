@@ -49,6 +49,28 @@ extends Resource
 @export var settled_drain := 0.015
 
 
+@export_group("Hunting you")
+
+## Whether it will come for a spider it outclasses. Zero means it never does,
+## whatever the size difference — a midge is a midge.
+##
+## The rule is the one the design doc always had: everything you can eat can also
+## eat you at the wrong size. A creature inside your bite power is food; one that
+## is out of it, and aggressive, comes looking. So growing *flips the
+## relationship* rather than swapping in a different bestiary, and every zone
+## opens with you as the smallest thing in it.
+@export_range(0.0, 1.0, 0.05) var aggression := 0.0
+
+## How far off it notices a spider worth attacking, in metres.
+@export var hunt_range := 6.0
+
+## Stamina taken out of the spider per bite.
+@export var bite_damage := 3.0
+
+## Seconds between bites, so being caught out is survivable for a moment.
+@export var bite_interval := 1.1
+
+
 @export_group("Movement")
 
 @export var move_speed := 1.7

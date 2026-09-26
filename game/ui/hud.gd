@@ -56,6 +56,8 @@ var _toast_timer := 0.0
 var _hotbar: HBoxContainer
 var _pockets: Array[Panel] = []
 var _tree: TraitTree
+var _condition_label: Label
+var _condition_bar: ProgressBar
 
 @onready var stage_label: Label = $Stats/StageLabel
 @onready var state_label: Label = $Stats/StateLabel
@@ -78,6 +80,8 @@ func _ready() -> void:
 	toast_label.modulate.a = 0.0
 	_build_hotbar()
 	_build_tree()
+	_build_condition()
+	_set_sizes()
 	problem_label.text = ""
 	dial_label.text = ""
 	_bind.call_deferred()
@@ -91,6 +95,7 @@ func _process(delta: float) -> void:
 		return
 	_refresh_state()
 	_refresh_limits()
+	_refresh_condition()
 	_refresh_hotbar()
 	_refresh_build_panel()
 
@@ -179,9 +184,49 @@ func _set_sizes() -> void:
 	}
 	for label in sizes:
 		(label as Label).add_theme_font_size_override("font_size", int(sizes[label]))
+	if _condition_label != null:
+		_condition_label.add_theme_font_size_override("font_size", int(BODY_SIZE))
 	# The bars grow with the text, or a bar is a hairline under a big number.
 	web_bar.custom_minimum_size = Vector2(0.0, 16.0)
 	biomass_bar.custom_minimum_size = Vector2(0.0, 16.0)
+	if _condition_bar != null:
+		_condition_bar.custom_minimum_size = Vector2(0.0, 16.0)
+
+
+## What is left of you, built here rather than in the scene because it belongs
+## directly under the size and the scene has no slot there.
+##
+## Nearest the top on purpose: it is the only number on the HUD you cannot get
+## back by waiting somewhere safe, so it is the one worth seeing first.
+func _build_condition() -> void:
+	var stats := get_node_or_null(NodePath("Stats")) as VBoxContainer
+	if stats == null:
+		return
+	_condition_label = Label.new()
+	_condition_label.name = "ConditionLabel"
+	stats.add_child(_condition_label)
+	stats.move_child(_condition_label, 1)
+	_condition_bar = ProgressBar.new()
+	_condition_bar.name = "ConditionBar"
+	_condition_bar.show_percentage = false
+	_condition_bar.max_value = 1.0
+	stats.add_child(_condition_bar)
+	stats.move_child(_condition_bar, 2)
+
+
+## Reads the spider rather than waiting to be told, the same way the silk limits
+## do — mending has no moment worth signalling, it just creeps back.
+func _refresh_condition() -> void:
+	if _condition_label == null or _spider == null:
+		return
+	var left := _spider.condition()
+	_condition_bar.value = left
+	var top := _spider.max_stamina()
+	if left >= 0.999:
+		_condition_label.text = "Whole      %d" % roundi(top)
+	else:
+		_condition_label.text = "Hurt      %d / %d" % [
+			ceili(_spider.health), roundi(top)]
 
 
 # --- the tree -----------------------------------------------------------
@@ -319,6 +364,18 @@ func _refresh_state() -> void:
 	else:
 		state_label.text = "On the ground"
 	_note_tether()
+	_note_meal()
+
+
+## A meal in progress takes the line over, because while you are drinking it is
+## the only thing you are doing — and how far through it you are is the only
+## thing you want to know.
+func _note_meal() -> void:
+	var meal := _spider.feeding
+	if meal == null or not is_instance_valid(meal) or meal.eaten:
+		return
+	state_label.text = "Draining the %s   %s   [F] hold" % [
+		meal.species, _charge_bar(meal.drained())]
 
 
 ## What is on the end of your line, in front of wherever you are standing. Easy
