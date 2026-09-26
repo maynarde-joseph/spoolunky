@@ -3379,9 +3379,17 @@ func _test_fangs(spider: SpiderPlayer, traits: SpiderTraits, level: Node) -> voi
 	await physics_frame
 	_check(traits.has_fangs(), "and ends in fangs")
 
-	await _eat(spider, caught, 900)
+	# Bite power is read here rather than reused from above, because buying the
+	# venom line also buys the strength that carries it — the number this meal
+	# drinks at is not the number the quarry was chosen against.
+	var fanged := spider.stage().bite_power
+	var meal: float = await _eat(spider, caught, 900)
+	var state := "gone" if not is_instance_valid(caught) \
+		else "%.1f of %.1f left, wrapped %s, feeding %s" % [caught.biomass,
+			caught.full_biomass, caught.wrapped, spider.feeding != null]
 	_check(not is_instance_valid(caught) or caught.eaten,
-		"with which the %s goes down where it stands" % quarry.display_name)
+		"with which the %s goes down where it stands (+%.1f, bite %d, %s)"
+		% [quarry.display_name, meal, fanged, state])
 
 
 ## The screen the tree is spent on.
