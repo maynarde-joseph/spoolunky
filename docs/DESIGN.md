@@ -1025,64 +1025,32 @@ This is the traversal answer to a world built vertically: you get *down* fast
 and precisely, and back up at the cost of silk. It is also the best place in
 the game to build from — hanging under a doorway, spinning a web across it.
 
-### The camera: a look frame that rolls with the surface
+### The camera: world-space look, and both distances
 
-**Decided: yaw and pitch live in the frame of whatever the spider is standing
-on, rolled onto it by parallel transport — and the camera defaults to third
+**Decided: look direction lives in world yaw and pitch, never in the body's
+frame, and the rig is placed rather than eased — and the camera defaults to third
 person, with first person on a key.**
 
-This is the third answer to the same question and the first right one, so here is
-the whole argument.
+The look frame took three tries. *Taking the view from the body* came first: yaw
+turned you around whatever surface you were stuck to. On the floor that is
+identical to normal mouse look, so it seemed fine, but it rebuilt the frame from
+the body every time the body rolled, which yanked the view sideways mid-stride.
 
-*Taking the view from the body* came first: yaw turned you around whatever
-surface you were stuck to. On the floor that is identical to normal mouse look,
-so it seemed fine — but it rebuilt the frame from the body every time the body
-rolled, which yanked the view sideways mid-stride.
+Then we tried a *frame that rolls onto the surface*, carried across by parallel
+transport so the axes stayed consistent on a wall or a ceiling. It did make the
+axes consistent and it was horrible to look through. The whole world turning over
+underneath you as you crawl about is far more movement than anyone wants from a
+camera, and it is movement the player did not ask for. Same verdict on easing the
+arm across the frames between physics ticks: a camera that lags is a camera you
+can feel, and what the easing was hiding was a step of a few centimetres.
 
-*Pinning the view to the world* was the fix, and it broke something worse.
-Movement is worked out **in the surface plane**, so on a wall the axis that
-turned you along the wall was the mouse's *pitch*, while yaw only squashed
-against the face — the mouse meant a different thing on every surface. And on a
-ceiling, with the world still drawn the right way up, the camera's right and the
-body's right pointed opposite ways: pressing **D** walked you left. Nothing in
-the game said so. It just felt wrong on every ceiling, which is exactly the
-report that came back.
+So the rig is the plain one. **World yaw and pitch, a level horizon, placed
+exactly where it belongs every frame, and it does not roll for surfaces.** The
+only thing that moves it is the mouse.
 
-*A frame that rolls with the surface* has neither problem, because the mouse and
-the walking are finally in the same space. Yaw always turns; pitch always looks
-up and down; strafe always goes where the screen says right. The roll is done by
-**parallel transport** — the frame's forward is carried onto the new up and
-flattened, never rebuilt — so walking onto a wall turns the view with you instead
-of spinning it, and you keep looking at what you were looking at. It is eased
-over about a seventh of a second, while the *movement* frame snaps, because
-walking wants no lag and a wall arriving instantly is a smear.
-
-The world does turn over as you crawl onto a ceiling, which the world-space model
-deliberately avoided. That was the right thing to avoid for the wrong reason: the
-cost of keeping the horizon level was not a lost sensation, it was scrambled
-controls.
-
-Movement follows from the same decision: forward is *the way the camera is
-looking, flattened onto whatever you are standing on*. Walk at a wall while
-looking at it and you climb it, because the transport carries "the way I was
-going" onto "up the wall".
-
-**The arm is eased, never pinned.** Physics runs on a fixed tick and rendering
-does not, so a camera placed straight from the body's position holds still for a
-few frames and then jumps — every tick, the whole time you are moving. That reads
-as rough *movement* when the movement is fine. It eases at 22 a second, and snaps
-if it is ever further out than the arm is long, so a respawn does not sweep the
-camera across the world. What is never eased is where you are *looking*: the arm
-may lag a step behind the body, the mouse may not.
-
-Smaller, nearby: the speed the view opens up for was read off the body's whole
-velocity — the *resolved* one, after `move_and_slide` has absorbed the pull that
-holds a spider on and slid the body along whatever it hit. It reads the
-along-surface velocity now, which is the movement the spider actually asked for
-and the same number the legs are animated from, so the view and the walk cycle
-agree. (We first wrote this up as "the view breathed while standing still". It
-does not: the pull is absorbed by the collision, and the test written to pin that
-claim promptly disproved it. The change is worth keeping on the smaller ground.)
+What a wall does to the *controls* is then fixed where the controls are, in the
+mover — see **Walking on a wall** below. The camera and the walking agree without
+the camera having to move.
 
 The second half reverses an earlier call, twice reversed now, so here is the
 reasoning rather than a quiet edit. Third person wins because **the size ladder
@@ -1094,9 +1062,57 @@ look at and invisible in first person.
 First person stays, on **L**, because it is better for lining up an anchor and
 for the sensation of speed on a line.
 
-The world turns over as you crawl onto a ceiling, and there is no toggle for it,
-because the look frame *is* the surface's — that is what makes the controls mean
-one thing everywhere.
+The world does not flip upside down on a ceiling, and there is no toggle for it,
+because under a world-space look model there is nothing to flip. That sensation
+is gone and it was a real one. It cost less than a camera that rolls.
+
+### Walking on a wall
+
+**Decided: the walk is the camera's own screen axes, flattened onto whatever is
+underfoot.**
+
+This is where a wall or a ceiling is actually dealt with. The rig keeps a level
+horizon and never rolls, so on a wall "screen-right" and "along the wall" are two
+different directions and *something* has to reconcile them.
+
+The old answer took forward from the camera, flattened it onto the surface, and
+then built right as `forward × up`. Flattening forward is right — it is what makes
+walking at a wall climb it, since looking into a surface leaves nothing to flatten
+and it falls back to the camera's own up. Deriving right from it is not. On a wall
+with its face toward you that gave **down the wall** for D, and on a ceiling it
+came out **mirrored**, so D walked you left while the world was still drawn the
+right way up. Neither was written down anywhere. They were just how it felt, which
+is the worst kind of bug to have in a control scheme.
+
+Flattening the screen axes *themselves* gets all three surfaces right:
+
+* **Floor** — identical to the old construction, so nothing about walking on the
+  flat moved.
+* **Wall** — D runs along the face the way the screen says it should, and W, with
+  nothing left of forward once the wall's normal is taken out of it, climbs.
+* **Ceiling** — D is still the way the camera calls right, because the camera
+  never turned over.
+
+The one degenerate case is looking *along* a wall's face, where screen-right
+points into it and there is honestly no right to go to. That falls back to the old
+cross product, which is always square to the walk and always somewhere. The view
+is a sliver of wall at that angle and the player is about to turn it.
+
+### Framing a throw
+
+**Decided: the pivot lifts and the view widens. Nothing travels.**
+
+Winding a throw up used to drop you into first person, which cost the sight of the
+spider — the one thing worth watching while it winds up. Then it brought the arm
+in and swung it round the shoulder, which kept the spider on screen and was a lot
+of camera motion for a framing.
+
+It needs neither. The camera orbits a point **above** the spider instead of the
+spider itself, which drops it down the screen and opens the room out over its
+back, which is where the silk is going. The arm keeps its length, the horizon
+stays put, and the only other change is that the **view widens** by about nine
+degrees at a full wind-up. The field of view has one owner, because the speed rush
+writes it too and two things easing one number is two things fighting over it.
 
 ### How far silk goes
 
@@ -1205,7 +1221,7 @@ hold in their head on the first screen.
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
 | **Left Mouse** | **Go there, trailing a line.** A surface pulls you over; a line puts you on it; something you already caught comes to you instead. As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5) |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). Then a short wait before the next (§5) |
-| **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The camera comes in over the shoulder while you hold |
+| **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |
 | **1–9 / wheel** | Pick a pocket on the bar |
 | **E** | The tree — spend what you have eaten |
 | **F** | Wrap the prey you are looking at, then drain it |
@@ -1256,10 +1272,11 @@ first person, on the reasoning that third person has the cross and the silk
 leaving from different places. That is true and it turns out not to matter: a
 thrown ball leaves the spider *toward whatever the cross is over*, which is
 exactly what the third-person aim already works out. What the flip cost was the
-one thing worth having — watching the spider wind up. So the arm comes **in and
-round to the shoulder** as the charge fills, and eases back out after; the ball
-grows and brightens with it, so the charge has a reading in the world as well as
-on the HUD, and you never have to look away from the fly to read it.
+one thing worth having — watching the spider wind up. So the pivot **lifts above
+the spider** and the view **widens** as the charge fills, and both ease back
+after; nothing travels. See *Framing a throw* in §7. The ball grows and brightens
+with it, so the charge has a reading in the world as well as on the HUD, and you
+never have to look away from the fly to read it.
 
 ---
 

@@ -39,6 +39,7 @@ func _run() -> void:
 
 	await _test_floor()
 	await _test_strafing()
+	await _test_the_walk_fits_the_surface()
 	await _test_wall()
 	await _test_ceiling()
 	await _test_dragline()
@@ -119,6 +120,82 @@ func _strafe(action: String) -> Vector3:
 	return _spider.global_position - before
 
 
+## What the keys mean on a floor, a wall and a ceiling, worked out directly
+## rather than by walking about — so every surface is covered and the numbers are
+## exact.
+##
+## Two of these were wrong for a long time and nothing said so. On a ceiling D
+## came out **fully mirrored**: the camera never turns over, so screen-right stays
+## screen-right, but the walk was built from `forward.cross(up)` and with the
+## ceiling's up pointing down that flips. And on a wall seen at an angle, D ran
+## **down the wall** rather than along its face.
+func _test_the_walk_fits_the_surface() -> void:
+	var climb := _spider.climb
+	var rig := _spider.view
+	# name, surface up, camera pitch, where the camera looks
+	var probes := [
+		["a floor", Vector3.UP, 0.0, Vector3(0, 0, -1)],
+		["a floor, looking down", Vector3.UP, -0.785, Vector3(0, 0, -1)],
+		["a ceiling", Vector3.DOWN, 0.0, Vector3(0, 0, -1)],
+		["a ceiling, turned round", Vector3.DOWN, 0.0, Vector3(1, 0, 0)],
+		["a wall, facing it", Vector3.RIGHT, 0.0, Vector3(-1, 0, 0)],
+		["a wall, at an angle", Vector3.RIGHT, 0.0, Vector3(-1, 0, -1)],
+		["a wall, facing it, looking down", Vector3.RIGHT, -0.785, Vector3(-1, 0, 0)],
+		["the far wall", Vector3.FORWARD, 0.0, Vector3(0, 0, 1)],
+	]
+	for probe in probes:
+		var what: String = probe[0]
+		var up: Vector3 = probe[1]
+		rig.pitch = probe[2]
+		rig.face(probe[3])
+		var lead := climb._surface_forward(up)
+		var axes := climb._surface_axes(up, lead)
+		var right: Vector3 = axes[0]
+		var ahead: Vector3 = axes[1]
+		_check(absf(right.dot(ahead)) < 0.01,
+			"on %s the two keys are square to each other" % what)
+		_check(absf(right.dot(up)) < 0.01 and absf(ahead.dot(up)) < 0.01,
+			"and both lie on the surface")
+		# D against the camera's own right. On a wall seen edge-on there is no
+		# right on that surface to agree with, which is the one case left out.
+		_check(right.dot(rig.right()) > 0.5,
+			"D goes the way the camera calls right on %s (%+.2f)"
+			% [what, right.dot(rig.right())])
+		# W against where the camera is looking, as far as the surface allows —
+		# which on a wall facing you is up it, because that is all that is left.
+		_check(ahead.dot(lead) > 0.5 or absf(ahead.dot(lead)) < 0.06,
+			"and W goes the way you are looking (%+.2f against the flattened look)"
+			% ahead.dot(lead))
+
+	# The two that were wrong, named and nailed. Both compared against the old
+	# construction, so a regression has to show up as the old number.
+	rig.pitch = 0.0
+	rig.face(Vector3(0, 0, -1))
+	var ceiling := Vector3.DOWN
+	var lead_up := climb._surface_forward(ceiling)
+	var on_ceiling: Vector3 = climb._surface_axes(ceiling, lead_up)[0]
+	var was_ceiling := lead_up.cross(ceiling).normalized()
+	_check(on_ceiling.dot(rig.right()) > 0.99,
+		"upside down, D is still screen-right (%+.2f)" % on_ceiling.dot(rig.right()))
+	_check(was_ceiling.dot(rig.right()) < -0.99,
+		"where the old construction had it exactly backwards (%+.2f)"
+		% was_ceiling.dot(rig.right()))
+
+	rig.face(Vector3(-1, 0, -1))
+	var wall := Vector3.RIGHT
+	var lead_wall := climb._surface_forward(wall)
+	var axes_wall := climb._surface_axes(wall, lead_wall)
+	var on_wall: Vector3 = axes_wall[0]
+	var up_wall: Vector3 = axes_wall[1]
+	var was_wall := lead_wall.cross(wall).normalized()
+	_check(absf(on_wall.dot(Vector3.UP)) < 0.01,
+		"on a wall seen at an angle, D runs along the face (%.2v)" % on_wall)
+	_check(absf(was_wall.dot(Vector3.UP)) > 0.99,
+		"where the old construction sent you down it (%.2v)" % was_wall)
+	_check(up_wall.dot(Vector3.UP) > 0.99,
+		"and W climbs, which is the only thing left for it to mean (%.2v)" % up_wall)
+
+
 func _test_wall() -> void:
 	# Face the -X wall and walk into it.
 	_spider.climb.face(Vector3.LEFT)
@@ -138,21 +215,35 @@ func _test_wall() -> void:
 	_check(_spider.global_basis.y.dot(_spider.climb.body_up()) > 0.8,
 		"and the camera came with it")
 
-	# And so did the frame the mouse works in. This is what makes the controls
-	# mean the same thing on a wall as on the floor: yaw turns you *along* the
-	# wall. Pinned to the world it was the pitch axis that did that, and yaw only
-	# squashed against the face — so the mouse meant something different on every
-	# surface, which is exactly how it felt.
-	_check(_spider.view.frame_up().dot(Vector3.RIGHT) > 0.8,
-		"the mouse frame rolled onto the wall as well (%.2v)" % _spider.view.frame_up())
-	var was := _spider.view.forward()
-	_spider.view.yaw += PI / 2.0
-	var turned := _spider.view.forward()
-	_spider.view.yaw -= PI / 2.0
-	_check(turned.dot(was) < 0.5,
-		"a quarter turn of the mouse really turns (%.2f)" % turned.dot(was))
-	_check(absf(turned.dot(_spider.climb.surface_normal)) < 0.2,
-		"and stays on the wall rather than burying itself in it (%.2v)" % turned)
+	# The camera did not roll onto the wall, and must not: a level horizon is what
+	# makes the rig pleasant to look through. So the reconciling happens in the
+	# walk. Screen-right, flattened onto the wall, is where D goes — which on a
+	# wall facing you runs along the face. Derived from forward.cross(up), as this
+	# used to be, it was *down the wall* instead.
+	var normal := _spider.climb.surface_normal
+	_check(absf(_spider.view.up().dot(normal)) < 0.9,
+		"the camera kept its own horizon (%.2v up)" % _spider.view.up())
+	var across := _spider.view.right()
+	var along_wall := across - normal * across.dot(normal)
+	if _check(along_wall.length_squared() > 0.02,
+			"screen-right has somewhere to go on the wall (%.2v)" % along_wall):
+		along_wall = along_wall.normalized()
+		Input.action_release("move_forward")
+		await _run_frames(6)
+		var from_wall := _spider.global_position
+		Input.action_press("move_right")
+		await _run_frames(25)
+		Input.action_release("move_right")
+		await _run_frames(2)
+		var sideways := _spider.global_position - from_wall
+		_check(_spider.climb.surface_normal.dot(Vector3.RIGHT) > 0.9,
+			"strafing keeps you on the wall")
+		_check(sideways.dot(along_wall) > 0.05,
+			"and D runs along the face, where the screen says (%.2v)" % sideways)
+		_check(absf(sideways.dot(Vector3.UP)) < sideways.length() * 0.7,
+			"rather than down it (%.2fm of %.2fm vertical)"
+			% [absf(sideways.dot(Vector3.UP)), sideways.length()])
+		Input.action_press("move_forward")
 
 
 func _test_ceiling() -> void:
@@ -173,12 +264,14 @@ func _test_ceiling() -> void:
 	Input.action_release("move_forward")
 	await _run_frames(20)
 
-	# The bug the surface frame exists to kill. Upside down, with the world still
-	# drawn the right way up, the camera's right and the body's right pointed
-	# opposite ways — so pressing D walked you left. Nothing in the game said so;
-	# it just felt wrong on every ceiling.
-	_check(_spider.view.frame_up().dot(Vector3.DOWN) > 0.8,
-		"the mouse frame came over onto the ceiling (%.2v)" % _spider.view.frame_up())
+	# The bug the screen-axis walk exists to kill. Upside down, with the world
+	# still drawn the right way up — and it stays that way, because the camera
+	# never turns over — the body's right and the camera's right pointed opposite
+	# ways, so pressing D walked you left. Nothing in the game said so; it just
+	# felt wrong on every ceiling.
+	_check(_spider.view.up().dot(Vector3.UP) > 0.5,
+		"the camera is still the right way up over a ceiling (%.2v)"
+		% _spider.view.up())
 	var beside := _spider.global_position
 	Input.action_press("move_right")
 	await _run_frames(25)
@@ -395,7 +488,7 @@ func _test_grappling() -> void:
 	builder.stop()
 
 
-## Two things that read as rough movement and are not movement at all.
+## The rig holds still, and winding a throw up frames it without moving.
 func _test_a_steady_view() -> void:
 	_release_all()
 	_spider.climb.release()
@@ -407,41 +500,25 @@ func _test_a_steady_view() -> void:
 
 	var height: float = _spider.stage().body_height
 	var rig := _spider.view
-	_check(rig.follow_speed > 0.0,
-		"the arm eases rather than being pinned (%.0f/s)" % rig.follow_speed)
+	rig.aim_blend = 0.0
 
-	# Physics runs on a fixed tick and rendering does not, so an arm placed
-	# straight from the body's position holds still for a few frames and then
-	# jumps — every tick, the whole time you are moving. That reads as rough
-	# movement when the movement is fine.
+	# Placed, not eased. We tried easing it across the frames between physics
+	# ticks and it was more movement than it was worth: a camera that lags is a
+	# camera you can feel, and what it was hiding was a step of a few centimetres.
 	rig.update(height)
 	var settled := rig.camera.global_position
-	var shoved := settled + Vector3(0, 0, 4.0) * height
-	rig.camera.global_position = shoved
-	rig.update(height, 1.0 / 60.0)
-	var eased := rig.camera.global_position
-	_check(eased.distance_to(shoved) > 0.0001,
-		"a frame of easing moves it back toward where it belongs")
-	_check(eased.distance_to(settled) > 0.0001,
-		"but not the whole way in one frame (%.3fm still to go)"
-		% eased.distance_to(settled))
-	# Told to snap, it snaps — which is what a caller wants when it needs the rig
-	# to be right this instant rather than shortly.
-	rig.camera.global_position = shoved
+	rig.camera.global_position = settled + Vector3(0, 0, 4.0) * height
 	rig.update(height)
 	_check(rig.camera.global_position.distance_to(settled) < 0.0001,
-		"and no delta means place it exactly, for callers that cannot wait")
+		"the arm goes where it belongs, the frame it is asked to")
 
-	# The arm stands off along the *surface's* up. Taking it from the look basis
+	# Straight up the world at any pitch. Taking the lift from the look basis
 	# instead slides the pivot forward and back every time you glance up or down,
-	# which tilts everything worked out from the crosshair — including the plane a
-	# thrown web opens in, which is how this was caught.
-	#
-	# Measured with the arm shortened to nothing, so the camera sits *on* the
-	# pivot. Derived from a full-length arm it cannot be measured in a room this
-	# size: the arm is longer than the room is tall, so it is pulled in off a wall
-	# at most pitches and the pivot no longer follows from where it ended up.
-	rig.aim_blend = 0.0
+	# which tilts everything worked out from the crosshair — a thrown web's plane
+	# among it. Measured with the arm shortened to nothing so the camera sits *on*
+	# the pivot: derived from a full-length arm it cannot be measured in a room
+	# this size, because the arm is longer than the room is tall and gets pulled in
+	# off a wall at most pitches.
 	var arm := rig.distance
 	rig.distance = 0.0
 	var upright := true
@@ -452,29 +529,55 @@ func _test_a_steady_view() -> void:
 		var offset := rig.camera.global_position - _spider.global_position
 		if offset.length_squared() < 0.000001:
 			continue
-		var along := offset.normalized().dot(rig.frame_up())
+		var along := offset.normalized().dot(Vector3.UP)
 		worst = maxf(worst, absf(1.0 - along))
 		if along < 0.999:
 			upright = false
-	rig.distance = arm
 	rig.pitch = 0.0
-	rig.update(height)
 	_check(upright,
-		"and it stands off straight up the surface at any pitch (%.4f off)" % worst)
+		"and stands off straight up the world at any pitch (%.4f off)" % worst)
 
-	# And the view does not breathe while you stand still. It opens up with speed,
-	# read off the speed *along the surface* — the same number the legs are
-	# animated from — rather than off whatever move_and_slide left in the body's
-	# velocity after resolving the pull that holds a spider on.
-	_check(_spider.climb.tangent_velocity.length() < _spider.stage().move_speed * 0.1,
-		"standing still is standing still (%.2fm/s along the floor)"
-		% _spider.climb.tangent_velocity.length())
+	# Winding a throw up lifts the point the arm orbits, so the spider drops down
+	# the screen and the room over its back opens out — which is where the silk is
+	# about to go. Measured the same way: with no arm, the camera *is* the pivot.
+	rig.update(height)
+	var resting := rig.camera.global_position
+	rig.aim_blend = 1.0
+	rig.update(height)
+	var raised := rig.camera.global_position
+	rig.aim_blend = 0.0
+	rig.distance = arm
+	rig.update(height)
+	_check(raised.y > resting.y + height * 0.1,
+		"the pivot rises for a throw (%.2fm up)" % (raised.y - resting.y))
+	_check(Vector2(raised.x - resting.x, raised.z - resting.z).length() < height * 0.01,
+		"straight up, with no swing round the shoulder")
+	_check(is_equal_approx(rig.distance, arm),
+		"and the arm keeps its length (%.2f body heights)" % rig.distance)
+
+	# And the view widens with it. One owner for the angle, because the speed rush
+	# writes it too and two things easing one number is two things fighting.
+	_check(rig.aim_fov_gain > 0.0,
+		"a throw opens the view by %.0f°" % rig.aim_fov_gain)
 	var lens := _spider.view.camera
 	_check(_spider._base_fov > 0.0,
 		"the view has a resting angle (%.1f°)" % _spider._base_fov)
 	_check(absf(lens.fov - _spider._base_fov) < 0.5,
 		"which is where it sits at rest (%.1f° against %.1f°)"
 		% [lens.fov, _spider._base_fov])
+	# Held each tick, because the builder eases the blend back to nothing whenever
+	# nothing is actually being aimed — which is the right thing for it to do and
+	# would quietly undo this from under the check.
+	for i in 40:
+		rig.aim_blend = 1.0
+		await physics_frame
+	_check(lens.fov > _spider._base_fov + rig.aim_fov_gain * 0.5,
+		"and it opens up while one is being wound (%.1f°)" % lens.fov)
+	rig.aim_blend = 0.0
+	for i in 40:
+		await physics_frame
+	_check(absf(lens.fov - _spider._base_fov) < 1.0,
+		"then closes again after (%.1f°)" % lens.fov)
 
 
 # --- scaffolding --------------------------------------------------------

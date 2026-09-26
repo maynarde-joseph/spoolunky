@@ -2612,20 +2612,28 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) ->
 	_check(spider.view.aim_blend > 0.5,
 		"with the camera settling into the aim (%.2f)" % spider.view.aim_blend)
 
-	# The camera move on its own: same look, one blend against the other. Aiming
-	# is framed over the shoulder now rather than hidden behind a first-person
-	# flip, so the thing winding up stays on screen.
+	# The framing on its own: same look, one blend against the other. Nothing
+	# travels — the arm keeps its length and the horizon stays put. The point it
+	# orbits lifts, so the spider drops down the screen and the room over its back
+	# opens out, which is where the silk is going. We did try bringing the arm in
+	# and round the shoulder and it was far too much motion for a framing.
 	var wound := spider.view.aim_blend
 	spider.view.face(Vector3(1, 0, 0))
 	spider.view.pitch = 0.0
 	spider.view.aim_blend = 0.0
 	spider.view.update(spider.stage().body_height)
-	var arm_out := spider.view.camera.global_position.distance_to(spider.global_position)
+	var resting := spider.view.camera.global_position
+	var arm_out := resting.distance_to(spider.global_position)
 	spider.view.aim_blend = wound
 	spider.view.update(spider.stage().body_height)
-	var arm_in := spider.view.camera.global_position.distance_to(spider.global_position)
-	_check(arm_in < arm_out,
-		"pulling in over the shoulder (%.2fm from %.2fm)" % [arm_in, arm_out])
+	var framed := spider.view.camera.global_position
+	_check(framed.y > resting.y,
+		"the view lifts above the spider for a throw (%.2fm up)" % (framed.y - resting.y))
+	_check(absf(framed.distance_to(spider.global_position) - arm_out) < arm_out * 0.3,
+		"without hauling the camera in (%.2fm against %.2fm)"
+		% [framed.distance_to(spider.global_position), arm_out])
+	_check(spider.view.aim_fov_gain > 0.0,
+		"and the view opens up by %.0f° with it" % spider.view.aim_fov_gain)
 
 	# A wound-up throw, aimed at the fly, takes it — and it is the aim that does
 	# it. The bolt leaves along the crosshair and keeps that heading.

@@ -138,10 +138,8 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed(input_fly_mode_action_name):
 			fly_ability.set_active(not fly_ability.is_actived())
 
-	# Rolls the look frame onto this tick's surface and turns the body to follow,
-	# so the walk below is worked out in the frame the player is looking through.
-	# The arm itself is placed in _process, where it can be eased across the
-	# render frames between ticks instead of stepping with them.
+	# Keep the rig current before anything asks it which way forward is.
+	view.update(stage().body_height)
 	climb.update_orientation(delta)
 
 	if climb.handles_movement():
@@ -300,21 +298,24 @@ func _process(delta: float) -> void:
 	_take_aim(delta)
 	climb.haul = tether.drag_factor()
 	climb.glide = traits.glide() if traits != null else 0.0
-	view.update(stage().body_height, delta)
+	view.update(stage().body_height)
 	_rush(delta)
 	if body != null:
 		body.visible = view.third_person
 		body.animate(delta, _horizontal_velocity.length())
 
 
-## Opens the view up as you pick up speed.
+## Opens the view up: with speed, and with a throw being wound up.
 ##
-## Off the speed along the surface, not off [member velocity]. The two are close
-## at rest, because move_and_slide absorbs the pull that holds a spider onto what
-## it is standing on — but what it leaves behind is the *resolved* movement, so it
-## picks up whatever a step or a slope slid the body sideways by. The along-surface
-## velocity is the movement the spider actually asked for, which is the same
-## number the legs are animated from, and now the view agrees with them.
+## One owner for the field of view, because two things easing one number is two
+## things fighting over it. Both terms add to the resting angle.
+##
+## The speed is the one along the surface, not [member velocity]. The two are
+## close at rest, because move_and_slide absorbs the pull that holds a spider onto
+## what it is standing on — but what it leaves behind is the *resolved* movement,
+## so it picks up whatever a step or a slope slid the body sideways by. The
+## along-surface velocity is the movement the spider actually asked for, which is
+## the same number the legs are animated from, so now the view agrees with them.
 func _rush(delta: float) -> void:
 	var camera := get_viewport().get_camera_3d()
 	if camera == null:
@@ -323,7 +324,11 @@ func _rush(delta: float) -> void:
 		_base_fov = camera.fov
 	var reference: float = maxf(stage().move_speed * 2.5, 0.001)
 	var rush := clampf(_horizontal_velocity.length() / reference - 0.2, 0.0, 1.0)
-	camera.fov = lerpf(camera.fov, _base_fov + rush * speed_fov_gain,
+	# Winding a throw up widens the view. Together with the raised pivot that is
+	# the whole of the aim framing: the room opens out over the spider's back,
+	# which is where the silk is about to go, and nothing had to move to do it.
+	var aiming := clampf(view.aim_blend, 0.0, 1.0) * view.aim_fov_gain
+	camera.fov = lerpf(camera.fov, _base_fov + rush * speed_fov_gain + aiming,
 		clampf(delta * 6.0, 0.0, 1.0))
 
 

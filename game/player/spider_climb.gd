@@ -287,12 +287,6 @@ func _surface_forward(up: Vector3) -> Vector3:
 func update_orientation(delta: float) -> void:
 	if _spider == null:
 		return
-	# The frame the mouse works in rolls onto whatever is underfoot, so that
-	# turning means turning and looking up means looking up whichever surface
-	# the spider is on. Done before the facing is read, so this frame's walk is
-	# worked out in this frame's view.
-	if _view != null:
-		_view.roll_onto(_current_up, delta)
 	# The body turns to follow the camera; the camera never follows the body.
 	_facing = _surface_forward(_current_up)
 	if mode == Mode.GRAPPLING:
@@ -932,19 +926,69 @@ func _ride_axis() -> Vector3:
 
 # --- helpers ------------------------------------------------------------
 
+## Where the keys want to go: the camera's own axes, fitted to whatever is
+## underfoot.
+##
+## This is where a wall or a ceiling is dealt with, and it belongs here rather
+## than in the camera. The rig keeps a level horizon and never rolls, which is
+## what makes it pleasant to look through — so on a wall, "screen-right" and
+## "along the wall" are two different directions and something has to reconcile
+## them. Deriving right from `forward.cross(up)`, as this did, reconciled them
+## wrongly: on a wall with its face toward you that gave *down the wall* for D,
+## and on a ceiling it came out mirrored, so D walked you left while the world
+## was still drawn the right way up. Neither was ever written down. They were
+## just how it felt, which is the worst way to have a bug in a control scheme.
 func _wish_direction(input_axis: Vector2, up: Vector3) -> Vector3:
 	if input_axis.length_squared() < 0.01:
 		return Vector3.ZERO
-	var forward := _surface_forward(up)
-	if forward.length_squared() < 0.000001:
+	var lead := _surface_forward(up)
+	if lead.length_squared() < 0.000001:
 		return Vector3.ZERO
-	forward = forward.normalized()
-	# right = forward x up is the +X of the basis the body is rolled onto, and
-	# the template's own mover adds it for a positive x input. Subtracting it
-	# here mirrored every strafe the moment the climb component took over,
-	# which is nearly always — see the strafe checks in the climb suite.
-	var right := forward.cross(up).normalized()
-	return (forward * input_axis.y + right * input_axis.x).normalized()
+	lead = lead.normalized()
+	var axes := _surface_axes(up, lead)
+	return (axes[1] * input_axis.y + axes[0] * input_axis.x).normalized()
+
+
+## The two directions the keys move you in, as [right, ahead].
+##
+## Right comes first, because a mirrored strafe is the thing you feel: it is the
+## camera's own right, flattened onto the surface. Ahead is then squared off
+## against it inside the surface, pointed whichever way the camera is looking.
+##
+## Taking *both* from the screen and flattening them separately does not work,
+## and it is worth saying why. The camera's right is always horizontal, so on a
+## vertical wall — whose only horizontal tangent is the one direction along its
+## face — every horizontal vector flattens onto that same direction. Forward
+## would flatten onto it too, and W and D would move you the same way. Squaring
+## ahead off against right instead gives the wall its other tangent, the vertical
+## one, which is the reading a wall wants anyway: **W and S climb, A and D
+## traverse.**
+##
+## The sign of ahead comes from where the camera is looking, as far as the
+## surface allows. A level camera on a vertical wall cannot say — its look is all
+## horizontal and ahead is all vertical — and then the answer is to climb, which
+## is the behaviour walking at a wall always had.
+func _surface_axes(up: Vector3, lead: Vector3) -> Array:
+	var across := _view.right() if _view != null else lead.cross(up)
+	var right := across - up * across.dot(up)
+	if right.length_squared() < 0.02:
+		# Looking along a wall's face edge-on: the camera's right points into the
+		# wall, and there is honestly no right on that surface to go to. Fall back
+		# to the old pair, which is always square and always somewhere. The view
+		# is a sliver of wall at that angle and the player is about to turn it.
+		return [lead.cross(up).normalized(), lead]
+	right = right.normalized()
+	var ahead := up.cross(right)
+	if ahead.length_squared() < 0.000001:
+		return [right, lead]
+	ahead = ahead.normalized()
+	var agreement := ahead.dot(lead)
+	if absf(agreement) < 0.05:
+		if ahead.dot(Vector3.UP) < 0.0:
+			ahead = -ahead
+	elif agreement < 0.0:
+		ahead = -ahead
+	return [right, ahead]
 
 
 func _orientation_basis(raw_up: Vector3) -> Basis:
