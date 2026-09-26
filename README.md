@@ -349,6 +349,15 @@ godot --headless --script res://tests/world_smoke_test.gd
 Each prints a line per check and exits non-zero if any fail. Together they take
 about a minute.
 
+The web suite puts its sections back to a bare spiderling in an empty room
+between each one, so nothing depends on what ran before it. To check that is
+still true, run it in a random order — the seed is printed, so a failure can be
+run again exactly:
+
+```sh
+SPOOLUNKY_SHUFFLE=whatever godot --headless --script res://tests/web_smoke_test.gd
+```
+
 They also run on every push: `.github/workflows/tests.yml` fetches the newest
 Linux build matching `GODOT_VERSION` and runs all three. Bump that one variable
 when the project moves to a new engine version — the workflow finds the build

@@ -1,4 +1,4 @@
-extends TestSuite
+extends WebSuite
 
 ## Headless smoke test for the web building loop.
 ##
@@ -8,68 +8,74 @@ extends TestSuite
 ## web, catching prey in one, wrapping and draining it, growing a size tier and
 ## pulling a web back down. Exits non-zero if anything comes back wrong.
 
-const LEVEL_PATH := "res://addons/character-controller/example/main/level.tscn"
 
 func run_checks() -> void:
-	var level := await open(LEVEL_PATH)
-	if level == null:
+	if not await open_sandbox():
 		return
-
-	var spider := root.get_tree().get_first_node_in_group("spider") as SpiderPlayer
-	if not check(spider != null, "spider is in the level"):
-		return
-
-	var webs := level.get_node("Webs") as Node3D
-	var builder := spider.web_builder
-	builder.notice.connect(func(text: String) -> void: note(text))
-
-	# Somewhere flat and open to work in.
-	spider.global_position = Vector3(12, 0.5, 0)
-	await physics_frame
-
-	_test_starting_state(spider, builder)
-	await _test_input_map(spider, builder)
-	await _test_aiming(spider, builder)
-	await _test_building_a_net(spider, builder, webs)
-	await _test_catching(spider, level, webs)
-	await _test_strands(spider, builder, webs)
-	await _test_growth(spider, builder)
-	await _test_tripline_alert(spider, builder, webs, level)
-	await _test_pressure_snare(spider, builder, webs, level)
-	await _test_trigger_links(spider, builder, webs, level)
-	await _test_weave_modes(spider, builder, webs)
-	await _test_rings_of_silk(spider, builder, webs)
-	await _test_living_on_the_web(spider, builder, webs, level)
-	await _test_tuning_dials(spider, builder, webs, level)
-	await _test_saved_designs(spider, builder, webs)
-	await _test_placing_a_web(spider, builder, webs)
-	await _test_a_web_fits_the_space(spider, builder)
-	await _test_spitting_a_web_at_something(spider, builder, level, webs)
-	await _test_throwing_a_bolt(spider, builder, level, webs)
-	await _test_species(spider, builder, level)
-	await _test_tethering(spider, level)
-	await _test_a_meal_takes_time(spider, level)
-	await _test_something_hunts_you(spider, builder, level, webs)
-	await _test_wrapped_things_fall(spider, builder, level, webs)
-	await _test_shooting(spider, builder, level, webs)
-	await _test_taking_aim(spider, builder, level)
-	await _test_how_far_silk_goes(spider, builder, level)
-	await _test_a_shot_fits_a_corner(spider, builder, webs)
-	await _test_silk_sits_on_what_it_sticks_to(spider, builder)
-	_test_a_spiders_jump()
-	await _test_the_bar(spider)
-	await _test_the_larder(spider, builder, webs, level)
-	await _test_three_lines(spider, builder)
-	await _test_a_web_ends_with_its_catch(builder, webs, level)
-	await _test_the_bag(spider, level, webs, builder)
-	await _test_sandbox_wiring(level, spider)
-	await _test_demolish(builder, webs)
-	# Last, deliberately: buying traits reshapes the body for good, and every
-	# test above this line was written against a spider the ladder alone made.
-	await _test_the_tree(spider, level)
+	for section: Callable in _sections():
+		await reset()
+		await section.call()
 
 
-func _test_starting_state(spider: SpiderPlayer, builder: WebBuilder) -> void:
+## Every section, each one handed a fresh arena by [method WebSuite.reset].
+##
+## The order used to be load-bearing and mostly undocumented: the tree went last
+## because buying a trait is permanent, and everything above it had been written
+## against a spider the ladder alone had made. Nothing depends on what ran before
+## it any more — a section that wants a grown spider or a standing web makes one.
+func _sections() -> Array[Callable]:
+	var list: Array[Callable] = [
+		_test_starting_state,
+		_test_input_map,
+		_test_aiming,
+		_test_building_a_net,
+		_test_catching,
+		_test_strands,
+		_test_growth,
+		_test_tripline_alert,
+		_test_pressure_snare,
+		_test_trigger_links,
+		_test_weave_modes,
+		_test_rings_of_silk,
+		_test_living_on_the_web,
+		_test_tuning_dials,
+		_test_saved_designs,
+		_test_placing_a_web,
+		_test_a_web_fits_the_space,
+		_test_spitting_a_web_at_something,
+		_test_throwing_a_bolt,
+		_test_species,
+		_test_tethering,
+		_test_a_meal_takes_time,
+		_test_something_hunts_you,
+		_test_wrapped_things_fall,
+		_test_shooting,
+		_test_taking_aim,
+		_test_how_far_silk_goes,
+		_test_a_shot_fits_a_corner,
+		_test_silk_sits_on_what_it_sticks_to,
+		_test_a_spiders_jump,
+		_test_the_bar,
+		_test_the_larder,
+		_test_three_lines,
+		_test_a_web_ends_with_its_catch,
+		_test_the_bag,
+		_test_sandbox_wiring,
+		_test_demolish,
+		_test_the_tree,
+	]
+	# SPOOLUNKY_SHUFFLE=<seed> runs them in a random order. Nothing here depends on
+	# what ran before it, and running it shuffled now and again is what keeps that
+	# true — the seed is printed so a failure can be run again exactly.
+	var seed_text := OS.get_environment("SPOOLUNKY_SHUFFLE")
+	if not seed_text.is_empty():
+		seed(seed_text.hash())
+		list.shuffle()
+		note("shuffled, seed %s" % seed_text)
+	return list
+
+
+func _test_starting_state() -> void:
 	var stage := spider.stage()
 	check(stage.display_name == "Spiderling", "starts as a spiderling")
 	var capsule := spider.collision.shape as CapsuleShape3D
@@ -89,7 +95,7 @@ func _test_starting_state(spider: SpiderPlayer, builder: WebBuilder) -> void:
 		% (starting.display_name if starting != null else "nothing"))
 
 
-func _test_input_map(spider: SpiderPlayer, builder: WebBuilder) -> void:
+func _test_input_map() -> void:
 	for action in ["web_build_mode", "web_place", "web_cancel", "web_finish",
 			"web_next_pattern", "web_prev_pattern", "web_remove", "interact",
 			"device_mode", "web_throw_mode", "web_tether", "web_shoot",
@@ -117,7 +123,7 @@ func _test_input_map(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	release_action(spider.input_build_mode)
 
 
-func _test_aiming(spider: SpiderPlayer, builder: WebBuilder) -> void:
+func _test_aiming() -> void:
 	builder.start()
 	# Look straight down at the floor. Aim lives on the camera rig now.
 	spider.view.pitch = -PI / 2.0
@@ -136,22 +142,22 @@ func _test_aiming(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	builder.stop()
 
 
-func _test_building_a_net(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) -> void:
-	_select_pattern(builder, "sheet_web")
+func _test_building_a_net() -> void:
+	select_pattern("sheet_web")
 	builder.start()
 	var centre := spider.global_position + Vector3(0, 0.4, -1.0)
 
 	var corners := _square(centre, 0.6)
 	for point in corners:
 		builder.add_anchor(point)
-	check(_web_count(webs) == 3, "three lines behind four anchors (%d)" % _web_count(webs))
+	check(web_count() == 3, "three lines behind four anchors (%d)" % web_count())
 	check(builder.enclosed_area() > 0.0,
 		"the run encloses %.2f m2" % builder.enclosed_area())
 
 	builder.finish()
 	await physics_frame
 
-	var net := _newest_web(webs, "sheet_web") as WebNet
+	var net := newest_web("sheet_web") as WebNet
 	if not check(net != null, "a sheet web was woven inside it"):
 		return
 	check(net.mesh_instance != null and net.mesh_instance.mesh.get_surface_count() > 0,
@@ -164,16 +170,25 @@ func _test_building_a_net(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 	check(builder.building, "build mode stays on for the next one")
 
 	# The frame outlives the web: roads are not traps.
-	var lines_before := _count_pattern(webs, "frame_line")
+	var lines_before := _count_pattern("frame_line")
 	check(lines_before == 4, "the ring left four lines standing (%d)" % lines_before)
 	builder.stop()
 
-	# Too few anchors must not weave anything.
+	# Too few anchors must not weave anything — with nothing else to lean on.
+	#
+	# One anchor while a ring of silk is in view is a different move: the builder
+	# weaves a sheet into the ring, which is a feature and says so ("Sheet Web
+	# woven into the ring"). This check used to pass only because the section
+	# before it happened to leave the camera pointing elsewhere, so it never
+	# actually tested its own claim. Look away from the ring and it does.
+	spider.view.face(Vector3(0, 0, 1))
+	spider.view.pitch = 0.0
 	builder.start()
 	builder.add_anchor(centre + Vector3(0, 1.5, 0))
-	var webs_before := _web_count(webs)
+	var webs_before := web_count()
 	builder.finish()
-	check(_web_count(webs) == webs_before, "a lone anchor weaves nothing")
+	check(web_count() == webs_before,
+		"a lone anchor weaves nothing (%d, started %d)" % [web_count(), webs_before])
 	builder.stop()
 
 
@@ -186,7 +201,7 @@ func _mesh_verts(web: WebStructure) -> int:
 	return web.mesh_instance.mesh.surface_get_array_len(0)
 
 
-func _count_pattern(webs: Node3D, pattern_id: String) -> int:
+func _count_pattern(pattern_id: String) -> int:
 	var total := 0
 	for child in webs.get_children():
 		var web := child as WebStructure
@@ -195,14 +210,14 @@ func _count_pattern(webs: Node3D, pattern_id: String) -> int:
 	return total
 
 
-func _test_catching(spider: SpiderPlayer, level: Node, webs: Node3D) -> void:
-	var net := _first_web(webs) as WebNet
+func _test_catching() -> void:
+	var net := first_web() as WebNet
 	if net == null:
 		return
-	_clear_prey_near(level, net.to_global(net.centre_local), net.radius * 3.0, null)
+	clear_prey_near(net.to_global(net.centre_local), net.radius * 3.0, null)
 	await physics_frame
 	await process_frame
-	var fly := _spawn_fly(level, net.to_global(net.centre_local))
+	var fly := spawn_fly(net.to_global(net.centre_local))
 	await physics_frame
 	await physics_frame
 
@@ -234,15 +249,15 @@ func _test_catching(spider: SpiderPlayer, level: Node, webs: Node3D) -> void:
 	check(not is_instance_valid(net), "and the web comes down with the catch")
 
 
-func _test_strands(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) -> void:
-	_select_pattern(builder, "trip_line")
+func _test_strands() -> void:
+	select_pattern("trip_line")
 	builder.start()
 	var base := spider.global_position + Vector3(1.5, 0.3, 0)
 	builder.add_anchor(base)
 	builder.add_anchor(base + Vector3(0, 0, 1.2))
 	await physics_frame
 
-	var trip := _find_web(webs, "trip_line") as WebStrand
+	var trip := find_web("trip_line") as WebStrand
 	if not check(trip != null, "a tripline was spun"):
 		return
 	check(trip.catch_area != null, "the tripline watches for crossings")
@@ -251,7 +266,7 @@ func _test_strands(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) -> v
 	builder.stop()
 
 
-func _test_growth(spider: SpiderPlayer, builder: WebBuilder) -> void:
+func _test_growth() -> void:
 	var before_height := (spider.collision.shape as CapsuleShape3D).height
 	var gained := spider.growth.feed(60.0, "test")
 	await physics_frame
@@ -264,28 +279,37 @@ func _test_growth(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	check(builder.unlocked_patterns().size() > 2, "bigger spider, more web patterns")
 
 	# A bridge is a tier-2 unlock, so it should build now.
-	_select_pattern(builder, "silk_bridge")
+	select_pattern("silk_bridge")
 	builder.start()
 	var base := spider.global_position + Vector3(-1.5, 0.4, 0)
 	builder.add_anchor(base)
 	builder.add_anchor(base + Vector3(0, 0, 1.4))
 	await physics_frame
-	var webs := spider.get_parent().get_node("Webs") as Node3D
-	var bridge := _find_web(webs, "silk_bridge") as WebStrand
+	var bridge := find_web("silk_bridge") as WebStrand
 	if check(bridge != null, "a silk bridge was spun"):
 		check(bridge.get_node_or_null("Walkway") != null, "the bridge is solid enough to walk on")
 		check(bridge.catch_area == null, "but it does not catch anything")
 	builder.stop()
 
 
-func _test_tripline_alert(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D, level: Node) -> void:
-	var trip := _find_web(webs, "trip_line") as WebStrand
-	if not check(trip != null, "the tripline is still up"):
+func _test_tripline_alert() -> void:
+	# Its own line to walk into. This used to read whatever tripline an earlier
+	# section had left up, which made it the only check here with no setup and the
+	# first to break when anything above it changed.
+	select_pattern("trip_line")
+	builder.start()
+	var base := spider.global_position + Vector3(0, 0.3, -1.2)
+	builder.add_anchor(base + Vector3(-0.7, 0, 0))
+	builder.add_anchor(base + Vector3(0.7, 0, 0))
+	await physics_frame
+	builder.stop()
+	var trip := find_web("trip_line") as WebStrand
+	if not check(trip != null, "a tripline to walk into"):
 		return
 	var tripped := [false]
 	trip.tripped.connect(func(_web: WebStructure, _who: Node3D) -> void: tripped[0] = true)
 
-	var fly := _spawn_fly(level, (trip.point_a + trip.point_b) * 0.5)
+	var fly := spawn_fly((trip.point_a + trip.point_b) * 0.5)
 	await physics_frame
 	await physics_frame
 	check(tripped[0], "walking through a tripline reports it")
@@ -295,18 +319,17 @@ func _test_tripline_alert(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 	await physics_frame
 
 
-func _test_pressure_snare(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D, level: Node) -> void:
-	spider.growth.feed(40.0, "test")
+func _test_pressure_snare() -> void:
+	check(grow_to_spin("pressure_snare"), "grown enough to build snares")
 	await physics_frame
-	check(spider.growth.stage_index >= 2, "grown enough to build snares")
 
-	_select_pattern(builder, "pressure_snare")
+	select_pattern("pressure_snare")
 	var centre := spider.global_position + Vector3(0, 0.5, 2.0)
 	# Clear the patch first. Some of what wanders the level walks on the floor
 	# now, and a trap on the floor is exactly what a walker blunders into — so
 	# without this the snare is sometimes already sprung before the first check
 	# looks at it, which is a test of where the beetles happened to be.
-	_clear_prey_near(level, centre, 8.0, null)
+	clear_prey_near(centre, 8.0, null)
 	await physics_frame
 	await process_frame
 
@@ -317,7 +340,7 @@ func _test_pressure_snare(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 	builder.stop()
 	await physics_frame
 
-	var snare := _find_web(webs, "pressure_snare") as WebNet
+	var snare := find_web("pressure_snare") as WebNet
 	if not check(snare != null, "a pressure snare was spun"):
 		return
 	check(snare.armed, "it starts armed")
@@ -326,7 +349,7 @@ func _test_pressure_snare(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 		"with nothing already in it (%d)" % snare.snared_count())
 
 	# A beetle walks, which is the whole reason a trap on the ground exists.
-	var quarry := _spawn_species(level, "beetle", snare.to_global(snare.centre_local))
+	var quarry := spawn("beetle", snare.to_global(snare.centre_local))
 	if not check(quarry != null, "a beetle to spring it on"):
 		return
 	await physics_frame
@@ -349,30 +372,32 @@ func _test_pressure_snare(spider: SpiderPlayer, builder: WebBuilder, webs: Node3
 
 ## The point of the whole feature: a tripline metres away springs a snare, and
 ## the snare grabs prey that never touched it.
-func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D, level: Node) -> void:
+func _test_trigger_links() -> void:
+	# A snare is two tiers up, and this is about wiring rather than growing.
+	grow_to_spin("pressure_snare")
 	var base := spider.global_position + Vector3(0, 0.4, -3.0)
 
-	_select_pattern(builder, "pressure_snare")
+	select_pattern("pressure_snare")
 	builder.start()
 	for point in _square(base, 0.7):
 		builder.add_anchor(point)
 	builder.finish()
 	builder.stop()
 	await physics_frame
-	var snare := _newest_web(webs, "pressure_snare") as WebNet
+	var snare := newest_web("pressure_snare") as WebNet
 	if not check(snare != null, "a snare to wire up"):
 		return
 
 	# A tripline well clear of the snare — nothing that crosses it is anywhere
 	# near the silk.
 	var trip_at := base + Vector3(3.5, 0, 0)
-	_select_pattern(builder, "trip_line")
+	select_pattern("trip_line")
 	builder.start()
 	builder.add_anchor(trip_at + Vector3(0, -0.4, -0.6))
 	builder.add_anchor(trip_at + Vector3(0, -0.4, 0.6))
 	builder.stop()
 	await physics_frame
-	var trip := _newest_web(webs, "trip_line") as WebStrand
+	var trip := newest_web("trip_line") as WebStrand
 	if not check(trip != null, "a tripline to wire it to"):
 		return
 
@@ -391,7 +416,7 @@ func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 
 	# A fly loitering near the snare, but not in it.
 	var centre := snare.to_global(snare.centre_local)
-	var bystander := _spawn_fly(level, centre + Vector3(0, 0, 1.3))
+	var bystander := spawn_fly(centre + Vector3(0, 0, 1.3))
 	await physics_frame
 	await physics_frame
 	var reach: float = snare.radius * snare.pattern.signal_strike_factor
@@ -405,13 +430,13 @@ func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	# the nearest thing in reach — so anything else that has drifted into range
 	# would win the race and make this a test of where the spawner's flies
 	# happened to be. Clear the field first.
-	_clear_prey_near(level, centre, reach, bystander)
+	clear_prey_near(centre, reach, bystander)
 	await physics_frame
 	await process_frame
 
 	# Now set the line off, far away.
 	check(snare.armed, "the snare is armed before anything happens")
-	var crosser := _spawn_fly(level, (trip.point_a + trip.point_b) * 0.5)
+	var crosser := spawn_fly((trip.point_a + trip.point_b) * 0.5)
 	await physics_frame
 	await physics_frame
 
@@ -430,14 +455,14 @@ func _test_trigger_links(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	check(not crosser.is_stuck(), "while the fly on the tripline walks on")
 
 	# Tensing: a plain web wired to something pulls taut instead of springing.
-	_select_pattern(builder, "orb_web")
+	select_pattern("orb_web")
 	builder.start()
 	for point in _square(base + Vector3(-2.5, 0, 0), 0.6):
 		builder.add_anchor(point)
 	builder.finish()
 	builder.stop()
 	await physics_frame
-	var orb := _newest_web(webs, "orb_web") as WebNet
+	var orb := newest_web("orb_web") as WebNet
 	if check(orb != null, "an orb web to tense"):
 		var relaxed := orb.hold_strength()
 		orb.receive_signal(trip, 1)
@@ -492,8 +517,10 @@ func _worst_anchor_drift(points: PackedVector3Array, layout) -> float:
 	return worst
 
 
-func _test_weave_modes(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) -> void:
-	_select_pattern(builder, "orb_web")
+func _test_weave_modes() -> void:
+	# An orb web is a tier past a spiderling, and this is about the web.
+	grow_to_spin("orb_web")
+	select_pattern("orb_web")
 	var pattern := builder.current_pattern()
 	var corner := _corner_anchors()
 	var centre := Vector3.ZERO
@@ -551,7 +578,7 @@ func _test_weave_modes(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) 
 	builder.finish()
 	builder.stop()
 	await physics_frame
-	var spun := _newest_web(webs, "orb_web") as WebNet
+	var spun := newest_web("orb_web") as WebNet
 	if check(spun != null, "an inscribed web was spun"):
 		check(spun.weave == WebGeometry.Weave.INSCRIBED, "and it remembers how")
 		check(spun.spiral_radius > 0.0, "with a sticky disc")
@@ -565,7 +592,7 @@ func _test_weave_modes(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) 
 
 ## Three lines slung across a gap, none of them touching another at an end,
 ## still enclose the triangle where they cross — and that triangle can be woven.
-func _test_rings_of_silk(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) -> void:
+func _test_rings_of_silk() -> void:
 	spider.view.pitch = 0.0
 	spider.view.face(Vector3.FORWARD)
 	await physics_frame
@@ -576,7 +603,7 @@ func _test_rings_of_silk(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	var up := across.cross(forward).normalized()
 
 	# A triangle made only by crossings: each line runs well past the others.
-	var frame := _pattern(builder, "frame_line")
+	var frame := pattern_named("frame_line")
 	var lines: Array[WebStrand] = []
 	for pair in [
 			[centre - across * 1.0 - up * 0.35, centre + across * 1.0 - up * 0.35],
@@ -605,7 +632,7 @@ func _test_rings_of_silk(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 				corners_on_ends += 1
 	check(corners_on_ends == 0, "every corner is a crossing, not a line end")
 
-	_select_pattern(builder, "sheet_web")
+	select_pattern("sheet_web")
 	builder.start()
 	var aimed = builder.aimed_loop()
 	check(aimed != null, "the ring is found under the crosshair")
@@ -614,7 +641,7 @@ func _test_rings_of_silk(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	await physics_frame
 	check(woven, "and can be woven in one go")
 
-	var net := _newest_web(webs, "sheet_web") as WebNet
+	var net := newest_web("sheet_web") as WebNet
 	if check(net != null, "a web is standing in the ring"):
 		net.demolish()
 	for line in lines:
@@ -628,29 +655,22 @@ func _test_rings_of_silk(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 
 	# And every strand is rideable now, not just the ones meant as roads.
 	var opt_in := false
-	for entry in _pattern(builder, "trip_line").get_property_list():
+	for entry in pattern_named("trip_line").get_property_list():
 		if entry.get("name", "") == "ridable":
 			opt_in = true
 	check(not opt_in, "there is no opt-in for riding any more — all silk is a zipline")
 
 
-func _pattern(builder: WebBuilder, id: String) -> WebPattern:
-	for pattern in builder.patterns:
-		if pattern.id == id:
-			return pattern
-	return null
-
-
 ## A spider lives on its web. It has to hold the spider's weight and still let
 ## prey fly into it, which is why silk gets its own collision layer.
-func _test_living_on_the_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D, level: Node) -> void:
+func _test_living_on_the_web() -> void:
 
 	# A web lying flat on the ground — the case worth checking, because a trap
 	# underfoot is the one that sounds like it needs to be a special object.
 	var floor_height := spider.global_position.y - spider.stage().body_height * 0.4
 	var centre := spider.global_position + Vector3(2.5, 0, 2.5)
 	centre.y = floor_height + 0.05
-	_select_pattern(builder, "sheet_web")
+	select_pattern("sheet_web")
 	builder.start()
 	for offset in [Vector3(-0.7, 0, -0.7), Vector3(0.7, 0, -0.7),
 			Vector3(0.7, 0, 0.7), Vector3(-0.7, 0, 0.7)]:
@@ -659,7 +679,7 @@ func _test_living_on_the_web(spider: SpiderPlayer, builder: WebBuilder, webs: No
 	builder.stop()
 	await physics_frame
 
-	var mat := _newest_web(webs, "sheet_web") as WebNet
+	var mat := newest_web("sheet_web") as WebNet
 	if not check(mat != null, "a web woven flat on the ground"):
 		return
 	check(absf(mat.plane_normal.dot(Vector3.UP)) > 0.9, "lying flat, as asked")
@@ -674,7 +694,7 @@ func _test_living_on_the_web(spider: SpiderPlayer, builder: WebBuilder, webs: No
 		"and can climb about on")
 
 	# ...without being solid to the things it is meant to catch.
-	var fly := _spawn_fly(level, centre + Vector3(0, 1.0, 0))
+	var fly := spawn_fly(centre + Vector3(0, 1.0, 0))
 	await physics_frame
 	check(walkway.collision_layer & fly.collision_mask == 0,
 		"but prey passes straight through it")
@@ -705,8 +725,10 @@ func _test_living_on_the_web(spider: SpiderPlayer, builder: WebBuilder, webs: No
 	await physics_frame
 
 
-func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D, level: Node) -> void:
-	_select_pattern(builder, "orb_web")
+func _test_tuning_dials() -> void:
+	# An orb web is a tier past a spiderling, and this is about the web.
+	grow_to_spin("orb_web")
+	select_pattern("orb_web")
 	var pattern := builder.current_pattern()
 	var tuning := builder.tuning_for(pattern)
 	check(tuning.is_default(), "a pattern starts on standard settings")
@@ -759,7 +781,7 @@ func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 		builder.finish()
 		builder.stop()
 		await physics_frame
-		var web := _newest_web(webs, "orb_web")
+		var web := newest_web("orb_web")
 		# Measured off the drawn geometry: a coarse mesh is literally fewer
 		# threads, and vertices are what fewer threads look like from here.
 		costs[setting] = float(_mesh_verts(web))
@@ -782,10 +804,10 @@ func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 	builder.finish()
 	builder.stop()
 	await physics_frame
-	var coarse_web := _newest_web(webs, "orb_web") as WebNet
+	var coarse_web := newest_web("orb_web") as WebNet
 	if check(coarse_web != null, "a coarse web to test the gate on"):
 		check(coarse_web.pattern.min_catch_size > 1, "it is meshed for bigger prey")
-		var fly := _spawn_fly(level, coarse_web.to_global(coarse_web.centre_local))
+		var fly := spawn_fly(coarse_web.to_global(coarse_web.centre_local))
 		await physics_frame
 		await physics_frame
 		check(not fly.is_stuck(), "and a fly goes straight through it")
@@ -796,25 +818,27 @@ func _test_tuning_dials(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 	await physics_frame
 
 
-func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) -> void:
+func _test_saved_designs() -> void:
+	# A snare is two tiers up, and this is about wiring rather than growing.
+	grow_to_spin("pressure_snare")
 	var base := spider.global_position + Vector3(-5.0, 0.4, 0.0)
 
 	# A two-piece rig: snare plus a tripline wired to it.
-	_select_pattern(builder, "pressure_snare")
+	select_pattern("pressure_snare")
 	builder.start()
 	for point in _square(base, 0.6):
 		builder.add_anchor(point)
 	builder.finish()
 	builder.stop()
-	_select_pattern(builder, "trip_line")
+	select_pattern("trip_line")
 	builder.start()
 	builder.add_anchor(base + Vector3(1.6, -0.4, -0.5))
 	builder.add_anchor(base + Vector3(1.6, -0.4, 0.5))
 	builder.stop()
 	await physics_frame
 
-	var snare := _newest_web(webs, "pressure_snare") as WebNet
-	var trip := _newest_web(webs, "trip_line") as WebStrand
+	var snare := newest_web("pressure_snare") as WebNet
+	var trip := newest_web("trip_line") as WebStrand
 	if not check(snare != null and trip != null, "a rig to keep"):
 		return
 	check(snare.anchors.size() == 4, "a spun web remembers its anchors")
@@ -849,12 +873,12 @@ func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	builder.aim_point = spider.global_position + Vector3(0, 0.5, -7.0)
 	builder.aim_normal = Vector3.UP
 
-	var before_webs := _web_count(webs)
+	var before_webs := web_count()
 	# Aim is recomputed every frame, so remember where this went.
 	var placed_at := builder.aim_point
 	check(builder.place_design(), "the design can be spun somewhere new")
 	await physics_frame
-	check(_web_count(webs) == before_webs + 2, "both webs went up")
+	check(web_count() == before_webs + 2, "both webs went up")
 
 	# The copies must be wired to each other, not back to the original.
 	var copies: Array[WebStructure] = []
@@ -874,23 +898,31 @@ func _test_saved_designs(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	# There is no being too poor for one any more, so what is left to check is
 	# that a second copy is a second copy: the same design, somewhere else,
 	# going up whole rather than borrowing from the first.
-	var before_second := _web_count(webs)
+	var before_second := web_count()
 	builder.aim_valid = true
 	builder.aim_point = spider.global_position + Vector3(0, 0.5, -11.0)
 	builder.aim_normal = Vector3.UP
 	check(builder.place_design(), "the same design goes up again elsewhere")
 	await physics_frame
-	check(_web_count(webs) == before_second + design.piece_count(),
+	check(web_count() == before_second + design.piece_count(),
 		"whole, with all %d of its pieces" % design.piece_count())
 
 	builder.placing_design = false
 	DesignLibrary.forget(design)
 
 
-func _test_sandbox_wiring(level: Node, spider: SpiderPlayer) -> void:
+func _test_sandbox_wiring() -> void:
 	var spawner := level.get_node_or_null("PreySpawner") as PreySpawner
 	if check(spawner != null, "the level has a prey spawner"):
-		check(spawner.alive_count() > 0, "it stocked %d creatures" % spawner.alive_count())
+		# Clearing the room between sections takes the spawner's stock with
+		# everything else, and it refills one creature per respawn_delay — five
+		# seconds, which is not worth waiting out three times over. So it is asked
+		# to do now what it would do anyway, and then watched doing it.
+		spawner._pending = 0.0
+		var stocked := await wait_until(
+			func() -> bool: return spawner.alive_count() > 0, 120)
+		var alive := spawner.alive_count()
+		check(stocked, "it stocked %d creature%s" % [alive, "" if alive == 1 else "s"])
 		check(spawner.stock.size() > 1,
 			"from a mixed stock (%d species)" % spawner.stock.size())
 	var hud := level.get_node_or_null("HUD") as SpiderHUD
@@ -900,16 +932,16 @@ func _test_sandbox_wiring(level: Node, spider: SpiderPlayer) -> void:
 		check(hud.web_bar.max_value == 1.0, "and showing when the next web is ready")
 
 
-func _test_demolish(builder: WebBuilder, webs: Node3D) -> void:
+func _test_demolish() -> void:
 	# Its own, rather than whatever the suite left standing: webs come down with
 	# their catch now, so leftovers are not something to count on.
-	var web := await _sheet_at(builder, webs, Vector3(90.0, 3.0, 40.0))
-	var count := _web_count(webs)
+	var web := await _sheet_at(Vector3(90.0, 3.0, 40.0))
+	var count := web_count()
 	if not check(web != null, "there is a web to pull down"):
 		return
 	web.demolish()
 	await process_frame
-	check(_web_count(webs) == count - 1, "the web is gone")
+	check(web_count() == count - 1, "the web is gone")
 
 
 ## Three lines at a time, and the fourth takes the oldest down.
@@ -917,7 +949,7 @@ func _test_demolish(builder: WebBuilder, webs: Node3D) -> void:
 ## This is what replaced the silk budget on lines: a line costs nothing to
 ## make and everything to keep, so the question is which three you want rather
 ## than whether you can afford another.
-func _test_three_lines(spider: SpiderPlayer, builder: WebBuilder) -> void:
+func _test_three_lines() -> void:
 	check(WebBuilder.MAX_LINES == 3, "three at a time (%d)" % WebBuilder.MAX_LINES)
 
 	# Start from a known register — the suite has been grappling for a while.
@@ -929,16 +961,16 @@ func _test_three_lines(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	check(builder.line_count() == 0, "starting with none up (%d)" % builder.line_count())
 
 	var base := Vector3(60.0, 4.0, 60.0)
-	_select_pattern(builder, "frame_line")
-	var first := _run_a_line(builder, base, base + Vector3(2, 0, 0))
-	var second := _run_a_line(builder, base + Vector3(2, 0, 0), base + Vector3(4, 0, 0))
-	var third := _run_a_line(builder, base + Vector3(4, 0, 0), base + Vector3(6, 0, 0))
+	select_pattern("frame_line")
+	var first := _run_a_line(base, base + Vector3(2, 0, 0))
+	var second := _run_a_line(base + Vector3(2, 0, 0), base + Vector3(4, 0, 0))
+	var third := _run_a_line(base + Vector3(4, 0, 0), base + Vector3(6, 0, 0))
 	await physics_frame
 	if not check(first != null and second != null and third != null, "three lines go up"):
 		return
 	check(builder.line_count() == 3, "and all three are counted (%d)" % builder.line_count())
 
-	var fourth := _run_a_line(builder, base + Vector3(6, 0, 0), base + Vector3(8, 0, 0))
+	var fourth := _run_a_line(base + Vector3(6, 0, 0), base + Vector3(8, 0, 0))
 	await physics_frame
 	await process_frame
 	check(fourth != null, "a fourth can still be run")
@@ -950,7 +982,7 @@ func _test_three_lines(spider: SpiderPlayer, builder: WebBuilder) -> void:
 	# The one holding you up is never the one that goes. Dropping the floor out
 	# from under the player is the game taking the controls off them.
 	spider.climb.standing_on = second
-	var fifth := _run_a_line(builder, base + Vector3(8, 0, 0), base + Vector3(10, 0, 0))
+	var fifth := _run_a_line(base + Vector3(8, 0, 0), base + Vector3(10, 0, 0))
 	await physics_frame
 	await process_frame
 	check(fifth != null, "a fifth while standing on the oldest")
@@ -966,17 +998,16 @@ func _test_three_lines(spider: SpiderPlayer, builder: WebBuilder) -> void:
 
 
 ## A web is a larder while it holds something, and nothing once it does not.
-func _test_a_web_ends_with_its_catch(builder: WebBuilder, webs: Node3D,
-		level: Node) -> void:
+func _test_a_web_ends_with_its_catch() -> void:
 	var centre := Vector3(70.0, 3.0, 30.0)
-	_clear_prey_near(level, centre, 14.0, null)
-	var net := await _sheet_at(builder, webs, centre)
+	clear_prey_near(centre, 14.0, null)
+	var net := await _sheet_at(centre)
 	if not check(net != null, "a web to fill and then empty"):
 		return
 
 	var at := net.to_global(net.centre_local)
-	var one := _spawn_fly(level, at)
-	var two := _spawn_fly(level, at + Vector3(0.12, 0.0, 0.12))
+	var one := spawn_fly(at)
+	var two := spawn_fly(at + Vector3(0.12, 0.0, 0.12))
 	await run_frames(4)
 	if not check(one != null and two != null and one.is_stuck() and two.is_stuck(),
 			"two flies in it"):
@@ -997,10 +1028,10 @@ func _test_a_web_ends_with_its_catch(builder: WebBuilder, webs: Node3D,
 
 	# Escaping is not harvesting. Something getting away is the web losing, and
 	# taking the web as well would be losing twice for one mistake.
-	var again := await _sheet_at(builder, webs, centre)
+	var again := await _sheet_at(centre)
 	if not check(again != null, "another web, to lose one out of"):
 		return
-	var runner := _spawn_fly(level, again.to_global(again.centre_local))
+	var runner := spawn_fly(again.to_global(again.centre_local))
 	await run_frames(4)
 	if check(runner != null and runner.is_stuck(), "a fly in this one"):
 		again.on_prey_escaped(runner)
@@ -1015,19 +1046,19 @@ func _test_a_web_ends_with_its_catch(builder: WebBuilder, webs: Node3D,
 
 
 ## Spins a sheet web round a point, the scripted way.
-func _sheet_at(builder: WebBuilder, webs: Node3D, centre: Vector3) -> WebNet:
-	_select_pattern(builder, "sheet_web")
+func _sheet_at(centre: Vector3) -> WebNet:
+	select_pattern("sheet_web")
 	builder.start()
 	for point in _square(centre, 0.7):
 		builder.add_anchor(point)
 	builder.finish()
 	builder.stop()
 	await physics_frame
-	return _newest_web(webs, "sheet_web") as WebNet
+	return newest_web("sheet_web") as WebNet
 
 
 ## Runs a line the way arriving from a grapple does, without the journey.
-func _run_a_line(builder: WebBuilder, from: Vector3, to: Vector3) -> WebStrand:
+func _run_a_line(from: Vector3, to: Vector3) -> WebStrand:
 	builder._launched_from = from
 	builder._arrive_at(to)
 	var up := builder.lines()
@@ -1040,12 +1071,11 @@ func _run_a_line(builder: WebBuilder, from: Vector3, to: Vector3) -> WebStrand:
 ## that web to the surface it hit made corners strictly worse than the old
 ## system, because a web flat against a wall casts all sixteen rim rays parallel
 ## to that wall and none of them find anything.
-func _test_a_shot_fits_a_corner(spider: SpiderPlayer, builder: WebBuilder,
-		webs: Node3D) -> void:
-	var host := spider.get_parent()
-	_select_pattern(builder, "orb_web")
-	builder.shot_cooldown = 0.0
-	builder._cooling = 0.0
+func _test_a_shot_fits_a_corner() -> void:
+	# An orb web is a tier past a spiderling, and this is about the web.
+	grow_to_spin("orb_web")
+	select_pattern("orb_web")
+	ignore_shot_cooldown()
 	# First person, so the bolt leaves along exactly the line being aimed. In
 	# third person the cross and the muzzle are apart, and a bolt meant for the
 	# wall ahead can arrive at the one beside it instead.
@@ -1056,30 +1086,37 @@ func _test_a_shot_fits_a_corner(spider: SpiderPlayer, builder: WebBuilder,
 
 	# A flat wall first, for the number a corner has to beat.
 	var flat_at := Vector3(-140.0, 0.0, -140.0)
-	var flat_floor := _test_slab(host, flat_at, Vector3(10, 0.5, 10))
-	_test_slab(host, flat_at + Vector3(4.0, 2.0, 0.0), Vector3(0.4, 4.0, 10.0))
+	var flat_floor := add_slab(flat_at, Vector3(10, 0.5, 10))
+	add_slab(flat_at + Vector3(4.0, 2.0, 0.0), Vector3(0.4, 4.0, 10.0))
 	await physics_frame
-	_stand_on(spider, flat_floor.global_position + Vector3(-1.0, 0.25, 0.0))
+	stand_on(flat_floor.global_position + Vector3(-1.0, 0.25, 0.0))
 	spider.view.face(Vector3.RIGHT)
 	spider.view.pitch = 0.0
 	await run_frames(4)
-	var flat_anchored := await _shoot_and_read_rim(builder, webs)
+	var flat_anchored := await _shoot_and_read_rim()
 
 	# Then an inside corner: walls close on both sides of the one it hits, near
 	# enough that a web of this size can actually reach them. A shot is 1.26m
 	# across at this tier, so walls four metres out would make this test pass on
 	# nothing at all.
+	# The side walls go where this spider's shot can actually reach, measured
+	# rather than written down. They used to sit a flat metre out, which was
+	# inside the reach of whatever size the spider had eaten its way to by the
+	# time this ran and outside a smaller one's — so the check quietly stopped
+	# testing anything instead of failing. Faces at four fifths of the reach,
+	# plus the wall's own half-thickness.
+	var side := builder.shot_radius() * 0.8 + 0.2
 	var corner_at := Vector3(-170.0, 0.0, -140.0)
-	var corner_floor := _test_slab(host, corner_at, Vector3(10, 0.5, 10))
-	_test_slab(host, corner_at + Vector3(4.0, 2.0, 0.0), Vector3(0.4, 4.0, 10.0))
-	_test_slab(host, corner_at + Vector3(0.0, 2.0, 1.0), Vector3(10, 4.0, 0.4))
-	_test_slab(host, corner_at + Vector3(0.0, 2.0, -1.0), Vector3(10, 4.0, 0.4))
+	var corner_floor := add_slab(corner_at, Vector3(10, 0.5, 10))
+	add_slab(corner_at + Vector3(4.0, 2.0, 0.0), Vector3(0.4, 4.0, 10.0))
+	add_slab(corner_at + Vector3(0.0, 2.0, side), Vector3(10, 4.0, 0.4))
+	add_slab(corner_at + Vector3(0.0, 2.0, -side), Vector3(10, 4.0, 0.4))
 	await physics_frame
-	_stand_on(spider, corner_floor.global_position + Vector3(-1.0, 0.25, 0.0))
+	stand_on(corner_floor.global_position + Vector3(-1.0, 0.25, 0.0))
 	spider.view.face(Vector3.RIGHT)
 	spider.view.pitch = 0.0
 	await run_frames(4)
-	var corner_anchored := await _shoot_and_read_rim(builder, webs)
+	var corner_anchored := await _shoot_and_read_rim()
 
 	check(corner_anchored > flat_anchored,
 		"a shot into a corner finds more to hold on to than one at a flat wall (%d against %d of %d)"
@@ -1091,7 +1128,7 @@ func _test_a_shot_fits_a_corner(spider: SpiderPlayer, builder: WebBuilder,
 
 
 ## Fires one and reports how many of the web's corners found something.
-func _shoot_and_read_rim(builder: WebBuilder, webs: Node3D) -> int:
+func _shoot_and_read_rim() -> int:
 	var built: Array[WebStructure] = []
 	var catcher := func(web: WebStructure) -> void: built.append(web)
 	# Nothing else in the air: shoot() refuses while a bolt is still flying, and
@@ -1113,15 +1150,15 @@ func _shoot_and_read_rim(builder: WebBuilder, webs: Node3D) -> int:
 
 
 ## Silk stuck to a wall should look stuck to it.
-func _test_silk_sits_on_what_it_sticks_to(spider: SpiderPlayer,
-		builder: WebBuilder) -> void:
-	var host := spider.get_parent()
-	var slab := _test_slab(host, Vector3(200.0, 0.0, 200.0))
+func _test_silk_sits_on_what_it_sticks_to() -> void:
+	# An orb web is a tier past a spiderling, and this is about the web.
+	grow_to_spin("orb_web")
+	var slab := add_slab(Vector3(200.0, 0.0, 200.0))
 	await physics_frame
 	var top := slab.global_position.y + 0.25
-	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
 	await process_frame
-	_select_pattern(builder, "frame_line")
+	select_pattern("frame_line")
 	builder._update_aim()
 
 	# Straight down at the slab: the anchor is on it, not hovering over it.
@@ -1135,7 +1172,7 @@ func _test_silk_sits_on_what_it_sticks_to(spider: SpiderPlayer,
 		"clear of it by something, so silk does not z-fight the stone (%.4fm)" % lift)
 
 	# The same for a web's rim: a corner stops a strand short, not a hand's width.
-	_select_pattern(builder, "orb_web")
+	select_pattern("orb_web")
 	if check(builder.begin_place(), "a web to measure against the floor"):
 		builder.place_radius = clampf(1.0, builder._min_place_radius(),
 			builder._max_place_radius())
@@ -1164,8 +1201,7 @@ func _square(centre: Vector3, half: float) -> Array[Vector3]:
 ## Devices are the one thing that isn't silk, so what's tested here is the ways
 ## they differ from a web: they run out, they come back up, they do something
 ## silk can't, and they wire into the same network either way round.
-func _test_the_bag(spider: SpiderPlayer, level: Node, webs: Node3D,
-		builder: WebBuilder) -> void:
+func _test_the_bag() -> void:
 	var bag := spider.bag
 	var placer := spider.device_placer
 	placer.notice.connect(func(text: String) -> void: note(text))
@@ -1201,14 +1237,14 @@ func _test_the_bag(spider: SpiderPlayer, level: Node, webs: Node3D,
 
 	# A slab of our own to work on, so what's under the crosshair is known
 	# rather than whatever the demo level happens to have at that coordinate.
-	var slab := _test_slab(level, Vector3(30, 0.0, 30))
+	var slab := add_slab(Vector3(30, 0.0, 30))
 	await physics_frame
-	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
 	await process_frame
 
 	# Placing costs a device out of the bag and no silk at all: the bag is the
 	# whole limit on them, which is why they are allowed to be better than silk.
-	_select_device(placer, "venom_spur")
+	_select_device("venom_spur")
 	var carried_before := bag.count(venom)
 	var spur := placer.place()
 	await physics_frame
@@ -1225,7 +1261,7 @@ func _test_the_bag(spider: SpiderPlayer, level: Node, webs: Node3D,
 		"won't stack a second one on top of it")
 
 	# Taking it back up is the whole reason a device isn't a web.
-	_stand_on(spider, spur.global_position)
+	stand_on(spur.global_position)
 	await process_frame
 	check(placer.aimed_device() == spur, "looking at it finds it")
 	check(placer.pick_up_aimed(), "picked it back up")
@@ -1236,9 +1272,9 @@ func _test_the_bag(spider: SpiderPlayer, level: Node, webs: Node3D,
 		"and gone from the level")
 
 	# Run out and the wheel moves off it rather than sitting on an empty slot.
-	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 3.0))
+	stand_on(slab.global_position + Vector3(0, 0.25, 3.0))
 	await process_frame
-	_select_device(placer, "scent_lure")
+	_select_device("scent_lure")
 	var only_lure := placer.place()
 	await physics_frame
 	if not check(only_lure != null, "put the one scent lure down"):
@@ -1249,54 +1285,27 @@ func _test_the_bag(spider: SpiderPlayer, level: Node, webs: Node3D,
 	await physics_frame
 	await process_frame
 
-	await _test_venom_kills_what_silk_only_holds(spider, level, slab)
-	await _test_wiring_a_device(spider, webs, builder, placer, slab)
+	await _test_venom_kills_what_silk_only_holds(slab)
+	await _test_wiring_a_device(slab)
 	placer.stop()
 	slab.queue_free()
 
 
-## A bare platform a long way from everything else, so a device test is only
-## ever about the device.
-func _test_slab(level: Node, at: Vector3, size := Vector3(12, 0.5, 12)) -> StaticBody3D:
-	var shape := BoxShape3D.new()
-	shape.size = size
-	var collider := CollisionShape3D.new()
-	collider.shape = shape
-	var slab := StaticBody3D.new()
-	slab.name = "TestSlab"
-	slab.collision_layer = GameLayers.WORLD
-	slab.collision_mask = 0
-	slab.add_child(collider)
-	level.add_child(slab)
-	slab.global_position = at
-	return slab
-
-
-## Puts the spider on top of a point, looking straight down at it.
-func _stand_on(spider: SpiderPlayer, at: Vector3) -> void:
-	spider.climb.release()
-	spider.global_position = at + Vector3(0, 0.6, 0)
-	spider.velocity = Vector3.ZERO
-	spider.view.face(Vector3(0, 0, -1))
-	spider.view.pitch = -PI / 2.0
-
-
 ## The point of the venom spur: a dead fly can be drained whatever its size,
 ## and silk can only ever hold something until you get there.
-func _test_venom_kills_what_silk_only_holds(spider: SpiderPlayer, level: Node,
-		slab: StaticBody3D) -> void:
+func _test_venom_kills_what_silk_only_holds(slab: StaticBody3D) -> void:
 	var placer := spider.device_placer
 	var bag := spider.bag
-	_stand_on(spider, slab.global_position + Vector3(4.0, 0.25, 0))
+	stand_on(slab.global_position + Vector3(4.0, 0.25, 0))
 	await process_frame
 
-	_select_device(placer, "venom_spur")
+	_select_device("venom_spur")
 	var spur := placer.place()
 	await physics_frame
 	if not check(spur != null, "a venom spur to fire"):
 		return
 
-	var fly := _spawn_fly(level, spur.global_position + Vector3(0, 0.3, 0))
+	var fly := spawn_fly(spur.global_position + Vector3(0, 0.3, 0))
 	fly.size_class = spider.stage().bite_power + 3
 	await physics_frame
 	check(not fly.subdued, "a live fly beside it, too big to bite")
@@ -1311,14 +1320,14 @@ func _test_venom_kills_what_silk_only_holds(spider: SpiderPlayer, level: Node,
 	# Too big to bite, but dead — so drainable. That is the trade the item buys.
 	spider.global_position = fly.global_position + Vector3(0, 0.2, 0)
 	await physics_frame
-	var got: float = await _eat(spider, fly, 900)
+	var got: float = await eat(fly, 900)
 	check(got > 0.0,
 		"drained something bigger than the spider could ever bite (+%.1f)" % got)
 
 	# A spent device still sweeps up, so the level doesn't fill with litter.
 	var spur_kind := spur.kind
 	var held := bag.count(spur_kind)
-	_stand_on(spider, spur.global_position)
+	stand_on(spur.global_position)
 	await process_frame
 	if check(placer.aimed_device() == spur, "the spent spur is still there to sweep up"):
 		check(placer.pick_up_aimed(), "swept it up")
@@ -1327,25 +1336,24 @@ func _test_venom_kills_what_silk_only_holds(spider: SpiderPlayer, level: Node,
 
 ## A device is a node on the same signal graph a web is, which is the whole
 ## reason it is worth having: the tripline you already built sets it off.
-func _test_wiring_a_device(spider: SpiderPlayer, webs: Node3D, builder: WebBuilder,
-		placer: DevicePlacer, slab: StaticBody3D) -> void:
+func _test_wiring_a_device(slab: StaticBody3D) -> void:
 	var at := slab.global_position + Vector3(-4.0, 0.25, 0)
-	_stand_on(spider, at)
+	stand_on(at)
 	await process_frame
 
-	_select_device(placer, "signal_bell")
+	_select_device("signal_bell")
 	var bell := placer.place()
 	await physics_frame
 	if not check(bell != null, "a bell to wire up"):
 		return
 
-	_select_pattern(builder, "trip_line")
+	select_pattern("trip_line")
 	builder.start()
 	builder.add_anchor(at + Vector3(-0.6, 0.4, 0))
 	builder.add_anchor(at + Vector3(0.6, 0.4, 0))
 	builder.stop()
 	await physics_frame
-	var trip := _newest_web(webs, "trip_line") as WebStrand
+	var trip := newest_web("trip_line") as WebStrand
 	if not check(trip != null, "a tripline to wire it to"):
 		return
 
@@ -1364,7 +1372,7 @@ func _test_wiring_a_device(spider: SpiderPlayer, webs: Node3D, builder: WebBuild
 	check(heard.size() > 0, "setting the tripline off rings the bell")
 
 	# Wiring is aimed at whatever is under the crosshair, device or web alike.
-	_stand_on(spider, bell.global_position)
+	stand_on(bell.global_position)
 	await process_frame
 	check(builder.aimed_node() == bell, "the wiring cursor picks devices up too")
 
@@ -1380,7 +1388,7 @@ func _test_wiring_a_device(spider: SpiderPlayer, webs: Node3D, builder: WebBuild
 	trip.queue_free()
 
 
-func _select_device(placer: DevicePlacer, id: String) -> void:
+func _select_device(id: String) -> void:
 	for i in placer._inventory.kinds.size():
 		if placer._inventory.kinds[i].id == id:
 			placer.kind_index = i
@@ -1393,19 +1401,18 @@ func _select_device(placer: DevicePlacer, id: String) -> void:
 ## A web is meant to be somewhere you leave things and come back to. That only
 ## works if a catch survives you walking away, and if a web can be full — so
 ## this is about both: what a web keeps, and how much of it.
-func _test_the_larder(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
-		level: Node) -> void:
+func _test_the_larder() -> void:
 	# Out in open air, well clear of everything else the suite has built, and
 	# with a full spool so this measures catching rather than what is left over.
 	var centre := Vector3(30, 3, 20)
-	_select_pattern(builder, "sheet_web")
+	select_pattern("sheet_web")
 	builder.start()
 	for point in _square(centre, 0.7):
 		builder.add_anchor(point)
 	builder.finish()
 	builder.stop()
 	await physics_frame
-	var net := _newest_web(webs, "sheet_web") as WebNet
+	var net := newest_web("sheet_web") as WebNet
 	if not check(net != null, "a sheet web to fill up"):
 		return
 	check(net.capacity() == 2, "a sheet web holds two (%d)" % net.capacity())
@@ -1414,7 +1421,7 @@ func _test_the_larder(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 	# The tuning spine: a web keeps a catch if it can out-hold the whole thrash.
 	# A sheet web is meant to be exactly good enough for a fly.
 	var at := net.to_global(net.centre_local)
-	var first := _spawn_fly(level, at)
+	var first := spawn_fly(at)
 	await physics_frame
 	await physics_frame
 	if not check(first.is_stuck(), "a fly flew into it"):
@@ -1440,7 +1447,7 @@ func _test_the_larder(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 	await run_frames(20)
 	var settled_drain := settled_before - net.durability
 
-	var second := _spawn_fly(level, at)
+	var second := spawn_fly(at)
 	await physics_frame
 	await physics_frame
 	if not check(second.is_stuck(), "a second fly lands in it"):
@@ -1455,7 +1462,7 @@ func _test_the_larder(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 	# Full means full. This is what makes a second site worth walking to.
 	check(net.is_full(), "two catches fill a sheet web")
 	check(net.status_line().contains("FULL"), "and it says so: %s" % net.status_line())
-	var turned_away := _spawn_fly(level, at)
+	var turned_away := spawn_fly(at)
 	await physics_frame
 	await physics_frame
 	check(not turned_away.is_stuck(), "a full web catches nothing more")
@@ -1479,27 +1486,27 @@ func _test_the_larder(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D,
 	check(is_equal_approx(net.durability, wrapped_at),
 		"wrapping a catch stops it wearing the web at all")
 
-	await _test_a_web_can_lose_a_fight(builder, webs, level)
+	await _test_a_web_can_lose_a_fight()
 	net.demolish()
 
 
 ## The other half of the deal: a catch is only kept if the web was good enough
 ## for it. Something that out-fights the silk still gets away, and takes a bite
 ## of the web with it — which is what stops "leave a web anywhere" being free.
-func _test_a_web_can_lose_a_fight(builder: WebBuilder, webs: Node3D, level: Node) -> void:
+func _test_a_web_can_lose_a_fight() -> void:
 	var centre := Vector3(30, 3, 26)
-	_select_pattern(builder, "sheet_web")
+	select_pattern("sheet_web")
 	builder.start()
 	for point in _square(centre, 0.7):
 		builder.add_anchor(point)
 	builder.finish()
 	builder.stop()
 	await physics_frame
-	var net := _newest_web(webs, "sheet_web") as WebNet
+	var net := newest_web("sheet_web") as WebNet
 	if not check(net != null and not net.is_full(), "a fresh web for a real fight"):
 		return
 
-	var brute := _spawn_fly(level, net.to_global(net.centre_local))
+	var brute := spawn_fly(net.to_global(net.centre_local))
 	brute.species = "Test Brute"
 	brute.struggle_power = 40.0
 	await physics_frame
@@ -1530,14 +1537,16 @@ func _test_a_web_can_lose_a_fight(builder: WebBuilder, webs: Node3D, level: Node
 
 ## The main way a web gets made. Aim, hold, let go — no ring to have built
 ## first, and no area to have enclosed by accident.
-func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D) -> void:
-	var slab := _test_slab(spider.get_parent(), Vector3(-30, 0.0, 30))
+func _test_placing_a_web() -> void:
+	# An orb web is a tier past a spiderling, and this is about the web.
+	grow_to_spin("orb_web")
+	var slab := add_slab(Vector3(-30, 0.0, 30))
 	await physics_frame
-	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
 	await process_frame
 
-	_select_pattern(builder, "orb_web")
-	var before := _web_count(webs)
+	select_pattern("orb_web")
+	var before := web_count()
 	check(builder.begin_place(), "Q starts spinning a web")
 	check(builder.placing, "and it grows while held")
 	check(builder.place_valid, "with somewhere to put it")
@@ -1597,8 +1606,8 @@ func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	# Drive it through the input system as well. Calling begin_place() straight
 	# is how this shipped broken: the wheel sat on a strand, so the real key
 	# refused every single press while the test never went near a key.
-	_select_pattern(builder, "orb_web")
-	var count_before := _web_count(webs)
+	select_pattern("orb_web")
+	var count_before := web_count()
 	send_action(spider.input_build_mode)
 	await process_frame
 	check(builder.placing, "the Q key itself starts it")
@@ -1607,14 +1616,14 @@ func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 	await process_frame
 	await physics_frame
 	check(not builder.placing, "and letting the key go finishes it")
-	check(_web_count(webs) == count_before + 1,
-		"leaving a web behind (%d -> %d)" % [count_before, _web_count(webs)])
+	check(web_count() == count_before + 1,
+		"leaving a web behind (%d -> %d)" % [count_before, web_count()])
 
 	# A line is grappled across a gap, not spun in mid-air.
-	_select_pattern(builder, "trip_line")
+	select_pattern("trip_line")
 	check(not builder.begin_place(), "a tripline refuses to be spun as a web")
 	builder.cancel_place()
-	_select_first_spinnable_again(builder)
+	_select_first_spinnable_again()
 
 	web.demolish()
 	slab.queue_free()
@@ -1627,14 +1636,15 @@ func _test_placing_a_web(spider: SpiderPlayer, builder: WebBuilder, webs: Node3D
 ## Holding the key says how far a web is *allowed* to reach; the room decides
 ## where it actually stops. The same press should give a full circle in open
 ## air and something that fills the gap when there is a gap to fill.
-func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder) -> void:
-	var host := spider.get_parent()
-	_select_pattern(builder, "orb_web")
+func _test_a_web_fits_the_space() -> void:
+	# An orb web is a tier past a spiderling, and this is about the web.
+	grow_to_spin("orb_web")
+	select_pattern("orb_web")
 
 	# Open air: a slab to stand on and nothing beside it.
-	var open_slab := _test_slab(host, Vector3(-60, 0.0, -60))
+	var open_slab := add_slab(Vector3(-60, 0.0, -60))
 	await physics_frame
-	_stand_on(spider, open_slab.global_position + Vector3(0, 0.25, 0))
+	stand_on(open_slab.global_position + Vector3(0, 0.25, 0))
 	# Straight down at the floor, set rather than inherited. Two things have to be
 	# true for "open air" to mean anything: the crosshair needs a surface under it
 	# or there is no placement at all, and the web's plane has to end up parallel
@@ -1663,12 +1673,12 @@ func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder) -> vo
 
 	# A slot: two walls close either side, looking along it at the end.
 	var floor_at := Vector3(-90, 0.0, -60)
-	var slot_floor := _test_slab(host, floor_at, Vector3(10, 0.5, 10))
-	_test_slab(host, floor_at + Vector3(0, 2.0, -0.9), Vector3(10, 4.0, 0.4))
-	_test_slab(host, floor_at + Vector3(0, 2.0, 0.9), Vector3(10, 4.0, 0.4))
-	_test_slab(host, floor_at + Vector3(4.0, 2.0, 0), Vector3(0.4, 4.0, 4.0))
+	var slot_floor := add_slab(floor_at, Vector3(10, 0.5, 10))
+	add_slab(floor_at + Vector3(0, 2.0, -0.9), Vector3(10, 4.0, 0.4))
+	add_slab(floor_at + Vector3(0, 2.0, 0.9), Vector3(10, 4.0, 0.4))
+	add_slab(floor_at + Vector3(4.0, 2.0, 0), Vector3(0.4, 4.0, 4.0))
 	await physics_frame
-	_stand_on(spider, slot_floor.global_position + Vector3(-2.0, 0.25, 0))
+	stand_on(slot_floor.global_position + Vector3(-2.0, 0.25, 0))
 	spider.view.face(Vector3.RIGHT)
 	spider.view.pitch = 0.0
 	await process_frame
@@ -1725,15 +1735,15 @@ func _test_a_web_fits_the_space(spider: SpiderPlayer, builder: WebBuilder) -> vo
 ## and it is also something you throw over a thing that is right there — and
 ## the second only works if a new web catches what is already inside it, since
 ## a catch volume otherwise only ever hears about arrivals.
-func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder,
-		level: Node, webs: Node3D) -> void:
-	var host := spider.get_parent()
-	var before := _web_count(webs)
-	var slab := _test_slab(host, Vector3(-120, 0.0, -60))
+func _test_spitting_a_web_at_something() -> void:
+	# An orb web is a tier past a spiderling, and this is about the web.
+	grow_to_spin("orb_web")
+	var before := web_count()
+	var slab := add_slab(Vector3(-120, 0.0, -60))
 	await physics_frame
-	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
 	await process_frame
-	_clear_prey_near(level, slab.global_position, 12.0, null)
+	clear_prey_near(slab.global_position, 12.0, null)
 	await physics_frame
 	await process_frame
 
@@ -1742,7 +1752,7 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	if not check(builder.place_valid, "somewhere to spin one"):
 		return
 	var floor_y := builder.aim_point.y
-	var sitting := _spawn_fly(level, builder.aim_point + Vector3(0, 0.35, 0))
+	var sitting := spawn_fly(builder.aim_point + Vector3(0, 0.35, 0))
 	await physics_frame
 	await physics_frame
 	check(not sitting.is_stuck(), "a fly minding its own business")
@@ -1756,7 +1766,7 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 		"and centres on it (%.3fm off)"
 		% builder.place_centre.distance_to(sitting.global_position))
 
-	_select_pattern(builder, "orb_web")
+	select_pattern("orb_web")
 	if not check(builder.begin_place(), "spinning one straight onto it"):
 		return
 	builder.place_radius = clampf(1.6, builder._min_place_radius(),
@@ -1787,8 +1797,8 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	await process_frame
 	check(not is_instance_valid(net) or net.is_queued_for_deletion(),
 		"and the web goes with it rather than sitting there empty")
-	check(_web_count(webs) == before,
-		"leaving nothing standing (%d, started %d)" % [_web_count(webs), before])
+	check(web_count() == before,
+		"leaving nothing standing (%d, started %d)" % [web_count(), before])
 
 	# It has to come down, and come down to the floor — a bundle is dead weight
 	# whether or not the thing inside it could fly, and it must not come to
@@ -1808,27 +1818,27 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 
 	# And is simply there to be drained off the floor. Which takes a few seconds
 	# now, like every other meal.
-	var fed: float = await _eat(spider, sitting, 900)
+	var fed: float = await eat(sitting, 900)
 	check(fed > 0.0, "a bundle on the floor is drainable (+%.1f)" % fed)
 
 	# The silk still has to be up to it: one that out-fights the web is caught
 	# the ordinary way and has to be held, exactly as if it had flown in — and
 	# a web that only holds rather than wraps is a web that stays up.
-	_stand_on(spider, slab.global_position + Vector3(2.5, 0.25, 0))
+	stand_on(slab.global_position + Vector3(2.5, 0.25, 0))
 	await process_frame
 	if not check(builder.begin_place(), "a second throw, at something tougher"):
 		return
 	builder.place_radius = clampf(1.6, builder._min_place_radius(),
 		builder._max_place_radius())
 	builder._update_placement()
-	var brute := _spawn_fly(level, builder.place_centre)
+	var brute := spawn_fly(builder.place_centre)
 	brute.species = "Test Brute"
 	brute.struggle_power = 40.0
 	brute.flying = false
 	await physics_frame
 	await physics_frame
 
-	var standing := _web_count(webs)
+	var standing := web_count()
 	var tough: Array[WebStructure] = []
 	var second := func(built: WebStructure) -> void: tough.append(built)
 	builder.web_built.connect(second)
@@ -1844,7 +1854,7 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	check(held.bundled_on_arrival == 0, "so it is not wrapped outright")
 	check(brute.is_stuck() and not brute.is_bundled(),
 		"it hangs in the web and has to be fought for")
-	check(_web_count(webs) == standing + 1,
+	check(web_count() == standing + 1,
 		"and that web stays up, because it is still holding something")
 
 	brute.queue_free()
@@ -1861,16 +1871,16 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 ## so it can miss, it can be led onto something moving, and the web does not
 ## exist until it gets there. All three of those are what make it different
 ## from putting the web straight down under the crosshair.
-func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Node,
-		webs: Node3D) -> void:
-	var host := spider.get_parent()
-	var slab := _test_slab(host, Vector3(90, 0.0, -90))
+func _test_throwing_a_bolt() -> void:
+	# An orb web is a tier past a spiderling, and this is about the web.
+	grow_to_spin("orb_web")
+	var slab := add_slab(Vector3(90, 0.0, -90))
 	await physics_frame
-	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
 	await process_frame
-	_clear_prey_near(level, slab.global_position, 16.0, null)
+	clear_prey_near(slab.global_position, 16.0, null)
 	await physics_frame
-	_select_pattern(builder, "orb_web")
+	select_pattern("orb_web")
 
 	check(not builder.throwing, "webs go down where you point to start with")
 	builder.toggle_throwing()
@@ -1890,13 +1900,13 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 	var catcher := func(built: WebStructure) -> void: thrown.append(built)
 	builder.web_built.connect(catcher)
 
-	var standing := _web_count(webs)
+	var standing := web_count()
 	check(builder.commit_place(), "letting go throws it")
 	check(builder.shot_in_flight(), "and puts a bolt in the air")
 	check(thrown.is_empty(), "with no web yet — the silk has to get there first")
 	check(true,
 		"and nothing paid for while it is still flying")
-	check(_web_count(webs) == standing, "nothing standing yet either")
+	check(web_count() == standing, "nothing standing yet either")
 
 	var arrived := await wait_until(func() -> bool: return not thrown.is_empty(), 240)
 	builder.web_built.disconnect(catcher)
@@ -1914,7 +1924,7 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 		"near where it was aimed (%.2fm off)"
 		% web.global_position.distance_to(aimed_at))
 	check(web.radius > 0.0, "with real size to it (%.2fm)" % web.radius)
-	check(_web_count(webs) == standing + 1, "and it is standing there")
+	check(web_count() == standing + 1, "and it is standing there")
 	web.demolish()
 	await physics_frame
 
@@ -1926,8 +1936,7 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 	# about where a guessed offset happened to put the fly.
 	var muzzle := spider.view.aim_origin()
 	var floor_point := builder.aim_point
-	var sitting := _spawn_fly(level,
-		floor_point + (muzzle - floor_point).normalized() * 0.3)
+	var sitting := spawn_fly(floor_point + (muzzle - floor_point).normalized() * 0.3)
 	await physics_frame
 	await physics_frame
 	check(not sitting.is_stuck(), "a fly in the way of the next one")
@@ -1951,7 +1960,7 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 		var net := built as WebNet
 		wrapped_on_arrival[0] = net.bundled_on_arrival if net != null else -1
 	builder.web_built.connect(second)
-	var before_fly := _web_count(webs)
+	var before_fly := web_count()
 	check(builder.commit_place(), "and throwing it")
 	var hit := await wait_until(func() -> bool: return not at_fly.is_empty(), 240)
 	builder.web_built.disconnect(second)
@@ -1967,16 +1976,16 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 		"the fly is a bundle rather than stuck in a web")
 	await physics_frame
 	await process_frame
-	check(_web_count(webs) == before_fly,
+	check(web_count() == before_fly,
 		"and the silk goes with it, leaving nothing hanging (%d, started %d)"
-		% [_web_count(webs), before_fly])
+		% [web_count(), before_fly])
 
 	# And back to putting them down where you point.
 	builder.toggle_throwing()
 	check(not builder.throwing, "the toggle goes back the other way")
 	check(builder.throw_name().contains("placed"),
 		"and says so (%s)" % builder.throw_name())
-	_stand_on(spider, slab.global_position + Vector3(2.0, 0.25, 0))
+	stand_on(slab.global_position + Vector3(2.0, 0.25, 0))
 	await process_frame
 	var placed: Array[WebStructure] = []
 	var third := func(built: WebStructure) -> void: placed.append(built)
@@ -2004,7 +2013,7 @@ func _test_throwing_a_bolt(spider: SpiderPlayer, builder: WebBuilder, level: Nod
 ## claims to define — a sheet web keeps a fly, an orb web keeps a moth, a
 ## pressure snare keeps a wasp — because if that is not true then every web in
 ## the game is the same web and none of the choosing matters.
-func _test_species(spider: SpiderPlayer, builder: WebBuilder, level: Node) -> void:
+func _test_species() -> void:
 	var all := PreyLibrary.load_species()
 	check(all.size() >= 5, "the game has creatures in it (%d)" % all.size())
 	var ids: Array[String] = []
@@ -2048,9 +2057,9 @@ func _test_species(spider: SpiderPlayer, builder: WebBuilder, level: Node) -> vo
 	# move every one of these lines, so reading the live stage would make this
 	# a test of how much the earlier tests fed the spider.
 	var mid := 1.8
-	var sheet := _hold_of(builder, "sheet_web", mid)
-	var orb := _hold_of(builder, "orb_web", mid)
-	var snare := _hold_of(builder, "pressure_snare", mid)
+	var sheet := _hold_of("sheet_web", mid)
+	var orb := _hold_of("orb_web", mid)
+	var snare := _hold_of("pressure_snare", mid)
 	check(sheet > 0.0 and orb > sheet and snare > orb,
 		"the webs hold in order too (%.1f, %.1f, %.1f)" % [sheet, orb, snare])
 	check(fly.total_thrash() <= sheet and moth.total_thrash() > sheet,
@@ -2065,7 +2074,7 @@ func _test_species(spider: SpiderPlayer, builder: WebBuilder, level: Node) -> vo
 
 	# And growing is supposed to move the lines, not just the numbers: better
 	# silk should turn the web that lost a moth into the web that keeps one.
-	var grown := _hold_of(builder, "sheet_web", mid * 2.0)
+	var grown := _hold_of("sheet_web", mid * 2.0)
 	check(moth.total_thrash() <= grown,
 		"better silk turns the sheet web into one that keeps a moth (holds %.1f)"
 		% grown)
@@ -2082,12 +2091,11 @@ func _test_species(spider: SpiderPlayer, builder: WebBuilder, level: Node) -> vo
 		% [midge.biomass, moth.biomass, wasp.biomass])
 
 	# And one of them, in the world, built from nothing but its resource.
-	var host := spider.get_parent()
-	var slab := _test_slab(host, Vector3(-90, 0.0, 90))
+	var slab := add_slab(Vector3(-90, 0.0, 90))
 	await physics_frame
-	_clear_prey_near(level, slab.global_position, 16.0, null)
+	clear_prey_near(slab.global_position, 16.0, null)
 	await physics_frame
-	var one := _spawn_species(level, "wasp", slab.global_position + Vector3(0, 1.2, 0))
+	var one := spawn("wasp", slab.global_position + Vector3(0, 1.2, 0))
 	await physics_frame
 	if check(one != null, "a wasp can be put in the world"):
 		check(one.species == "Wasp", "it knows what it is (%s)" % one.species)
@@ -2099,7 +2107,7 @@ func _test_species(spider: SpiderPlayer, builder: WebBuilder, level: Node) -> vo
 		one.queue_free()
 
 	# A walker gets no wings, which is the visible half of "caught elsewhere".
-	var walker := _spawn_species(level, "beetle", slab.global_position + Vector3(1.5, 0.6, 0))
+	var walker := spawn("beetle", slab.global_position + Vector3(1.5, 0.6, 0))
 	await physics_frame
 	if check(walker != null, "and so can a beetle"):
 		check(walker.get_node_or_null("WingLeft") == null,
@@ -2113,8 +2121,8 @@ func _test_species(spider: SpiderPlayer, builder: WebBuilder, level: Node) -> vo
 
 ## The most a pattern can hold at a given silk quality, as the escape check
 ## measures it — pattern strength times quality, times the margin.
-func _hold_of(builder: WebBuilder, id: String, quality: float) -> float:
-	var pattern := _pattern(builder, id)
+func _hold_of(id: String, quality: float) -> float:
+	var pattern := pattern_named(id)
 	if pattern == null:
 		return 0.0
 	return pattern.hold_strength * quality * Prey.ESCAPE_MARGIN
@@ -2126,21 +2134,20 @@ func _hold_of(builder: WebBuilder, id: String, quality: float) -> float:
 ## hook it and it comes with you. What matters is that it is a rope and not a
 ## rod — slack does nothing, so walking towards the thing you are towing is
 ## free, and only past the length of the line does it pull.
-func _test_tethering(spider: SpiderPlayer, level: Node) -> void:
+func _test_tethering() -> void:
 	var tether := spider.tether
-	var host := spider.get_parent()
-	var slab := _test_slab(host, Vector3(120, 0.0, 120))
+	var slab := add_slab(Vector3(120, 0.0, 120))
 	await physics_frame
-	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
 	await process_frame
-	_clear_prey_near(level, slab.global_position, 18.0, null)
+	clear_prey_near(slab.global_position, 18.0, null)
 	await physics_frame
 
 	check(not tether.is_towing(), "you start with nothing on the line")
 	check(is_equal_approx(tether.drag_factor(), 1.0), "and nothing slowing you")
 
 	# Something still fighting is not cargo. That is what the wrapping is for.
-	var live := _spawn_species(level, "fly", slab.global_position + Vector3(0.5, 0.6, 0))
+	var live := spawn("fly", slab.global_position + Vector3(0.5, 0.6, 0))
 	if not check(live != null, "a fly to try it on"):
 		return
 	await physics_frame
@@ -2185,7 +2192,7 @@ func _test_tethering(spider: SpiderPlayer, level: Node) -> void:
 	var light := tether.drag_factor()
 	tether.cut()
 	check(not tether.is_towing(), "cutting the line lets go")
-	var heavy_one := _spawn_species(level, "wasp", slab.global_position + Vector3(0, 0.6, 0))
+	var heavy_one := spawn("wasp", slab.global_position + Vector3(0, 0.6, 0))
 	if check(heavy_one != null, "something heavier to drag"):
 		heavy_one.bundle()
 		await physics_frame
@@ -2219,7 +2226,7 @@ func _test_tethering(spider: SpiderPlayer, level: Node) -> void:
 	# to the slab — aiming from a viewpoint that is still moving points the
 	# crosshair at where the viewpoint used to be.
 	await run_frames(10)
-	_aim_at(spider, live.global_position)
+	aim_at(live.global_position)
 	await run_frames(2)
 	check(tether.aimed_cargo() == live,
 		"the crosshair picks the bundle out from five metres")
@@ -2283,16 +2290,19 @@ func _test_tethering(spider: SpiderPlayer, level: Node) -> void:
 ## pointless: if a meal costs nothing, nowhere is safer than anywhere else and
 ## there is no reason to drag anything anywhere. A meal you have to stand still
 ## for is what gives the trip home a point.
-func _test_a_meal_takes_time(spider: SpiderPlayer, level: Node) -> void:
-	var host := spider.get_parent()
-	var slab := _test_slab(host, Vector3(60, 0.0, -140))
+func _test_a_meal_takes_time() -> void:
+	# A moth is size two and a spiderling bites one, so wrapped or not it is "too
+	# big for you". This check is about how long a meal takes, not about reaching
+	# one, so it grows first.
+	grow_to_bite(2)
+	var slab := add_slab(Vector3(60, 0.0, -140))
 	await physics_frame
-	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
 	await process_frame
-	_clear_prey_near(level, slab.global_position, 20.0, null)
+	clear_prey_near(slab.global_position, 20.0, null)
 	await physics_frame
 
-	var meal := _spawn_species(level, "moth", spider.global_position + Vector3(0.3, 0.2, 0))
+	var meal := spawn("moth", spider.global_position + Vector3(0.3, 0.2, 0))
 	if not check(meal != null, "a moth to eat"):
 		slab.queue_free()
 		return
@@ -2332,14 +2342,14 @@ func _test_a_meal_takes_time(spider: SpiderPlayer, level: Node) -> void:
 		check(part > 0.0, "and what you drank is already banked (%.1f)" % part)
 
 		# Go back to it and finish.
-		var rest: float = await _eat(spider, meal, 900)
+		var rest: float = await eat(meal, 900)
 		check(rest > 0.0, "coming back finishes it (+%.1f)" % rest)
 		check(not is_instance_valid(meal) or meal.eaten,
 			"and the moth is gone this time")
 
 	# On the line, at any length: silk is a straw, which is what makes eating on
 	# the move possible at all — take it, tether it, run, drink on the way.
-	var carried := _spawn_species(level, "fly", spider.global_position + Vector3(1.2, 0.3, 0))
+	var carried := spawn("fly", spider.global_position + Vector3(1.2, 0.3, 0))
 	if check(carried != null, "a fly to carry"):
 		carried.move_speed = 0.0
 		carried.bundle()
@@ -2353,7 +2363,7 @@ func _test_a_meal_takes_time(spider: SpiderPlayer, level: Node) -> void:
 			var span := spider.global_position.distance_to(carried.global_position)
 			check(span > fangs,
 				"further off than your fangs reach (%.2fm past %.2fm)" % [span, fangs])
-			var drunk: float = await _eat(spider, carried, 900)
+			var drunk: float = await eat(carried, 900)
 			check(drunk > 0.0,
 				"and you can still drink it down the line (+%.1f)" % drunk)
 			if tether.is_towing():
@@ -2367,14 +2377,12 @@ func _test_a_meal_takes_time(spider: SpiderPlayer, level: Node) -> void:
 ## Everything you can eat can also eat you at the wrong size — which is the one
 ## line §8 of the design doc always had and nothing enforced. A creature inside
 ## your bite is food; one outside it, and aggressive, comes looking.
-func _test_something_hunts_you(spider: SpiderPlayer, builder: WebBuilder, level: Node,
-		webs: Node3D) -> void:
-	var host := spider.get_parent()
-	var slab := _test_slab(host, Vector3(-60, 0.0, 140), Vector3(24, 0.5, 24))
+func _test_something_hunts_you() -> void:
+	var slab := add_slab(Vector3(-60, 0.0, 140), Vector3(24, 0.5, 24))
 	await physics_frame
-	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
 	await process_frame
-	_clear_prey_near(level, slab.global_position, 30.0, null)
+	clear_prey_near(slab.global_position, 30.0, null)
 	await physics_frame
 
 	spider.health = spider.max_stamina()
@@ -2382,7 +2390,7 @@ func _test_something_hunts_you(spider: SpiderPlayer, builder: WebBuilder, level:
 		"the spider has something to lose (%.0f)" % spider.max_stamina())
 	check(not spider.is_hurt(), "and starts whole")
 
-	var wasp := _spawn_species(level, "wasp", spider.global_position + Vector3(2.0, 0.4, 0))
+	var wasp := spawn("wasp", spider.global_position + Vector3(2.0, 0.4, 0))
 	if not check(wasp != null, "a wasp, which is what hunts you"):
 		slab.queue_free()
 		return
@@ -2402,7 +2410,7 @@ func _test_something_hunts_you(spider: SpiderPlayer, builder: WebBuilder, level:
 	small.bite = wasp.size_class
 	check(not wasp.would_hunt(small),
 		"and stops the moment the bite catches up (%d)" % small.bite)
-	var midge := _spawn_species(level, "midge", spider.global_position + Vector3(1.0, 0.3, 0))
+	var midge := spawn("midge", spider.global_position + Vector3(1.0, 0.3, 0))
 	if check(midge != null, "a midge, which never hunts anything"):
 		small.bite = 1
 		check(not midge.would_hunt(small),
@@ -2411,7 +2419,7 @@ func _test_something_hunts_you(spider: SpiderPlayer, builder: WebBuilder, level:
 	small.free()
 
 	# Being bitten costs you the mouthful. That is the whole reason to eat at home.
-	var dinner := _spawn_species(level, "fly", spider.global_position + Vector3(0.3, 0.2, 0))
+	var dinner := spawn("fly", spider.global_position + Vector3(0.3, 0.2, 0))
 	if check(dinner != null, "something to be interrupted eating"):
 		dinner.move_speed = 0.0
 		dinner.bundle()
@@ -2432,7 +2440,7 @@ func _test_something_hunts_you(spider: SpiderPlayer, builder: WebBuilder, level:
 
 	# Run out and you are driven off, not killed: you drop what you were carrying
 	# and get thrown clear. A sandbox with no save has no business killing you.
-	var hauled := _spawn_species(level, "fly", spider.global_position + Vector3(0.6, 0.2, 0))
+	var hauled := spawn("fly", spider.global_position + Vector3(0.6, 0.2, 0))
 	if check(hauled != null, "something on your line to lose"):
 		hauled.move_speed = 0.0
 		hauled.bundle()
@@ -2451,20 +2459,27 @@ func _test_something_hunts_you(spider: SpiderPlayer, builder: WebBuilder, level:
 			hauled.queue_free()
 
 	# It comes back on its own, so a bad trip costs you time and not a restart.
+	#
+	# The wasp is parked for this rather than cleared away: a wasp still biting
+	# takes the stamina down faster than it mends, which reads as "mending is
+	# broken", but the checks below still need it alive to stop hunting.
+	var was_aggression := wasp.aggression
+	wasp.aggression = 0.0
+	wasp.move_speed = 0.0
+	await physics_frame
 	spider.health = 1.0
 	spider._mending = 0.0
 	var low := spider.health
 	await run_frames(120)
 	check(spider.health > low, "stamina mends on its own (%.1f from %.1f)"
 		% [spider.health, low])
+	wasp.aggression = was_aggression
 
 	# And growing is what settles it for good: the thing that was hunting you is
 	# food once your bite catches up, which is the whole reward for eating.
 	var was_bite := spider.stage().bite_power
 	var hurt_first := spider.health
-	while spider.stage().bite_power < wasp.size_class and spider.growth.next_stage() != null:
-		spider.growth.feed(spider.growth.biomass_to_next() + 1.0, "test")
-	if spider.stage().bite_power >= wasp.size_class:
+	if grow_to_bite(wasp.size_class):
 		check(not wasp.would_hunt(spider),
 			"grown past it, the wasp stops hunting you (bite %d against size %d)"
 			% [spider.stage().bite_power, wasp.size_class])
@@ -2482,16 +2497,16 @@ func _test_something_hunts_you(spider: SpiderPlayer, builder: WebBuilder, level:
 	# too weak to keep it has bought you the seconds it spends tearing out — which
 	# is what makes a web somewhere to stand and eat rather than a fortress.
 	var centre := slab.global_position + Vector3(0, 3.0, 0)
-	_select_pattern(builder, "sheet_web")
+	select_pattern("sheet_web")
 	builder.start()
 	for point in _square(centre, 0.8):
 		builder.add_anchor(point)
 	builder.finish()
 	builder.stop()
 	await physics_frame
-	var net := _newest_web(webs, "sheet_web") as WebNet
+	var net := newest_web("sheet_web") as WebNet
 	if check(net != null, "a sheet web hung between you and it"):
-		var comer := _spawn_species(level, "wasp", net.to_global(net.centre_local))
+		var comer := spawn("wasp", net.to_global(net.centre_local))
 		if check(comer != null, "a wasp that flies into it"):
 			comer.move_speed = 0.0
 			await physics_frame
@@ -2535,20 +2550,18 @@ func _test_something_hunts_you(spider: SpiderPlayer, builder: WebBuilder, level:
 ## Two ways to end up wrapped in mid-air with nothing under you — killed by
 ## venom where you flew, and left behind when the web holding you comes down —
 ## and neither of them should leave a cocoon hovering in the air.
-func _test_wrapped_things_fall(spider: SpiderPlayer, builder: WebBuilder, level: Node,
-		webs: Node3D) -> void:
-	var host := spider.get_parent()
-	var slab := _test_slab(host, Vector3(-120, 0.0, -120))
+func _test_wrapped_things_fall() -> void:
+	var slab := add_slab(Vector3(-120, 0.0, -120))
 	await physics_frame
-	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
 	await process_frame
-	_clear_prey_near(level, slab.global_position, 18.0, null)
+	clear_prey_near(slab.global_position, 18.0, null)
 	await physics_frame
 	var floor_y := slab.global_position.y + 0.25
 
 	# Poisoned in mid-air, having never been in a web at all.
 	var high := slab.global_position + Vector3(0, 2.4, 0)
-	var flier := _spawn_species(level, "fly", high)
+	var flier := spawn("fly", high)
 	if not check(flier != null, "a fly in the air to poison"):
 		return
 	await physics_frame
@@ -2571,19 +2584,19 @@ func _test_wrapped_things_fall(spider: SpiderPlayer, builder: WebBuilder, level:
 	# rather than by spinning one over it and hoping: what is being tested is
 	# what happens to a wrapped catch when its web goes, so the catch has to be
 	# wrapped and in a web before the test starts, not as a side effect.
-	var second := _spawn_species(level, "fly", high)
+	var second := spawn("fly", high)
 	if not check(second != null, "another fly, this one for a web"):
 		slab.queue_free()
 		return
 	await physics_frame
-	_select_pattern(builder, "sheet_web")
+	select_pattern("sheet_web")
 	builder.start()
 	for point in _square(high, 0.8):
 		builder.add_anchor(point)
 	builder.finish()
 	builder.stop()
 	await physics_frame
-	var holder := _newest_web(webs, "sheet_web") as WebNet
+	var holder := newest_web("sheet_web") as WebNet
 	if not check(holder != null, "a web to hang it in"):
 		second.queue_free()
 		slab.queue_free()
@@ -2620,16 +2633,16 @@ func _test_wrapped_things_fall(spider: SpiderPlayer, builder: WebBuilder, level:
 ## The web verb, and now the only one the player has. Point, press, and a bolt
 ## leaves the spider: no ghost, no held key, and no asking the room whether
 ## there is a good enough spot. What it hits decides what happens.
-func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
-		webs: Node3D) -> void:
-	var host := spider.get_parent()
-	var slab := _test_slab(host, Vector3(150, 0.0, -150))
+func _test_shooting() -> void:
+	# An orb web is a tier past a spiderling, and this is about the web.
+	grow_to_spin("orb_web")
+	var slab := add_slab(Vector3(150, 0.0, -150))
 	await physics_frame
-	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
 	await process_frame
-	_clear_prey_near(level, slab.global_position, 18.0, null)
+	clear_prey_near(slab.global_position, 18.0, null)
 	await physics_frame
-	_select_pattern(builder, "orb_web")
+	select_pattern("orb_web")
 
 	check(builder.shot_radius() > 0.0,
 		"a throw has a size, taken from the body (%.2fm)" % builder.shot_radius())
@@ -2639,7 +2652,7 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	var built: Array[WebStructure] = []
 	var catcher := func(web: WebStructure) -> void: built.append(web)
 	builder.web_built.connect(catcher)
-	var standing := _web_count(webs)
+	var standing := web_count()
 	var from := spider.view.aim_origin()
 	var along := spider.view.aim_forward().normalized()
 	check(builder.shoot(), "right mouse fires one")
@@ -2665,7 +2678,7 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	var landed: bool = await wait_until(func() -> bool: return not built.is_empty(), 240)
 	builder.web_built.disconnect(catcher)
 	check(landed and built.size() == 1, "it makes a web where it lands (%d)" % built.size())
-	check(_web_count(webs) == standing + 1, "which is standing there")
+	check(web_count() == standing + 1, "which is standing there")
 	if built.size() == 1:
 		built[0].demolish()
 	await physics_frame
@@ -2687,7 +2700,7 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 
 	# At something alive: the creature is wrapped, and no web is left hanging.
 	builder._update_aim()
-	var victim := _spawn_species(level, "fly", builder.aim_point + Vector3(0, 0.4, 0))
+	var victim := spawn("fly", builder.aim_point + Vector3(0, 0.4, 0))
 	if not check(victim != null, "a fly to shoot at"):
 		slab.queue_free()
 		return
@@ -2696,7 +2709,7 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	var after: Array[WebStructure] = []
 	var second := func(web: WebStructure) -> void: after.append(web)
 	builder.web_built.connect(second)
-	var before_shot := _web_count(webs)
+	var before_shot := web_count()
 	check(builder.shoot(), "a second shot, at the fly")
 	var hit: bool = await wait_until(func() -> bool: return victim.wrapped, 240)
 	builder.web_built.disconnect(second)
@@ -2704,8 +2717,8 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	check(victim.is_bundled(), "and drops it as a bundle")
 	await physics_frame
 	await process_frame
-	check(_web_count(webs) == before_shot,
-		"with no web left hanging (%d, started %d)" % [_web_count(webs), before_shot])
+	check(web_count() == before_shot,
+		"with no web left hanging (%d, started %d)" % [web_count(), before_shot])
 	victim.queue_free()
 
 	# Off the line on purpose. The bolt is a ball of silk, not a hairline: a fly
@@ -2721,8 +2734,8 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 		sideways = Vector3.RIGHT
 	sideways = sideways.normalized()
 	var beside := start + (builder.aim_point - start) * 0.5 + sideways * reach * 0.6
-	_clear_prey_near(level, beside, 6.0, null)
-	var grazed := _spawn_species(level, "fly", beside)
+	clear_prey_near(beside, 6.0, null)
+	var grazed := spawn("fly", beside)
 	if check(grazed != null, "a fly beside the line, not on it"):
 		await physics_frame
 		check(builder.shoot(), "a shot past it")
@@ -2747,17 +2760,19 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 
 ## Holding the shoot key: a ball of silk wound up over the spider's back, which
 ## buys a bigger throw rather than a promised one.
-func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) -> void:
-	var host := spider.get_parent()
-	var slab := _test_slab(host, Vector3(150, 0.0, 150))
+func _test_taking_aim() -> void:
+	# Six shots in a row, and this is about where they go rather than how long you
+	# wait between them. It used to get that for free from the section before it.
+	ignore_shot_cooldown()
+	var slab := add_slab(Vector3(150, 0.0, 150))
 	await physics_frame
-	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
 	await process_frame
-	_clear_prey_near(level, spider.global_position, 30.0, null)
-	_select_pattern(builder, "orb_web")
+	clear_prey_near(spider.global_position, 30.0, null)
+	select_pattern("orb_web")
 	await physics_frame
 
-	var quarry := _spawn_species(level, "fly", spider.global_position + Vector3(3.0, 1.0, 0.0))
+	var quarry := spawn("fly", spider.global_position + Vector3(3.0, 1.0, 0.0))
 	if not check(quarry != null, "a fly to take aim at"):
 		slab.queue_free()
 		return
@@ -2781,7 +2796,7 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) ->
 	# No frames between here and letting go: a physics frame would see the key
 	# is not really held down in a headless run and let go on the spider's
 	# behalf, which is the safety net doing its job and ruining the test.
-	_aim_at(spider, quarry.global_position)
+	aim_at(quarry.global_position)
 	spider.view.update(spider.stage().body_height)
 	builder._update_held()
 	var small_ball: float = ball.scale.x if ball != null else 0.0
@@ -2789,7 +2804,7 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) ->
 	var tap_span := builder.catch_radius(tap_radius)
 
 	for i in 30:
-		_aim_at(spider, quarry.global_position)
+		aim_at(quarry.global_position)
 		spider.view.update(spider.stage().body_height)
 		builder.track(0.05)
 		builder._frame_the_aim(0.05)
@@ -2844,7 +2859,7 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) ->
 
 	# A wound-up throw, aimed at the fly, takes it — and it is the aim that does
 	# it. The bolt leaves along the crosshair and keeps that heading.
-	_aim_at(spider, quarry.global_position)
+	aim_at(quarry.global_position)
 	spider.view.update(spider.stage().body_height)
 	var along := spider.view.aim_forward().normalized()
 	check(builder.release_shot(), "letting go throws it")
@@ -2862,8 +2877,7 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) ->
 	# Nothing homes any more. Wind one right up, throw it the other way, and the
 	# fly across the room is left alone: the help is the size of the ball.
 	await wait_until(func() -> bool: return not builder.shot_in_flight(), 240)
-	var bystander := _spawn_species(level, "fly",
-		spider.global_position + Vector3(14.0, 1.0, 0.0))
+	var bystander := spawn("fly", spider.global_position + Vector3(14.0, 1.0, 0.0))
 	if check(bystander != null, "another fly, right across the room"):
 		bystander.move_speed = 0.0
 		await physics_frame
@@ -2902,15 +2916,15 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) ->
 ## see — which made the whole game read as too long ranged. That is what happens
 ## when nothing is out of reach: there is no distance left for growing to close,
 ## and a room you cannot cross is the only thing that makes crossing it a reward.
-func _test_how_far_silk_goes(spider: SpiderPlayer, builder: WebBuilder,
-		level: Node) -> void:
-	var host := spider.get_parent()
-	var slab := _test_slab(host, Vector3(-150, 0.0, 150), Vector3(20, 0.5, 20))
+func _test_how_far_silk_goes() -> void:
+	# An orb web is a tier past a spiderling, and this is about the web.
+	grow_to_spin("orb_web")
+	var slab := add_slab(Vector3(-150, 0.0, 150), Vector3(20, 0.5, 20))
 	await physics_frame
-	_stand_on(spider, slab.global_position + Vector3(0, 0.25, 0))
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
 	await process_frame
-	_clear_prey_near(level, slab.global_position, 24.0, null)
-	_select_pattern(builder, "orb_web")
+	clear_prey_near(slab.global_position, 24.0, null)
+	select_pattern("orb_web")
 	await physics_frame
 
 	var stage := spider.stage()
@@ -2943,7 +2957,7 @@ func _test_how_far_silk_goes(spider: SpiderPlayer, builder: WebBuilder,
 	# Past the end of it there is nothing to grapple to, and the readout says so
 	# with the number in it — "no surface in reach" reads as a broken click,
 	# where a distance reads as somewhere to come back to when you are bigger.
-	var far := _test_slab(host, slab.global_position
+	var far := add_slab(slab.global_position
 		+ Vector3(0, 0.0, -(reach + 12.0)), Vector3(8, 6.0, 0.5))
 	await physics_frame
 	spider.view.face(Vector3(0, 0, -1))
@@ -2958,7 +2972,7 @@ func _test_how_far_silk_goes(spider: SpiderPlayer, builder: WebBuilder,
 	await physics_frame
 
 	# Inside it, the same wall is fair game.
-	var near := _test_slab(host, slab.global_position
+	var near := add_slab(slab.global_position
 		+ Vector3(0, 0.0, -reach * 0.5), Vector3(8, 6.0, 0.5))
 	await physics_frame
 	builder._update_aim()
@@ -3016,9 +3030,8 @@ func _test_a_spiders_jump() -> void:
 		% [last_rise / last.body_height, rise / first.body_height])
 
 
-
 ## Nine pockets, and the bar is the whole inventory.
-func _test_the_bar(spider: SpiderPlayer) -> void:
+func _test_the_bar() -> void:
 	var bag := spider.bag
 	check(SpiderInventory.SLOTS == 9, "nine slots (%d)" % SpiderInventory.SLOTS)
 	check(bag.slots().size() == 9, "and the bar always has nine of them")
@@ -3048,27 +3061,8 @@ func _test_the_bar(spider: SpiderPlayer) -> void:
 
 
 ## Puts the wheel back on something spinnable, the way a fresh spider starts.
-func _select_first_spinnable_again(builder: WebBuilder) -> void:
+func _select_first_spinnable_again() -> void:
 	builder._select_first_spinnable()
-
-
-## Clears the spawner's wandering flies out of a patch, so a test about one
-## particular fly is not quietly a test about where the others drifted.
-func _clear_prey_near(level: Node, point: Vector3, radius: float, keep: Prey) -> void:
-	for node in level.get_tree().get_nodes_in_group("prey"):
-		var other := node as Prey
-		if other == null or other == keep or not is_instance_valid(other):
-			continue
-		if point.distance_to(other.global_position) <= radius:
-			other.queue_free()
-
-
-## Points the spider's crosshair at a spot in the world, yaw and pitch both.
-func _aim_at(spider: SpiderPlayer, point: Vector3) -> void:
-	var offset := point - spider.view.aim_origin()
-	var flat := Vector2(offset.x, offset.z).length()
-	spider.view.face(Vector3(offset.x, 0.0, offset.z))
-	spider.view.pitch = atan2(offset.y, maxf(flat, 0.0001))
 
 
 ## A spider with a bite power of our choosing.
@@ -3088,96 +3082,8 @@ class PretendSpider extends Node3D:
 		return tier
 
 
-## Eats, the way the player does: hold the key and let frames pass.
-##
-## Feeding is no longer one call — that is the point of it — so a test that wants
-## a meal has to spend time on it like everybody else. Returns how much biomass
-## the spider actually gained.
-##
-## Two conveniences, both deliberate. The creature is pinned still, because a live
-## one wanders out of reach inside the seconds a meal now takes and then the check
-## is measuring a chase — which is what happened to the larder. And [param frames]
-## is an upper bound rather than a duration: it stops as soon as the creature is
-## empty, so no caller has to work out how many frames a beetle takes and get it
-## wrong by six — which is exactly what happened twice, because a beetle at a bite
-## of three needs about 306 and 300 looked generous. Pass a number you are sure is
-## too big; a fast meal costs nothing.
-func _eat(spider: SpiderPlayer, prey: Prey, frames: int) -> float:
-	var before := spider.growth.biomass
-	prey.move_speed = 0.0
-	Input.action_press("interact")
-	# Two presses, because that is what the player does. A creature still fighting
-	# a web is wrapped by the first press and drunk by the second — and by the time
-	# some of these tests run the suite has left fifty-odd webs standing, so a fly
-	# spawned next to the spider lands in one of them and is stuck, not loose. The
-	# larder check spent a round failing on exactly that.
-	spider._handle_prey(prey)
-	if spider.feeding == null and is_instance_valid(prey) and not prey.eaten:
-		await physics_frame
-		spider._handle_prey(prey)
-	var on_the_line: bool = spider.tether != null and spider.tether.cargo == prey
-	for i in frames:
-		# Held at the spider's side unless it is on the line, where the whole point
-		# is that distance does not matter. A meal takes seconds now, and in seconds
-		# a bundle falls and a beetle walks off — out of fang reach and out of the
-		# meal. These checks are about eating; the one that is about reach tethers
-		# its catch and is left alone here.
-		if not on_the_line and is_instance_valid(prey) and not prey.eaten:
-			prey.global_position = spider.global_position + Vector3(0.3, 0.1, 0.0)
-		await physics_frame
-		if not is_instance_valid(prey) or prey.eaten:
-			break
-	Input.action_release("interact")
-	await process_frame
-	await process_frame
-	return spider.growth.biomass - before
-
-
-## A plain fly, the baseline everything else is measured against.
-func _spawn_fly(level: Node, at: Vector3) -> Prey:
-	return _spawn_species(level, "fly", at)
-
-
-## Callers check what comes back, so this does not add a check of its own —
-## one per spawn buried the suite in "species 'fly' exists".
-func _spawn_species(level: Node, id: String, at: Vector3) -> Prey:
-	var prey := Prey.of(PreyLibrary.find(id))
-	if prey == null:
-		return null
-	level.add_child(prey)
-	prey.global_position = at
-	return prey
-
-
-func _select_pattern(builder: WebBuilder, id: String) -> void:
-	for i in builder.patterns.size():
-		if builder.patterns[i].id == id:
-			builder.pattern_index = i
-			return
-	check(false, "pattern '%s' exists" % id)
-
-
-func _first_web(webs: Node3D) -> WebStructure:
-	for child in webs.get_children():
-		var web := child as WebStructure
-		if web != null and not web.is_queued_for_deletion():
-			return web
-	return null
-
-
-## Most recently built web of a kind — several of the same pattern exist by the
-## time the later checks run.
-func _newest_web(webs: Node3D, pattern_id: String) -> WebStructure:
-	var found: WebStructure = null
-	for child in webs.get_children():
-		var web := child as WebStructure
-		if web != null and not web.is_queued_for_deletion() and web.pattern.id == pattern_id:
-			found = web
-	return found
-
-
 ## The evolutionary tree: the larder as a currency, and a trait as a body.
-func _test_the_tree(spider: SpiderPlayer, level: Node) -> void:
+func _test_the_tree() -> void:
 	var traits := spider.traits
 	if not check(traits != null, "the spider has an evolutionary tree"):
 		return
@@ -3215,7 +3121,7 @@ func _test_the_tree(spider: SpiderPlayer, level: Node) -> void:
 	# to be hanging in one of them as loose on the floor, and then the press wraps
 	# it instead of drinking it. A bundle is the state the loop actually delivers a
 	# catch in anyway: you wrap it, you haul it home, you drink it.
-	var lunch := _spawn_species(level, "fly", spider.global_position + Vector3(0.3, 0.0, 0.0))
+	var lunch := spawn("fly", spider.global_position + Vector3(0.3, 0.0, 0.0))
 	await physics_frame
 	if check(lunch != null, "there is a fly to eat"):
 		# Wrapped, then put on the line, which is the loop as designed: a bundle
@@ -3228,7 +3134,7 @@ func _test_the_tree(spider: SpiderPlayer, level: Node) -> void:
 		spider.tether.hook(lunch)
 		# The larder counts creatures, not mouthfuls, so it is paid on the last
 		# swallow — which means the fly has to actually be finished.
-		var got: float = await _eat(spider, lunch, 900)
+		var got: float = await eat(lunch, 900)
 		var left := "gone" if not is_instance_valid(lunch) \
 			else "%.1f of %.1f left" % [lunch.biomass, lunch.full_biomass]
 		check(traits.eaten("fly") == 1,
@@ -3238,7 +3144,7 @@ func _test_the_tree(spider: SpiderPlayer, level: Node) -> void:
 			spider.tether.cut()
 
 	var wanted := int(wings.cost["fly"])
-	_feed_larder(traits, "fly", wanted - traits.eaten("fly"))
+	_feed_larder("fly", wanted - traits.eaten("fly"))
 	check(traits.eaten("fly") == wanted, "eat enough and the trait is paid for")
 	check(traits.affordable(wings), "wings can be afforded")
 	check(not traits.affordable(bulk),
@@ -3255,8 +3161,8 @@ func _test_the_tree(spider: SpiderPlayer, level: Node) -> void:
 
 	# Wings are a lighter fall, with no key to hold.
 	check(traits.glide() > 0.0, "wings cancel some of a fall (%.2f)" % traits.glide())
-	var gliding := _fall_gain(spider, traits.glide())
-	var plummeting := _fall_gain(spider, 0.0)
+	var gliding := _fall_gain(traits.glide())
+	var plummeting := _fall_gain(0.0)
 	check(gliding < plummeting,
 		"so a fall picks up less speed (%.2f against %.2f m/s per tenth)"
 		% [gliding, plummeting])
@@ -3267,8 +3173,8 @@ func _test_the_tree(spider: SpiderPlayer, level: Node) -> void:
 	var tier := spider.growth.stage_index
 	var tall := spider.stage().body_height
 	var capsule := spider.collision.shape as CapsuleShape3D
-	_feed_larder(traits, "midge", int(lean.cost["midge"]))
-	_feed_larder(traits, "moth", int(lean.cost["moth"]))
+	_feed_larder("midge", int(lean.cost["midge"]))
+	_feed_larder("moth", int(lean.cost["moth"]))
 	check(traits.buy(lean), "a hollow frame can be taken once the wings are there")
 	await physics_frame
 	check(spider.stage().body_height < tall,
@@ -3284,19 +3190,19 @@ func _test_the_tree(spider: SpiderPlayer, level: Node) -> void:
 		"and is quicker than its tier for it")
 
 	# Bulk is the other end of the same ruler.
-	_feed_larder(traits, "fly", int(bulk.cost["fly"]))
+	_feed_larder("fly", int(bulk.cost["fly"]))
 	var small := spider.stage().body_height
 	check(traits.buy(bulk), "a heavy frame can be taken alongside it")
 	await physics_frame
 	check(spider.stage().body_height > small,
 		"and puts the size back on (%.3f -> %.3f)" % [small, spider.stage().body_height])
 
-	await _test_fangs(spider, traits, level)
-	_test_the_tree_on_screen(level, traits)
+	await _test_fangs()
+	_test_the_tree_on_screen()
 
 
 ## Venom's gift: a kill that needs no web behind it.
-func _test_fangs(spider: SpiderPlayer, traits: SpiderTraits, level: Node) -> void:
+func _test_fangs() -> void:
 	var fangs := traits.by_id("hunting_fangs")
 	if not check(fangs != null, "the tree has fangs at the end of venom"):
 		return
@@ -3304,6 +3210,12 @@ func _test_fangs(spider: SpiderPlayer, traits: SpiderTraits, level: Node) -> voi
 
 	# Something inside the bite either way, so this is about the fangs and not
 	# about the bite power they also carry.
+	#
+	# That needs a creature inside the bite but not inside half of it, and with a
+	# bite of one there is none: the smallest creature is size one, and one
+	# doubled is exactly the bite plus the bonus fangs carry. From a bite of two
+	# the moth sits in the gap.
+	grow_to_bite(2)
 	var bite := spider.stage().bite_power
 	var quarry: PreySpecies = null
 	for kind in PreyLibrary.load_species():
@@ -3315,8 +3227,8 @@ func _test_fangs(spider: SpiderPlayer, traits: SpiderTraits, level: Node) -> voi
 		return
 
 	var at := spider.global_position + Vector3(0.35, 0.0, 0.0)
-	_clear_prey_near(level, at, 3.0, null)
-	var caught := _spawn_species(level, quarry.id, at)
+	clear_prey_near(at, 3.0, null)
+	var caught := spawn(quarry.id, at)
 	await physics_frame
 	if not check(caught != null, "there is a %s to try it on" % quarry.display_name):
 		return
@@ -3329,7 +3241,7 @@ func _test_fangs(spider: SpiderPlayer, traits: SpiderTraits, level: Node) -> voi
 	for step in line:
 		var gift := traits.by_id(step)
 		for species_id in gift.cost:
-			_feed_larder(traits, str(species_id), int(gift.cost[species_id]))
+			_feed_larder(str(species_id), int(gift.cost[species_id]))
 		check(traits.buy(gift), "the venom line goes up in order — %s" % gift.display_name)
 	await physics_frame
 	check(traits.has_fangs(), "and ends in fangs")
@@ -3356,7 +3268,7 @@ func _test_fangs(spider: SpiderPlayer, traits: SpiderTraits, level: Node) -> voi
 
 
 ## The screen the tree is spent on.
-func _test_the_tree_on_screen(level: Node, traits: SpiderTraits) -> void:
+func _test_the_tree_on_screen() -> void:
 	var hud := level.get_node_or_null("HUD") as SpiderHUD
 	if not check(hud != null, "the level has a HUD to hang the tree off"):
 		return
@@ -3388,7 +3300,7 @@ func _test_the_tree_on_screen(level: Node, traits: SpiderTraits) -> void:
 
 ## Puts creatures straight into the larder, for a test that is about spending
 ## them rather than about catching them.
-func _feed_larder(traits: SpiderTraits, species_id: String, how_many: int) -> void:
+func _feed_larder(species_id: String, how_many: int) -> void:
 	var kind := PreyLibrary.find(species_id)
 	for i in maxi(how_many, 0):
 		traits.record(kind)
@@ -3396,7 +3308,7 @@ func _feed_larder(traits: SpiderTraits, species_id: String, how_many: int) -> vo
 
 ## Speed one tenth of a second of falling adds, at a given glide. Measured well
 ## above the level so nothing is underfoot to cut the fall short.
-func _fall_gain(spider: SpiderPlayer, glide: float) -> float:
+func _fall_gain(glide: float) -> float:
 	var climb := spider.climb
 	var was_glide := climb.glide
 	var was_where := spider.global_position
@@ -3412,18 +3324,3 @@ func _fall_gain(spider: SpiderPlayer, glide: float) -> float:
 	return gained
 
 
-func _find_web(webs: Node3D, pattern_id: String) -> WebStructure:
-	for child in webs.get_children():
-		var web := child as WebStructure
-		if web != null and not web.is_queued_for_deletion() and web.pattern.id == pattern_id:
-			return web
-	return null
-
-
-func _web_count(webs: Node3D) -> int:
-	var total := 0
-	for child in webs.get_children():
-		var web := child as WebStructure
-		if web != null and not web.is_queued_for_deletion():
-			total += 1
-	return total

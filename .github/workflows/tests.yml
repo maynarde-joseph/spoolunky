@@ -100,3 +100,11 @@ jobs:
 
       - name: World smoke test
         run: godot --headless --path . --script res://tests/world_smoke_test.gd
+
+      # The web suite resets between sections so that none of them depends on what
+      # ran before it. That is a property, and a property nothing checks rots — a
+      # fixed seed keeps this deterministic while still shuffling the order.
+      - name: Web smoke test, shuffled
+        env:
+          SPOOLUNKY_SHUFFLE: ci
+        run: godot --headless --path . --script res://tests/web_smoke_test.gd
