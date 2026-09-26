@@ -338,13 +338,28 @@ back, in a plain box room:
 godot --headless --script res://tests/climb_smoke_test.gd
 ```
 
-Both print a line per check and exit non-zero if any fail.
+A third loads the gym and the tower and checks the level itself — that the gates
+open at the sizes the tier table names, that every station is signed, that the
+spider lands on the floor rather than through it:
 
-They also run on every push: `.github/workflows/tests.yml` fetches the Linux
-build matching `GODOT_VERSION` and runs both suites, so you do not need Godot
-on PATH to find out whether a change broke something. Bump that one variable
+```sh
+godot --headless --script res://tests/world_smoke_test.gd
+```
+
+Each prints a line per check and exits non-zero if any fail. Together they take
+about a minute.
+
+They also run on every push: `.github/workflows/tests.yml` fetches the newest
+Linux build matching `GODOT_VERSION` and runs all three. Bump that one variable
 when the project moves to a new engine version — the workflow finds the build
 itself rather than holding a URL that rots.
+
+Waiting on a push to find out is slow, though, and `gdparse` only reads syntax:
+an undeclared identifier, a renamed method and a stale test assumption all parse
+clean and all fail in the engine. So `.claude/hooks/session-start.sh` fetches the
+engine at the start of a Claude Code web session and imports the project, which
+puts the suites a second away instead of a CI round. It does nothing on a local
+checkout, where you have an engine already.
 
 To look at the silk geometry without opening the editor:
 
