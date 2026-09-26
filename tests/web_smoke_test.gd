@@ -3253,8 +3253,14 @@ func _test_the_tree(spider: SpiderPlayer, level: Node) -> void:
 	var lunch := _spawn_species(level, "fly", spider.global_position + Vector3(0.3, 0.0, 0.0))
 	await physics_frame
 	if _check(lunch != null, "there is a fly to eat"):
+		# Wrapped, then put on the line, which is the loop as designed: a bundle
+		# obeys gravity, so left alone it drops away from you and out of reach
+		# part-way through the meal — the first run of this check came back with
+		# three of the fly's eight biomass drunk and the rest on the floor. Silk is
+		# a straw; a catch on your line can be drunk at any length.
 		lunch.bundle()
 		await physics_frame
+		spider.tether.hook(lunch)
 		# The larder counts creatures, not mouthfuls, so it is paid on the last
 		# swallow — which means the fly has to actually be finished.
 		var got: float = await _eat(spider, lunch, 300)
@@ -3263,6 +3269,8 @@ func _test_the_tree(spider: SpiderPlayer, level: Node) -> void:
 		_check(traits.eaten("fly") == 1,
 			"draining one puts it in the larder (%d, +%.1f biomass, bite %d, %s)"
 			% [traits.eaten("fly"), got, spider.stage().bite_power, left])
+		if spider.tether.is_towing():
+			spider.tether.cut()
 
 	var wanted := int(wings.cost["fly"])
 	_feed_larder(traits, "fly", wanted - traits.eaten("fly"))
