@@ -3379,17 +3379,25 @@ func _test_fangs(spider: SpiderPlayer, traits: SpiderTraits, level: Node) -> voi
 	await physics_frame
 	_check(traits.has_fangs(), "and ends in fangs")
 
-	# Bite power is read here rather than reused from above, because buying the
-	# venom line also buys the strength that carries it — the number this meal
-	# drinks at is not the number the quarry was chosen against.
-	var fanged := spider.stage().bite_power
-	var meal: float = await _eat(spider, caught, 900)
-	var state := "gone" if not is_instance_valid(caught) \
-		else "%.1f of %.1f left, wrapped %s, feeding %s" % [caught.biomass,
-			caught.full_biomass, caught.wrapped, spider.feeding != null]
-	_check(not is_instance_valid(caught) or caught.eaten,
-		"with which the %s goes down where it stands (+%.1f, bite %d, %s)"
-		% [quarry.display_name, meal, fanged, state])
+	# Fangs change the verdict, and the verdict is the whole claim: bare-fanged
+	# the same press refused and said to use a web (checked above), and with them
+	# it starts a meal.
+	#
+	# Checked at the verdict rather than by draining the beetle dry. It used to
+	# drain it in one call; now it is thirty biomass of meal, and this test runs
+	# last in a level holding fifty-odd webs and a restocking spawner, where a
+	# long meal has plenty to interrupt it — the run that taught me this drank
+	# sixteen of the thirty and then stopped. Whether a drain completes is what
+	# the feeding tests are for, on a clean slab; what this one is about is fangs.
+	Input.action_press("interact")
+	spider._handle_prey(caught)
+	var started: bool = spider.feeding == caught
+	Input.action_release("interact")
+	await process_frame
+	await process_frame
+	_check(started,
+		"with which the %s can be taken where it stands, no web needed"
+		% quarry.display_name)
 
 
 ## The screen the tree is spent on.
