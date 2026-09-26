@@ -1343,7 +1343,7 @@ func _test_venom_kills_what_silk_only_holds(spider: SpiderPlayer, level: Node,
 	# Too big to bite, but dead — so drainable. That is the trade the item buys.
 	spider.global_position = fly.global_position + Vector3(0, 0.2, 0)
 	await physics_frame
-	var got: float = await _eat(spider, fly, 120)
+	var got: float = await _eat(spider, fly, 900)
 	_check(got > 0.0,
 		"drained something bigger than the spider could ever bite (+%.1f)" % got)
 
@@ -1853,7 +1853,7 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 
 	# And is simply there to be drained off the floor. Which takes a few seconds
 	# now, like every other meal.
-	var fed: float = await _eat(spider, sitting, 90)
+	var fed: float = await _eat(spider, sitting, 900)
 	_check(fed > 0.0, "a bundle on the floor is drainable (+%.1f)" % fed)
 
 	# The silk still has to be up to it: one that out-fights the web is caught
@@ -2377,7 +2377,7 @@ func _test_a_meal_takes_time(spider: SpiderPlayer, level: Node) -> void:
 		_check(part > 0.0, "and what you drank is already banked (%.1f)" % part)
 
 		# Go back to it and finish.
-		var rest: float = await _eat(spider, meal, 240)
+		var rest: float = await _eat(spider, meal, 900)
 		_check(rest > 0.0, "coming back finishes it (+%.1f)" % rest)
 		_check(not is_instance_valid(meal) or meal.eaten,
 			"and the moth is gone this time")
@@ -2398,7 +2398,7 @@ func _test_a_meal_takes_time(spider: SpiderPlayer, level: Node) -> void:
 			var span := spider.global_position.distance_to(carried.global_position)
 			_check(span > fangs,
 				"further off than your fangs reach (%.2fm past %.2fm)" % [span, fangs])
-			var drunk: float = await _eat(spider, carried, 180)
+			var drunk: float = await _eat(spider, carried, 900)
 			_check(drunk > 0.0,
 				"and you can still drink it down the line (+%.1f)" % drunk)
 			if tether.is_towing():
@@ -3144,7 +3144,9 @@ class PretendSpider extends Node3D:
 ## is measuring a chase — which is what happened to the larder. And [param frames]
 ## is an upper bound rather than a duration: it stops as soon as the creature is
 ## empty, so no caller has to work out how many frames a beetle takes and get it
-## wrong by six.
+## wrong by six — which is exactly what happened twice, because a beetle at a bite
+## of three needs about 306 and 300 looked generous. Pass a number you are sure is
+## too big; a fast meal costs nothing.
 func _eat(spider: SpiderPlayer, prey: Prey, frames: int) -> float:
 	var before := spider.growth.biomass
 	prey.move_speed = 0.0
@@ -3271,7 +3273,7 @@ func _test_the_tree(spider: SpiderPlayer, level: Node) -> void:
 		spider.tether.hook(lunch)
 		# The larder counts creatures, not mouthfuls, so it is paid on the last
 		# swallow — which means the fly has to actually be finished.
-		var got: float = await _eat(spider, lunch, 300)
+		var got: float = await _eat(spider, lunch, 900)
 		var left := "gone" if not is_instance_valid(lunch) \
 			else "%.1f of %.1f left" % [lunch.biomass, lunch.full_biomass]
 		_check(traits.eaten("fly") == 1,
@@ -3377,7 +3379,7 @@ func _test_fangs(spider: SpiderPlayer, traits: SpiderTraits, level: Node) -> voi
 	await physics_frame
 	_check(traits.has_fangs(), "and ends in fangs")
 
-	await _eat(spider, caught, 300)
+	await _eat(spider, caught, 900)
 	_check(not is_instance_valid(caught) or caught.eaten,
 		"with which the %s goes down where it stands" % quarry.display_name)
 
