@@ -87,6 +87,9 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if cargo == null:
 		return
+	if _eaten_off_the_line():
+		_let_go("")
+		return
 	if not _still_there():
 		_let_go("The line came back empty")
 		return
@@ -134,6 +137,7 @@ func hook(target: Node3D) -> bool:
 	# Paid out to wherever it is. A long shot is a long line, and then it reels.
 	_rope_length = maxf(_resting_length(), _hand().distance_to(target.global_position))
 	cargo = target
+	_watch_cargo(true)
 	_reset_rope(_hand(), target.global_position)
 	notice.emit("Hooked the %s" % _label(target))
 	hooked.emit(target)
@@ -315,6 +319,7 @@ func _reset_rope(hand: Vector3, tail: Vector3) -> void:
 
 func _let_go(text: String) -> void:
 	var was := cargo
+	_watch_cargo(false)
 	cargo = null
 	_rope.clear()
 	_previous.clear()
@@ -325,6 +330,44 @@ func _let_go(text: String) -> void:
 
 
 # --- odds and ends ------------------------------------------------------
+
+## Told when the thing on the line is drained, rather than working it out
+## afterwards from the fact that it is gone.
+##
+## Which is what the old version did, and it was a race it usually lost: eating
+## happens on an input frame and frees the creature at the end of it, so by the
+## tether's next physics tick there was nothing left to ask. All it could see was
+## a cargo that had vanished, so every meal came back as "the line came back
+## empty" — a success reported as a failure, every time.
+func _watch_cargo(watching: bool) -> void:
+	var prey := cargo as Prey
+	if prey == null:
+		return
+	if watching:
+		if not prey.eaten_by_spider.is_connected(_on_cargo_eaten):
+			prey.eaten_by_spider.connect(_on_cargo_eaten)
+	elif prey.eaten_by_spider.is_connected(_on_cargo_eaten):
+		prey.eaten_by_spider.disconnect(_on_cargo_eaten)
+
+
+## You ate it. That is what a tether is for, so the line goes quietly: a report
+## here would land on top of the one that just said what you got out of it.
+func _on_cargo_eaten(prey: Prey) -> void:
+	if prey != cargo:
+		return
+	_let_go("")
+
+
+## Whether the cargo went because the spider drained it, rather than because it
+## stopped existing for some other reason. The signal above is what usually
+## catches this; this is for the tick where the flag is set and the signal has
+## not been reached yet.
+func _eaten_off_the_line() -> bool:
+	if not is_instance_valid(cargo):
+		return false
+	var prey := cargo as Prey
+	return prey != null and prey.eaten
+
 
 func _still_there() -> bool:
 	if not is_instance_valid(cargo) or cargo.is_queued_for_deletion():

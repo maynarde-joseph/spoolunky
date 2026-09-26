@@ -52,7 +52,6 @@ var _age := 0.0
 var _exclude: Array[RID] = []
 var _size := 0.05
 var _spent := false
-var _chasing: Prey = null
 
 
 static func fire(from: Vector3, direction: Vector3, body_height: float,
@@ -68,18 +67,8 @@ static func fire(from: Vector3, direction: Vector3, body_height: float,
 	return shot
 
 
-## Locks the bolt onto something. A shot that was aimed for a full second is
-## promised its catch, so the promise is kept by the flight rather than by the
-## arithmetic at the trigger: it steers, all the way, and a fly cannot outrun
-## silk. Give it longer too — finding something that moves takes more time than
-## reaching a wall that does not.
-func chase(creature: Prey) -> void:
-	_chasing = creature
-	lifetime = maxf(lifetime, 4.0)
-
-
-## Which way it is travelling. A chasing bolt bends, so this is read at the
-## moment it lands rather than remembered from the trigger.
+## Which way it is travelling. Read off the bolt rather than remembered from the
+## trigger, so a web opens facing the way the silk actually arrived.
 func heading() -> Vector3:
 	if _velocity.length_squared() < 0.000001:
 		return Vector3.FORWARD
@@ -99,7 +88,6 @@ func _physics_process(delta: float) -> void:
 	if lifetime > 0.0 and _age >= lifetime:
 		_give_up()
 		return
-	_steer()
 	var step := _velocity * delta
 	var distance := step.length()
 	if distance < 0.0001:
@@ -130,23 +118,6 @@ func _physics_process(delta: float) -> void:
 	_travelled += distance
 	if _travelled >= range_limit:
 		_give_up()
-
-
-## Bends the flight onto what it was locked to. All the way, not partly: a bolt
-## that merely leans toward a fly is a bolt that misses it, and the whole point
-## of holding the crosshair for a second is that you were promised otherwise.
-func _steer() -> void:
-	if _chasing == null:
-		return
-	if not is_instance_valid(_chasing) or _chasing.eaten:
-		# Something else got it mid-flight. Carry straight on rather than
-		# vanishing: the silk is spent either way, and it may still find a wall.
-		_chasing = null
-		return
-	var toward := _chasing.global_position - global_position
-	if toward.length_squared() < 0.000001:
-		return
-	_velocity = toward.normalized() * _velocity.length()
 
 
 ## The nearest creature the ball passes within [member catch_radius] of during

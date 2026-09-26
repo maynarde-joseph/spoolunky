@@ -29,6 +29,19 @@ signal mode_changed(third_person: bool)
 
 @export var sensitivity := 2.0
 
+## How far in the arm comes while winding up a throw, as a fraction of its
+## usual length — and how far round the shoulder it swings.
+##
+## Aiming used to drop to first person, which cost the sight of the spider. The
+## camera moves *toward* it instead: closer, off to one side, so the throw is
+## framed rather than hidden.
+@export var aim_distance_scale := 0.58
+@export var aim_shoulder := 0.6
+@export var aim_rise := 0.2
+
+## How far into the aim the rig is, 0 to 1. Written by the web builder.
+var aim_blend := 0.0
+
 ## What the arm refuses to pass through.
 @export_flags_3d_physics var collide_with := 1
 
@@ -82,8 +95,17 @@ func update(body_height: float) -> void:
 	var look := -look_basis.z
 
 	if third_person:
-		var pivot := _body.global_position + Vector3.UP * pivot_height * body_height
-		var wanted := pivot - look * distance * body_height
+		var aim := clampf(aim_blend, 0.0, 1.0)
+		var lift: float = pivot_height + aim_rise * aim
+		var pivot := _body.global_position + Vector3.UP * lift * body_height
+		# Over the shoulder while aiming: along the look direction's right, so it
+		# swings with the camera rather than with the body, which is rolling about
+		# on walls and has no stable idea of sideways.
+		var sideways := look.cross(Vector3.UP)
+		if sideways.length_squared() > 0.000001:
+			pivot += sideways.normalized() * aim_shoulder * aim * body_height
+		var reach: float = distance * lerpf(1.0, aim_distance_scale, aim)
+		var wanted := pivot - look * reach * body_height
 		camera.global_position = _unobstructed(pivot, wanted, body_height)
 	elif _anchor != null:
 		camera.global_position = _anchor.global_position

@@ -2283,14 +2283,29 @@ func _test_tethering(spider: SpiderPlayer, level: Node) -> void:
 	if was_third:
 		spider.view.toggle_mode()
 
-	# The line does not outlive what is on the end of it.
+	# The line does not outlive what is on the end of it — and eating a catch off
+	# the line is a success, so it must not be reported as a lost cargo. It was:
+	# eating happens on an input frame and frees the creature at the end of it,
+	# so the tether's next tick found nothing there and said the line came back
+	# empty. Every meal off a tether read as a failure.
 	live.global_position = slab.global_position + Vector3(0, 0.4, 0)
 	await physics_frame
 	if _check(tether.hook(live), "one more, to be eaten off the line"):
+		var said: Array[String] = []
+		var listen := func(text: String) -> void: said.append(text)
+		tether.notice.connect(listen)
 		live.consume()
+		# Freed at the end of the frame the eating happened on, exactly as in
+		# play — so the tether has to have been told, not left to look afterwards.
+		await process_frame
 		await physics_frame
 		await physics_frame
+		tether.notice.disconnect(listen)
 		_check(not tether.is_towing(), "draining the cargo drops the line")
+		_check(not is_instance_valid(live), "and the creature is gone with it")
+		_check(said.is_empty(),
+			"quietly — nothing about an empty line over the top of your meal (%s)"
+			% ", ".join(said))
 
 	slab.queue_free()
 	await physics_frame
@@ -2400,7 +2415,7 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	_select_pattern(builder, "orb_web")
 
 	_check(builder.shot_radius() > 0.0,
-		"a shot has one size, from the body (%.2fm)" % builder.shot_radius())
+		"a throw has a size, taken from the body (%.2fm)" % builder.shot_radius())
 	_check(not builder.cooling(), "and no wait on it to start with")
 
 	# At a surface: a web, wherever it landed, with nothing asked of the room.
@@ -2513,8 +2528,8 @@ func _test_shooting(spider: SpiderPlayer, builder: WebBuilder, level: Node,
 	await process_frame
 
 
-## Holding the shoot key: first person, a second on a creature, and a bolt that
-## then cannot miss it.
+## Holding the shoot key: a ball of silk wound up over the spider's back, which
+## buys a bigger throw rather than a promised one.
 func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) -> void:
 	var host := spider.get_parent()
 	var slab := _test_slab(host, Vector3(150, 0.0, 150))
@@ -2529,14 +2544,14 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) ->
 	if not _check(quarry != null, "a fly to take aim at"):
 		slab.queue_free()
 		return
-	# Still, for the aiming half. What is being checked here is the lock, not
+	# Still, for the winding-up half. What is being checked is the wind-up, not
 	# whether a test can hold a crosshair on a wandering insect.
-	var wander := quarry.move_speed
 	quarry.move_speed = 0.0
 	await physics_frame
 
 	var was_third := spider.view.third_person
-	_check(builder.begin_shot(), "holding right mouse starts taking aim")
+	spider.view.aim_blend = 0.0
+	_check(builder.begin_shot(), "holding right mouse starts winding a throw up")
 	_check(builder.aiming, "which is a state you are in")
 	# It used to drop you into first person. Watching the spider wind the throw
 	# up is worth more than the precision that bought, so the camera stays put.
@@ -2544,7 +2559,7 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) ->
 		"and leaves the camera alone — you keep watching the spider")
 	var ball := builder.get_node_or_null(NodePath("HeldSilk")) as MeshInstance3D
 	_check(ball != null and ball.visible, "with a ball of silk held over its back")
-	_check(builder.aim_locked_on == null, "and nothing in the cross yet")
+	_check(is_zero_approx(builder.charge), "wound up not at all yet")
 
 	# No frames between here and letting go: a physics frame would see the key
 	# is not really held down in a headless run and let go on the spider's
@@ -2553,44 +2568,101 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) ->
 	spider.view.update(spider.stage().body_height)
 	builder._update_held()
 	var small_ball: float = ball.scale.x if ball != null else 0.0
-	builder.track(0.05)
-	_check(builder.aim_locked_on == quarry, "putting the cross on it starts the clock")
-	_check(not builder.locked, "which does not finish at once")
-	var part := builder.lock_progress
+	var tap_radius := builder.shot_radius()
+	var tap_span := builder.catch_radius(tap_radius)
 
 	for i in 30:
 		_aim_at(spider, quarry.global_position)
 		spider.view.update(spider.stage().body_height)
 		builder.track(0.05)
+		builder._frame_the_aim(0.05)
 		builder._update_held()
-	_check(builder.lock_progress > part, "holding it there fills the second")
-	_check(builder.locked, "and a second later it is locked on")
-	# The ball is the readout as well: it swells as the second fills, so you can
-	# keep looking at the fly rather than down at a bar.
+	_check(builder.charge >= 1.0, "holding it winds all the way up (%.2f)" % builder.charge)
+
+	# What the second buys. It used to buy a promise — hold the cross on a fly
+	# for a second and the bolt steered itself home, which took the shot away
+	# from the player. It buys size instead: the same help, earned the same way,
+	# and you still have to aim it.
+	var full_radius := builder.shot_radius()
+	var full_span := builder.catch_radius(full_radius)
+	_check(full_radius > tap_radius * 1.5,
+		"and throws a far bigger web (%.2fm across, from %.2fm)"
+		% [full_radius * 2.0, tap_radius * 2.0])
+	# The catch ball has a floor under it, so that a tap is not a shot nobody
+	# could make — which is why it grows by less than the web does.
+	_check(full_span > tap_span,
+		"which is that much easier to hit with (%.2fm ball, from %.2fm)"
+		% [full_span * 2.0, tap_span * 2.0])
+	# The ball is the readout as well: it swells as the wind-up fills, so you
+	# can keep looking at the fly rather than down at a bar.
 	if ball != null:
 		_check(ball.scale.x > small_ball,
-			"and the ball has swollen with it (%.4f from %.4f)" % [ball.scale.x, small_ball])
+			"and you can watch it grow in your hands (%.4f from %.4f)"
+			% [ball.scale.x, small_ball])
+	_check(spider.view.aim_blend > 0.5,
+		"with the camera settling into the aim (%.2f)" % spider.view.aim_blend)
 
-	# Now look somewhere else entirely and fire. A locked bolt is promised its
-	# catch, and the promise is kept by the flight rather than by the aim.
-	quarry.move_speed = wander
-	spider.view.face(Vector3(0, 0, 1))
-	spider.view.pitch = 0.4
+	# The camera move on its own: same look, one blend against the other. Aiming
+	# is framed over the shoulder now rather than hidden behind a first-person
+	# flip, so the thing winding up stays on screen.
+	var wound := spider.view.aim_blend
+	spider.view.face(Vector3(1, 0, 0))
+	spider.view.pitch = 0.0
+	spider.view.aim_blend = 0.0
 	spider.view.update(spider.stage().body_height)
-	_check(builder.release_shot(), "letting go fires it")
-	_check(not builder.aiming, "and aiming is over")
-	_check(ball == null or not ball.visible, "and the ball has left its hands")
-	var took: bool = await _wait_until(func() -> bool: return quarry.wrapped, 360)
-	_check(took, "the bolt goes and finds it, whichever way you were looking")
-	_check(not is_instance_valid(quarry) or quarry.is_bundled(),
-		"and leaves it bundled")
+	var arm_out := spider.view.camera.global_position.distance_to(spider.global_position)
+	spider.view.aim_blend = wound
+	spider.view.update(spider.stage().body_height)
+	var arm_in := spider.view.camera.global_position.distance_to(spider.global_position)
+	_check(arm_in < arm_out,
+		"pulling in over the shoulder (%.2fm from %.2fm)" % [arm_in, arm_out])
 
-	# A tap is still a tap: nothing held, nothing locked, ordinary straight shot.
+	# A wound-up throw, aimed at the fly, takes it — and it is the aim that does
+	# it. The bolt leaves along the crosshair and keeps that heading.
+	_aim_at(spider, quarry.global_position)
+	spider.view.update(spider.stage().body_height)
+	var along := spider.view.aim_forward().normalized()
+	_check(builder.release_shot(), "letting go throws it")
+	_check(not builder.aiming, "and the wind-up is over")
+	_check(ball == null or not ball.visible, "and the ball has left its hands")
+	var bolt := builder._shot
+	if _check(bolt != null, "with a ball of silk in the air"):
+		_check(bolt.heading().normalized().dot(along) > 0.999,
+			"flying exactly where it was pointed, nothing steering it")
+	var took: bool = await _wait_until(func() -> bool: return quarry.wrapped, 360)
+	_check(took, "and a wide ball thrown at a fly catches it")
+	_check(not is_instance_valid(quarry) or quarry.is_bundled(),
+		"leaving it bundled")
+
+	# Nothing homes any more. Wind one right up, throw it the other way, and the
+	# fly across the room is left alone: the help is the size of the ball.
+	await _wait_until(func() -> bool: return not builder.shot_in_flight(), 240)
+	var bystander := _spawn_species(level, "fly",
+		spider.global_position + Vector3(14.0, 1.0, 0.0))
+	if _check(bystander != null, "another fly, right across the room"):
+		bystander.move_speed = 0.0
+		await physics_frame
+		_check(builder.begin_shot(), "winding another one up")
+		for i in 30:
+			builder.track(0.05)
+		spider.view.face(Vector3(-1, 0, 0))
+		spider.view.pitch = 0.9
+		spider.view.update(spider.stage().body_height)
+		_check(builder.release_shot(), "thrown the other way entirely")
+		var spent: bool = await _wait_until(
+			func() -> bool: return not builder.shot_in_flight(), 300)
+		_check(spent, "the throw runs out rather than turning round")
+		_check(not bystander.wrapped, "and the fly behind you is untouched")
+		bystander.queue_free()
+		await physics_frame
+
+	# A tap is still a tap: nothing wound up, the smallest ball, straight out.
 	await _wait_until(func() -> bool: return not builder.shot_in_flight(), 200)
 	_check(builder.begin_shot(), "a tap starts the same way")
-	_check(builder.release_shot(), "and lets go before the second is up")
-	_check(not builder.locked and builder.aim_locked_on == null,
-		"with nothing locked, so it is the plain shot it always was")
+	var tapped := builder.catch_radius(builder.shot_radius())
+	_check(builder.release_shot(), "and lets go before anything is wound up")
+	_check(is_zero_approx(builder.charge) and tapped < full_span,
+		"throwing the small ball it always did (%.2fm)" % [tapped * 2.0])
 
 	if is_instance_valid(quarry):
 		quarry.queue_free()

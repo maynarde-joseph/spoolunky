@@ -351,8 +351,12 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 		_move_airborne(delta, input_axis)
 		return
 
-	_adopt_surface(hit["normal"])
 	_note_surface(hit.get("collider"))
+	var thread := _strand_under(hit.get("collider")) if on_silk else null
+	standing_on = thread
+	# A thread's up comes from the thread, not from the probe. See _thread_up.
+	var found: Vector3 = hit["normal"]
+	_adopt_surface(_thread_up(thread, found) if thread != null else found)
 	_set_mode(Mode.ATTACHED)
 
 	if want_line_out:
@@ -368,8 +372,6 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	# Walking the surface: all the movement happens in its tangent plane, and
 	# the only force is the one holding the spider onto it.
 	wish = _wish_direction(input_axis, _current_up)
-	var thread := _strand_under(hit.get("collider")) if on_silk else null
-	standing_on = thread
 	if thread != null:
 		wish = _along_thread(thread, wish)
 	var speed := _surface_speed(want_sprint)
@@ -564,6 +566,28 @@ func _along_thread(strand: WebStrand, wish: Vector3) -> Vector3:
 	return axis * wish.dot(axis)
 
 
+## The up to stand with while on a thread, which is *not* the probe's normal.
+##
+## A tightrope's collider is a box five centimetres across. The surface probe
+## finds its top face one frame and a side face the next, and the body dutifully
+## rolls ninety degrees between the two — which is the jank. An up derived from
+## the thread's own axis cannot flip, because the axis does not.
+func _thread_up(strand: WebStrand, probed: Vector3) -> Vector3:
+	var axis := _thread_axis(strand)
+	if axis == Vector3.ZERO:
+		return probed
+	var up := probed - axis * probed.dot(axis)
+	if up.length_squared() < 0.01:
+		# The probe found an end cap, or a face edge-on to the line. Stand up.
+		up = Vector3.UP - axis * Vector3.UP.dot(axis)
+	if up.length_squared() < 0.01:
+		# A vertical thread has no preferred up, so keep the one already held.
+		up = _current_up - axis * _current_up.dot(axis)
+	if up.length_squared() < 0.000001:
+		return probed
+	return up.normalized()
+
+
 ## Keeps the body over the thread it is walking on. Only the drift across the
 ## line is pulled back; moving along it is untouched, and so is the force
 ## holding the spider on. With input already confined to the line this is
@@ -577,7 +601,13 @@ func _hold_to_thread(strand: WebStrand, tangent: Vector3) -> Vector3:
 	var offset := nearest - _spider.global_position
 	offset -= axis * offset.dot(axis)
 	offset -= _current_up * offset.dot(_current_up)
-	return tangent + offset * thread_grip
+	# Cancel the drift before pulling it in, rather than pulling against it. The
+	# pull alone is a spring with no damping — five metres per second of
+	# correction for every metre of error, overshooting every time — and a spring
+	# with no damping is a wobble you cannot walk out of.
+	var adrift := tangent - axis * tangent.dot(axis)
+	adrift -= _current_up * adrift.dot(_current_up)
+	return tangent - adrift + offset * thread_grip
 
 
 ## Which way a thread runs, or zero if it is not one.

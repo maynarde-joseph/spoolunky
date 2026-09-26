@@ -46,10 +46,6 @@ const MAX_LINES := 3
 ## biggest this size tier can spin.
 @export var place_grow_time := 1.1
 
-## How big a shot web is, as a multiple of body height. One size, taken from
-## the spider rather than chosen by holding a key down.
-@export var shot_radius_bodies := 1.8
-
 ## Seconds between web shots.
 ##
 ## This is the whole cost of a web now. Silk used to be the thing that stopped
@@ -60,22 +56,22 @@ const MAX_LINES := 3
 ## over in a few seconds.
 @export var shot_cooldown := 3.5
 
-## How long a creature has to be kept in the crosshair before the shot becomes
-## a certainty, in seconds.
-@export var lock_seconds := 1.0
+## How long winding a throw up to its full size takes, in seconds.
+##
+## This replaced a lock-on. Holding the crosshair on a creature for a second
+## used to *guarantee* the catch, with the bolt steering itself in — which was
+## no fun, because a promise removes the shot. Holding now makes the ball
+## bigger, and a bigger ball is easier to hit with: the same second, the same
+## reward for spending it, and you still have to aim.
+@export var charge_time := 0.9
 
-## The cosine of the angle that still counts as pointing at something: how
-## close you have to get to start tracking it.
-@export var lock_cone := 0.98
-
-## And the looser one that keeps a lock once it has started. Holding a cross
-## exactly on a wandering fly for a whole second is not a thing anyone can do,
-## and it is not what the second is for — the second is for choosing, not for
-## steadiness.
-@export var lock_hold_cone := 0.93
-
-## How far away something can be locked, in body heights.
-@export var lock_reach_bodies := 60.0
+## How big the ball looks, in body heights, from a tap to a full wind-up.
+##
+## A readout rather than the hitbox at 1:1 — the real catch radius is metres
+## across at the top end, and a ball drawn that size over the spider's back
+## would be bigger than the spider. It grows with the thing it stands for,
+## which is what a readout has to do.
+@export var held_bodies := Vector2(0.12, 0.3)
 
 ## Pattern dragged between anchors when the chosen one is a net.
 const FRAME_PATTERN := "frame_line"
@@ -142,15 +138,12 @@ var throwing := false
 ## A bolt in flight, so a second press cannot send another.
 var _shot: SilkShot = null
 
-## True while the shoot key is held down: first person, and looking for
-## something worth being certain about.
+## True while the shoot key is held down and a ball is being wound up.
 var aiming := false
 
-## What the crosshair is holding, how far through the second it is, and whether
-## that second is up.
-var aim_locked_on: Prey = null
-var lock_progress := 0.0
-var locked := false
+## How far through the wind-up, 0 to 1. The size of the throw, and the size of
+## the ball standing for it.
+var charge := 0.0
 
 var _cooling := 0.0
 var _cooldown_span := 0.0
@@ -225,6 +218,7 @@ func setup(spider: CharacterBody3D, growth: SpiderGrowth,
 func _process(delta: float) -> void:
 	_cooling = maxf(0.0, _cooling - delta)
 	_update_held()
+	_frame_the_aim(delta)
 	if placing:
 		_grow_placement(delta)
 	elif placing_design:
@@ -332,7 +326,7 @@ func commit_place() -> bool:
 ## The older way of making a web — hold to grow a ghost that fits the room — is
 ## still in this file below, still tested, and no longer reachable from the
 ## keyboard. It was the better idea on paper and the worse one to play.
-func shoot(chase: Prey = null) -> bool:
+func shoot() -> bool:
 	if shot_in_flight() or _view == null:
 		return false
 	if cooling():
@@ -352,9 +346,7 @@ func shoot(chase: Prey = null) -> bool:
 	var shot := SilkShot.fire(_view.aim_origin(), _view.aim_forward(),
 		_stage().body_height, _exclusions())
 	shot.catch_radius = catch_radius(radius)
-	if chase != null and is_instance_valid(chase):
-		shot.chase(chase)
-	shot.landed.connect(_on_shot_landed.bind(pattern, radius, chase != null))
+	shot.landed.connect(_on_shot_landed.bind(pattern, radius))
 	shot.fizzled.connect(func() -> void: _shot = null)
 	shot.launch_from(_resolve_container(), _view.aim_origin())
 	_shot = shot
@@ -391,29 +383,26 @@ func catch_radius(web_radius: float) -> float:
 	return maxf(web_radius * 1.25, _stage().body_height * 2.5)
 
 
-## One size, from the body that threw it.
+## How big the throw is: the smallest web this body can spin at a tap, up to the
+## biggest it can spin at a full wind-up.
 ##
-## There was a whole apparatus here once for quoting a web's price and stepping
-## the size down until the spool could pay — two bugs' worth of arithmetic, one
-## of them quoting 49 and charging 167. A web costs a wait now, and a wait is
-## the same length whatever size the web is, so all of that is gone and the
-## size is just the spider.
+## The same span a held place grows through, on purpose — one rule for how big a
+## web gets, whether it is spun by hand or thrown. And one number doing three
+## jobs: how big the ball looks, how close the bolt has to pass to take
+## something, and how big the web it opens ends up. That is what makes a wind-up
+## legible — the thing you watch grow is the thing that got easier to hit with.
 func shot_radius() -> float:
-	return clampf(_stage().body_height * shot_radius_bodies,
-		_min_place_radius(), _max_place_radius())
+	return lerpf(_min_place_radius(), _max_place_radius(), clampf(charge, 0.0, 1.0))
 
 
 ## Landed. Something alive is wrapped where it stood; anything else gets a web
 ## built against it. No validity test either way — a shot that reached
 ## something has already earned its web.
 func _on_shot_landed(at: Vector3, normal: Vector3, prey: Node3D, heading: Vector3,
-		pattern: WebPattern, radius: float, sure: bool) -> void:
+		pattern: WebPattern, radius: float) -> void:
 	_shot = null
 	var caught := prey as Prey
-	# A locked shot takes it whatever state it is in. Being told you are certain
-	# and then watching the silk bounce off something already half-caught is the
-	# promise broken on the one shot that made a promise.
-	if caught != null and is_instance_valid(caught) and (sure or caught.can_be_snared()):
+	if caught != null and is_instance_valid(caught) and caught.can_be_snared():
 		if caught.bundle():
 			notice.emit("Wrapped the %s" % caught.species)
 			return
@@ -422,8 +411,7 @@ func _on_shot_landed(at: Vector3, normal: Vector3, prey: Node3D, heading: Vector
 
 # --- taking aim ---------------------------------------------------------
 
-## The shoot key went down. Drop into first person and start watching for
-## something worth locking onto.
+## The shoot key went down. Starts winding a ball of silk up.
 ##
 ## A tap is still a tap: the second only matters if you spend it, so the fast
 ## shot is unchanged and the slow one is a thing you choose.
@@ -431,9 +419,7 @@ func begin_shot() -> bool:
 	if aiming or _view == null:
 		return false
 	aiming = true
-	aim_locked_on = null
-	lock_progress = 0.0
-	locked = false
+	charge = 0.0
 	# The camera stays where it is. Taking aim used to drop to first person, on
 	# the reasoning that third person has the cross and the silk leaving from
 	# different places — true, and it turns out not to matter: a ball of silk is
@@ -445,34 +431,21 @@ func begin_shot() -> bool:
 	return true
 
 
-## Held down. Feeds the lock, or lets it slip and looks for something else.
+## Held down. Winds the ball up.
 func track(delta: float) -> void:
 	if not aiming:
 		return
-	if aim_locked_on != null and is_instance_valid(aim_locked_on) \
-			and not aim_locked_on.eaten and _on_target(aim_locked_on, lock_hold_cone):
-		lock_progress = clampf(lock_progress + delta / maxf(lock_seconds, 0.05), 0.0, 1.0)
-		if lock_progress >= 1.0 and not locked:
-			locked = true
-			notice.emit("Locked on the %s" % aim_locked_on.species)
-		return
-	aim_locked_on = _aimed_creature()
-	lock_progress = 0.0
-	locked = false
+	charge = clampf(charge + delta / maxf(charge_time, 0.05), 0.0, 1.0)
 
 
-## Let go. A lock sends a bolt that will not miss; anything else is the
-## ordinary straight shot.
+## Let go. Throws whatever size the wind-up reached, straight down the cross.
 func release_shot() -> bool:
 	if not aiming:
 		return false
 	aiming = false
-	var promised: Prey = aim_locked_on if locked else null
-	aim_locked_on = null
-	lock_progress = 0.0
-	locked = false
 	_show_held(false)
-	var fired := shoot(promised)
+	var fired := shoot()
+	charge = 0.0
 	state_changed.emit()
 	return fired
 
@@ -483,19 +456,17 @@ func cancel_shot() -> void:
 	if not aiming:
 		return
 	aiming = false
-	aim_locked_on = null
-	lock_progress = 0.0
-	locked = false
+	charge = 0.0
 	_show_held(false)
 	state_changed.emit()
 
 
 ## The ball of silk the spider winds up while aiming, held over its back.
 ##
-## A wizard holding a fireball: you can see the throw coming, it grows as the
-## lock fills, and it brightens when the lock takes. That last part is the point
-## — the second you spend holding a crosshair then has a reading in the world as
-## well as one on the HUD, so you do not have to look away from the fly to know.
+## A wizard holding a fireball: you can see the throw coming, and it grows and
+## brightens as the wind-up fills. That is the point — the second you spend
+## winding up has a reading in the world as well as one on the HUD, so you can
+## judge the throw without looking away from the fly.
 func _show_held(shown: bool) -> void:
 	if shown and _held == null:
 		_build_held()
@@ -503,19 +474,26 @@ func _show_held(shown: bool) -> void:
 		_held.visible = shown
 
 
-## Keeps the ball over the spider and sized to how far the lock has come.
+## Keeps the ball over the spider and sized to how far the wind-up has come.
 func _update_held() -> void:
 	if _held == null or not _held.visible or _spider == null:
 		return
 	var height := _stage().body_height
-	_held.global_position = _spider.global_position + Vector3.UP * height * 1.2
-	# Starts at a third and fills out. Something that only changes colour is
-	# something you miss while you are watching the thing you are aiming at.
-	var filling: float = lock_progress if aim_locked_on != null else 0.0
-	var swell: float = lerpf(0.35, 1.0, filling)
-	_held.scale = Vector3.ONE * maxf(height * shot_radius_bodies * 0.22 * swell, 0.01)
+	var wide: float = height * lerpf(held_bodies.x, held_bodies.y, clampf(charge, 0.0, 1.0))
+	_held.global_position = _spider.global_position + Vector3.UP * (height * 0.9 + wide)
+	_held.scale = Vector3.ONE * maxf(wide, 0.005)
 	if _held_material != null:
-		_held_material.emission_energy_multiplier = 2.4 if locked else 0.7
+		_held_material.emission_energy_multiplier = lerpf(0.5, 2.2, charge)
+
+
+## Brings the camera in over the shoulder while winding up, and lets it back
+## out after. Eased, and independently of the charge, so letting go at half a
+## wind-up does not jerk the view back from halfway.
+func _frame_the_aim(delta: float) -> void:
+	if _view == null:
+		return
+	var wanted := 1.0 if aiming else 0.0
+	_view.aim_blend = move_toward(_view.aim_blend, wanted, delta * 4.0)
 
 
 func _build_held() -> void:
@@ -533,38 +511,6 @@ func _build_held() -> void:
 	_held.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_held.visible = false
 	add_child(_held)
-
-
-## The creature nearest the middle of the screen, or null.
-func _aimed_creature() -> Prey:
-	var best: Prey = null
-	var best_dot := lock_cone
-	for node in get_tree().get_nodes_in_group("prey"):
-		var creature := node as Prey
-		if creature == null or not is_instance_valid(creature) or creature.eaten:
-			continue
-		var alignment := _alignment(creature)
-		if alignment > best_dot:
-			best_dot = alignment
-			best = creature
-	return best
-
-
-func _on_target(creature: Prey, cone: float) -> bool:
-	return _alignment(creature) >= cone
-
-
-## How squarely the crosshair sits on something: 1 is dead on, -1 is behind
-## you, and anything out of range is as good as behind you.
-func _alignment(creature: Prey) -> float:
-	if _view == null:
-		return -1.0
-	var offset := creature.global_position - _view.aim_origin()
-	var distance := offset.length()
-	if distance < 0.0001 or distance > _stage().body_height * lock_reach_bodies:
-		return -1.0
-	return (offset / distance).dot(_view.aim_forward())
-
 
 
 ## Whatever this tier can actually spin, for when nothing is selected — the

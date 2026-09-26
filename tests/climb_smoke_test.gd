@@ -652,7 +652,24 @@ func _test_lines_are_roads() -> void:
 		_spider.view.pitch = 0.0
 		await _run_frames(4)
 		from = _spider.global_position
-		await _walk_forward(20)
+		# The body's up, frame by frame, while it walks. A tightrope's collider
+		# is a box a few centimetres across: the surface probe used to find its
+		# top face one frame and a side face the next, and the body rolled a
+		# right angle between the two, every few frames, the whole way along.
+		# That was the jank. An up taken from the thread's own axis cannot flip,
+		# because the axis does not.
+		var lurch := 0.0
+		var leaning := 0.0
+		var previous := _spider.climb.body_up()
+		Input.action_press("move_forward")
+		for i in 20:
+			await physics_frame
+			var now := _spider.climb.body_up()
+			lurch = maxf(lurch, rad_to_deg(previous.angle_to(now)))
+			leaning = maxf(leaning, absf(now.dot(axis)))
+			previous = now
+		Input.action_release("move_forward")
+		await _run_frames(2)
 		moved = _spider.global_position - from
 		_check(absf(moved.dot(axis)) > 0.25,
 			"and it walks you along it (%.2fm)" % absf(moved.dot(axis)))
@@ -660,6 +677,11 @@ func _test_lines_are_roads() -> void:
 			"still over the thread after walking it")
 		_check(_spider.climb.on_silk and not _spider.climb.is_riding(),
 			"under your own power, not on a ride")
+		_check(lurch < 8.0,
+			"and the walk is smooth — no roll worse than %.1f° in a frame" % lurch)
+		_check(leaning < 0.2,
+			"with the body square to the thread all the way (%.3f along it)"
+			% leaning)
 
 		# And the way off is the jump.
 		Input.action_press("move_jump")

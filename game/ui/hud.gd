@@ -437,27 +437,26 @@ func _refresh_build_panel() -> void:
 	dial_label.text = "%s      %s" % [_dial_readout(builder), _weave_readout(builder)]
 
 
-## What holding the shoot key is doing: what is in the crosshair, and how far
-## through the second it is.
+## What holding the shoot key is doing: how big the ball has got, and how wide
+## a throw that buys.
+##
+## The span, not the charge percentage, because the span is the thing the player
+## is actually deciding — it is how close the bolt has to pass to take something.
 func _refresh_aim_panel(builder: WebBuilder) -> void:
-	var target := builder.aim_locked_on
-	if target == null or not is_instance_valid(target):
-		pattern_label.text = "Taking aim"
-		hint_label.text = "Let go to shoot"
-		problem_label.text = "Hold a creature in the cross for a second to be sure of it"
-		return
-	pattern_label.text = target.species
-	if builder.locked:
-		hint_label.text = "Locked — let go and it is yours"
-		problem_label.text = _lock_bar(1.0)
-		return
-	hint_label.text = "Keep it there…"
-	problem_label.text = _lock_bar(builder.lock_progress)
+	var pattern := builder.current_pattern()
+	var span := builder.catch_radius(builder.shot_radius()) * 2.0
+	pattern_label.text = "%s     %.1f m ball" % [
+		pattern.display_name if pattern != null else "Winding up", span]
+	if builder.charge >= 1.0:
+		hint_label.text = "Wound right up — let go to throw it"
+	else:
+		hint_label.text = "Let go to throw — keep holding for a bigger ball"
+	problem_label.text = _charge_bar(builder.charge)
 
 
-## The second, drawn. Ten blocks: enough to read the rate at a glance, and
+## The wind-up, drawn. Ten blocks: enough to read the rate at a glance, and
 ## short enough not to become the thing you watch instead of the fly.
-func _lock_bar(progress: float) -> String:
+func _charge_bar(progress: float) -> String:
 	var lit := clampi(roundi(progress * 10.0), 0, 10)
 	return "%s%s" % ["|".repeat(lit), ".".repeat(10 - lit)]
 

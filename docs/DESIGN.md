@@ -492,7 +492,8 @@ they cover the two things a web is ever for:
   A catch volume is a thin slab around the web's own plane, so a throw that
   lands where the crosshair's ray finally stopped would sail straight past the
   moth it was aimed at. The ghost centres on whatever is under the crosshair
-  and the HUD names it, so the throw is visibly locked on before you let go.
+  and the HUD names it, so you can see what the throw is lined up on before you
+  let go.
 
   It is not a free kill, because it is the same number as everything else:
   a web only takes something outright if it can out-hold the whole fight that
@@ -1131,7 +1132,7 @@ hold in their head on the first screen.
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
 | **Left Mouse** | **Go there, trailing a line.** A surface pulls you over; a line puts you on it; something you already caught comes to you instead. Three lines at a time — a fourth takes the oldest down (§5) |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss expires after two seconds. Then a short wait before the next (§5) |
-| **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. Hold a creature in the cross for a second and the throw cannot miss it |
+| **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The camera comes in over the shoulder while you hold |
 | **1–9 / wheel** | Pick a pocket on the bar |
 | **E** | The tree — spend what you have eaten |
 | **F** | Wrap the prey you are looking at, then drain it |
@@ -1161,26 +1162,31 @@ wandering; asking a player to put a hairline through one is asking for a
 precision no amount of practice reaches, and for a while the honest report was
 "I spent a few minutes shooting and could not catch anything".
 
-The **one-second lock** is the other half of the same problem, and it is a
-choice rather than a fix. A tap is the fast, fallible shot and is unchanged.
-Holding winds up a ball of silk over the spider's back — a wizard with a
-fireball — and a second spent holding a creature buys certainty. The bolt then
-steers all the way in, because a promise kept by the arithmetic at the trigger
-is a promise broken by the first gust of wandering.
+The **wind-up** is the other half of the same problem, and it is a choice
+rather than a fix. A tap is the fast, fallible shot and is unchanged. Holding
+winds a ball of silk up over the spider's back — a wizard with a fireball — and
+what the second buys is **size**: the ball grows from the smallest web this body
+can spin to the biggest, and the catch ball grows with it. A bigger ball is
+easier to hit with, which is the help that was wanted, and the throw is still
+yours to aim.
 
-**The camera does not move for it.** Aiming used to drop to first person, on
-the reasoning that third person has the cross and the silk leaving from
-different places. That is true and it turns out not to matter: a thrown ball
-leaves the spider *toward whatever the cross is over*, which is exactly what
-the third-person aim already works out. What the flip cost was the one thing
-worth having — watching the spider wind up. The ball grows as the second fills
-and brightens when the lock takes, so the charge has a reading in the world as
-well as on the HUD, and you never have to look away from the fly to read it.
+This replaced a one-second lock-on. Holding the cross on a creature for a second
+used to *guarantee* the catch, with the bolt steering itself all the way in.
+That worked and it was no fun: a promise removes the shot, and the reply when we
+tried it was that it was too easy. Nothing homes now. The wind-up is the whole
+of the help, it is legible — the thing you watch grow is the thing that got
+easier to hit with — and one rule covers web size everywhere, because it is the
+same span a held place grows through.
 
-The cone that *acquires* a target is tighter than the cone that *keeps* one.
-Holding a cross exactly on a wandering fly for a whole second is not a thing
-anyone can do, and it is not what the second is for: the second is for
-choosing, not for steadiness.
+**The camera frames the wind-up instead of hiding it.** Aiming used to drop to
+first person, on the reasoning that third person has the cross and the silk
+leaving from different places. That is true and it turns out not to matter: a
+thrown ball leaves the spider *toward whatever the cross is over*, which is
+exactly what the third-person aim already works out. What the flip cost was the
+one thing worth having — watching the spider wind up. So the arm comes **in and
+round to the shoulder** as the charge fills, and eases back out after; the ball
+grows and brightens with it, so the charge has a reading in the world as well as
+on the HUD, and you never have to look away from the fly to read it.
 
 ---
 
