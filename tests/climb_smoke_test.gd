@@ -436,35 +436,45 @@ func _test_a_steady_view() -> void:
 	# instead slides the pivot forward and back every time you glance up or down,
 	# which tilts everything worked out from the crosshair — including the plane a
 	# thrown web opens in, which is how this was caught.
+	#
+	# Measured with the arm shortened to nothing, so the camera sits *on* the
+	# pivot. Derived from a full-length arm it cannot be measured in a room this
+	# size: the arm is longer than the room is tall, so it is pulled in off a wall
+	# at most pitches and the pivot no longer follows from where it ended up.
 	rig.aim_blend = 0.0
+	var arm := rig.distance
+	rig.distance = 0.0
 	var upright := true
 	var worst := 0.0
 	for tip in [0.0, -0.6, 0.5, 1.1]:
 		rig.pitch = tip
 		rig.update(height)
-		var pivot := rig.camera.global_position + rig.forward() * rig.distance * height
-		var offset := pivot - _spider.global_position
+		var offset := rig.camera.global_position - _spider.global_position
 		if offset.length_squared() < 0.000001:
 			continue
 		var along := offset.normalized().dot(rig.frame_up())
 		worst = maxf(worst, absf(1.0 - along))
 		if along < 0.999:
 			upright = false
+	rig.distance = arm
 	rig.pitch = 0.0
 	rig.update(height)
 	_check(upright,
 		"and it stands off straight up the surface at any pitch (%.4f off)" % worst)
 
-	# A climbing spider carries a permanent pull into whatever it is standing on
-	# — that is what keeps it on a ceiling — so its velocity is several metres a
-	# second while it stands perfectly still. The view used to open up off that
-	# total, which left it breathing at rest.
-	_check(_spider.velocity.length() > height * 2.0,
-		"standing still still means a stiff pull into the floor (%.2fm/s)"
-		% _spider.velocity.length())
-	_check(_spider.climb.tangent_velocity.length() < _spider.stage().move_speed * 0.5,
-		"while going nowhere along it (%.2fm/s)"
+	# And the view does not breathe while you stand still. It opens up with speed,
+	# read off the speed *along the surface* — the same number the legs are
+	# animated from — rather than off whatever move_and_slide left in the body's
+	# velocity after resolving the pull that holds a spider on.
+	_check(_spider.climb.tangent_velocity.length() < _spider.stage().move_speed * 0.1,
+		"standing still is standing still (%.2fm/s along the floor)"
 		% _spider.climb.tangent_velocity.length())
+	var lens := _spider.view.camera
+	_check(_spider._base_fov > 0.0,
+		"the view has a resting angle (%.1f°)" % _spider._base_fov)
+	_check(absf(lens.fov - _spider._base_fov) < 0.5,
+		"which is where it sits at rest (%.1f° against %.1f°)"
+		% [lens.fov, _spider._base_fov])
 
 
 # --- scaffolding --------------------------------------------------------

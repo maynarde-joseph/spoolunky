@@ -309,11 +309,12 @@ func _process(delta: float) -> void:
 
 ## Opens the view up as you pick up speed.
 ##
-## Off the speed along the surface, not off [member velocity]. A climbing spider
-## carries a permanent few metres a second of pull into whatever it is standing
-## on — that is what keeps it there — so the total velocity is several m/s even
-## standing still, and reading the rush off it left the view breathing at rest
-## and lurching whenever move_and_slide resolved a step.
+## Off the speed along the surface, not off [member velocity]. The two are close
+## at rest, because move_and_slide absorbs the pull that holds a spider onto what
+## it is standing on — but what it leaves behind is the *resolved* movement, so it
+## picks up whatever a step or a slope slid the body sideways by. The along-surface
+## velocity is the movement the spider actually asked for, which is the same
+## number the legs are animated from, and now the view agrees with them.
 func _rush(delta: float) -> void:
 	var camera := get_viewport().get_camera_3d()
 	if camera == null:

@@ -1075,11 +1075,14 @@ if it is ever further out than the arm is long, so a respawn does not sweep the
 camera across the world. What is never eased is where you are *looking*: the arm
 may lag a step behind the body, the mouse may not.
 
-The same mistake in a second place: the speed the view opens up for was read off
-the body's whole velocity, and a climbing spider carries a permanent few metres a
-second of pull into whatever it is standing on — that is what keeps it on a
-ceiling. So the view breathed while standing still. It reads the speed *along the
-surface* now.
+Smaller, nearby: the speed the view opens up for was read off the body's whole
+velocity — the *resolved* one, after `move_and_slide` has absorbed the pull that
+holds a spider on and slid the body along whatever it hit. It reads the
+along-surface velocity now, which is the movement the spider actually asked for
+and the same number the legs are animated from, so the view and the walk cycle
+agree. (We first wrote this up as "the view breathed while standing still". It
+does not: the pull is absorbed by the collision, and the test written to pin that
+claim promptly disproved it. The change is worth keeping on the smaller ground.)
 
 The second half reverses an earlier call, twice reversed now, so here is the
 reasoning rather than a quiet edit. Third person wins because **the size ladder
