@@ -2437,9 +2437,9 @@ func _test_something_hunts_you(spider: SpiderPlayer, builder: WebBuilder, level:
 	# spider is a Huntsman by the time this runs and a Huntsman out-bites every
 	# creature in the game, which made the honest-looking version of this check a
 	# tautology: it passed while proving nothing.
+	# Never added to the tree: the rule reads a bite power and nothing else, and
+	# this script is a SceneTree, which has no children to add it to.
 	var small := PretendSpider.new()
-	add_child(small)
-	small.global_position = wasp.global_position
 	small.bite = wasp.size_class - 1
 	_check(wasp.would_hunt(small),
 		"a wasp comes for anything whose bite is under its size (%d against %d)"
@@ -2453,7 +2453,7 @@ func _test_something_hunts_you(spider: SpiderPlayer, builder: WebBuilder, level:
 		_check(not midge.would_hunt(small),
 			"however small the thing in front of it is, because its aggression is nil")
 		midge.queue_free()
-	small.queue_free()
+	small.free()
 
 	# Being bitten costs you the mouthful. That is the whole reason to eat at home.
 	var dinner := _spawn_species(level, "fly", spider.global_position + Vector3(0.3, 0.2, 0))
