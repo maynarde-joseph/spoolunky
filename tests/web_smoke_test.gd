@@ -3138,13 +3138,24 @@ class PretendSpider extends Node3D:
 ## Feeding is no longer one call — that is the point of it — so a test that wants
 ## a meal has to spend time on it like everybody else. Returns how much biomass
 ## the spider actually gained.
+##
+## Two conveniences, both deliberate. The creature is pinned still, because a live
+## one wanders out of reach inside the seconds a meal now takes and then the check
+## is measuring a chase — which is what happened to the larder. And [param frames]
+## is an upper bound rather than a duration: it stops as soon as the creature is
+## empty, so no caller has to work out how many frames a beetle takes and get it
+## wrong by six.
 func _eat(spider: SpiderPlayer, prey: Prey, frames: int) -> float:
 	var before := spider.growth.biomass
+	prey.move_speed = 0.0
 	Input.action_press("interact")
 	spider._handle_prey(prey)
 	for i in frames:
 		await physics_frame
+		if not is_instance_valid(prey) or prey.eaten:
+			break
 	Input.action_release("interact")
+	await process_frame
 	await process_frame
 	return spider.growth.biomass - before
 
