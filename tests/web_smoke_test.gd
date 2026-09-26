@@ -1851,11 +1851,10 @@ func _test_spitting_a_web_at_something(spider: SpiderPlayer, builder: WebBuilder
 	_check(not sitting.can_be_snared(), "and no web will take it back")
 	_check(sitting.is_bundled(), "so it is still a bundle, not stuck again")
 
-	# And is simply there to be drained off the floor.
-	var fed := spider.growth.biomass
-	spider._handle_prey(sitting)
-	await process_frame
-	_check(spider.growth.biomass > fed, "a bundle on the floor is drainable")
+	# And is simply there to be drained off the floor. Which takes a few seconds
+	# now, like every other meal.
+	var fed: float = await _eat(spider, sitting, 90)
+	_check(fed > 0.0, "a bundle on the floor is drainable (+%.1f)" % fed)
 
 	# The silk still has to be up to it: one that out-fights the web is caught
 	# the ordinary way and has to be held, exactly as if it had flown in — and
@@ -2366,6 +2365,7 @@ func _test_a_meal_takes_time(spider: SpiderPlayer, level: Node) -> void:
 	# Let go part way and the rest is still hanging there.
 	Input.action_release("interact")
 	await process_frame
+	await process_frame
 	_check(spider.feeding == null, "letting go stops the meal")
 	_check(is_instance_valid(meal), "the moth is still there")
 	if is_instance_valid(meal):
@@ -2391,11 +2391,13 @@ func _test_a_meal_takes_time(spider: SpiderPlayer, level: Node) -> void:
 		await physics_frame
 		var tether := spider.tether
 		if _check(tether.hook(carried), "hooked onto your line"):
-			spider.global_position += Vector3(0, 0, -3.0)
+			var fangs: float = maxf(spider.stage().reach * 2.5,
+				spider.stage().body_height * 4.0)
+			spider.global_position += Vector3(0, 0, -(fangs + 2.0))
 			await physics_frame
 			var span := spider.global_position.distance_to(carried.global_position)
-			_check(span > spider.stage().reach * 2.5,
-				"further off than your fangs reach (%.2fm)" % span)
+			_check(span > fangs,
+				"further off than your fangs reach (%.2fm past %.2fm)" % [span, fangs])
 			var drunk: float = await _eat(spider, carried, 180)
 			_check(drunk > 0.0,
 				"and you can still drink it down the line (+%.1f)" % drunk)
@@ -2431,16 +2433,27 @@ func _test_something_hunts_you(spider: SpiderPlayer, builder: WebBuilder, level:
 		return
 	_check(wasp.aggression > 0.0, "and it is the aggressive sort (%.2f)" % wasp.aggression)
 
-	# The rule, both ways round, checked without waiting for it to fly over.
-	var bite := spider.stage().bite_power
-	_check(wasp.size_class > bite or not wasp.would_hunt(spider),
-		"a wasp out of your bite comes for you (size %d against a bite of %d)"
-		% [wasp.size_class, bite])
+	# The rule, both ways round, against a stand-in whose bite we choose. The real
+	# spider is a Huntsman by the time this runs and a Huntsman out-bites every
+	# creature in the game, which made the honest-looking version of this check a
+	# tautology: it passed while proving nothing.
+	var small := PretendSpider.new()
+	add_child(small)
+	small.global_position = wasp.global_position
+	small.bite = wasp.size_class - 1
+	_check(wasp.would_hunt(small),
+		"a wasp comes for anything whose bite is under its size (%d against %d)"
+		% [small.bite, wasp.size_class])
+	small.bite = wasp.size_class
+	_check(not wasp.would_hunt(small),
+		"and stops the moment the bite catches up (%d)" % small.bite)
 	var midge := _spawn_species(level, "midge", spider.global_position + Vector3(1.0, 0.3, 0))
-	if _check(midge != null, "a midge, which does not"):
-		_check(not midge.would_hunt(spider),
-			"because nothing that small ever hunts anything")
+	if _check(midge != null, "a midge, which never hunts anything"):
+		small.bite = 1
+		_check(not midge.would_hunt(small),
+			"however small the thing in front of it is, because its aggression is nil")
 		midge.queue_free()
+	small.queue_free()
 
 	# Being bitten costs you the mouthful. That is the whole reason to eat at home.
 	var dinner := _spawn_species(level, "fly", spider.global_position + Vector3(0.3, 0.2, 0))
@@ -2493,14 +2506,22 @@ func _test_something_hunts_you(spider: SpiderPlayer, builder: WebBuilder, level:
 	# And growing is what settles it for good: the thing that was hunting you is
 	# food once your bite catches up, which is the whole reward for eating.
 	var was_bite := spider.stage().bite_power
+	var hurt_first := spider.health
 	while spider.stage().bite_power < wasp.size_class and spider.growth.next_stage() != null:
 		spider.growth.feed(spider.growth.biomass_to_next() + 1.0, "test")
 	if spider.stage().bite_power >= wasp.size_class:
 		_check(not wasp.would_hunt(spider),
-			"grown past it, the wasp stops hunting you (bite %d from %d)"
-			% [spider.stage().bite_power, was_bite])
+			"grown past it, the wasp stops hunting you (bite %d against size %d)"
+			% [spider.stage().bite_power, wasp.size_class])
+	# Only meaningful if it actually grew — by this point in the suite the spider
+	# may already out-bite a wasp, and then there is no tier to have mended you.
+	if spider.stage().bite_power > was_bite:
 		_check(is_equal_approx(spider.health, spider.max_stamina()),
-			"and growing left you whole (%.0f)" % spider.health)
+			"and growing left you whole (%.0f of %.0f)"
+			% [spider.health, spider.max_stamina()])
+	else:
+		_check(spider.health >= hurt_first,
+			"already out-biting a wasp, so there was no tier left to mend you")
 
 	# A hunter that comes at you through silk goes into the silk first. Even a web
 	# too weak to keep it has bought you the seconds it spends tearing out — which
@@ -2536,9 +2557,12 @@ func _test_something_hunts_you(spider: SpiderPlayer, builder: WebBuilder, level:
 			_check(bought > 1.0,
 				"but it holds it for %.1fs, which is the seconds you were after"
 				% bought)
+			# A moment of fighting, then look: the wear is the other half of the
+			# bargain. A sprung snare holds rigid for a beat first, so this waits.
+			await _run_frames(30)
 			var worn := net.max_durability - net.durability
 			_check(worn > 0.0,
-				"and the fight is already costing the web (%.3f of %.1f)"
+				"and the fight costs the web as it goes (%.3f of %.1f)"
 				% [worn, net.max_durability])
 			comer.queue_free()
 		net.queue_free()
@@ -3092,6 +3116,23 @@ func _aim_at(spider: SpiderPlayer, point: Vector3) -> void:
 	spider.view.pitch = atan2(offset.y, maxf(flat, 0.0001))
 
 
+## A spider with a bite power of our choosing.
+##
+## The hunting rule turns on one comparison — the creature's size against the
+## spider's bite — and by the time the hunt test runs, the real spider has eaten
+## its way to a Huntsman, which out-bites everything in the game. Checking the
+## rule against it could only ever come out one way. This lets the check state
+## both halves.
+class PretendSpider extends Node3D:
+	var bite := 1
+
+	func stage() -> GrowthStage:
+		var tier := GrowthStage.new()
+		tier.bite_power = bite
+		tier.body_height = 0.25
+		return tier
+
+
 ## Eats, the way the player does: hold the key and let frames pass.
 ##
 ## Feeding is no longer one call — that is the point of it — so a test that wants
@@ -3187,7 +3228,9 @@ func _test_the_tree(spider: SpiderPlayer, level: Node) -> void:
 	var lunch := _spawn_species(level, "fly", spider.global_position + Vector3(0.3, 0.0, 0.0))
 	await physics_frame
 	if _check(lunch != null, "there is a fly to eat"):
-		spider._handle_prey(lunch)
+		# The larder counts creatures, not mouthfuls, so it is paid on the last
+		# swallow — which means the fly has to actually be finished.
+		await _eat(spider, lunch, 240)
 		_check(traits.eaten("fly") == 1,
 			"draining one puts it in the larder (%d)" % traits.eaten("fly"))
 
@@ -3288,7 +3331,7 @@ func _test_fangs(spider: SpiderPlayer, traits: SpiderTraits, level: Node) -> voi
 	await physics_frame
 	_check(traits.has_fangs(), "and ends in fangs")
 
-	spider._handle_prey(caught)
+	await _eat(spider, caught, 300)
 	_check(not is_instance_valid(caught) or caught.eaten,
 		"with which the %s goes down where it stands" % quarry.display_name)
 

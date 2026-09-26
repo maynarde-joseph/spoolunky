@@ -73,8 +73,13 @@ signal skill_tree_toggled()
 ##
 ## A meal is a few seconds you spend standing still, and that is the whole point
 ## of it: eating used to be one click and instantly over, which meant nowhere was
-## safer than anywhere else and a web was decoration. Scaled by bite power, so
-## growing does not turn a fly into a sitting.
+## safer than anywhere else and a web was decoration.
+##
+## Scaled by the *square root* of bite power rather than by bite power, so a meal
+## stays a few seconds the whole way up the ladder. Scaled linearly it cancelled
+## out against the bigger prey a bigger spider eats and then overtook it — an
+## Architect swallowed a beetle in under a second, and the loop this exists to
+## create quietly dissolved at the top of the game.
 @export var feed_rate := 3.4
 @export var input_interact := "interact"
 
@@ -538,8 +543,7 @@ func _feed(delta: float) -> void:
 		return
 
 	var yield_scale := traits.drain_scale() if traits != null else 1.0
-	var bite: float = maxf(stage().bite_power, 1)
-	var swallowed := feeding.drain(feed_rate * bite * delta)
+	var swallowed := feeding.drain(feed_rate * _gulp() * delta)
 	if swallowed <= 0.0:
 		return
 	var food := swallowed * yield_scale
@@ -553,6 +557,12 @@ func _feed(delta: float) -> void:
 		if traits != null:
 			traits.record(feeding.kind)
 		_end_feed()
+
+
+## How much faster a bigger mouth drinks: the square root of its bite, so the
+## curve flattens instead of running away. See [member feed_rate].
+func _gulp() -> float:
+	return sqrt(maxf(stage().bite_power, 1))
 
 
 ## Whether a meal is close enough to keep drinking. On the line counts at any
