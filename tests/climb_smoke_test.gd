@@ -50,6 +50,7 @@ func _run() -> void:
 	await _test_grappling_a_long_way()
 	await _test_lines_are_roads()
 	await _test_sloppy_normals()
+	await _test_momentum_survives_a_grapple()
 
 	_release_all()
 	current_scene = null
@@ -361,6 +362,73 @@ func _test_grappling() -> void:
 
 
 # --- scaffolding --------------------------------------------------------
+
+## A grapple keeps what it was carrying along the surface, and a skid is where
+## that momentum lives.
+##
+## Arriving used to zero the velocity, which made every grapple a full stop. The
+## three pieces are all needed: keep the tangential part on arrival, let speed
+## above a walk bleed gently rather than being clamped, and let a jump carry what
+## you already had. Any one of them alone is invisible.
+func _test_momentum_survives_a_grapple() -> void:
+	_release_all()
+	var climb := _spider.climb
+	_check(climb.grapple_carry > 0.0,
+		"some of a grapple's travel survives the landing (%.0f%%)"
+		% (climb.grapple_carry * 100.0))
+	_check(climb.skid_damping < climb.deceleration * 0.5,
+		"and speed above a walk bleeds slower than a stop (%.1f against %.1f)"
+		% [climb.skid_damping, climb.deceleration])
+
+	# Head-on into a floor: all of the travel is into the stone, so all of it
+	# goes. A stop is the right answer here and it has to stay the right answer.
+	_spider.global_position = Vector3(0.0, -ROOM_HALF.y + 1.0, 0.0)
+	climb.release()
+	_spider.velocity = Vector3(0.0, -8.0, 0.0)
+	climb.grapple_target = Vector3(0.0, -ROOM_HALF.y, 0.0)
+	climb.grapple_normal = Vector3.UP
+	climb._arrive()
+	_check(_spider.velocity.length() < 0.5,
+		"straight down onto a floor still stops dead (%.2f m/s)"
+		% _spider.velocity.length())
+
+	# Glancing along it: the travel is mostly sideways, so most of it is kept.
+	climb.release()
+	_spider.velocity = Vector3(9.0, -2.0, 0.0)
+	climb.grapple_target = Vector3(1.0, -ROOM_HALF.y, 0.0)
+	climb.grapple_normal = Vector3.UP
+	climb._arrive()
+	var kept := _spider.velocity.length()
+	_check(kept > 5.0, "but skimming across it lands you running (%.2f m/s)" % kept)
+	_check(absf(_spider.velocity.y) < 0.01,
+		"with the part aimed at the stone gone (%.3f downward)" % _spider.velocity.y)
+	_check(kept < 9.0, "and a little lost to the landing (%.2f of 9.00)" % kept)
+
+	# The skid lasts long enough to be a thing you can use. Walk speed is about
+	# 2.4, so this measures how long it takes to come back down toward it.
+	var fast := _spider.velocity.length()
+	await _run_frames(12)
+	var after := _spider.climb.tangent_velocity.length()
+	_check(after > _spider.stage().move_speed,
+		"a fifth of a second later it is still above a walk (%.2f over %.2f)"
+		% [after, _spider.stage().move_speed])
+	_check(after < fast, "and coming down (%.2f from %.2f)" % [after, fast])
+
+	# And a jump out of that skid takes it with you, which is the chaining.
+	var sideways := _spider.climb.tangent_velocity
+	_spider.velocity = sideways
+	climb._leap(Vector2.ZERO)
+	var flat := Vector3(_spider.velocity.x, 0.0, _spider.velocity.z)
+	_check(flat.length() > sideways.length() * 0.8,
+		"jumping out of a skid carries it into the air (%.2f of %.2f)"
+		% [flat.length(), sideways.length()])
+	_check(_spider.velocity.y > 0.0,
+		"while still going up (%.2f m/s)" % _spider.velocity.y)
+	climb.release()
+	_spider.global_position = Vector3(0.0, -ROOM_HALF.y + 0.6, 0.0)
+	_spider.velocity = Vector3.ZERO
+	await _run_frames(10)
+
 
 func _build_room() -> Node3D:
 	var room := Node3D.new()

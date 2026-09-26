@@ -1056,6 +1056,32 @@ it any more, because under a world-space look model there is nothing to flip —
 the camera was never derived from the body in the first place. That sensation is
 gone, and it was a real one. It cost less than scrambled controls.
 
+### A grapple keeps what it was carrying
+
+Arriving used to zero the velocity, which made every grapple a **full stop** and
+every journey a series of them. Three things had to change together, and any one
+alone is invisible:
+
+* **On arrival** the part of the travel running *along* the surface is kept (at
+  80%); the part running *into* it is dropped. So a glancing arrival lands you
+  running and a head-on one still stops — head-on into stone is a stop, and the
+  honest momentum to keep is the part the wall is not in the way of.
+* **Above a walk, speed bleeds rather than being clamped.** `deceleration` is
+  18/s because it exists to stop you the moment you release a key; applied to a
+  landing that erases the arrival in 0.12s. A skid at 1.6/s lasts 1.4s, which is
+  long enough to be a thing you use. Steering *against* it still brakes hard.
+* **A jump carries what you already had.** `_leap` built its velocity from
+  scratch, which threw away the half of chaining that matters: grapple, land
+  running, jump, grapple again.
+
+**Why not swinging instead.** The obvious alternative — click an anchor and swing
+from it — is already in the game twice: `Ctrl` drops you onto a dragline and you
+swing on it, and `F` rides any line and throws you off the end with your speed.
+What the grapple has that a swing does not is that **every click leaves a road**
+(§5). A swing anchored at one end leaves silk dangling from nothing, which turns
+the best property of the traversal into litter. The grapple's problem was never
+its shape; it was that it ended in a full stop.
+
 ### Ziplines
 Any strand marked ridable can be clipped onto and slid along. Gravity does most
 of the work — a line strung downhill builds real speed — the movement keys push

@@ -50,6 +50,18 @@ signal notice(text: String)
 @export_range(0.1, 1.0, 0.05) var steep_speed_factor := 0.8
 
 @export var acceleration := 14.0
+
+## How much of a grapple's travel survives the landing. The rest went into the
+## surface, which is where speed aimed at stone belongs.
+@export_range(0.0, 1.0, 0.05) var grapple_carry := 0.8
+
+## How fast speed above a walk bleeds off, per second.
+##
+## Deliberately far gentler than [member deceleration], which exists to stop you
+## the moment you let go of a key. Applied to a landing, that erases the arrival
+## in four frames — which is why keeping momentum on a grapple needed this as
+## well as keeping it: without a skid there is nothing for the momentum to be.
+@export var skid_damping := 1.6
 @export var deceleration := 18.0
 
 ## Seconds after jumping before the spider may stick to anything again,
@@ -364,8 +376,15 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	var velocity := _spider.velocity
 	var tangent := velocity - _current_up * velocity.dot(_current_up)
 	var target := wish * speed
-	var rate: float = acceleration if target.dot(tangent) > 0.0 else deceleration
-	tangent = tangent.lerp(target, clampf(rate * delta, 0.0, 1.0))
+	# Above a walk, speed bleeds instead of being clamped away. Steering against
+	# it still brakes hard — that is what deceleration is for — but coasting on
+	# what a grapple or a jump gave you is a skid, and a skid is the only place
+	# carried momentum can actually live.
+	if tangent.length() > speed and wish.dot(tangent) >= 0.0:
+		tangent = tangent.lerp(target, clampf(skid_damping * delta, 0.0, 1.0))
+	else:
+		var rate: float = acceleration if target.dot(tangent) > 0.0 else deceleration
+		tangent = tangent.lerp(target, clampf(rate * delta, 0.0, 1.0))
 	tangent = _hold_to_thread(thread, tangent)
 
 	_spider.velocity = tangent - _current_up * stick_force * height
@@ -397,7 +416,14 @@ func _move_airborne(delta: float, input_axis: Vector2) -> void:
 
 func _leap(input_axis: Vector2) -> void:
 	var wish := _wish_direction(input_axis, _current_up)
-	_spider.velocity = _current_up * _spider.jump_height + wish * _spider.speed * 0.5
+	# Whatever you were already carrying comes with you. Jumping out of a skid is
+	# what turns a grapple's landing into the next hop, rather than a full stop
+	# followed by a standing jump — and it is the half of chaining that a launch
+	# built from scratch quietly threw away.
+	var carried := _spider.velocity
+	carried -= _current_up * carried.dot(_current_up)
+	_spider.velocity = carried + _current_up * _spider.jump_height \
+		+ wish * _spider.speed * 0.5
 	_grace = release_grace
 	_set_mode(Mode.AIRBORNE)
 	jumped.emit()
@@ -733,7 +759,16 @@ func _grapple_limit(speed: float) -> float:
 func _arrive() -> void:
 	var point := grapple_target
 	var normal := grapple_normal
-	_spider.velocity = Vector3.ZERO
+	# Keep what was running *along* the surface; drop what was running into it.
+	#
+	# Arriving used to stop dead, which made every grapple a full stop and every
+	# journey a series of them. A glancing arrival now lands you moving and a
+	# head-on one still stops, because head-on into stone is a stop — the part of
+	# the momentum that is honest to keep is the part the wall is not in the way
+	# of.
+	var travel := _spider.velocity
+	var along := travel - normal * travel.dot(normal)
+	_spider.velocity = along * grapple_carry
 	_adopt_surface(normal)
 	_set_mode(Mode.ATTACHED)
 	grappled.emit(point, normal)
