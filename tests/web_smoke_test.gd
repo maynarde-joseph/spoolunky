@@ -3244,14 +3244,25 @@ func _test_the_tree(spider: SpiderPlayer, level: Node) -> void:
 	_check(not traits.has("wing_buds"), "and nothing happened")
 
 	# Eating fills the larder — through the real path, not by hand.
+	#
+	# Wrapped first, and deliberately. By the time this runs the suite has left
+	# fifty-odd webs standing, so a live fly dropped beside the spider is as likely
+	# to be hanging in one of them as loose on the floor, and then the press wraps
+	# it instead of drinking it. A bundle is the state the loop actually delivers a
+	# catch in anyway: you wrap it, you haul it home, you drink it.
 	var lunch := _spawn_species(level, "fly", spider.global_position + Vector3(0.3, 0.0, 0.0))
 	await physics_frame
 	if _check(lunch != null, "there is a fly to eat"):
+		lunch.bundle()
+		await physics_frame
 		# The larder counts creatures, not mouthfuls, so it is paid on the last
 		# swallow — which means the fly has to actually be finished.
-		await _eat(spider, lunch, 240)
+		var got: float = await _eat(spider, lunch, 300)
+		var left := "gone" if not is_instance_valid(lunch) \
+			else "%.1f of %.1f left" % [lunch.biomass, lunch.full_biomass]
 		_check(traits.eaten("fly") == 1,
-			"draining one puts it in the larder (%d)" % traits.eaten("fly"))
+			"draining one puts it in the larder (%d, +%.1f biomass, bite %d, %s)"
+			% [traits.eaten("fly"), got, spider.stage().bite_power, left])
 
 	var wanted := int(wings.cost["fly"])
 	_feed_larder(traits, "fly", wanted - traits.eaten("fly"))
