@@ -13,9 +13,9 @@ extends Control
 ## you are working toward and what it will cost, which is the one thing worth
 ## keeping from the genre this game is not.
 
-const CARD := Vector2(252.0, 104.0)
-const COLUMN_GAP := 18.0
-const CARD_GAP := 12.0
+const CARD := Vector2(320.0, 132.0)
+const COLUMN_GAP := 22.0
+const CARD_GAP := 14.0
 
 ## Owned, affordable, reachable but not yet paid for, and still locked.
 const TAKEN := Color(0.62, 0.92, 0.66, 1.0)
@@ -99,13 +99,13 @@ func _build() -> void:
 	page.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	middle.add_child(page)
 
-	page.add_child(_heading("Evolution", 26, Color(1, 1, 1, 1)))
+	page.add_child(_heading("Evolution", 42, Color(1, 1, 1, 1)))
 
-	_larder = _heading("", 15, Color(1.0, 0.88, 0.7, 1.0))
+	_larder = _heading("", 24, Color(1.0, 0.88, 0.7, 1.0))
 	page.add_child(_larder)
 
 	page.add_child(_heading("what you have eaten is what you spend    ·    [E] back",
-		13, Color(0.72, 0.75, 0.82, 1.0)))
+		19, Color(0.72, 0.75, 0.82, 1.0)))
 
 	var columns := HBoxContainer.new()
 	columns.name = "Branches"
@@ -123,7 +123,7 @@ func _column(which: int) -> VBoxContainer:
 	column.add_theme_constant_override("separation", int(CARD_GAP))
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var header := _heading(SpiderTrait.BRANCH_NAMES[which], 18, Color(0.86, 0.9, 1.0, 1.0))
+	var header := _heading(SpiderTrait.BRANCH_NAMES[which], 27, Color(0.86, 0.9, 1.0, 1.0))
 	header.custom_minimum_size = Vector2(CARD.x, 0.0)
 	column.add_child(header)
 
@@ -152,10 +152,10 @@ func _card(gift: SpiderTrait) -> Panel:
 	lines.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(lines)
 
-	lines.add_child(_line("Name", gift.display_name, 16))
-	lines.add_child(_line("What", gift.description, 11))
-	lines.add_child(_line("Effect", gift.effect_line(), 12))
-	lines.add_child(_line("Cost", "", 12))
+	lines.add_child(_line("Name", gift.display_name, 23))
+	lines.add_child(_line("What", gift.description, 15))
+	lines.add_child(_line("Effect", gift.effect_line(), 17))
+	lines.add_child(_line("Cost", "", 17))
 	return card
 
 

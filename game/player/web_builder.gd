@@ -152,9 +152,10 @@ var aim_locked_on: Prey = null
 var lock_progress := 0.0
 var locked := false
 
-var _aim_was_third_person := false
 var _cooling := 0.0
 var _cooldown_span := 0.0
+var _held: MeshInstance3D
+var _held_material: StandardMaterial3D
 
 ## How many rim corners found something to hold onto, and how much the web
 ## would actually cover once the room has had its say.
@@ -223,6 +224,7 @@ func setup(spider: CharacterBody3D, growth: SpiderGrowth,
 
 func _process(delta: float) -> void:
 	_cooling = maxf(0.0, _cooling - delta)
+	_update_held()
 	if placing:
 		_grow_placement(delta)
 	elif placing_design:
@@ -432,16 +434,13 @@ func begin_shot() -> bool:
 	aim_locked_on = null
 	lock_progress = 0.0
 	locked = false
-	# Third person puts the camera behind and beside the spider, so the cross
-	# and the silk leave from different places. That is survivable when you are
-	# pointing at a wall and hopeless when you are pointing at a fly.
-	_aim_was_third_person = _view.third_person
-	if _view.third_person:
-		_view.toggle_mode()
-		# Move the rig now rather than next frame. Aiming reads where the camera
-		# is, and a rig that has not caught up yet is the same bug that once had
-		# a harpoon test measuring third-person parallax instead of a shot.
-		_view.update(_stage().body_height)
+	# The camera stays where it is. Taking aim used to drop to first person, on
+	# the reasoning that third person has the cross and the silk leaving from
+	# different places — true, and it turns out not to matter: a ball of silk is
+	# thrown from the spider *toward whatever the cross is over*, which is what
+	# the third-person aim already works out. What the flip cost was the one
+	# thing worth having, which is watching the spider wind up.
+	_show_held(true)
 	state_changed.emit()
 	return true
 
@@ -469,13 +468,11 @@ func release_shot() -> bool:
 		return false
 	aiming = false
 	var promised: Prey = aim_locked_on if locked else null
-	var back_to_third := _aim_was_third_person
 	aim_locked_on = null
 	lock_progress = 0.0
 	locked = false
+	_show_held(false)
 	var fired := shoot(promised)
-	if back_to_third and _view != null and not _view.third_person:
-		_view.toggle_mode()
 	state_changed.emit()
 	return fired
 
@@ -489,9 +486,53 @@ func cancel_shot() -> void:
 	aim_locked_on = null
 	lock_progress = 0.0
 	locked = false
-	if _aim_was_third_person and _view != null and not _view.third_person:
-		_view.toggle_mode()
+	_show_held(false)
 	state_changed.emit()
+
+
+## The ball of silk the spider winds up while aiming, held over its back.
+##
+## A wizard holding a fireball: you can see the throw coming, it grows as the
+## lock fills, and it brightens when the lock takes. That last part is the point
+## — the second you spend holding a crosshair then has a reading in the world as
+## well as one on the HUD, so you do not have to look away from the fly to know.
+func _show_held(shown: bool) -> void:
+	if shown and _held == null:
+		_build_held()
+	if _held != null:
+		_held.visible = shown
+
+
+## Keeps the ball over the spider and sized to how far the lock has come.
+func _update_held() -> void:
+	if _held == null or not _held.visible or _spider == null:
+		return
+	var height := _stage().body_height
+	_held.global_position = _spider.global_position + Vector3.UP * height * 1.2
+	# Starts at a third and fills out. Something that only changes colour is
+	# something you miss while you are watching the thing you are aiming at.
+	var filling: float = lock_progress if aim_locked_on != null else 0.0
+	var swell: float = lerpf(0.35, 1.0, filling)
+	_held.scale = Vector3.ONE * maxf(height * shot_radius_bodies * 0.22 * swell, 0.01)
+	if _held_material != null:
+		_held_material.emission_energy_multiplier = 2.4 if locked else 0.7
+
+
+func _build_held() -> void:
+	var mesh := SphereMesh.new()
+	mesh.radius = 1.0
+	mesh.height = 2.0
+	mesh.radial_segments = 12
+	mesh.rings = 6
+	_held_material = WebGeometry.silk_material()
+	_held_material.albedo_color = Color(0.12, 0.13, 0.16, 1.0)
+	_held = MeshInstance3D.new()
+	_held.name = "HeldSilk"
+	_held.mesh = mesh
+	_held.material_override = _held_material
+	_held.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_held.visible = false
+	add_child(_held)
 
 
 ## The creature nearest the middle of the screen, or null.

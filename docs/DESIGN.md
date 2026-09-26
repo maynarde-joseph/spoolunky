@@ -302,6 +302,25 @@ are elsewhere.
 
 ---
 
+### The interface scales, and is laid out once
+
+The HUD is laid out in a **1920x1080 space and scaled** to whatever the window
+is (`canvas_items` stretch, `expand` aspect). Every size in `hud.gd` is
+therefore a fraction of the screen rather than a count of pixels, which is the
+only way a size can be chosen once. Without it the bar and the text keep their
+pixel size at every resolution: half the size they should be on a 4K panel,
+half the width of a small one.
+
+The default font is drawn as a **multichannel distance field**, so it stays
+sharp at whatever scale the stretch lands on instead of being rasterised once at
+the design size and then magnified. That magnification was the pixelisation.
+
+Sizes live in one block at the top of `hud.gd` and are applied in code, not left
+as per-label overrides in the scene — a size that lives in nine places is a size
+nobody adjusts.
+
+---
+
 ### 4.6 The testbed — a gym, not a place
 
 `game/world/testbed.tscn` is the workshop, and it is what the project opens.
@@ -1086,7 +1105,7 @@ hold in their head on the first screen.
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
 | **Left Mouse** | **Go there, trailing a line.** A surface pulls you over; a line puts you on it; something you already caught comes to you instead. Three lines at a time — a fourth takes the oldest down (§5) |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss expires after two seconds. Then a short wait before the next (§5) |
-| **Right Mouse** *(hold)* | **Take aim.** Drops to first person; hold a creature in the cross for a second and the bolt that leaves cannot miss it |
+| **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. Hold a creature in the cross for a second and the throw cannot miss it |
 | **1–9 / wheel** | Pick a pocket on the bar |
 | **E** | The tree — spend what you have eaten |
 | **F** | Wrap the prey you are looking at, then drain it |
@@ -1118,11 +1137,19 @@ precision no amount of practice reaches, and for a while the honest report was
 
 The **one-second lock** is the other half of the same problem, and it is a
 choice rather than a fix. A tap is the fast, fallible shot and is unchanged.
-Holding puts you in first person — third person has the cross and the silk
-leaving from different places, which is survivable against a wall and hopeless
-against an insect — and a second spent holding a creature buys certainty. The
-bolt then steers all the way in, because a promise kept by the arithmetic at
-the trigger is a promise broken by the first gust of wandering.
+Holding winds up a ball of silk over the spider's back — a wizard with a
+fireball — and a second spent holding a creature buys certainty. The bolt then
+steers all the way in, because a promise kept by the arithmetic at the trigger
+is a promise broken by the first gust of wandering.
+
+**The camera does not move for it.** Aiming used to drop to first person, on
+the reasoning that third person has the cross and the silk leaving from
+different places. That is true and it turns out not to matter: a thrown ball
+leaves the spider *toward whatever the cross is over*, which is exactly what
+the third-person aim already works out. What the flip cost was the one thing
+worth having — watching the spider wind up. The ball grows as the second fills
+and brightens when the lock takes, so the charge has a reading in the world as
+well as on the HUD, and you never have to look away from the fly to read it.
 
 The cone that *acquires* a target is tighter than the cone that *keeps* one.
 Holding a cross exactly on a wandering fly for a whole second is not a thing

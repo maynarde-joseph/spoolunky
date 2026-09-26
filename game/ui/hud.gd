@@ -4,8 +4,8 @@ extends CanvasLayer
 ## Everything the player needs to read at a glance: how many lines are up,
 ## whether the next web is ready, and how close the next size is.
 
-const HOTBAR_SLOT := 54.0
-const HOTBAR_GAP := 6.0
+const HOTBAR_SLOT := 72.0
+const HOTBAR_GAP := 8.0
 
 ## How far the bar sits off the bottom edge.
 const HOTBAR_MARGIN := 16.0
@@ -19,8 +19,8 @@ Left Mouse             grapple there, trailing a line — three at a time,
                        and a fourth takes the oldest down
 Right Mouse            tap: shoot a web — it sticks where it lands, and
                        wraps whatever it lands on. Then a short wait
-Right Mouse  (hold)    aim in first person; hold a creature in the cross
-                       for a second and the shot cannot miss
+Right Mouse  (hold)    wind up a ball of silk; hold a creature in the
+                       cross for a second and the throw cannot miss
 1-9 / wheel            pick a pocket on the bar
 X                      pick up the item you are looking at
 E                      the tree — spend what you have eaten
@@ -28,6 +28,25 @@ F                      wrap prey, then drain it
 X                      pull down the web you're looking at
 
 L  camera   T  free the mouse   H  hide this   Esc  quit"""
+
+## Every size in the interface, in one block.
+##
+## These are units in the 1920x1080 space the project lays the HUD out in, not
+## pixels on anyone's screen — the stretch mode scales them. So a number here is
+## a fraction of the screen whatever the screen is, which is the only way a size
+## can be chosen once.
+##
+## They are applied in code rather than left as per-label overrides in the scene
+## because a size that lives in nine places is a size nobody adjusts.
+const TITLE_SIZE := 28
+const BODY_SIZE := 20
+const HEADLINE_SIZE := 26
+const SMALL_SIZE := 18
+const TOAST_SIZE := 30
+const HELP_SIZE := 19
+const SLOT_NUMBER_SIZE := 15
+const SLOT_COUNT_SIZE := 19
+
 
 ## Leave empty to find the spider by its group.
 @export var spider_path: NodePath
@@ -54,6 +73,7 @@ var _tree: TraitTree
 
 
 func _ready() -> void:
+	_set_sizes()
 	help_label.text = HELP_TEXT
 	toast_label.modulate.a = 0.0
 	_build_hotbar()
@@ -144,6 +164,26 @@ func _on_grew(stage: GrowthStage, index: int) -> void:
 		_on_biomass_changed(_spider.growth.biomass, _spider.growth.progress())
 
 
+## Puts the one set of sizes onto the labels the scene brought with it.
+func _set_sizes() -> void:
+	var sizes := {
+		stage_label: TITLE_SIZE,
+		state_label: BODY_SIZE,
+		lines_label: BODY_SIZE,
+		pattern_label: HEADLINE_SIZE,
+		hint_label: BODY_SIZE,
+		problem_label: BODY_SIZE,
+		dial_label: SMALL_SIZE,
+		toast_label: TOAST_SIZE,
+		help_label: HELP_SIZE,
+	}
+	for label in sizes:
+		(label as Label).add_theme_font_size_override("font_size", int(sizes[label]))
+	# The bars grow with the text, or a bar is a hairline under a big number.
+	web_bar.custom_minimum_size = Vector2(0.0, 16.0)
+	biomass_bar.custom_minimum_size = Vector2(0.0, 16.0)
+
+
 # --- the tree -----------------------------------------------------------
 
 func _build_tree() -> void:
@@ -200,14 +240,14 @@ func _build_hotbar() -> void:
 		var number := Label.new()
 		number.name = "Number"
 		number.text = str(i + 1)
-		number.add_theme_font_size_override("font_size", 11)
+		number.add_theme_font_size_override("font_size", SLOT_NUMBER_SIZE)
 		number.modulate = Color(1, 1, 1, 0.45)
-		number.position = Vector2(4.0, 1.0)
+		number.position = Vector2(6.0, 2.0)
 		pocket.add_child(number)
 
 		var count := Label.new()
 		count.name = "Count"
-		count.add_theme_font_size_override("font_size", 13)
+		count.add_theme_font_size_override("font_size", SLOT_COUNT_SIZE)
 		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		count.set_anchors_preset(Control.PRESET_FULL_RECT)

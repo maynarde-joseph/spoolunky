@@ -2538,15 +2538,21 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) ->
 	var was_third := spider.view.third_person
 	_check(builder.begin_shot(), "holding right mouse starts taking aim")
 	_check(builder.aiming, "which is a state you are in")
-	_check(not spider.view.third_person,
-		"and it puts you in first person — the cross and the silk leave from one place")
-	_check(builder.aim_locked_on == null, "with nothing in the cross yet")
+	# It used to drop you into first person. Watching the spider wind the throw
+	# up is worth more than the precision that bought, so the camera stays put.
+	_check(spider.view.third_person == was_third,
+		"and leaves the camera alone — you keep watching the spider")
+	var ball := builder.get_node_or_null(NodePath("HeldSilk")) as MeshInstance3D
+	_check(ball != null and ball.visible, "with a ball of silk held over its back")
+	_check(builder.aim_locked_on == null, "and nothing in the cross yet")
 
 	# No frames between here and letting go: a physics frame would see the key
 	# is not really held down in a headless run and let go on the spider's
 	# behalf, which is the safety net doing its job and ruining the test.
 	_aim_at(spider, quarry.global_position)
 	spider.view.update(spider.stage().body_height)
+	builder._update_held()
+	var small_ball: float = ball.scale.x if ball != null else 0.0
 	builder.track(0.05)
 	_check(builder.aim_locked_on == quarry, "putting the cross on it starts the clock")
 	_check(not builder.locked, "which does not finish at once")
@@ -2556,8 +2562,14 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) ->
 		_aim_at(spider, quarry.global_position)
 		spider.view.update(spider.stage().body_height)
 		builder.track(0.05)
+		builder._update_held()
 	_check(builder.lock_progress > part, "holding it there fills the second")
 	_check(builder.locked, "and a second later it is locked on")
+	# The ball is the readout as well: it swells as the second fills, so you can
+	# keep looking at the fly rather than down at a bar.
+	if ball != null:
+		_check(ball.scale.x > small_ball,
+			"and the ball has swollen with it (%.4f from %.4f)" % [ball.scale.x, small_ball])
 
 	# Now look somewhere else entirely and fire. A locked bolt is promised its
 	# catch, and the promise is kept by the flight rather than by the aim.
@@ -2567,7 +2579,7 @@ func _test_taking_aim(spider: SpiderPlayer, builder: WebBuilder, level: Node) ->
 	spider.view.update(spider.stage().body_height)
 	_check(builder.release_shot(), "letting go fires it")
 	_check(not builder.aiming, "and aiming is over")
-	_check(spider.view.third_person == was_third, "with the camera put back where it was")
+	_check(ball == null or not ball.visible, "and the ball has left its hands")
 	var took: bool = await _wait_until(func() -> bool: return quarry.wrapped, 360)
 	_check(took, "the bolt goes and finds it, whichever way you were looking")
 	_check(not is_instance_valid(quarry) or quarry.is_bundled(),

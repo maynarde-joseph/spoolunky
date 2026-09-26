@@ -21,6 +21,22 @@ window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/size/window_width_override=1920
 window/size/window_height_override=1080
+; The HUD is laid out in a 1920x1080 space and scaled to whatever the window
+; actually is, rather than pinned to real pixels. Without this the bar and the
+; text keep their pixel size at every resolution, so they are half the size
+; they should be on a 4K screen and take half the width on a small one.
+window/stretch/mode="canvas_items"
+; expand rather than keep: a wider screen gets more room instead of black bars,
+; which is what anchored UI is for.
+window/stretch/aspect="expand"
+
+[gui]
+
+; Renders the default font as a distance field, so it stays sharp at whatever
+; scale the stretch mode lands on instead of being drawn once at the design size
+; and then magnified. This is the pixelisation, and this is the fix for it.
+theme/default_font_multichannel_signed_distance_field=true
+theme/default_font_antialiasing=1
 
 [input]
 
