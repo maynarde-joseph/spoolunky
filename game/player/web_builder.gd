@@ -198,10 +198,6 @@ var _lines: Array[WebStrand] = []
 var _pending_anchor := Vector3.ZERO
 var _awaiting_grapple := false
 
-## Whether the spider had hold of something when it fired. Silk has to start on
-## something: a line launched in mid-air would hang from a point in empty space.
-var _launch_anchored := false
-
 ## Where the spider pushed off from, so the line it drags has somewhere to
 ## start once it lands.
 var _launched_from := Vector3.ZERO
@@ -952,7 +948,6 @@ func place() -> void:
 		return
 
 	_launched_from = _line_start()
-	_launch_anchored = _anchored()
 	_pending_ride = aimed_line()
 	if _pending_ride != null:
 		# Joining the road network rather than extending it: no new silk, you
@@ -991,28 +986,10 @@ func _arrive_at(point: Vector3) -> void:
 		# explicit ring and weave it with finish().
 		add_anchor(point)
 		return
-	if not _launch_anchored:
-		# Fired with nothing under you. The grapple still takes you there — that is
-		# the move, and taking it away would be taking the controls off you
-		# mid-fall — but there is nothing to tie the near end to, so no line is
-		# left. Silk that starts in mid-air is not silk, it is a mistake you can
-		# walk on.
-		_loop_source = -1
-		state_changed.emit()
-		return
 	if _launched_from.distance_to(point) > 0.01:
 		_remember_line(_lay_line(_launched_from, point))
 	_loop_source = -1
 	state_changed.emit()
-
-
-## Whether the spider has hold of something silk could be tied to: a surface, or
-## a line it is already on. Falling and swinging are not the same thing — a swing
-## is hanging off silk, which is an anchor.
-func _anchored() -> bool:
-	if _climb == null:
-		return true
-	return _climb.is_attached() or _climb.is_hanging() or _climb.is_riding()
 
 
 ## How many lines are up.
