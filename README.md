@@ -223,14 +223,14 @@ drops for you to put a line on and drag off; short of enough, it's carrying that
 silk around and the next shot starts from there. A heavier pattern doesn't catch
 better, it just gets there in fewer shots.
 
-**Go after it by hand.** Point at something alive and in range and click: you
-throw yourself at it and bite it on landing. The bite works silk into it from the
-inside over the next several seconds, so it softens the same way a thrown web
-does — just by hand, with no wait, and with you standing next to whatever you
-just bit. Slower than shooting on purpose; the point of it is that there's no
-wheel to wait for and you closed the distance. Bite it twice and the venom
-refreshes rather than doubling. With **Hunting Fangs**, anything inside your bite
-goes down where it stands.
+There's deliberately no third move against a creature you haven't caught yet.
+Clicking at something alive grapples to whatever is *behind* it — the spider goes
+past, it doesn't pounce. For a while it did pounce, and biting on landing turned
+out to be a second way of doing exactly what a bolt already does, on an animal
+whose whole offensive vocabulary is supposed to be wrapping. **Hunting Fangs**
+still halve what counts as "much bigger than me", so a fanged spider can take
+anything inside its bite where it stands, and a **Venom Spur** rigged into a web
+still kills what it catches outright.
 
 **Leave one somewhere to work.** Fit a web to a corner prey walks past, drop a
 **Scent Lure** on the far side so traffic comes *through* the web to reach it,

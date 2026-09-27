@@ -47,18 +47,19 @@ const ESCAPE_MARGIN := 6.0
 ## because they live in different files and neither one looks like it owns this.
 const BIND_SHRUG := 0.025
 
-## How much binding a bite's venom works in per second while it lasts.
+## How much binding venom works in per second while it lasts.
 ##
 ## Deliberately slower than shooting. A bolt lands about half a wasp at once on a
 ## three and a half second wait, which is roughly 0.13 a second; this nets 0.055
 ## after the shrug, so silk thrown from across the room stays the efficient way to
-## soften something and the bite is what you do when you are already there — or
-## when you would rather close the distance than wait out the wheel.
+## soften something and a dose is what works on it while you are elsewhere.
+##
+## Nothing in the game hands out a dose at the moment — the lunge that bit on
+## landing was the only caller and it was cut. See [method poison].
 const VENOM_BIND := 0.08
 
-## What fangs are worth. The venom branch promises a kill that needs no web and
-## until now delivered two points of bite power and a drain multiplier; this is
-## the part that makes it a bite.
+## How much harder a fanged dose works than a plain one. Unused while nothing
+## produces a dose, and kept with the rest of the drip.
 const FANG_VENOM := 2.2
 
 ## Slowest a creature gets from silk alone, as a share of its own speed. Wrapped
@@ -397,12 +398,18 @@ func bind_share(hold: float) -> float:
 	return clampf(hold * ESCAPE_MARGIN / whole, 0.0, 1.0)
 
 
-## Bitten. Venom works silk into it from the inside for [param seconds].
+## Dosed. Venom works silk into it from the inside for [param seconds].
 ##
-## It does not stack: biting something twice sets the clock to whichever is longer
-## rather than running two doses at once. Stacking would make the answer to
-## everything "bite it again", which is the button-mashing the risk of standing
-## next to a wasp is supposed to rule out.
+## It does not stack: a second dose sets the clock to whichever is longer rather
+## than running two at once. Stacking would make the answer to everything "dose it
+## again", and a drip that stacks outruns the bolt it is meant to sit behind.
+##
+## **Nothing in the game calls this.** It was the lunge's, and the lunge was cut
+## for being a second way to spend [member bound] on an animal whose only offensive
+## verb is meant to be wrapping. The machinery is kept, tuned and tested, because
+## "a dose that softens something over the next several seconds" is a shape a spur
+## mode, a thrown flask or a trait could all want. A venom spur does not use it —
+## that is [method envenom], an outright kill, and a different thing.
 func poison(seconds: float, strength := 1.0) -> bool:
 	if eaten or _state == State.BUNDLED or seconds <= 0.0:
 		return false

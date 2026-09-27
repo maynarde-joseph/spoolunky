@@ -87,20 +87,27 @@ Three changes, and they only work together:
   was to grow. Half wrapped, that wasp comes down to 2.3 and a spiderling can walk
   after it. Never quite stopped, though — something held still where it stands
   without being wrapped is a pin, and a pin is a different mechanic.
-* **You can go after it by hand.** Left mouse on a live creature in range throws
-  the spider at it and bites it on landing, and the bite works silk in from the
-  inside over the seconds that follow — so it is a third way into the same loop
-  rather than a second system. No wait on it: the risk is the cost, because you
-  end up standing next to the thing and stamina and being driven off are already
-  built. A wait *on top of* the risk is a double cost, and a move that is both
-  dangerous and rationed either goes unused or gets cranked into the mandatory
-  opener. Range is the gate instead, which is what makes slowing something the
-  thing that puts it in reach. It is deliberately the slower of the two — 0.055 a
-  second against a bolt's 0.131 — so silk from across the room stays the efficient
-  answer and the bite is what you do when you are already there. Biting twice
-  refreshes rather than stacks. And fangs finally mean something: anything inside
-  your bite goes down outright, which is the kill-that-needs-no-web the venom
-  branch has promised since it was written.
+* **There is no move against a creature you have not caught.** Left mouse on a
+  live creature grapples to whatever is *behind* it: the spider goes past, it does
+  not pounce. This was tried the other way — a lunge that threw the spider at the
+  thing and bit it on landing, softening it over the seconds that followed — and
+  it was cut, because it failed on three counts that only showed up once it was
+  playable. It spent `bound` from a second place, so it was the bolt again with
+  the range and the wait swapped out rather than a different idea. It overloaded
+  the fangs, which are how you *drain* something already caught, so "bite" stopped
+  having one meaning. And a spider that charges its prey is a wolf: everything
+  else in here is set-up-and-wait, and this was the single move that said go get
+  it. The fangs keep their real job — halving what counts as "much bigger than
+  me", so a fanged spider takes anything inside its bite where it stands — and the
+  **Venom Spur** keeps the outright kill, which is `envenom()` and was never the
+  lunge's. What is left with no producer is the *timed* venom: `Prey.poison()`,
+  which works `VENOM_BIND` worth of silk in per second while it lasts. The lunge
+  was the only thing that called it. It is deliberately still there, tuned and
+  tested, because "a dose that softens something over the next several seconds" is
+  a shape a spur mode, a thrown flask or a trait could all want — but until
+  something calls it, nothing in the game is ever poisoned, and the training
+  dummy's venom line (it only prints while a dose is running) shows up nowhere but
+  `tests/shot_dummies.gd`, which pokes `poison()` by hand to draw it.
 * **A bolt that reaches a creature is about the creature.** It used to also open a
   web where the thing happened to be standing, which plants one on the floor every
   time you shoot something low — a web nobody chose to put there, in a game where

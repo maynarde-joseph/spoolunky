@@ -52,13 +52,12 @@ func _sections() -> Array[Callable]:
 		_test_shooting,
 		_test_softening_something_big,
 		_test_silk_slows_what_it_sticks_to,
-		_test_going_after_it_by_hand,
-		_test_what_a_bite_is_worth,
+		_test_what_venom_is_worth,
 		_test_silk_stays_on_what_tore_loose,
 		_test_silk_outlasts_the_wait,
 		_test_it_takes_more_than_one_shot,
 		_test_a_bolt_at_a_creature_leaves_no_web,
-		_test_clicking_something_alive_goes_for_it,
+		_test_clicking_something_alive_grapples_past_it,
 		_test_reeling_a_web_in,
 		_test_what_a_reeled_web_costs,
 		_test_taking_aim,
@@ -3738,97 +3737,21 @@ func _test_silk_slows_what_it_sticks_to() -> void:
 	quarry.queue_free()
 
 
-# --- going after it by hand ----------------------------------------------
+# --- venom, once something else has put it there --------------------------
 
-## The third way into the same loop: throw yourself at something and bite it.
+## What venom is worth, against what a bolt is worth.
 ##
-## No wait on it, because the risk is the cost — you end up standing next to the
-## thing, and for anything that hunts you that is the whole price. What gates it
-## is range, which is why slowing something down is what makes it reachable.
-func _test_going_after_it_by_hand() -> void:
-	var slab := add_slab(Vector3(-20, 0.0, 150), Vector3(20, 0.5, 20))
-	await physics_frame
-	stand_on(slab.global_position + Vector3(0, 0.25, 0))
-	if not check(await wait_until(
-			func() -> bool: return spider.climb.is_attached(), 120),
-			"standing on something to push off"):
-		return
-	clear_prey_near(slab.global_position, 26.0, null)
-	await physics_frame
-
-	var mark := spawn("wasp", spider.global_position + Vector3(2.5, 0.3, 0.0))
-	if not check(mark != null, "a wasp to go after"):
-		return
-	mark.move_speed = 0.0
-	mark.aggression = 0.0
-	await physics_frame
-	aim_at(mark.global_position)
-	await physics_frame
-
-	check(spider.jaws.lunge_range() > spider.jaws.fang_reach(),
-		"a lunge reaches further than the fangs do (%.1fm against %.1fm)"
-		% [spider.jaws.lunge_range(), spider.jaws.fang_reach()])
-	check(spider.jaws.aimed_quarry() == mark, "and the cross is on something alive")
-
-	var stood := spider.global_position
-	if not check(spider.jaws.lunge(), "so the click throws you at it"):
-		return
-	await wait_until(func() -> bool: return not spider.climb.is_grappling(), 240)
-	await run_frames(4)
-	check(spider.global_position.distance_to(stood) > 1.0,
-		"you cross the gap (%.1fm)" % spider.global_position.distance_to(stood))
-	check(mark.is_poisoned(), "and bite it when you land")
-
-	# The bite works silk in from the inside, so it feeds the same number
-	# everything else does.
-	var before := mark.bound
-	await run_frames(180)
-	check(mark.bound > before,
-		"venom works silk into it while it runs (%d%% from %d%%)"
-		% [roundi(mark.bound * 100.0), roundi(before * 100.0)])
-
-	# Fangs are what the venom branch has always promised and never delivered: a
-	# kill that needs no web. They take anything inside the bite outright, and the
-	# slow version is for everything bigger.
-	var small := spawn_fly(spider.global_position + Vector3(0.5, 0.2, 0.0))
-	if check(small != null, "a fly, which is inside a grown spider's bite"):
-		small.move_speed = 0.0
-		traits.owned["hunting_fangs"] = true
-		traits.changed.emit()
-		await physics_frame
-		check(traits.has_fangs(), "with hunting fangs bought")
-		aim_at(small.global_position)
-		await physics_frame
-		if spider.jaws.lunge():
-			await wait_until(func() -> bool: return not spider.climb.is_grappling(), 240)
-			await run_frames(4)
-		check(small.subdued or not is_instance_valid(small),
-			"fangs finish something that small where it stands")
-		if is_instance_valid(small):
-			small.queue_free()
-
-	# Out of reach is a refusal with a reason, not a silent nothing.
-	var far := spawn("wasp", spider.global_position
-		+ Vector3(spider.jaws.lunge_range() + 4.0, 0.3, 0.0))
-	if check(far != null, "another wasp, well out of reach"):
-		far.move_speed = 0.0
-		far.aggression = 0.0
-		await physics_frame
-		aim_at(far.global_position)
-		await physics_frame
-		check(not spider.jaws.lunge(), "which you cannot reach from here")
-		far.queue_free()
-	mark.queue_free()
-
-
-## What a bite is worth, against what a bolt is worth. The two have to stay on
-## the right sides of each other or one of them stops being a choice.
+## Venom used to arrive by hand: click something alive and the spider threw itself
+## at it and bit it. That is gone, and with it the only caller of [method Prey.poison]
+## — the drip is kept because it is a shape something else will want, not because
+## anything produces it today. Which is exactly why the numbers are worth holding:
+## un-called tuning is tuning nobody notices has drifted.
 ##
 ## Shooting is the efficient way to soften something: it lands a large share at
-## once from somewhere safe. The bite trades that away for having no wait at all
-## and for closing the distance, so it has to be the slower of the two — otherwise
-## nobody would ever shoot.
-func _test_what_a_bite_is_worth() -> void:
+## once from somewhere safe. Venom trades that away for working while you are
+## elsewhere, so it has to stay the slower of the two — otherwise whatever ends up
+## delivering it makes shooting pointless.
+func _test_what_venom_is_worth() -> void:
 	var sample := spawn("wasp", spider.global_position + Vector3(5.0, 0.4, 0.0))
 	if not check(sample != null, "a wasp to reckon against"):
 		return
@@ -3849,13 +3772,14 @@ func _test_what_a_bite_is_worth() -> void:
 		"and slower than shooting, so silk from across the room stays worth it (%.3f against %.3f a second)"
 		% [venom_rate, bolt_rate])
 
-	# Biting twice is not twice the venom. Without this the answer to everything
-	# is to keep biting, which is the button-mashing the risk is there to prevent.
+	# Venom twice over is not twice the venom. Without this the answer to
+	# everything is another dose, and a drip that stacks outruns the bolt it is
+	# meant to sit behind.
 	sample.poison(8.0)
 	var one := sample.venom
 	sample.poison(8.0)
 	check(is_equal_approx(sample.venom, one),
-		"and a second bite refreshes rather than stacks (%.1fs, not %.1f)"
+		"and a second dose refreshes rather than stacks (%.1fs, not %.1f)"
 		% [sample.venom, one * 2.0])
 	sample.queue_free()
 
@@ -3903,45 +3827,72 @@ func _test_a_bolt_at_a_creature_leaves_no_web() -> void:
 	low.queue_free()
 
 
-## Left mouse on something alive throws the spider at it. One click reads three
-## ways — a catch comes to you, something alive you go for, anything else is a
-## surface — and this is the middle one, through the key rather than by calling
-## the lunge directly, because the order those three are asked in is the part that
-## could quietly break.
-func _test_clicking_something_alive_goes_for_it() -> void:
-	var slab := add_slab(Vector3(-120, 0.0, -40), Vector3(18, 0.5, 18))
+## Left mouse on something alive grapples straight past it.
+##
+## One click reads two ways — a catch comes to you, anything else is a surface —
+## and a creature still fighting is deliberately neither. It used to be the middle
+## of three: you threw yourself at it and bit it on landing. That is gone, so the
+## thing worth pinning is that the click now finds the *wall behind* the creature
+## and not the creature, because "silk connects me to that" is the whole contract
+## of this button and a special case for live prey is what broke it before.
+func _test_clicking_something_alive_grapples_past_it() -> void:
+	var middle := Vector3(-120, 0.0, -40)
+	var slab := add_slab(middle, Vector3(22, 0.5, 22))
 	await physics_frame
 	stand_on(slab.global_position + Vector3(0, 0.25, 0))
 	if not check(await wait_until(
 			func() -> bool: return spider.climb.is_attached(), 120),
 			"standing on something to push off"):
 		return
-	clear_prey_near(slab.global_position, 26.0, null)
+	clear_prey_near(middle, 30.0, null)
 	await physics_frame
 
-	var mark := spawn("wasp", spider.global_position + Vector3(2.2, 0.3, 0.0))
-	if not check(mark != null, "a wasp in front of you"):
+	# Somewhere to grapple to, inside what silk reaches at this size rather than
+	# at a distance picked by hand — the tier decides the reach, so the tier has
+	# to decide where the wall goes.
+	var span: float = minf(builder.silk_reach() * 0.6, 8.0)
+	add_slab(spider.global_position + Vector3(0, 2.5, span + 0.3),
+		Vector3(22, 6.0, 0.6))
+	await physics_frame
+	aim_at(spider.global_position + Vector3(0, 0, span * 3.0))
+	await physics_frame
+	builder._update_aim()
+	if not check(builder.aim_valid, "and a wall in front of you to grapple to"):
+		return
+
+	# Right in the line of sight, between the spider and that wall.
+	var mark := spawn("wasp", spider.global_position + Vector3(0, 0.1, span * 0.4))
+	if not check(mark != null, "a wasp standing in the way"):
 		return
 	mark.move_speed = 0.0
 	mark.aggression = 0.0
 	await physics_frame
 	aim_at(mark.global_position)
 	await physics_frame
-	check(spider.jaws.aimed_quarry() == mark, "under the cross and in reach")
-	check(not spider.tether.grab_aimed(),
-		"and not something already caught, so the line does not want it")
 
-	var stood := spider.global_position
-	var webs_before := web_count()
+	# The premise: the cross really is on the creature. Without this the rest of
+	# the section is a grapple at an empty wall passing for a grapple past a wasp.
+	var forward := spider.view.aim_forward()
+	var offset := mark.global_position - spider.view.aim_origin()
+	var gap := (offset - forward * offset.dot(forward)).length()
+	check(gap < 0.6, "the cross is on the wasp (%.2fm off the line)" % gap)
+	check(not spider.tether.grab_aimed(),
+		"and it is not something already caught, so the line does not want it")
+
+	builder._update_aim()
+	var to_wasp := spider.global_position.distance_to(mark.global_position)
+	var to_aim := spider.global_position.distance_to(builder.aim_point)
+	check(builder.aim_valid and to_aim > to_wasp + 0.5,
+		"the aim reads through it to the surface behind (%.1fm against %.1fm)"
+		% [to_aim, to_wasp])
+
 	send_action(spider.input_place_anchor)
 	await physics_frame
-	check(spider.climb.is_grappling(), "the click throws you at it rather than past it")
+	check(spider.climb.is_grappling(), "so the click grapples")
 	await wait_until(func() -> bool: return not spider.climb.is_grappling(), 240)
 	await run_frames(4)
-	check(spider.global_position.distance_to(stood) > 1.0,
-		"you cross the gap (%.1fm)" % spider.global_position.distance_to(stood))
-	check(mark.is_poisoned(), "and bite it when you land")
-	check(web_count() == webs_before,
-		"and it was a lunge, not a web run out to it (%d webs, started %d)"
-		% [web_count(), webs_before])
+	check(spider.global_position.distance_to(mark.global_position) > to_wasp,
+		"which carries you past the wasp rather than onto it (%.1fm away, was %.1f)"
+		% [spider.global_position.distance_to(mark.global_position), to_wasp])
+	check(not mark.is_poisoned(), "and nothing was bitten on the way")
 	mark.queue_free()

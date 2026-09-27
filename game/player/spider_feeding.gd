@@ -27,14 +27,6 @@ signal notice(text: String)
 
 @export var input_interact := "interact"
 
-## How long a bite's venom works for, in seconds.
-@export var venom_time := 8.0
-
-## How close the fangs have to get. A share of how far silk reaches, so it grows
-## with the spider like everything else — and short enough that closing the
-## distance is the move rather than a formality.
-@export_range(0.1, 1.0, 0.05) var lunge_reach := 0.7
-
 ## What is being drunk, or null. A meal now spans frames, so this is state rather
 ## than the result of a call.
 var meal: Prey = null
@@ -47,9 +39,6 @@ var _tether: SilkTether
 var _taken := 0.0
 var _species := ""
 
-## What this lunge was aimed at, while the spider is still in the air.
-var _quarry: Prey = null
-
 
 func setup(spider: SpiderPlayer, growth: SpiderGrowth, traits: SpiderTraits,
 		view: SpiderCamera, tether: SilkTether) -> void:
@@ -58,8 +47,6 @@ func setup(spider: SpiderPlayer, growth: SpiderGrowth, traits: SpiderTraits,
 	_traits = traits
 	_view = view
 	_tether = tether
-	if _spider.climb != null and not _spider.climb.grappled.is_connected(_on_landed):
-		_spider.climb.grappled.connect(_on_landed)
 
 
 ## How far the fangs go. One definition, because it used to be written out twice —
@@ -71,14 +58,11 @@ func fang_reach() -> float:
 	return maxf(current.reach * 2.5, current.body_height * 4.0)
 
 
-## What the crosshair is on, if it is on a creature at all.
-##
-## [param within] defaults to fang reach, which is what eating wants. A lunge
-## looks further, because the point of it is to cross the gap.
-func aimed_prey(within := -1.0) -> Prey:
+## What the crosshair is on, if it is on a creature at all, within fang reach.
+func aimed_prey() -> Prey:
 	var origin := _view.aim_origin()
 	var forward := _view.aim_forward()
-	var limit: float = within if within > 0.0 else fang_reach()
+	var limit := fang_reach()
 
 	var best: Prey = null
 	var best_dot := 0.82
@@ -232,76 +216,3 @@ func stop(reason := "") -> void:
 	else:
 		notice.emit("Half a %s  +%d biomass — the rest is still there"
 			% [species, roundi(got)])
-
-
-# --- going after it -------------------------------------------------------
-
-## Throws the spider at what the crosshair is on and bites it on arrival.
-##
-## The third way into the same loop. A bolt softens something from across the room
-## on a wait; this softens it by hand, with no wait at all, and the price is that
-## you are now standing next to the thing — which for anything that hunts you is
-## the whole cost, because stamina and being driven off are already built.
-##
-## No cooldown on purpose. A wait on top of the risk is a double cost, and a move
-## that is both dangerous and rationed either goes unused or has to be made strong
-## enough to be the mandatory opener. What gates this instead is range: it only
-## reaches so far, so anything faster than you has to be slowed before you can get
-## to it, which is exactly what silk already does.
-func lunge() -> bool:
-	if _spider == null or _spider.climb == null:
-		return false
-	var mark := aimed_quarry()
-	if mark == null:
-		return false
-	var span := _spider.global_position.distance_to(mark.global_position)
-	if span > lunge_range():
-		notice.emit("The %s is too far to reach — get closer or slow it down"
-			% mark.species)
-		return false
-	# Where it is now, not where it will be. The grapple travels to a point, so a
-	# creature that moves in the meantime is one you land beside rather than on —
-	# a miss you can see the reason for beats a lunge that cannot miss.
-	var toward := (_spider.global_position - mark.global_position).normalized()
-	if not _spider.climb.grapple_to(mark.global_position, toward):
-		return false
-	_quarry = mark
-	return true
-
-
-## The creature worth throwing yourself at: what the crosshair is on, alive, and
-## not already wrapped up and going nowhere.
-func aimed_quarry() -> Prey:
-	var mark := aimed_prey(lunge_range())
-	if mark == null or mark.eaten or mark.wrapped or mark.is_bundled():
-		return null
-	return mark
-
-
-## How far a lunge reaches.
-func lunge_range() -> float:
-	if _spider.web_builder == null:
-		return fang_reach()
-	return maxf(_spider.web_builder.silk_reach() * lunge_reach, fang_reach())
-
-
-## Landed. Bites whatever it was thrown at, if it is still there to bite.
-func _on_landed(_point: Vector3, _normal: Vector3) -> void:
-	var mark := _quarry
-	_quarry = null
-	if mark == null or not is_instance_valid(mark) or mark.eaten:
-		return
-	if _spider.global_position.distance_to(mark.global_position) > fang_reach():
-		notice.emit("Missed the %s — it moved while you were in the air" % mark.species)
-		return
-
-	var fanged: bool = _traits != null and _traits.has_fangs()
-	var strength := Prey.FANG_VENOM if fanged else 1.0
-	# Fangs take the small outright, which is what the venom branch has always
-	# promised: a kill that needs no web. Anything bigger gets the slow version.
-	if fanged and mark.size_class <= _spider.stage().bite_power and mark.envenom():
-		notice.emit("Fangs into the %s — it is finished" % mark.species)
-		return
-	if not mark.poison(venom_time, strength):
-		return
-	notice.emit("Bit the %s — the venom is working" % mark.species)
