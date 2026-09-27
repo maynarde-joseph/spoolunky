@@ -58,8 +58,6 @@ func _sections() -> Array[Callable]:
 		_test_silk_outlasts_the_wait,
 		_test_it_takes_more_than_one_shot,
 		_test_reeling_a_web_in,
-		_test_each_pattern_builds_its_own_shape,
-		_test_silk_hangs,
 		_test_what_a_reeled_web_costs,
 		_test_taking_aim,
 		_test_how_far_silk_goes,
@@ -3684,117 +3682,6 @@ func _test_what_a_reeled_web_costs() -> void:
 		"dropping it loses the web — a web off its anchors is not a web")
 	check(is_instance_valid(catch_it) and not catch_it.eaten,
 		"but what was wrapped in it is still yours to collect")
-
-
-# --- what a web looks like ------------------------------------------------
-
-## Three builds, three shapes. A sheet web used to be an orb web with fewer
-## spokes, which is why nothing on the wheel looked like anything but an orb.
-##
-## Checked by the shape of the silk rather than by eye: an orb has a hub every
-## spoke meets at, a mat has no middle at all, and a cone leaves the plane its
-## mouth is in. Those are the three claims, and they are what would quietly stop
-## being true if the builds were ever collapsed back into one.
-func _test_each_pattern_builds_its_own_shape() -> void:
-	grow_to_spin_anything()
-	var square := _square(Vector3(40.0, 2.0, 40.0), 0.7)
-	var corners := PackedVector3Array(square)
-
-	var shapes := {}
-	for id in ["orb_web", "sheet_web", "funnel_lure"]:
-		var spun := pattern_named(id)
-		if not check(spun != null, "%s is on the wheel" % id):
-			return
-		var layout := WebGeometry.layout_net(corners, spun, Vector3.ZERO, 1.0,
-			WebGeometry.Weave.STRETCHED, true)
-		if not check(layout.valid, "%s lays out" % spun.display_name):
-			return
-		shapes[id] = layout
-
-	# An orb has a hub: many strands start or end at one point.
-	var orb: WebGeometry.NetLayout = shapes["orb_web"]
-	check(_meeting_at(orb, orb.centre) >= pattern_named("orb_web").radial_count,
-		"an orb web runs every spoke into one hub (%d strands meet there)"
-		% _meeting_at(orb, orb.centre))
-
-	# A mat has no hub at all — that is the whole difference.
-	var sheet: WebGeometry.NetLayout = shapes["sheet_web"]
-	check(_meeting_at(sheet, sheet.centre) <= 2,
-		"a sheet web has no middle to it (%d)" % _meeting_at(sheet, sheet.centre))
-	check(sheet.strands.size() > orb.strands.size() * 0.5,
-		"but is a dense mat rather than a few threads (%d strands)"
-		% sheet.strands.size())
-
-	# A cone leaves the plane. Everything else is flat against it.
-	var funnel: WebGeometry.NetLayout = shapes["funnel_lure"]
-	check(_depth_of(funnel) > funnel.radius * 0.5,
-		"a funnel runs back off the plane of its mouth (%.2fm deep against %.2fm across)"
-		% [_depth_of(funnel), funnel.radius])
-	check(_depth_of(orb) < orb.radius * 0.25,
-		"where an orb web stays flat (%.2fm)" % _depth_of(orb))
-
-
-## Silk hangs. Every strand used to be one straight quad, which is the difference
-## between a web that looks spun and one that looks drawn in CAD.
-##
-## A drooping strand is drawn in pieces, so the test is that the pieces do not lie
-## on the straight line between the ends — and that a strand running straight down
-## is left alone, because it has nowhere to sag to.
-func _test_silk_hangs() -> void:
-	var slack := WebGeometry.StrandSet.new()
-	slack.sag = 0.12
-	slack.add(Vector3(-0.5, 1.0, 0.0), Vector3(0.5, 1.0, 0.0), 0.01)
-	check(slack.size() > 1,
-		"a level strand is drawn in pieces so it can dip (%d)" % slack.size())
-	var lowest := 1.0
-	for i in slack.size():
-		lowest = minf(lowest, slack.ends[i].y)
-	check(lowest < 0.97,
-		"and it dips below the line between its ends (%.3f from 1.000)" % lowest)
-
-	var taut := WebGeometry.StrandSet.new()
-	taut.sag = 0.0
-	taut.add(Vector3(-0.5, 1.0, 0.0), Vector3(0.5, 1.0, 0.0), 0.01)
-	check(taut.size() == 1, "no sag draws the one straight line it always did")
-
-	# Straight down has nowhere to go, and must not be stretched along itself.
-	var hanging := WebGeometry.StrandSet.new()
-	hanging.sag = 0.12
-	hanging.add(Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, 0.0), 0.01)
-	check(hanging.size() == 1, "a strand that already hangs straight is left alone")
-
-	# And the tension dial is the thing that shows it.
-	var pattern := pattern_named("orb_web")
-	if not check(pattern != null, "an orb web to tune"):
-		return
-	var dials := WebTuning.new()
-	dials.set_dial(WebTuning.Dial.TENSION, WebTuning.STEPS - 1)
-	var tight := dials.apply_to(pattern)
-	dials.set_dial(WebTuning.Dial.TENSION, 0)
-	var slackened := dials.apply_to(pattern)
-	check(tight.sag < slackened.sag,
-		"a web wound tight hangs straighter than a slack one (%.3f against %.3f)"
-		% [tight.sag, slackened.sag])
-
-
-## How many strand ends sit on a point — the signature of a hub.
-func _meeting_at(layout: WebGeometry.NetLayout, point: Vector3) -> int:
-	var total := 0
-	for i in layout.strands.size():
-		if layout.strands.starts[i].distance_to(point) < 0.02 \
-				or layout.strands.ends[i].distance_to(point) < 0.02:
-			total += 1
-	return total
-
-
-## How far the silk stands off the plane its rim sits in.
-func _depth_of(layout: WebGeometry.NetLayout) -> float:
-	var deepest := 0.0
-	for i in layout.strands.size():
-		for point in [layout.strands.starts[i], layout.strands.ends[i]]:
-			deepest = maxf(deepest, absf((point - layout.centre).dot(layout.normal)))
-	return deepest
-
 
 
 ## Silk costs a creature its legs as well as its fight, which is the thing that

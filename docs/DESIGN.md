@@ -490,36 +490,6 @@ the plan, and walking away still pays — while making the reward the moment you
 spend. That is the right moment for a cost: you pay when you are being
 rewarded, not when you are trying something.
 
-### What a web looks like
-
-Every pattern used to be an orb web with the counts turned up or down — a sheet
-web was an orb with fewer spokes — so seven patterns all read as the same web.
-A pattern now says how its silk is actually run:
-
-* **Orb** — hub, spokes out to the frame, capture spiral between them.
-* **Sheet** — a dense untidy mat with no middle at all: chords thrown clean
-  across the frame in layers that cross, plus tangle threads hanging off it.
-* **Funnel** — a cone running back into the surface behind the mouth, with the
-  retreat at the point of it. The only build that leaves its own plane.
-
-And silk hangs. Every strand was one straight quad, which is most of the
-difference between a web that looks spun and one that looks drawn in CAD; each
-one is drawn in six pieces now with a droop perpendicular to itself, so a strand
-already running downwards is left alone because it has nowhere to sag to. The
-**tension** dial scales it, which is the first time that dial has been visible
-from across the room rather than only in the numbers.
-
-A thrown web's rim is sixteen rays clipped independently against whatever is
-nearby, and one ray slipping past the edge of something between two that stopped
-short put a spike in it — which is most of why a thrown web's size read as rolled
-rather than aimed. Each corner is pulled into line with the two beside it now,
-and only ever shortened, so the smoothing can never push a corner out through the
-wall its neighbour found.
-
-**Escaping is not harvesting.** Something tearing loose leaves the web
-standing. Losing a catch is the web losing; taking the web as well would be
-losing twice for one mistake.
-
 ### Silk types (unlocked by tier)
 
 Not a currency, and never was — a list of what silk can *be*, which is still

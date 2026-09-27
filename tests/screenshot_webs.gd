@@ -30,8 +30,6 @@ func _run() -> void:
 	_spin(builder, "orb_web", Vector3(12, 1.0, 0.0), 0.75)
 	_spin(builder, "sheet_web", Vector3(10.0, 1.0, 0.0), 0.6)
 	_spin(builder, "pressure_snare", Vector3(14.0, 1.0, 0.0), 0.6)
-	# The three builds side by side, which is the point of the shot: an orb, a mat
-	# and a cone should not be mistakable for each other.
 	_spin(builder, "funnel_lure", Vector3(16.0, 1.0, 0.0), 0.6)
 	_strand(builder, "silk_bridge", Vector3(9.0, 1.7, 0.6), Vector3(15.0, 1.7, 0.6))
 	_strand(builder, "trip_line", Vector3(9.0, 0.25, -0.6), Vector3(15.0, 0.25, -0.6))
@@ -60,10 +58,8 @@ func _run() -> void:
 	print("saved ", ProjectSettings.globalize_path("user://webs_overview.png"),
 		"  ", image.get_width(), "x", image.get_height())
 
-	# The builds in a row, close enough to tell apart and with the readout out of
-	# the way. This is the shot that answers "do these look like different webs",
-	# which the overview cannot: from across a room an orb, a mat and a cone are
-	# all just grey.
+	# The patterns in a row, close enough to tell apart and with the readout out of
+	# the way — the overview cannot, because from across a room silk is just grey.
 	# Every overlay, not just the HUD: the example level puts its own help text up
 	# on a second layer, and one of the two covered the webs whichever I hid.
 	var overlays: Array[CanvasLayer] = []

@@ -31,54 +31,17 @@ enum Weave {
 const INSCRIBED_FILL := 0.9
 
 
-## How many pieces a drooping strand is drawn in. Six is enough for the eye to
-## read a curve and cheap enough that a web with four hundred strands in it is
-## still one mesh.
-const SAG_STEPS := 6
-
-
 ## A bundle of silk lines waiting to be turned into a mesh.
-##
-## Every strand in the game is added here, which is why the droop lives here: one
-## place to make silk hang like silk instead of being ruled with a straight edge.
 class StrandSet extends RefCounted:
 	var starts := PackedVector3Array()
 	var ends := PackedVector3Array()
 	var widths := PackedFloat32Array()
 	var length := 0.0
 
-	## How far a strand dips at its middle, as a share of how long it is. Zero
-	## draws the old straight line.
-	var sag := 0.0
-
 	func add(a: Vector3, b: Vector3, width: float) -> void:
 		var span := a.distance_to(b)
 		if span <= 0.0005:
 			return
-		if sag <= 0.0005:
-			_segment(a, b, width, span)
-			return
-
-		# Dip perpendicular to the strand rather than straight down, so a strand
-		# that already runs downwards does not get stretched along itself — it
-		# simply has nowhere to sag to, which is also true of real silk.
-		var along := (b - a) / span
-		var droop := Vector3.DOWN - along * Vector3.DOWN.dot(along)
-		if droop.length_squared() < 0.000001:
-			_segment(a, b, width, span)
-			return
-		droop = droop.normalized() * sag * span
-
-		var previous := a
-		for i in range(1, SAG_STEPS + 1):
-			var t := float(i) / float(SAG_STEPS)
-			# A parabola, not a real catenary: the difference is invisible at this
-			# scale and this costs one multiply.
-			var point := a.lerp(b, t) + droop * (4.0 * t * (1.0 - t))
-			_segment(previous, point, width, previous.distance_to(point))
-			previous = point
-
-	func _segment(a: Vector3, b: Vector3, width: float, span: float) -> void:
 		starts.append(a)
 		ends.append(b)
 		widths.append(width)
@@ -169,8 +132,6 @@ static func layout_net(world_points: PackedVector3Array, pattern: WebPattern,
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(Vector3i((rough_centre + hub) * 97.0)) ^ hash(pattern.id)
 	var thickness: float = pattern.strand_thickness * sqrt(quality)
-	# Every strand laid from here on hangs rather than being ruled.
-	layout.strands.sag = pattern.sag
 
 	# Frame: the heaviest silk, run anchor to anchor exactly where they are.
 	for i in layout.rim.size():
@@ -179,17 +140,6 @@ static func layout_net(world_points: PackedVector3Array, pattern: WebPattern,
 		if include_frame:
 			layout.strands.add(a, b, thickness * 1.5)
 		layout.radius = maxf(layout.radius, hub.distance_to(a))
-
-	match pattern.build:
-		WebPattern.Build.SHEET:
-			_weave_sheet(layout, pattern, rim_2d, hub_2d, basis_u, basis_v,
-				rough_centre, origin, thickness, rng)
-			layout.valid = layout.strands.size() > 0
-			return layout
-		WebPattern.Build.FUNNEL:
-			_weave_funnel(layout, pattern, hub, thickness, rng)
-			layout.valid = layout.strands.size() > 0
-			return layout
 
 	# Spokes, from the hub out to wherever the frame happens to be in that
 	# direction. Straight lines, so a folded frame costs them nothing.
@@ -539,108 +489,3 @@ static func _inside_polygon(point: Vector2, polygon: Array[Vector2]) -> bool:
 				inside = not inside
 		j = i
 	return inside
-
-
-## A sheet web: a dense untidy mat with no middle to it.
-##
-## Chords thrown clean across the frame at every angle, in a few layers so it
-## reads as a mat rather than a doily, plus tangle threads hanging off the
-## underside — which is what a sheet web actually is, and what stops it looking
-## like an orb web that lost its spokes.
-static func _weave_sheet(layout: NetLayout, pattern: WebPattern, rim_2d: Array[Vector2],
-		hub_2d: Vector2, basis_u: Vector3, basis_v: Vector3, rough_centre: Vector3,
-		origin: Vector3, thickness: float, rng: RandomNumberGenerator) -> void:
-	if rim_2d.size() < 3:
-		return
-	var to_local := func(flat: Vector2) -> Vector3:
-		return rough_centre + basis_u * flat.x + basis_v * flat.y - origin
-
-	# Enough passes that it looks woven rather than scribbled. Both counts feed it
-	# so the mesh dial still thins a sheet out the way it thins an orb.
-	var passes: int = maxi(pattern.ring_count, 2)
-	var chords: int = maxi(pattern.radial_count, 6)
-	# Chords start inside the largest circle that fits, not across the full width
-	# of the frame. Spread over the width, most of them started outside the
-	# polygon, both rays missed and the chord was dropped — a mat of forty-nine
-	# threads came out as a dozen, which read as chain-link rather than silk.
-	var circle := _largest_inscribed_circle(rim_2d)
-	var spread: float = float(circle["radius"]) * 0.95
-	if spread <= 0.001:
-		return
-	var seat: Vector2 = circle["centre"]
-	for layer in passes:
-		# Each layer runs its chords at its own angle, so they cross.
-		var lean := PI * float(layer) / float(passes) + rng.randf_range(-0.2, 0.2)
-		var across := Vector2(cos(lean), sin(lean))
-		var down := Vector2(-across.y, across.x)
-		for i in chords:
-			# Spread across the frame rather than fanned from a point.
-			var offset := (float(i) / float(maxi(chords - 1, 1)) - 0.5) * 2.0
-			offset += rng.randf_range(-1.0, 1.0) * pattern.jitter * 0.2
-			var from_point := seat + down * clampf(offset, -1.0, 1.0) * spread
-			var forward := _ray_to_polygon(from_point, across, rim_2d)
-			var backward := _ray_to_polygon(from_point, -across, rim_2d)
-			if forward.is_empty() or backward.is_empty():
-				continue
-			# The ray reports how far it went, not where it landed.
-			var a: Vector2 = from_point + across * float(forward["distance"])
-			var b: Vector2 = from_point - across * float(backward["distance"])
-			layout.strands.add(to_local.call(a), to_local.call(b),
-				thickness * rng.randf_range(0.6, 1.0))
-
-	# Tangle threads: short stragglers hanging off the mat. Pure character, and
-	# the reason a sheet web reads as neglected rather than engineered.
-	var stragglers: int = maxi(chords / 2, 3)
-	for i in stragglers:
-		var edge: int = rng.randi_range(0, rim_2d.size() - 1)
-		var along := rng.randf()
-		var anchor: Vector2 = rim_2d[edge].lerp(rim_2d[(edge + 1) % rim_2d.size()], along)
-		var inward := (hub_2d - anchor) * rng.randf_range(0.15, 0.5)
-		layout.strands.add(to_local.call(anchor), to_local.call(anchor + inward),
-			thickness * 0.6)
-
-
-## A funnel: a cone running back into whatever is behind the web, with the
-## retreat at the point of it.
-##
-## The rim is the mouth. Everything else converges on a spot pushed along the
-## back of the plane, so it reads as a tunnel you could sit in rather than a flat
-## disc — which is the whole idea of a funnel web and was impossible to see when
-## every pattern was drawn flat.
-static func _weave_funnel(layout: NetLayout, pattern: WebPattern, hub: Vector3,
-		thickness: float, rng: RandomNumberGenerator) -> void:
-	if layout.rim.size() < 3:
-		return
-	var depth: float = maxf(layout.radius, 0.05) * 1.1
-	var throat := hub - layout.normal * depth
-
-	# Walls of the cone, one from each corner of the mouth plus a few between.
-	var ribs: int = maxi(pattern.radial_count, layout.rim.size())
-	for i in ribs:
-		var t := float(i) / float(ribs) * float(layout.rim.size())
-		var lo: int = int(floorf(t)) % layout.rim.size()
-		var hi: int = (lo + 1) % layout.rim.size()
-		var mouth: Vector3 = layout.rim[lo].lerp(layout.rim[hi], t - floorf(t))
-		layout.strands.add(mouth, throat, thickness)
-
-	# Collars round the cone, tightening towards the throat.
-	var collars: int = maxi(pattern.ring_count, 2)
-	for ring in range(1, collars + 1):
-		var f := float(ring) / float(collars + 1)
-		var wobble := 1.0 + rng.randf_range(-1.0, 1.0) * pattern.jitter * 0.3
-		for i in layout.rim.size():
-			var a: Vector3 = layout.rim[i].lerp(throat, f * wobble)
-			var b: Vector3 = layout.rim[(i + 1) % layout.rim.size()].lerp(throat, f * wobble)
-			layout.strands.add(a, b, thickness * 0.7)
-
-
-## Roughly how wide a flattened rim is, for spacing things across it.
-static func _span_of(polygon: Array[Vector2]) -> float:
-	var lo := Vector2(INF, INF)
-	var hi := Vector2(-INF, -INF)
-	for p in polygon:
-		lo.x = minf(lo.x, p.x)
-		lo.y = minf(lo.y, p.y)
-		hi.x = maxf(hi.x, p.x)
-		hi.y = maxf(hi.y, p.y)
-	return maxf(hi.x - lo.x, hi.y - lo.y)

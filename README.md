@@ -304,18 +304,6 @@ else, and get told when to come back rather than having to guess.
 Devices land in a `Devices` node next to `Webs`, and a new one is a `.tres` in
 `game/data/devices/` — same as adding a web pattern.
 
-## What the different webs look like
-
-They are not one shape with the numbers turned up and down any more. An **orb
-web** is a hub with spokes and a capture spiral. A **sheet web** is a dense
-untidy mat with no middle to it and threads straggling off the edges. A **funnel
-lure** is a cone running back into the wall behind it, with the retreat at the
-point — the only one that isn't flat.
-
-Silk hangs, too, and the **tension** dial is what you can see it in: wind a web
-tight and it pulls straight, leave it slack and it droops like something that has
-been in the corner a while.
-
 ## Two ways to weave a web
 
 **K** switches between them, and it applies to webs spun from then on:

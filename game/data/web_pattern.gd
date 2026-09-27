@@ -17,24 +17,6 @@ enum Shape {
 	NET,
 }
 
-## How the silk inside the frame is actually run.
-##
-## Not a cosmetic switch. Every pattern used to be an orb web with the counts
-## turned up or down — a sheet web was an orb with fewer spokes — which is why
-## they all looked like the same web. A spider does not build one shape and then
-## adjust it; a sheet web is a tangled mat with no middle to it, and a funnel is a
-## cone with a hole you sit in.
-enum Build {
-	## Hub, spokes out to the frame, capture spiral between them. The classic.
-	ORB,
-	## A dense untidy mat: chords thrown across the frame at every angle with no
-	## centre at all, and tangle threads hanging off it.
-	SHEET,
-	## A cone running back into the surface behind it, with a retreat at the point
-	## and a collar of silk round the mouth.
-	FUNNEL,
-}
-
 ## What the web does when prey touches it.
 enum Trigger {
 	## Sticks to whatever lands in it.
@@ -79,17 +61,6 @@ enum Trigger {
 
 ## Most anchors the player may place before having to finish.
 @export var max_anchors := 10
-
-## How the inside is run. See [enum Build].
-@export var build: Build = Build.ORB
-
-## How far a strand dips at its middle, as a share of its own length.
-##
-## The single biggest thing standing between a web that reads as spun and one that
-## reads as drawn in CAD, because every strand used to be a dead straight line. A
-## little is enough — 0.04 already looks hung rather than ruled — and a lot is
-## the cobweb in the corner nobody has cleaned.
-@export_range(0.0, 0.35, 0.005) var sag := 0.05
 
 ## Spokes drawn from the centre out to the rim.
 @export var radial_count := 12
