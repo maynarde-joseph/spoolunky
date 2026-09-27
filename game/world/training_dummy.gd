@@ -57,7 +57,12 @@ func _ready() -> void:
 	# Something on it before the first physics frame: a blank sign in a room whose
 	# every other sign has words on it reads as broken.
 	_readout.text = "%s\nstanding up" % _title()
-	_stand_one_up()
+	# Deferred, because the creature goes next to the post rather than under it —
+	# it has to be able to be hauled off, fall, and be taken away — and a parent
+	# part way through setting up its own children refuses an add_child. That never
+	# came up while the gym built itself at startup, because by then the level was
+	# already in the tree; it does the moment the post is a node in the scene file.
+	_stand_one_up.call_deferred()
 
 
 func _physics_process(delta: float) -> void:

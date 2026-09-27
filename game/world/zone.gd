@@ -22,7 +22,11 @@ extends Node3D
 ## and if both zones claimed their walls then the slab between them would
 ## belong to two places at once and "where am I" would be a coin toss. Zones
 ## touch, and never overlap.
-var bounds := AABB()
+##
+## Exported, because a zone is level data: it has to survive being saved into a
+## scene file, and a baked level whose zones all measure nothing is a level where
+## "which zone am I in" answers null everywhere.
+@export var bounds := AABB()
 
 
 static func make(parent: Node3D, zone_name: String, lo: Vector3, hi: Vector3,

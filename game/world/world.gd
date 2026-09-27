@@ -15,6 +15,15 @@ extends Node3D
 ## Built in code because that is how everything else in this project makes
 ## geometry, and because a layout you can read as numbers is a layout you can
 ## change. The constants below are the whole design.
+##
+## **This no longer runs at load.** The level is baked into its .tscn as real
+## nodes so it can be moved about in the editor, and the script is taken off the
+## node when that happens. What is here is the generator of record: run
+##
+##     godot --headless --script res://tools/bake_level.gd -- world --force
+##
+## to build the shape again from scratch, which **throws away anything moved by
+## hand**. Without --force the bake leaves a baked level alone.
 
 # --- the house, standing on the park -------------------------------------
 

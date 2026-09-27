@@ -12,6 +12,15 @@ extends Node3D
 ## The rule for adding to it: a station tests one thing and says on it what that
 ## thing is. If you cannot tell from standing in front of it what it is for,
 ## it needs a better shape, not a longer sign.
+##
+## **This no longer runs at load.** The level is baked into its .tscn as real
+## nodes so it can be moved about in the editor, and the script is taken off the
+## node when that happens. What is here is the generator of record: run
+##
+##     godot --headless --script res://tools/bake_level.gd -- testbed --force
+##
+## to build the shape again from scratch, which **throws away anything moved by
+## hand**. Without --force the bake leaves a baked level alone.
 
 const FLOOR_LO := Vector3(-26.0, -1.0, -20.0)
 const FLOOR_HI := Vector3(26.0, 0.0, 20.0)

@@ -92,6 +92,10 @@ static func _box(parent: Node3D, size: Vector3, part_name: String) -> StaticBody
 	var shape := BoxShape3D.new()
 	shape.size = size
 	var collider := CollisionShape3D.new()
+	# Named, because these end up in the scene file now. Godot calls an unnamed one
+	# @CollisionShape3D@40, which is not a thing you want to read three hundred of
+	# while looking for the wall you meant to move.
+	collider.name = "Shape"
 	collider.shape = shape
 	body.add_child(collider)
 

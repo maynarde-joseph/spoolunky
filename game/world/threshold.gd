@@ -43,6 +43,12 @@ var open := false
 
 var _plug: StaticBody3D
 var _sensor: Area3D
+
+## Where the plug sits when shut, in the gate's own space. Exported for the same
+## reason [member Zone.bounds] is: a gate baked into a scene file has to remember
+## how far it has to move, and it cannot measure that from a plug it did not build
+## this run.
+@export var shut_at := Vector3.ZERO
 var _rest := Vector3.ZERO
 var _thickness := 0.2
 var _leaned_on := false
@@ -60,17 +66,40 @@ static func make(parent: Node3D, lo: Vector3, hi: Vector3, size_to_open: float,
 	return gate
 
 
+## Finds the plug and the sensor a previous run left behind, for a gate that was
+## baked into the scene rather than built just now.
+##
+## The pieces are saved with the scene but the references to them are not — they
+## are plain vars, and only exported values survive being written to a file — so
+## without this a baked gate has a plug it cannot move and never opens.
+func _adopt_built_pieces() -> bool:
+	_plug = get_node_or_null("Plug") as StaticBody3D
+	_sensor = get_node_or_null("Sensor") as Area3D
+	if _plug == null or _sensor == null:
+		return false
+	_rest = shut_at
+	var shape := _sensor.get_node_or_null("Shape") as CollisionShape3D
+	var box := shape.shape as BoxShape3D if shape != null else null
+	if box != null:
+		_thickness = minf(minf(box.size.x, box.size.y), box.size.z) * 0.25
+	return true
+
+
 func _build(lo: Vector3, hi: Vector3) -> void:
 	_plug = Greybox.span(self, lo, hi, "Plug")
 	if _plug == null:
 		return
 	_rest = _plug.global_position
+	shut_at = _rest
 	_thickness = minf(minf(absf(hi.x - lo.x), absf(hi.y - lo.y)), absf(hi.z - lo.z))
 
 	# A little taller than the plug, so standing on it counts as leaning on it.
 	var sensor_shape := BoxShape3D.new()
 	sensor_shape.size = (hi - lo).abs() + Vector3(0.0, _thickness * 4.0, 0.0)
 	var collider := CollisionShape3D.new()
+	# Named for the same reason the greybox's are: a baked gate carries this into
+	# the scene file, and _adopt_built_pieces goes looking for it by name.
+	collider.name = "Shape"
 	collider.shape = sensor_shape
 	_sensor = Area3D.new()
 	_sensor.name = "Sensor"
@@ -79,6 +108,13 @@ func _build(lo: Vector3, hi: Vector3) -> void:
 	_sensor.add_child(collider)
 	add_child(_sensor)
 	_sensor.global_position = (lo + hi) * 0.5
+
+
+func _ready() -> void:
+	# A gate built this run already has its pieces in hand. One loaded from a scene
+	# file has them as children and nothing pointing at them, so it picks them up.
+	if _plug == null:
+		_adopt_built_pieces()
 
 
 func _physics_process(delta: float) -> void:

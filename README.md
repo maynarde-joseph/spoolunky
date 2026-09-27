@@ -368,6 +368,28 @@ up in the build wheel — the library scans that folder. The fields that matter
 most are `shape` (strand or net), `trigger` (passive, alert, snare or lure),
 `unlock_stage`, the three silk costs, and `hold_strength` / `durability`.
 
+## Levels are scenes, not scripts
+
+`world.tscn` and `testbed.tscn` hold their geometry as real nodes, so anything in
+them can be selected and moved in the editor. They did not start that way — both
+were assembled in `_ready()` from `world.gd` and `testbed.gd`, which is quick to
+write and impossible to tweak, because there is nothing in the editor to tweak.
+
+Those two scripts are still there as the **generator of record**. To throw the
+hand-placed version away and build the shape again from scratch:
+
+```sh
+godot --headless --script res://tools/bake_level.gd -- testbed world --force
+```
+
+Without `--force` it looks at a baked level and leaves it alone, so running it by
+accident costs nothing.
+
+One thing to know if you add to a level: **only `@export` properties survive being
+saved into a scene.** A value set in code on a plain `var` is there while the
+builder runs and gone the moment it is baked — which is how the zones ended up
+measuring nothing and the gates stopped opening the first time round.
+
 ## The gym
 
 `game/world/testbed.tscn` is a signed practice room — one station per thing the
