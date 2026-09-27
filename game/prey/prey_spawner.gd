@@ -28,6 +28,15 @@ extends Node3D
 
 ## Drop spawns onto whatever is below, then lift them by this much. Fliers get
 ## their own species' height band instead; this is the fallback.
+## How much room to leave around the spider when putting a creature out.
+##
+## The world's spawn volume is twenty-six metres of extent centred twelve metres
+## from where the player starts, so the player starts *inside* it — creatures were
+## materialising next to them, and a wasp that appears inside its own eight-metre
+## hunt range attacks on arrival. Nothing about that is the wasp being aggressive;
+## it is the wasp being dealt a hand it cannot help playing.
+@export var keep_clear := 10.0
+
 @export var snap_to_ground := true
 @export var hover_height := Vector2(0.4, 2.2)
 
@@ -110,7 +119,7 @@ func _spawn() -> void:
 	if prey == null:
 		return
 	add_child(prey)
-	prey.global_position = _random_point(kind)
+	prey.global_position = _clear_point(kind)
 	_alive.append(prey)
 
 
@@ -125,6 +134,28 @@ func _pick_species() -> PreySpecies:
 		if roll <= 0.0:
 			return kind
 	return stock[stock.size() - 1]
+
+
+## A spot for a new creature that is not in the spider's lap.
+##
+## Tries a few times and takes the best of them rather than looping until it finds
+## one: in a small room every spot may be close, and a spawner that gives up and
+## puts nothing out is worse than one that puts something at arm's length.
+func _clear_point(kind: PreySpecies) -> Vector3:
+	var spider := get_tree().get_first_node_in_group("spider") as Node3D
+	var best := _random_point(kind)
+	if spider == null or keep_clear <= 0.0:
+		return best
+	var furthest := best.distance_to(spider.global_position)
+	for i in 5:
+		if furthest >= keep_clear:
+			return best
+		var tried := _random_point(kind)
+		var span := tried.distance_to(spider.global_position)
+		if span > furthest:
+			furthest = span
+			best = tried
+	return best
 
 
 func _random_point(kind: PreySpecies) -> Vector3:

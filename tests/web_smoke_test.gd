@@ -935,6 +935,19 @@ func _test_sandbox_wiring() -> void:
 			func() -> bool: return spawner.alive_count() > 0, 120)
 		var alive := spawner.alive_count()
 		check(stocked, "it stocked %d creature%s" % [alive, "" if alive == 1 else "s"])
+
+		# And not in the player's lap. The world's spawn volume has the player
+		# start inside it, so without this a wasp appears within its own hunt
+		# range and attacks on arrival — which reads as the wasp being unfair
+		# rather than as the spawner being careless.
+		spawner.keep_clear = 12.0
+		var nearest := INF
+		for i in 12:
+			var spot: Vector3 = spawner._clear_point(null)
+			nearest = minf(nearest, spot.distance_to(spider.global_position))
+		check(nearest > spider.stage().body_height * 4.0,
+			"and puts them at arm's length or better (nearest of twelve: %.1fm)"
+			% nearest)
 		check(spawner.stock.size() > 1,
 			"from a mixed stock (%d species)" % spawner.stock.size())
 	var hud := level.get_node_or_null("HUD") as SpiderHUD

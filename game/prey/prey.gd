@@ -66,6 +66,14 @@ const FANG_VENOM := 2.2
 ## always has something left.
 const CRAWL := 0.15
 
+## How long a creature ignores the spider after it appears.
+##
+## Something that spawns already locked on gives you nothing to react to — the
+## first you know of it is being bitten. A moment of it minding its own business
+## is the difference between an ambush you walked into and one that was posted to
+## you.
+const SETTLE_IN := 2.5
+
 ## The one scene every creature is built from.
 const SCENE_PATH := "res://game/prey/prey.tscn"
 
@@ -639,7 +647,7 @@ func would_hunt(spider: Node3D) -> bool:
 ## so often, because there is exactly one spider and no need to check per frame.
 func _look_for_a_spider() -> void:
 	_hunt_timer = 0.9
-	if aggression <= 0.0:
+	if aggression <= 0.0 or _life < SETTLE_IN:
 		return
 	var spiders := get_tree().get_nodes_in_group("spider")
 	if spiders.is_empty():
