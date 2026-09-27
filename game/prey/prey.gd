@@ -47,6 +47,11 @@ const ESCAPE_MARGIN := 6.0
 ## because they live in different files and neither one looks like it owns this.
 const BIND_SHRUG := 0.025
 
+## Slowest a creature gets from silk alone, as a share of its own speed. Wrapped
+## all the way it is a bundle and not going anywhere regardless; short of that it
+## always has something left.
+const CRAWL := 0.15
+
 ## The one scene every creature is built from.
 const SCENE_PATH := "res://game/prey/prey.tscn"
 
@@ -238,7 +243,7 @@ func _physics_process(delta: float) -> void:
 			if _flee_timer <= 0.0:
 				_state = State.WANDER
 				_pick_target()
-			_steer(delta, move_speed * 1.8)
+			_steer(delta, current_speed() * 1.8)
 		_:
 			_process_wander(delta)
 
@@ -304,6 +309,23 @@ func is_stuck() -> bool:
 ## cleanly, waiting to be collected.
 func is_bundled() -> bool:
 	return _state == State.BUNDLED
+
+
+## How fast it can still move, after the silk already on it.
+##
+## The same factor the fight uses, deliberately: silk on you costs you legs as
+## well as struggle, and one number meaning one thing is easier to reason about
+## than two that have to be kept in step.
+##
+## This is what makes softening something worth doing before you chase it. A
+## fleeing wasp runs at 4.7 and the ladder tops out at 4.8, so without it nothing
+## the player does ever makes a fast thing catchable — half-bound, that same wasp
+## comes down to 2.3, which a spiderling can walk after.
+##
+## Never quite zero. Something pinned still where it stands but not yet wrapped is
+## the pin mechanic arriving by the back door, and this is not that: it crawls.
+func current_speed() -> float:
+	return move_speed * maxf(1.0 - clampf(bound, 0.0, 1.0), CRAWL)
 
 
 ## What it can thrash with right now, after the silk already on it.
@@ -611,7 +633,7 @@ func _process_hunt(delta: float) -> void:
 	# Faster than it wanders: something that has decided to attack you should
 	# read as having decided, and a hunter you can simply walk away from is not
 	# pressure, it is scenery.
-	_steer(delta, move_speed * 1.5)
+	_steer(delta, current_speed() * 1.5)
 
 	# Off the spider's size, not the hunter's: what has to be true is that it has
 	# reached *you*, and a wasp closing on a spiderling covers the last few
@@ -645,7 +667,7 @@ func _process_wander(delta: float) -> void:
 		_sniff_for_lures()
 	if _wander_timer <= 0.0 or global_position.distance_to(_target) < _arrival_distance():
 		_pick_target()
-	_steer(delta, move_speed)
+	_steer(delta, current_speed())
 
 
 func _steer(delta: float, speed: float) -> void:

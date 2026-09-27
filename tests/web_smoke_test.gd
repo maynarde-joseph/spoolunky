@@ -51,6 +51,7 @@ func _sections() -> Array[Callable]:
 		_test_wrapped_things_fall,
 		_test_shooting,
 		_test_softening_something_big,
+		_test_silk_slows_what_it_sticks_to,
 		_test_silk_stays_on_what_tore_loose,
 		_test_silk_outlasts_the_wait,
 		_test_it_takes_more_than_one_shot,
@@ -3835,3 +3836,42 @@ func _test_a_line_needs_somewhere_to_start() -> void:
 	check(builder.line_count() == aloft,
 		"and firing mid-air leaves none (%d, started %d)"
 		% [builder.line_count(), aloft])
+
+
+## Silk costs a creature its legs as well as its fight, which is the thing that
+## makes softening worth doing before a chase rather than only before a web.
+##
+## Without it nothing the player does makes a fast creature catchable: a fleeing
+## wasp runs at 4.7 and the fastest tier on the ladder is 4.8, so the answer to
+## "it is faster than me" was to grow, and nothing else.
+func _test_silk_slows_what_it_sticks_to() -> void:
+	var quarry := spawn("wasp", spider.global_position + Vector3(4.0, 0.4, 0.0))
+	if not check(quarry != null, "a wasp, which outruns most of the ladder"):
+		return
+	quarry.aggression = 0.0
+	var loose := quarry.current_speed()
+	check(is_equal_approx(loose, quarry.move_speed),
+		"loose, it runs at its own pace (%.2f)" % loose)
+
+	quarry.bind(0.5)
+	var slowed := quarry.current_speed()
+	check(slowed < loose * 0.6,
+		"half wrapped, it is down to %.2f from %.2f" % [slowed, loose])
+
+	# The number that matters is whether the chase is on: fleeing is the fastest
+	# a creature ever goes, and a spiderling is the slowest the spider ever is.
+	var ladder := WebLibrary.default_stages()
+	var spiderling: float = ladder[0].move_speed
+	check(loose * 1.8 > spiderling,
+		"at full pelt it outruns a spiderling (%.2f against %.2f)"
+		% [loose * 1.8, spiderling])
+	check(slowed * 1.8 < spiderling,
+		"and half wrapped it does not (%.2f against %.2f)"
+		% [slowed * 1.8, spiderling])
+
+	# Never quite stopped: something held still where it stands without being
+	# wrapped would be a pin, and that is a different mechanic.
+	quarry.bound = 0.99
+	check(quarry.current_speed() > 0.0,
+		"wrapped to the last, it still crawls (%.2f)" % quarry.current_speed())
+	quarry.queue_free()

@@ -79,6 +79,14 @@ Three changes, and they only work together:
   second while the creature is loose, which has to lose to the shot cooldown or
   there is no loop at all — the first cut lost that race and netted four points a
   shot.
+* **Silk costs legs as well as fight.** Binding scales what a creature can move at
+  by the same factor it scales what the creature can thrash with — one number
+  meaning one thing. This is what makes softening worth doing before a *chase*
+  rather than only before a web: a fleeing wasp runs at 4.7 and the fastest tier
+  on the ladder is 4.8, so without it the only answer to "it is faster than me"
+  was to grow. Half wrapped, that wasp comes down to 2.3 and a spiderling can walk
+  after it. Never quite stopped, though — something held still where it stands
+  without being wrapped is a pin, and a pin is a different mechanic.
 * **A direct hit is not a free catch.** The bolt used to wrap whatever it touched,
   with no size check anywhere, so a spiderling's first shot took a wasp and both of
   the slower ways of catching things had nothing to do. All three paths — a web left

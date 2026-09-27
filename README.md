@@ -206,6 +206,11 @@ caught in it. Anything in a web on your line is in reach at any length, so the m
 is to drag a full larder somewhere safe and eat there rather than standing out in
 the open next to it.
 
+Silk you land also slows the thing down — the same silk that costs it fight costs
+it legs. That matters more than it sounds: almost everything outruns you when it
+bolts, so a creature you haven't softened is a creature you simply cannot chase.
+Half-wrapped, a wasp is slow enough for even a spiderling to walk after.
+
 It costs you the web, mind. Off its anchors it is a wad of silk, so letting go of
 one spills it: whatever you had **wrapped** in it lands as a bundle you can still
 collect, and anything still fighting gets loose. So wrap your catches before you
