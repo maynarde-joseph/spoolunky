@@ -30,6 +30,10 @@ enum Weave {
 ## actually uses. Real webs leave a gap between spiral and frame.
 const INSCRIBED_FILL := 0.9
 
+## How far along its spoke a strand starts, leaving the hub open. Small enough to
+## read as a hub and not a hole.
+const HUB_CLEARANCE := 0.06
+
 
 ## How many pieces a drooping strand is drawn in. Six is enough for the eye to
 ## read a curve and cheap enough that a web with four hundred strands in it is
@@ -210,7 +214,12 @@ static func layout_net(world_points: PackedVector3Array, pattern: WebPattern,
 			var along: float = hit["edge_t"]
 			var end := layout.rim[edge].lerp(layout.rim[(edge + 1) % layout.rim.size()], along)
 			spoke_end.append(end)
-			layout.strands.add(hub, end, thickness)
+			# Started a little way out, not at the hub itself. A dozen spokes
+			# converging on one exact point stack a dozen overlapping quads there
+			# for nothing, and a real orb web has a small open hub anyway, because
+			# the spider sits in it. Clearance is a share of the spoke, so it scales
+			# with the web.
+			layout.strands.add(hub.lerp(end, HUB_CLEARANCE), end, thickness)
 
 	# Capture spiral.
 	if radials >= 3 and pattern.ring_count > 0:
@@ -353,9 +362,20 @@ static func silk_material() -> StandardMaterial3D:
 	material.roughness = 0.16
 	# The floor. Faint, and the same for every pattern: in the dark a web is a
 	# web, and which kind it is comes back the moment light reaches it.
+	#
+	# Lifted, because a strand is a couple of millimetres across and these rooms
+	# have one lamp in them — silk that only shows where the light lands is silk
+	# you cannot plan around. It is still a floor and not a glow: the thread reads
+	# in a dark corner without becoming a neon tube in a lit one.
 	material.emission_enabled = true
-	material.emission = Color(0.56, 0.64, 0.82, 1.0)
-	material.emission_energy_multiplier = 0.22
+	material.emission = Color(0.62, 0.70, 0.86, 1.0)
+	material.emission_energy_multiplier = 0.55
+	# Silk catches the light at a glancing angle, which is exactly the angle most
+	# of a web is seen from. Cheap, and it does more for picking a web out of a
+	# busy wall than the emission does.
+	material.rim_enabled = true
+	material.rim = 0.85
+	material.rim_tint = 0.1
 	material.disable_receive_shadows = true
 	material.no_depth_test = false
 	return material
@@ -578,26 +598,44 @@ static func _weave_sheet(layout: NetLayout, pattern: WebPattern, rim_2d: Array[V
 			var offset := (float(i) / float(maxi(chords - 1, 1)) - 0.5) * 2.0
 			offset += rng.randf_range(-1.0, 1.0) * pattern.jitter * 0.2
 			var from_point := seat + down * clampf(offset, -1.0, 1.0) * spread
-			var forward := _ray_to_polygon(from_point, across, rim_2d)
-			var backward := _ray_to_polygon(from_point, -across, rim_2d)
+			# Every thread leans its own way, not just every layer. A layer of
+			# parallel chords reads as a rack; a layer of nearly-parallel ones that
+			# each wander a few degrees reads as something that was spun in a
+			# hurry, which is what a sheet web is.
+			var wander := rng.randf_range(-1.0, 1.0) * pattern.jitter * 0.55
+			var line := across.rotated(wander)
+			var forward := _ray_to_polygon(from_point, line, rim_2d)
+			var backward := _ray_to_polygon(from_point, -line, rim_2d)
 			if forward.is_empty() or backward.is_empty():
 				continue
 			# The ray reports how far it went, not where it landed.
-			var a: Vector2 = from_point + across * float(forward["distance"])
-			var b: Vector2 = from_point - across * float(backward["distance"])
-			layout.strands.add(to_local.call(a), to_local.call(b),
-				thickness * rng.randf_range(0.6, 1.0))
+			var a: Vector2 = from_point + line * float(forward["distance"])
+			var b: Vector2 = from_point - line * float(backward["distance"])
+			var width := thickness * rng.randf_range(0.5, 1.05)
+			# Some threads are caught on something part way across and kink there
+			# rather than running clean. The kink is what stops the mat reading as
+			# woven on a loom.
+			if rng.randf() < pattern.jitter:
+				var bend := a.lerp(b, rng.randf_range(0.3, 0.7))
+				bend += down * rng.randf_range(-1.0, 1.0) * spread * 0.22
+				layout.strands.add(to_local.call(a), to_local.call(bend), width)
+				layout.strands.add(to_local.call(bend), to_local.call(b), width)
+			else:
+				layout.strands.add(to_local.call(a), to_local.call(b), width)
 
 	# Tangle threads: short stragglers hanging off the mat. Pure character, and
 	# the reason a sheet web reads as neglected rather than engineered.
-	var stragglers: int = maxi(chords / 2, 3)
+	var stragglers: int = maxi(chords, 5)
 	for i in stragglers:
 		var edge: int = rng.randi_range(0, rim_2d.size() - 1)
 		var along := rng.randf()
 		var anchor: Vector2 = rim_2d[edge].lerp(rim_2d[(edge + 1) % rim_2d.size()], along)
-		var inward := (hub_2d - anchor) * rng.randf_range(0.15, 0.5)
+		var inward := (hub_2d - anchor) * rng.randf_range(0.15, 0.55)
+		# Not straight at the middle either — a straggler that points at the hub is
+		# a spoke, and a sheet web has no spokes.
+		inward = inward.rotated(rng.randf_range(-0.9, 0.9))
 		layout.strands.add(to_local.call(anchor), to_local.call(anchor + inward),
-			thickness * 0.6)
+			thickness * rng.randf_range(0.45, 0.75))
 
 
 ## A funnel: a cone running back into whatever is behind the web, with the

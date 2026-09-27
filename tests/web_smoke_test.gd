@@ -57,6 +57,7 @@ func _sections() -> Array[Callable]:
 		_test_reeling_a_web_in,
 		_test_each_pattern_builds_its_own_shape,
 		_test_silk_hangs,
+		_test_a_line_needs_somewhere_to_start,
 		_test_what_a_reeled_web_costs,
 		_test_taking_aim,
 		_test_how_far_silk_goes,
@@ -1068,6 +1069,11 @@ func _sheet_at(centre: Vector3) -> WebNet:
 ## Runs a line the way arriving from a grapple does, without the journey.
 func _run_a_line(from: Vector3, to: Vector3) -> WebStrand:
 	builder._launched_from = from
+	# The whole launch, not half of it. This skips place() to put a line exactly
+	# where a check wants one, and a launch records whether the spider had hold of
+	# anything as well as where it fired from — leave that out and every line here
+	# is treated as fired in mid-air, which lays nothing.
+	builder._launch_anchored = true
 	builder._arrive_at(to)
 	var up := builder.lines()
 	return up[up.size() - 1] if up.size() > 0 else null
@@ -3697,14 +3703,23 @@ func _test_each_pattern_builds_its_own_shape() -> void:
 
 	# An orb has a hub: many strands start or end at one point.
 	var orb: WebGeometry.NetLayout = shapes["orb_web"]
-	check(_meeting_at(orb, orb.centre) >= pattern_named("orb_web").radial_count,
-		"an orb web runs every spoke into one hub (%d strands meet there)"
-		% _meeting_at(orb, orb.centre))
+	# Near it, not on it: the spokes stop short of the middle so a dozen quads do
+	# not stack on one point, and so the web has the open hub a spider sits in.
+	var near_hub := _meeting_at(orb, orb.centre, orb.radius * 0.2)
+	check(near_hub >= pattern_named("orb_web").radial_count,
+		"an orb web runs every spoke into one hub (%d strands reach it)" % near_hub)
+	check(_meeting_at(orb, orb.centre, 0.005) == 0,
+		"and leaves the hub itself open rather than stacking silk on a point")
 
 	# A mat has no hub at all — that is the whole difference.
 	var sheet: WebGeometry.NetLayout = shapes["sheet_web"]
-	check(_meeting_at(sheet, sheet.centre) <= 2,
-		"a sheet web has no middle to it (%d)" % _meeting_at(sheet, sheet.centre))
+	var sheet_hub := _meeting_at(sheet, sheet.centre, sheet.radius * 0.2)
+	# Relative, because a mat has plenty of silk near its middle — it just has no
+	# point everything runs to. Against the same share of the same-sized web, an
+	# orb gathers several times what a mat does.
+	check(sheet_hub * 2 < near_hub,
+		"a sheet web has nothing everything runs to (%d near the middle, against %d)"
+		% [sheet_hub, near_hub])
 	check(sheet.strands.size() > orb.strands.size() * 0.5,
 		"but is a dense mat rather than a few threads (%d strands)"
 		% sheet.strands.size())
@@ -3761,12 +3776,13 @@ func _test_silk_hangs() -> void:
 		% [tight.sag, slackened.sag])
 
 
-## How many strand ends sit on a point — the signature of a hub.
-func _meeting_at(layout: WebGeometry.NetLayout, point: Vector3) -> int:
+## How many strand ends sit within [param tolerance] of a point — the signature of
+## a hub, and of a mat not having one.
+func _meeting_at(layout: WebGeometry.NetLayout, point: Vector3, tolerance: float) -> int:
 	var total := 0
 	for i in layout.strands.size():
-		if layout.strands.starts[i].distance_to(point) < 0.02 \
-				or layout.strands.ends[i].distance_to(point) < 0.02:
+		if layout.strands.starts[i].distance_to(point) < tolerance \
+				or layout.strands.ends[i].distance_to(point) < tolerance:
 			total += 1
 	return total
 
@@ -3778,3 +3794,44 @@ func _depth_of(layout: WebGeometry.NetLayout) -> float:
 		for point in [layout.strands.starts[i], layout.strands.ends[i]]:
 			deepest = maxf(deepest, absf((point - layout.centre).dot(layout.normal)))
 	return deepest
+
+
+## Silk has to start on something. Firing with nothing under you still takes you
+## where you aimed — that is the move, and taking it away mid-fall would be taking
+## the controls off the player — but no line is left, because the near end would
+## be tied to a point in empty space.
+func _test_a_line_needs_somewhere_to_start() -> void:
+	var slab := add_slab(Vector3(-40, 0.0, 120), Vector3(16, 0.5, 16))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+
+	# Standing on it counts, and so does hanging off silk or riding a line. It
+	# takes a moment: being put somewhere is not the same as having hold of it.
+	var landed: bool = await wait_until(
+		func() -> bool: return spider.climb.is_attached(), 120)
+	if not check(landed, "the spider takes hold of what it was put on"):
+		return
+	check(builder._anchored(), "which is somewhere a line could start")
+
+	select_pattern("frame_line")
+	var before := builder.line_count()
+	builder._launched_from = spider.global_position
+	builder._launch_anchored = builder._anchored()
+	builder._arrive_at(spider.global_position + Vector3(2.0, 0.0, 0.0))
+	check(builder.line_count() == before + 1,
+		"so firing from it leaves a line (%d, started %d)"
+		% [builder.line_count(), before])
+
+	# Now in the air, with nothing to tie the near end to.
+	spider.climb.release()
+	spider.global_position = slab.global_position + Vector3(0, 6.0, 0)
+	await physics_frame
+	if not check(not builder._anchored(), "off it, there is nothing to start on"):
+		return
+	var aloft := builder.line_count()
+	builder._launched_from = spider.global_position
+	builder._launch_anchored = builder._anchored()
+	builder._arrive_at(spider.global_position + Vector3(2.0, 0.0, 0.0))
+	check(builder.line_count() == aloft,
+		"and firing mid-air leaves none (%d, started %d)"
+		% [builder.line_count(), aloft])
