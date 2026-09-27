@@ -38,6 +38,10 @@ const PIT := Vector3(16.0, 0.0, 13.0)
 ## Loose items, two metres in front of where you start.
 const PICKUPS := Vector3(0.0, 0.0, -6.5)
 
+## Between the grapple row and the gates row, where there is floor and nothing
+## else — a fight wants room around it.
+const DUMMIES := Vector3(-8.0, 0.0, 6.5)
+
 
 func _ready() -> void:
 	build()
@@ -53,6 +57,7 @@ func build() -> void:
 	_zipline()
 	_gates()
 	_prey_pen()
+	_training_dummies()
 	_the_pit()
 	_pickups()
 	_sun()
@@ -204,6 +209,28 @@ func _prey_pen() -> void:
 	Greybox.span(here, Vector3(-5.0, 3.2, 12.8), Vector3(5.0, 3.6, 13.2), "Beam")
 	Greybox.clutter(here, Vector3(-2.5, 0.5, 11.0), Vector3(1.4, 1.0, 1.4), "Crate")
 	Greybox.clutter(here, Vector3(2.5, 0.35, 15.0), Vector3(2.0, 0.7, 1.0), "Plank")
+
+
+## Three creatures on posts with their numbers over their heads: one that stands
+## still, one that runs at a wasp's pace so you can watch silk take its legs, and
+## one that comes for you so you can find out what standing next to something
+## costs. Each puts a fresh one up a few seconds after you finish the last.
+func _training_dummies() -> void:
+	var here := _station(DUMMIES, "DUMMIES\nshoot them, bite them, web them")
+	var posts := {
+		"dummy_post": -3.0,
+		"dummy_runner": 0.0,
+		"dummy_biter": 3.0,
+	}
+	for id in posts:
+		var plinth := Vector3(DUMMIES.x + float(posts[id]), 0.0, DUMMIES.z)
+		Greybox.clutter(here, plinth + Vector3(0.0, 0.2, 0.0),
+			Vector3(0.8, 0.4, 0.8), "Plinth_" + id)
+		var dummy := TrainingDummy.new()
+		dummy.name = "Dummy_" + id
+		dummy.species_id = id
+		here.add_child(dummy)
+		dummy.global_position = plinth + Vector3(0.0, 0.45, 0.0)
 
 
 ## A hole through the floor and a ledge beside it. Falling out of the world is a

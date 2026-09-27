@@ -87,6 +87,8 @@ func _test_the_testbed() -> void:
 			near += 1
 	check(near >= 3, "within reach of where you start (%d of them)" % near)
 
+	await _test_the_dummies(bed)
+
 	var across := SpiderTestbed.FLOOR_HI - SpiderTestbed.FLOOR_LO
 	check(across.x < 60.0 and across.z < 50.0,
 		"the whole gym is %.0f by %.0f, which is the point of it" % [across.x, across.z])
@@ -233,3 +235,87 @@ func _lights_under(node: Node) -> int:
 		if child is Light3D:
 			total += 1
 	return total
+
+
+## The dummies station: three creatures on posts with their numbers over their
+## heads, for trying a fight against something that holds still and says what it
+## is doing.
+##
+## They are creatures rather than special cases, so silk, venom, webs, hauling and
+## eating all work on them the way they work on anything — which is the point, and
+## also the thing that would quietly stop being true if they were ever turned into
+## a bespoke target.
+func _test_the_dummies(bed: Node) -> void:
+	var posts: Array[TrainingDummy] = []
+	for node in all_under(bed):
+		var post := node as TrainingDummy
+		if post != null:
+			posts.append(post)
+	if not check(posts.size() == 3, "three dummies to practise on (%d)" % posts.size()):
+		return
+
+	await run_frames(20)
+	var kinds: Array[String] = []
+	for post in posts:
+		var standing: Prey = post._standing
+		if not check(is_instance_valid(standing),
+				"%s has something standing on it" % post.species_id):
+			return
+		kinds.append(standing.species)
+	check(kinds.size() == 3 and kinds[0] != kinds[1] and kinds[1] != kinds[2],
+		"and they are three different things (%s)" % ", ".join(kinds))
+
+	# One stands still, one runs, one comes for you. Those are the three questions
+	# a fight asks and there is a target for each.
+	var still := 0
+	var runners := 0
+	var hunters := 0
+	for post in posts:
+		var standing: Prey = post._standing
+		if standing.aggression > 0.0:
+			hunters += 1
+		elif standing.move_speed <= 0.0:
+			still += 1
+		else:
+			runners += 1
+	check(still == 1 and runners == 1 and hunters == 1,
+		"one that stands, one that runs, one that bites (%d/%d/%d)"
+		% [still, runners, hunters])
+
+	# The readout is the whole reason the station exists.
+	var target: Prey = posts[0]._standing
+	target.bind(0.4)
+	target.poison(6.0)
+	await run_frames(4)
+	var lines: String = posts[0]._readout.text
+	check(lines.contains("bound") and lines.contains("40%"),
+		"the readout says how much silk is on it")
+	check(lines.contains("venom"), "and how long the venom has left")
+	check(lines.contains("a web needs"),
+		"and what a web would have to hold to take it")
+
+	# Something a web could actually take, once softened. A practice target no web
+	# in the game can hold is a target you cannot practise the web on.
+	var snare := WebLibrary.load_patterns()
+	var strongest := 0.0
+	for spun in snare:
+		strongest = maxf(strongest, spun.hold_strength)
+	check(target.total_thrash() / Prey.ESCAPE_MARGIN <= strongest,
+		"and at 40%% wrapped a real web could take it (%.1f needed, %.1f is the best there is)"
+		% [target.total_thrash() / Prey.ESCAPE_MARGIN, strongest])
+
+	# Finish one and the post stands another up, or it is a one-shot station.
+	var was: Prey = posts[0]._standing
+	was.eaten = true
+	posts[0]._waiting = 0.05
+	await run_frames(20)
+	check(posts[0]._standing != was and is_instance_valid(posts[0]._standing),
+		"and finishing one puts a fresh one up")
+
+	# Practice targets stay out of the game: the spawner, the larder and the
+	# catalogue all read the species folder, and none of them want these.
+	var shipped: Array[String] = []
+	for kind in PreyLibrary.load_species():
+		shipped.append(kind.id)
+	check(not shipped.has("dummy_post"),
+		"and none of them are in the game's own species (%d)" % shipped.size())

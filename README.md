@@ -368,6 +368,21 @@ up in the build wheel — the library scans that folder. The fields that matter
 most are `shape` (strand or net), `trigger` (passive, alert, snare or lure),
 `unlock_stage`, the three silk costs, and `hold_strength` / `durability`.
 
+## The gym
+
+`game/world/testbed.tscn` is a signed practice room — one station per thing the
+game does. The **DUMMIES** station is the one for fights: three creatures on
+posts with their numbers over their heads, showing how much silk is on them, how
+long the venom has left, what that has done to their speed, and what a web would
+have to hold to take them. One stands still, one runs at a wasp's pace so you can
+watch silk take its legs, and one comes for you. Finish one and the post stands a
+fresh one up.
+
+They are ordinary creatures, so silk, venom, webs, hauling and eating all work on
+them exactly as they work on anything else — and their species live in
+`game/data/training/` rather than `game/data/prey/`, so they never spawn in the
+world, fill the larder or pay for traits.
+
 ## Running the tests
 
 The smoke test loads the sandbox and drives the whole loop — building each
