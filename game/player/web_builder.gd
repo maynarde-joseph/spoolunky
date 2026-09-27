@@ -435,13 +435,35 @@ func shot_radius() -> float:
 func _on_shot_landed(at: Vector3, normal: Vector3, prey: Node3D, heading: Vector3,
 		pattern: WebPattern, radius: float, from: Vector3) -> void:
 	_shot = null
+	var quality := throw_quality(from.distance_to(at))
 	var caught := prey as Prey
 	if caught != null and is_instance_valid(caught) and caught.can_be_snared():
-		if caught.bundle():
-			notice.emit("Wrapped the %s" % caught.species)
-			return
-	_open_web_at(at, normal, _facing_from(heading, normal), prey, radius,
-		throw_quality(from.distance_to(at)))
+		# What this bolt's silk is worth where it landed. A direct hit used to wrap
+		# whatever it touched, which let a spiderling take a wasp in one shot and
+		# made both of the other ways of catching things pointless.
+		var hold := shot_hold(pattern, from.distance_to(at))
+		if hold <= 0.0:
+			# A line pattern has no hold in it at all, so there is nothing for it to
+			# bind with and no reading worth printing.
+			notice.emit("A %s has no hold in it — aim it at something solid"
+				% pattern.display_name)
+		elif caught.taken_cleanly_by(hold) or caught.bind(caught.bind_share(hold)):
+			# Either the silk was up to it, or that was the hit that closed it.
+			if caught.bundle():
+				notice.emit("Wrapped the %s" % caught.species)
+				return
+		else:
+			notice.emit("Silk on the %s — %d%% wrapped, it will still fight"
+				% [caught.species, roundi(caught.bound * 100.0)])
+	_open_web_at(at, normal, _facing_from(heading, normal), prey, radius, quality)
+
+
+## What a bolt of [param pattern] is worth as a hold, landing [param distance]
+## away. One place, so the readout can promise exactly what the landing delivers.
+func shot_hold(pattern: WebPattern, distance: float) -> float:
+	if pattern == null:
+		return 0.0
+	return pattern.hold_strength * throw_quality(distance)
 
 
 ## What a web is worth, thrown this far.

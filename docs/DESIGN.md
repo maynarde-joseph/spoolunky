@@ -69,6 +69,22 @@ Three changes, and they only work together:
   a sheet web for about two seconds and then tears out, wearing the web down as
   it goes. What a web buys is those seconds, and it spends itself buying them.
 
+* **Silk accumulates.** Wrapping used to be all or nothing: either the silk was up
+  to the whole fight a creature would put up, or it did nothing. A bolt that cannot
+  take something outright now leaves `bound` on it — a share of the way, worked out
+  from the same two numbers that decide a clean take, so "how many hits does this
+  need" answers itself. Binding saps what the creature can thrash with, which means
+  **the way to take something no web could hold is to put silk on it first**, and
+  the shot and the web stop being alternatives. It comes off again at 0.025 a
+  second while the creature is loose, which has to lose to the shot cooldown or
+  there is no loop at all — the first cut lost that race and netted four points a
+  shot.
+* **A direct hit is not a free catch.** The bolt used to wrap whatever it touched,
+  with no size check anywhere, so a spiderling's first shot took a wasp and both of
+  the slower ways of catching things had nothing to do. All three paths — a web left
+  standing, a web thrown over something, a bolt square on — now ask the creature the
+  same question, and all three see the silk already on it.
+
 So the web stops competing with the gun. It is not a better way to acquire food —
 it is **the place you can eat what you acquired**, which is a job nothing else in
 the game does. That is §8's old line, *"your web is your cover, not just your
@@ -613,6 +629,13 @@ is already expressible as **something no single web can hold**. That makes it a
 construction problem in the language the game already speaks: venom to weaken
 it, a lure to put it where you want it, several webs rigged together, the road
 network to move around it while it thrashes. An exam, not a duel.
+
+Binding is the piece that was missing from that. "No single web can hold it" used
+to be a flat no, with nothing to do about it but grow; now it is a number you can
+work at, because silk you land costs the creature fight it does not get back
+inside the window. A boss becomes a question of getting enough silk onto something
+faster than it shrugs it off — which is exactly the kind of problem the lure, the
+venom spur and the road network are already answers to.
 
 ### Creatures are resources
 

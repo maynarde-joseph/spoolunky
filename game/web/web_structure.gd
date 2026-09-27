@@ -168,10 +168,14 @@ func catch_what_is_already_here() -> int:
 ## Whether this web can take something outright rather than hold it while it
 ## fights. Same number that decides whether a catch stays put at all, so a
 ## sheet web thrown at a wasp is no better than a sheet web left for one.
+##
+## The creature owns the rule now, so a web left standing, a web thrown over
+## something and a bolt that hits it square all ask the same question — and all
+## three see the silk already on it.
 func _takes_cleanly(body: Node3D) -> bool:
-	if not body.has_method("bundle") or not body.has_method("total_thrash"):
+	if not body.has_method("bundle") or not body.has_method("taken_cleanly_by"):
 		return false
-	return body.total_thrash() <= hold_strength() * Prey.ESCAPE_MARGIN
+	return body.taken_cleanly_by(hold_strength())
 
 
 ## How hard this web holds on to prey. A web that has just been signalled is

@@ -504,11 +504,37 @@ func _refresh_aim_panel(builder: WebBuilder) -> void:
 	var span := builder.catch_radius(builder.shot_radius()) * 2.0
 	pattern_label.text = "%s     %.1f m ball" % [
 		pattern.display_name if pattern != null else "Winding up", span]
-	if builder.charge >= 1.0:
+	# What the cross is actually on, if it is on anything. This is the whole
+	# decision while winding up — whether this ball will take it or only wrap it a
+	# bit more — so it goes where the hint would otherwise repeat itself.
+	var mark := _aimed_quarry(builder)
+	if mark != null:
+		hint_label.text = mark
+	elif builder.charge >= 1.0:
 		hint_label.text = "Wound right up — let go to throw it"
 	else:
 		hint_label.text = "Let go to throw — keep holding for a bigger ball"
 	problem_label.text = _charge_bar(builder.charge)
+
+
+## The creature under the cross and how a shot at it would go, or an empty string
+## when the cross is on scenery.
+##
+## Worked out from the same numbers the landing uses, so what this promises is what
+## happens: silk with enough hold takes it outright, and silk without only puts
+## more on it. Something already wrapped is not news.
+func _aimed_quarry(builder: WebBuilder) -> String:
+	var jaws := _spider.jaws
+	if jaws == null:
+		return ""
+	var prey := jaws.aimed_prey()
+	if prey == null or prey.wrapped:
+		return ""
+	var hold := builder.shot_hold(builder.current_pattern(),
+		_spider.global_position.distance_to(prey.global_position))
+	var verdict := "this will take it" if prey.taken_cleanly_by(hold) \
+		else "not enough hold — wrap it first"
+	return "%s  %s  %s" % [prey.species, _charge_bar(prey.bound), verdict]
 
 
 ## The wind-up, drawn. Ten blocks: enough to read the rate at a glance, and

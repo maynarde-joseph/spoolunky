@@ -31,6 +31,22 @@ enum State {
 ## quality, which climbs with size, moves every one of those lines up.
 const ESCAPE_MARGIN := 6.0
 
+## How much binding a creature works off per second while it is loose.
+##
+## Without this you could chip anything down over an afternoon of pot shots from
+## safety, which is the opposite of the point: a big catch should be a burst of
+## commitment. But it has to lose to the shot cooldown or the mechanic cannot
+## work at all, and that is a tighter constraint than it looks.
+##
+## A shot is [member WebBuilder.shot_cooldown] seconds apart — 3.5 as it stands —
+## and one orb web hit is worth about 46% of a wasp. At 0.12 a second the wait
+## costs 42% of that back, so each shot netted four points and nothing was ever
+## catchable. At 0.025 the wait costs about a fifth of a hit, two hits carry you
+## past what an orb web needs, and one hit's worth is gone in eighteen seconds if
+## you walk away. `_test_silk_outlasts_the_wait` pins that against both numbers,
+## because they live in different files and neither one looks like it owns this.
+const BIND_SHRUG := 0.025
+
 ## The one scene every creature is built from.
 const SCENE_PATH := "res://game/prey/prey.tscn"
 
@@ -92,6 +108,14 @@ var hunt_range := 6.0
 var bite_damage := 3.0
 var bite_interval := 1.1
 
+
+## How much silk is on it, 0 to 1. Saps what it can thrash with, so the way to
+## take something a web could never hold is to put silk on it first — a shot that
+## cannot wrap it outright still costs it some of its fight.
+##
+## At 1 it is bundled. Wrapping used to be all or nothing, which made a thrown web
+## either a guaranteed catch or nothing at all, and left no move between the two.
+var bound := 0.0
 
 var wrapped := false
 var eaten := false
@@ -191,6 +215,11 @@ func _physics_process(delta: float) -> void:
 
 	if _bite_timer > 0.0:
 		_bite_timer -= delta
+	# Only while loose. Silk on something a web is holding is not going anywhere,
+	# and neither is the creature.
+	if bound > 0.0 and not is_stuck() and _state != State.BUNDLED:
+		bound = maxf(0.0, bound - BIND_SHRUG * delta)
+		_show_binding()
 
 	match _state:
 		State.BUNDLED:
@@ -264,10 +293,49 @@ func is_bundled() -> bool:
 	return _state == State.BUNDLED
 
 
+## What it can thrash with right now, after the silk already on it.
+func thrash_power() -> float:
+	return struggle_power * (1.0 - clampf(bound, 0.0, 1.0))
+
+
 ## Everything it will throw at a web before it tires itself out: the number a
-## web has to beat to keep hold of it.
+## web has to beat to keep hold of it. Falls as it is bound.
 func total_thrash() -> float:
-	return struggle_power * struggle_stamina
+	return thrash_power() * struggle_stamina
+
+
+## Whether silk of this strength takes it outright, rather than leaving it hanging
+## there fighting.
+##
+## The rule a web uses to decide whether a catch stays put at all, so it is the
+## same one for a web left standing, a web thrown over something, and a bolt that
+## hits it square. Those three used to disagree: the bolt wrapped anything it
+## touched, which let a spiderling take a wasp in one shot and made the other two
+## paths pointless.
+func taken_cleanly_by(hold: float) -> bool:
+	return total_thrash() <= hold * ESCAPE_MARGIN
+
+
+## How much of the way towards being wrapped one hit of this silk gets you.
+##
+## Deliberately derived rather than tuned: it is the same two numbers that decide
+## a clean take, so "how many shots does this need" answers itself and there is no
+## third figure to keep in step. A wasp needs two softening hits before an orb web
+## can take it, and five before a sheet web can.
+func bind_share(hold: float) -> float:
+	var whole := struggle_power * struggle_stamina
+	if whole <= 0.0:
+		return 1.0
+	return clampf(hold * ESCAPE_MARGIN / whole, 0.0, 1.0)
+
+
+## Puts silk on it. Returns true if that was the hit that wrapped it.
+func bind(amount: float) -> bool:
+	if eaten or _state == State.BUNDLED or amount <= 0.0:
+		return false
+	bound = clampf(bound + amount, 0.0, 1.0)
+	_show_binding()
+	return bound >= 1.0
 
 
 ## Still fighting, and still able to get free. This is the only window in which
@@ -301,6 +369,7 @@ func envenom() -> bool:
 		return true
 	wrapped = true
 	_state = State.WRAPPED
+	bound = 1.0
 	_stuck_point = global_position
 	_struggle = 0.0
 	_set_marked(false)
@@ -326,6 +395,7 @@ func bundle() -> bool:
 	_snap_timer = 0.0
 	_recatch_cooldown = 0.0
 	_state = State.BUNDLED
+	bound = 1.0
 	_set_marked(false)
 	_set_cocoon(true)
 	velocity = Vector3.ZERO
@@ -369,6 +439,7 @@ func wrap() -> void:
 		return
 	wrapped = true
 	_state = State.WRAPPED
+	bound = 1.0
 	_struggle = 0.0
 	_set_marked(false)
 	_set_cocoon(true)
@@ -452,8 +523,11 @@ func _process_stuck(delta: float) -> void:
 		return
 
 	_fight_left -= delta
-	_struggle += struggle_power * delta
-	_web.take_damage(struggle_power * delta * 0.6)
+	# Silk already on it is silk it is fighting through, so a bound creature both
+	# tears more slowly and does less damage on the way.
+	var power := thrash_power()
+	_struggle += power * delta
+	_web.take_damage(power * delta * 0.6)
 	if _struggle >= _web.hold_strength() * ESCAPE_MARGIN:
 		var torn_from := _web
 		torn_from.on_prey_escaped(self)
@@ -610,7 +684,10 @@ func _release_into_flight() -> void:
 	_fight_left = 0.0
 	_snap_timer = 0.0
 	wrapped = false
-	_set_cocoon(false)
+	# The silk it was fighting in stays on it. Tearing out of a web is not shaking
+	# off what is already stuck to you, and keeping it is what makes a second
+	# attempt on the same creature worth making.
+	_show_binding()
 	_state = State.FLEEING
 	_flee_timer = 2.0
 	_recatch_cooldown = 2.5
@@ -739,6 +816,25 @@ func _drop_child(child_name: String) -> void:
 
 
 ## Silk bundle drawn around wrapped prey.
+## Silk showing on the creature, as much of it as there is: a wisp on something
+## part-bound and the full bundle at the end of it. The point is that you can tell
+## from across the room whether another shot is worth taking.
+func _show_binding() -> void:
+	var share := clampf(bound, 0.0, 1.0)
+	if share <= 0.02:
+		_set_cocoon(false)
+		return
+	_set_cocoon(true)
+	if _cocoon == null:
+		return
+	_cocoon.scale = Vector3.ONE * lerpf(0.45, 1.0, share)
+	var material := _cocoon.material_override as StandardMaterial3D
+	if material != null:
+		var tint := material.albedo_color
+		tint.a = lerpf(0.3, 0.9, share)
+		material.albedo_color = tint
+
+
 func _set_cocoon(active: bool) -> void:
 	if active and _cocoon == null:
 		var radius: float = kind.body_radius if kind != null else 0.045

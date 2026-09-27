@@ -192,6 +192,14 @@ Only if your silk is up to it, mind: a web takes something outright just when
 it could have out-held the whole fight that thing would have put up. Throw a
 sheet web at a wasp and you get a wasp hanging in a sheet web, fighting.
 
+That goes for a bolt square on the creature too, which used to be a guaranteed
+catch on anything. What a shot the silk is not up to does instead is **leave some
+of the silk on it**: the readout shows how wrapped it is, it has that much less
+fight in it, and a web that could never have held it can once it is wrapped
+enough. So the two tools work together — soften it with shots, then take it with a
+web — and the silk works off again if you leave it alone, so it is a burst of
+commitment rather than a slow grind from safety.
+
 **Leave one somewhere to work.** Fit a web to a corner prey walks past, drop a
 **Scent Lure** on the far side so traffic comes *through* the web to reach it,
 and wire a **Signal Bell** in so you get told when it catches. Then go

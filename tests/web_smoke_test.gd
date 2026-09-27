@@ -50,6 +50,10 @@ func _sections() -> Array[Callable]:
 		_test_something_hunts_you,
 		_test_wrapped_things_fall,
 		_test_shooting,
+		_test_softening_something_big,
+		_test_silk_stays_on_what_tore_loose,
+		_test_silk_outlasts_the_wait,
+		_test_it_takes_more_than_one_shot,
 		_test_taking_aim,
 		_test_how_far_silk_goes,
 		_test_a_shot_fits_a_corner,
@@ -3323,4 +3327,227 @@ func _fall_gain(glide: float) -> float:
 	spider.velocity = Vector3.ZERO
 	return gained
 
+# --- softening something too big for one shot ----------------------------
 
+## The tandem the whole thing is for: silk you can put on a creature a bit at a
+## time, until a web that could never have held it can.
+##
+## A bolt used to wrap whatever it touched, whatever the size of it, which made a
+## spiderling's first shot a guaranteed kill on a wasp and left both of the slower
+## ways of catching things with nothing to do.
+func _test_softening_something_big() -> void:
+	grow_to_spin("orb_web")
+	select_pattern("orb_web")
+	ignore_shot_cooldown()
+	var slab := add_slab(Vector3(90, 0.0, 170), Vector3(16, 0.5, 16))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+	clear_prey_near(slab.global_position, 22.0, null)
+	await physics_frame
+
+	var orb := pattern_named("orb_web")
+	if not check(orb != null, "an orb web to throw"):
+		return
+	var hold: float = orb.hold_strength
+
+	# The two ends of the ladder, against the same silk.
+	var fly := spawn_fly(spider.global_position + Vector3(1.2, 0.3, 0.0))
+	var wasp := spawn("wasp", spider.global_position + Vector3(2.4, 0.3, 0.0))
+	if not check(fly != null and wasp != null, "a fly and a wasp to try it on"):
+		return
+	fly.move_speed = 0.0
+	wasp.move_speed = 0.0
+	wasp.aggression = 0.0
+	await physics_frame
+
+	check(fly.taken_cleanly_by(hold),
+		"an orb web takes a fly outright (%.1f thrash against %.1f)"
+		% [fly.total_thrash(), hold * Prey.ESCAPE_MARGIN])
+	check(not wasp.taken_cleanly_by(hold),
+		"and cannot take a wasp, which is four times the fight (%.1f)"
+		% wasp.total_thrash())
+
+	# Binding is worth a measured share of the way, not a guess.
+	var share := wasp.bind_share(hold)
+	check(share > 0.0 and share < 1.0,
+		"one hit of it is worth %d%% of a wasp" % roundi(share * 100.0))
+	var needed := ceili((1.0 - share) / share)
+	note("so a wasp needs %d softening hit(s) before the same web takes it" % needed)
+
+	# Put that much on it and the same silk now can.
+	check(not wasp.bind(share), "one hit does not close it")
+	check(not wasp.wrapped, "a wasp with one hit on it is still loose")
+	check(wasp.bound > 0.0, "but it is carrying silk (%d%%)" % roundi(wasp.bound * 100.0))
+	check(wasp.thrash_power() < wasp.struggle_power,
+		"which is fight it no longer has (%.2f of %.2f)"
+		% [wasp.thrash_power(), wasp.struggle_power])
+
+	for i in needed:
+		wasp.bind(share)
+	check(wasp.taken_cleanly_by(hold),
+		"wrapped enough, the orb web can take it after all (%d%% on it)"
+		% roundi(wasp.bound * 100.0))
+
+	# And it comes off if you walk away, so chipping is a burst and not a siege.
+	var loose := spawn("wasp", spider.global_position + Vector3(3.6, 0.3, 0.0))
+	if check(loose != null, "another wasp, to leave alone"):
+		loose.move_speed = 0.0
+		loose.aggression = 0.0
+		loose.bind(0.5)
+		var was: float = loose.bound
+		await run_frames(120)
+		check(loose.bound < was,
+			"silk works off a creature you leave alone (%d%% from %d%%)"
+			% [roundi(loose.bound * 100.0), roundi(was * 100.0)])
+		check(loose.bound > 0.0,
+			"but not all at once — two seconds is not a reprieve (%d%%)"
+			% roundi(loose.bound * 100.0))
+
+
+## Silk stays on a creature that tears out of a web, because the next attempt on it
+## should start from where the last one got to.
+func _test_silk_stays_on_what_tore_loose() -> void:
+	grow_to_spin("orb_web")
+	var slab := add_slab(Vector3(-90, 0.0, 170), Vector3(14, 0.5, 14))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+	clear_prey_near(slab.global_position, 20.0, null)
+	await physics_frame
+
+	var runner := spawn("wasp", spider.global_position + Vector3(1.4, 0.3, 0.0))
+	if not check(runner != null, "a wasp to lose"):
+		return
+	runner.move_speed = 0.0
+	runner.aggression = 0.0
+	runner.bind(0.4)
+	await physics_frame
+	var carried: float = runner.bound
+	check(carried > 0.0, "with silk on it (%d%%)" % roundi(carried * 100.0))
+
+	var web := await _sheet_at(spider.global_position + Vector3(1.4, 0.4, 0.0))
+	if not check(web != null, "and a sheet web that cannot keep it"):
+		return
+	await physics_frame
+	var tore: bool = await wait_until(func() -> bool: return not runner.is_stuck(), 400)
+	if check(tore, "it tears out, which is what a sheet web does to a wasp"):
+		check(is_equal_approx(runner.bound, carried),
+			"and the silk it was fighting in is still on it (%d%%)"
+			% roundi(runner.bound * 100.0))
+
+
+## The one relationship the softening loop stands on, and the one nothing else
+## would notice breaking: silk has to go on faster than it comes off.
+##
+## A shot is shot_cooldown seconds apart and a hit is worth bind_share of the
+## creature. If the wait costs most of a hit back, every shot nets nothing and
+## there is no softening loop — which is exactly what the first cut did, at four
+## points a shot. The two numbers live in different files and neither reads like
+## it owns this, so it is checked here against both of them rather than trusted.
+func _test_silk_outlasts_the_wait() -> void:
+	grow_to_spin("orb_web")
+	select_pattern("orb_web")
+	var orb := pattern_named("orb_web")
+	if not check(orb != null, "an orb web to reckon with"):
+		return
+
+	var wait: float = builder.shot_cooldown * maxf(orb.spin_time, 0.1)
+	check(wait > 0.0, "a shot costs a wait of %.1fs" % wait)
+
+	var sample := spawn("wasp", spider.global_position + Vector3(6.0, 0.4, 0.0))
+	if not check(sample != null, "a wasp to measure against"):
+		return
+	sample.move_speed = 0.0
+	sample.aggression = 0.0
+	var share: float = sample.bind_share(orb.hold_strength)
+	var lost: float = Prey.BIND_SHRUG * wait
+	check(lost < share * 0.5,
+		"and the wait costs back %d%% of a hit, not most of it (%.3f of %.3f)"
+		% [roundi(100.0 * lost / share), lost, share])
+
+	# Two hits a cooldown apart have to leave it takeable, or nothing is.
+	var needed := 1.0 - share
+	var after_two := share - lost + share
+	check(after_two >= needed,
+		"so two hits a wait apart get past what the web needs (%.2f against %.2f)"
+		% [after_two, needed])
+	sample.queue_free()
+
+
+## The whole thing end to end, with real bolts rather than arithmetic: the bolt
+## actually asks the rule, which is the bug this was written for — a direct hit
+## used to wrap whatever it touched and never asked anything.
+##
+## How many hits a hard catch adds up to is stated against the numbers in
+## [method _test_softening_something_big]; grinding it out with real shots would
+## cost the suite half a minute of waiting out recatch timers to say the same
+## thing. What is here is the part only the real thing can show: which side of the
+## rule each pattern falls on.
+func _test_it_takes_more_than_one_shot() -> void:
+	# Grown once, up front. Both halves then run against the same spider at the
+	# same range, so the pattern is the only thing that differs — growing in the
+	# middle moves the body and the aim with it, and the second half was quietly
+	# shooting somewhere else.
+	grow_to_spin("orb_web")
+	ignore_shot_cooldown()
+	var slab := add_slab(Vector3(-150, 0.0, 90), Vector3(16, 0.5, 16))
+	await physics_frame
+	# Left looking at the floor, the way stand_on leaves it: the aim ray has to
+	# land on something for aim_point to mean anything, and a horizontal look
+	# across an empty slab hits nothing and quietly keeps the last one — which is
+	# how the first draft of this shot at a wasp 187 metres away and passed.
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	await run_frames(4)
+	clear_prey_near(slab.global_position, 24.0, null)
+	await physics_frame
+
+	# The starter web, at point-blank range, against something four times the fight
+	# it can hold.
+	select_pattern("sheet_web")
+	builder._update_aim()
+	var tough := spawn("wasp", builder.aim_point + Vector3(0, 0.4, 0))
+	if not check(tough != null, "a wasp to shoot at"):
+		return
+	tough.move_speed = 0.0
+	tough.aggression = 0.0
+	await physics_frame
+	builder._cooling = 0.0
+	if check(builder.shoot(), "a sheet web thrown straight at it"):
+		await wait_until(func() -> bool: return not builder.shot_in_flight(), 240)
+		await run_frames(4)
+		check(not tough.is_bundled(),
+			"does not take a wasp in one — a sheet web is not up to it")
+		check(tough.bound > 0.0,
+			"but it costs the wasp %d%% of its fight" % roundi(tough.bound * 100.0))
+		var loose: bool = await wait_until(
+			func() -> bool: return not tough.is_stuck(), 400)
+		check(loose, "it tears out of the web that came with the shot")
+		check(tough.bound > 0.0,
+			"still wearing the silk, so the next shot starts from there (%d%%)"
+			% roundi(tough.bound * 100.0))
+	tough.queue_free()
+	clear_webs()
+	await physics_frame
+
+	# And the better web, same spider, same range, takes the same creature outright.
+	# That is the whole trade the wheel is for.
+	#
+	# Stood up again first: the wait for the first wasp to tear loose is six seconds
+	# of the spider settling onto the slab, and it sank far enough that a bolt fired
+	# straight down went past the second one rather than through it.
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	await run_frames(4)
+	select_pattern("orb_web")
+	builder._update_aim()
+	var second := spawn("wasp", builder.aim_point + Vector3(0, 0.4, 0))
+	if not check(second != null, "another wasp, and a better web for it"):
+		return
+	second.move_speed = 0.0
+	second.aggression = 0.0
+	await physics_frame
+	builder._cooling = 0.0
+	if check(builder.shoot(), "an orb web thrown the same way"):
+		var took: bool = await wait_until(func() -> bool: return second.wrapped, 240)
+		check(took, "an orb web does take it point blank — the trade the wheel is for")
+	second.queue_free()
