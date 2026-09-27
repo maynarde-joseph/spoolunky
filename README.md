@@ -216,6 +216,13 @@ one spills it: whatever you had **wrapped** in it lands as a bundle you can stil
 collect, and anything still fighting gets loose. So wrap your catches before you
 haul. Lines can't be hauled — a road is the floor you walk on.
 
+**Shoot it.** A bolt that lands on a creature puts silk on it and does nothing
+else — no web is left where it was standing, so shooting something down by your
+feet doesn't paper the floor. Enough silk wraps it where it stands and the bundle
+drops for you to put a line on and drag off; short of enough, it's carrying that
+silk around and the next shot starts from there. A heavier pattern doesn't catch
+better, it just gets there in fewer shots.
+
 **Go after it by hand.** Point at something alive and in range and click: you
 throw yourself at it and bite it on landing. The bite works silk into it from the
 inside over the next several seconds, so it softens the same way a thrown web

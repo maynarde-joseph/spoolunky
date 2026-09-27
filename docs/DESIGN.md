@@ -101,6 +101,18 @@ Three changes, and they only work together:
   refreshes rather than stacks. And fangs finally mean something: anything inside
   your bite goes down outright, which is the kill-that-needs-no-web the venom
   branch has promised since it was written.
+* **A bolt that reaches a creature is about the creature.** It used to also open a
+  web where the thing happened to be standing, which plants one on the floor every
+  time you shoot something low — a web nobody chose to put there, in a game where
+  three lines and a wait are the whole cost of one. A hit is silk on the creature
+  and nothing else: enough wraps it where it stands and the bundle drops, short of
+  enough costs it fight and legs and the next bolt starts from there. What a
+  heavier pattern buys is fewer shots, not a catch — an orb web lands 61% of a
+  wasp where a sheet web lands 25%.
+* **Silk has to start on something.** Firing with nothing under you still takes you
+  where you aimed, because taking that away mid-fall would be taking the controls
+  off the player, but no line is left behind: the near end would be tied to a point
+  in empty air. Hanging from a line and riding one both count as having hold.
 * **A direct hit is not a free catch.** The bolt used to wrap whatever it touched,
   with no size check anywhere, so a spiderling's first shot took a wasp and both of
   the slower ways of catching things had nothing to do. All three paths — a web left

@@ -57,6 +57,8 @@ func _sections() -> Array[Callable]:
 		_test_silk_stays_on_what_tore_loose,
 		_test_silk_outlasts_the_wait,
 		_test_it_takes_more_than_one_shot,
+		_test_a_bolt_at_a_creature_leaves_no_web,
+		_test_clicking_something_alive_goes_for_it,
 		_test_reeling_a_web_in,
 		_test_what_a_reeled_web_costs,
 		_test_taking_aim,
@@ -1082,6 +1084,11 @@ func _sheet_at(centre: Vector3) -> WebNet:
 ## Runs a line the way arriving from a grapple does, without the journey.
 func _run_a_line(from: Vector3, to: Vector3) -> WebStrand:
 	builder._launched_from = from
+	# The whole launch, not half of it. This skips place() to put a line exactly
+	# where a check wants one, and a launch records whether the spider had hold of
+	# anything as well as where it fired from — leave that out and every line here
+	# reads as fired in mid-air, which lays nothing.
+	builder._launch_anchored = true
 	builder._arrive_at(to)
 	var up := builder.lines()
 	return up[up.size() - 1] if up.size() > 0 else null
@@ -3524,6 +3531,7 @@ func _test_it_takes_more_than_one_shot() -> void:
 	# it can hold.
 	select_pattern("sheet_web")
 	builder._update_aim()
+	var sheet_landed := 0.0
 	var tough := spawn("wasp", builder.aim_point + Vector3(0, 0.4, 0))
 	if not check(tough != null, "a wasp to shoot at"):
 		return
@@ -3536,6 +3544,7 @@ func _test_it_takes_more_than_one_shot() -> void:
 		await run_frames(4)
 		check(not tough.is_bundled(),
 			"does not take a wasp in one — a sheet web is not up to it")
+		sheet_landed = tough.bound
 		check(tough.bound > 0.0,
 			"but it costs the wasp %d%% of its fight" % roundi(tough.bound * 100.0))
 		var loose: bool = await wait_until(
@@ -3548,8 +3557,9 @@ func _test_it_takes_more_than_one_shot() -> void:
 	clear_webs()
 	await physics_frame
 
-	# And the better web, same spider, same range, takes the same creature outright.
-	# That is the whole trade the wheel is for.
+	# And the better web is worth more per shot, which is the trade the wheel is
+	# for. Not "takes it outright": a bolt at a creature is silk on the creature
+	# and nothing else now, so what a heavier pattern buys is fewer shots.
 	#
 	# Stood up again first: the wait for the first wasp to tear loose is six seconds
 	# of the spider settling onto the slab, and it sank far enough that a bolt fired
@@ -3566,8 +3576,13 @@ func _test_it_takes_more_than_one_shot() -> void:
 	await physics_frame
 	builder._cooling = 0.0
 	if check(builder.shoot(), "an orb web thrown the same way"):
-		var took: bool = await wait_until(func() -> bool: return second.wrapped, 240)
-		check(took, "an orb web does take it point blank — the trade the wheel is for")
+		await wait_until(func() -> bool: return not builder.shot_in_flight(), 240)
+		await run_frames(4)
+		check(second.bound > sheet_landed,
+			"puts on far more silk for the same shot (%d%% against a sheet web's %d%%)"
+			% [roundi(second.bound * 100.0), roundi(sheet_landed * 100.0)])
+		check(second.bound > 0.5,
+			"enough that the next one finishes it (%d%%)" % roundi(second.bound * 100.0))
 	second.queue_free()
 
 
@@ -3843,3 +3858,90 @@ func _test_what_a_bite_is_worth() -> void:
 		"and a second bite refreshes rather than stacks (%.1fs, not %.1f)"
 		% [sample.venom, one * 2.0])
 	sample.queue_free()
+
+
+## A bolt that reaches a creature has found what it was aimed at. It used to also
+## open a web where the creature happened to be standing, which plants one on the
+## floor every time you shoot something low — a web nobody chose to put there.
+##
+## What a hit does instead is silk: enough wraps it where it stands, short of
+## enough costs it fight and speed and the next bolt starts from there. Then it is
+## a bundle to put a line on and drag off.
+func _test_a_bolt_at_a_creature_leaves_no_web() -> void:
+	grow_to_spin("orb_web")
+	select_pattern("orb_web")
+	ignore_shot_cooldown()
+	var slab := add_slab(Vector3(120, 0.0, -40), Vector3(16, 0.5, 16))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	await run_frames(4)
+	clear_prey_near(slab.global_position, 24.0, null)
+	clear_webs()
+	await physics_frame
+
+	builder._update_aim()
+	var low := spawn("wasp", builder.aim_point + Vector3(0, 0.35, 0))
+	if not check(low != null, "a wasp down near the floor"):
+		return
+	low.move_speed = 0.0
+	low.aggression = 0.0
+	await physics_frame
+
+	var before := web_count()
+	builder._cooling = 0.0
+	if not check(builder.shoot(), "a bolt straight at it"):
+		return
+	await wait_until(func() -> bool: return not builder.shot_in_flight(), 240)
+	await run_frames(6)
+
+	check(web_count() == before,
+		"leaves no web behind it (%d, started %d)" % [web_count(), before])
+	check(low.bound > 0.0,
+		"but the silk is on the wasp (%d%%)" % roundi(low.bound * 100.0))
+	check(low.current_speed() < low.move_speed or low.move_speed <= 0.0,
+		"which is speed it no longer has")
+	low.queue_free()
+
+
+## Left mouse on something alive throws the spider at it. One click reads three
+## ways — a catch comes to you, something alive you go for, anything else is a
+## surface — and this is the middle one, through the key rather than by calling
+## the lunge directly, because the order those three are asked in is the part that
+## could quietly break.
+func _test_clicking_something_alive_goes_for_it() -> void:
+	var slab := add_slab(Vector3(-120, 0.0, -40), Vector3(18, 0.5, 18))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	if not check(await wait_until(
+			func() -> bool: return spider.climb.is_attached(), 120),
+			"standing on something to push off"):
+		return
+	clear_prey_near(slab.global_position, 26.0, null)
+	await physics_frame
+
+	var mark := spawn("wasp", spider.global_position + Vector3(2.2, 0.3, 0.0))
+	if not check(mark != null, "a wasp in front of you"):
+		return
+	mark.move_speed = 0.0
+	mark.aggression = 0.0
+	await physics_frame
+	aim_at(mark.global_position)
+	await physics_frame
+	check(spider.jaws.aimed_quarry() == mark, "under the cross and in reach")
+	check(not spider.tether.grab_aimed(),
+		"and not something already caught, so the line does not want it")
+
+	var stood := spider.global_position
+	var webs_before := web_count()
+	send_action(spider.input_place_anchor)
+	await physics_frame
+	check(spider.climb.is_grappling(), "the click throws you at it rather than past it")
+	await wait_until(func() -> bool: return not spider.climb.is_grappling(), 240)
+	await run_frames(4)
+	check(spider.global_position.distance_to(stood) > 1.0,
+		"you cross the gap (%.1fm)" % spider.global_position.distance_to(stood))
+	check(mark.is_poisoned(), "and bite it when you land")
+	check(web_count() == webs_before,
+		"and it was a lunge, not a web run out to it (%d webs, started %d)"
+		% [web_count(), webs_before])
+	mark.queue_free()

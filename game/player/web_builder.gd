@@ -198,6 +198,10 @@ var _lines: Array[WebStrand] = []
 var _pending_anchor := Vector3.ZERO
 var _awaiting_grapple := false
 
+## Whether the spider had hold of something when it fired. Silk has to start on
+## something: a line launched in mid-air would hang from a point in empty space.
+var _launch_anchored := false
+
 ## Where the spider pushed off from, so the line it drags has somewhere to
 ## start once it lands.
 var _launched_from := Vector3.ZERO
@@ -437,25 +441,44 @@ func _on_shot_landed(at: Vector3, normal: Vector3, prey: Node3D, heading: Vector
 	_shot = null
 	var quality := throw_quality(from.distance_to(at))
 	var caught := prey as Prey
-	if caught != null and is_instance_valid(caught) and caught.can_be_snared():
-		# What this bolt's silk is worth where it landed. A direct hit used to wrap
-		# whatever it touched, which let a spiderling take a wasp in one shot and
-		# made both of the other ways of catching things pointless.
-		var hold := shot_hold(pattern, from.distance_to(at))
-		if hold <= 0.0:
-			# A line pattern has no hold in it at all, so there is nothing for it to
-			# bind with and no reading worth printing.
-			notice.emit("A %s has no hold in it — aim it at something solid"
-				% pattern.display_name)
-		elif caught.taken_cleanly_by(hold) or caught.bind(caught.bind_share(hold)):
-			# Either the silk was up to it, or that was the hit that closed it.
-			if caught.bundle():
-				notice.emit("Wrapped the %s" % caught.species)
-				return
-		else:
-			notice.emit("Silk on the %s — %d%% wrapped, it will still fight"
-				% [caught.species, roundi(caught.bound * 100.0)])
+	if caught != null and is_instance_valid(caught):
+		_silk_onto(caught, pattern, from.distance_to(at))
+		# And nothing else. A bolt that reaches a creature has found what it was
+		# aimed at, and opening a web where it happened to be standing plants one
+		# on the floor every time you shoot something low — which is not a web
+		# anybody chose to put there. Enough silk wraps it; then it is a bundle to
+		# put a line on and drag off.
+		return
 	_open_web_at(at, normal, _facing_from(heading, normal), prey, radius, quality)
+
+
+## What one bolt does to the creature it hits.
+##
+## Silk, and only silk. Enough of it wraps the creature where it stands and the
+## bundle drops; short of enough it goes on anyway, costing the thing some of its
+## fight and some of its speed, and the next bolt starts from there.
+func _silk_onto(caught: Prey, pattern: WebPattern, distance: float) -> void:
+	if not caught.can_be_snared():
+		notice.emit("The %s is already caught" % caught.species)
+		return
+	# What this bolt's silk is worth where it landed. A direct hit used to wrap
+	# whatever it touched, which let a spiderling take a wasp in one shot and made
+	# both of the other ways of catching things pointless.
+	var hold := shot_hold(pattern, distance)
+	if hold <= 0.0:
+		# A line pattern has no hold in it at all, so there is nothing for it to
+		# bind with and no reading worth printing.
+		notice.emit("A %s has no hold in it — aim it at something solid"
+			% pattern.display_name)
+		return
+	if caught.taken_cleanly_by(hold) or caught.bind(caught.bind_share(hold)):
+		# Either the silk was up to it, or that was the hit that closed it.
+		if caught.bundle():
+			notice.emit("Wrapped the %s — put a line on it and drag it off"
+				% caught.species)
+			return
+	notice.emit("Silk on the %s — %d%% wrapped, it will still fight"
+		% [caught.species, roundi(caught.bound * 100.0)])
 
 
 ## What a bolt of [param pattern] is worth as a hold, landing [param distance]
@@ -921,6 +944,7 @@ func place() -> void:
 		return
 
 	_launched_from = _line_start()
+	_launch_anchored = _anchored()
 	_pending_ride = aimed_line()
 	if _pending_ride != null:
 		# Joining the road network rather than extending it: no new silk, you
@@ -959,10 +983,26 @@ func _arrive_at(point: Vector3) -> void:
 		# explicit ring and weave it with finish().
 		add_anchor(point)
 		return
+	if not _launch_anchored:
+		# Fired with nothing under you. The grapple still takes you there — that is
+		# the move, and taking it away mid-fall would be taking the controls off
+		# you — but there is nothing to tie the near end to, so no line is left.
+		_loop_source = -1
+		state_changed.emit()
+		return
 	if _launched_from.distance_to(point) > 0.01:
 		_remember_line(_lay_line(_launched_from, point))
 	_loop_source = -1
 	state_changed.emit()
+
+
+## Whether the spider has hold of something silk could be tied to: a surface, or
+## a line it is already on. Falling and swinging are not the same thing — a swing
+## is hanging off silk, which is an anchor.
+func _anchored() -> bool:
+	if _climb == null:
+		return true
+	return _climb.is_attached() or _climb.is_hanging() or _climb.is_riding()
 
 
 ## How many lines are up.
