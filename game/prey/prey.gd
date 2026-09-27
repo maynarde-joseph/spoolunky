@@ -47,6 +47,20 @@ const ESCAPE_MARGIN := 6.0
 ## because they live in different files and neither one looks like it owns this.
 const BIND_SHRUG := 0.025
 
+## How much binding a bite's venom works in per second while it lasts.
+##
+## Deliberately slower than shooting. A bolt lands about half a wasp at once on a
+## three and a half second wait, which is roughly 0.13 a second; this nets 0.055
+## after the shrug, so silk thrown from across the room stays the efficient way to
+## soften something and the bite is what you do when you are already there — or
+## when you would rather close the distance than wait out the wheel.
+const VENOM_BIND := 0.08
+
+## What fangs are worth. The venom branch promises a kill that needs no web and
+## until now delivered two points of bite power and a drain multiplier; this is
+## the part that makes it a bite.
+const FANG_VENOM := 2.2
+
 ## Slowest a creature gets from silk alone, as a share of its own speed. Wrapped
 ## all the way it is a bundle and not going anywhere regardless; short of that it
 ## always has something left.
@@ -139,6 +153,12 @@ var _stuck_point := Vector3.ZERO
 ## with its web instead of being held to the patch of air the web used to occupy —
 ## which is what lets a web be reeled in with its catches still in it.
 var _hold_offset := Vector3.ZERO
+
+## Seconds of venom still working through it, and how hard. Not the same thing as
+## [member subdued], which is the instant kill a venom spur does — this is a slow
+## drip that binds the creature from the inside while it runs.
+var venom := 0.0
+var venom_strength := 1.0
 var _struggle := 0.0
 var _fight_left := 0.0
 var _snap_timer := 0.0
@@ -225,6 +245,11 @@ func _physics_process(delta: float) -> void:
 
 	if _bite_timer > 0.0:
 		_bite_timer -= delta
+	# Venom first, so a creature working off silk while venom puts it back on ends
+	# the frame wherever the two of them leave it.
+	if venom > 0.0 and not eaten and _state != State.BUNDLED:
+		venom = maxf(0.0, venom - delta)
+		bind(VENOM_BIND * venom_strength * delta)
 	# Only while loose. Silk on something a web is holding is not going anywhere,
 	# and neither is the creature.
 	if bound > 0.0 and not is_stuck() and _state != State.BUNDLED:
@@ -362,6 +387,25 @@ func bind_share(hold: float) -> float:
 	if whole <= 0.0:
 		return 1.0
 	return clampf(hold * ESCAPE_MARGIN / whole, 0.0, 1.0)
+
+
+## Bitten. Venom works silk into it from the inside for [param seconds].
+##
+## It does not stack: biting something twice sets the clock to whichever is longer
+## rather than running two doses at once. Stacking would make the answer to
+## everything "bite it again", which is the button-mashing the risk of standing
+## next to a wasp is supposed to rule out.
+func poison(seconds: float, strength := 1.0) -> bool:
+	if eaten or _state == State.BUNDLED or seconds <= 0.0:
+		return false
+	venom = maxf(venom, seconds)
+	venom_strength = maxf(venom_strength, strength) if venom > 0.0 else strength
+	return true
+
+
+## Whether venom is still working through it.
+func is_poisoned() -> bool:
+	return venom > 0.0
 
 
 ## Puts silk on it. Returns true if that was the hit that wrapped it.

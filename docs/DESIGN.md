@@ -87,6 +87,20 @@ Three changes, and they only work together:
   was to grow. Half wrapped, that wasp comes down to 2.3 and a spiderling can walk
   after it. Never quite stopped, though — something held still where it stands
   without being wrapped is a pin, and a pin is a different mechanic.
+* **You can go after it by hand.** Left mouse on a live creature in range throws
+  the spider at it and bites it on landing, and the bite works silk in from the
+  inside over the seconds that follow — so it is a third way into the same loop
+  rather than a second system. No wait on it: the risk is the cost, because you
+  end up standing next to the thing and stamina and being driven off are already
+  built. A wait *on top of* the risk is a double cost, and a move that is both
+  dangerous and rationed either goes unused or gets cranked into the mandatory
+  opener. Range is the gate instead, which is what makes slowing something the
+  thing that puts it in reach. It is deliberately the slower of the two — 0.055 a
+  second against a bolt's 0.131 — so silk from across the room stays the efficient
+  answer and the bite is what you do when you are already there. Biting twice
+  refreshes rather than stacks. And fangs finally mean something: anything inside
+  your bite goes down outright, which is the kill-that-needs-no-web the venom
+  branch has promised since it was written.
 * **A direct hit is not a free catch.** The bolt used to wrap whatever it touched,
   with no size check anywhere, so a spiderling's first shot took a wasp and both of
   the slower ways of catching things had nothing to do. All three paths — a web left

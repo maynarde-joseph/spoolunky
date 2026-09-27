@@ -52,6 +52,8 @@ func _sections() -> Array[Callable]:
 		_test_shooting,
 		_test_softening_something_big,
 		_test_silk_slows_what_it_sticks_to,
+		_test_going_after_it_by_hand,
+		_test_what_a_bite_is_worth,
 		_test_silk_stays_on_what_tore_loose,
 		_test_silk_outlasts_the_wait,
 		_test_it_takes_more_than_one_shot,
@@ -3875,3 +3877,125 @@ func _test_silk_slows_what_it_sticks_to() -> void:
 	check(quarry.current_speed() > 0.0,
 		"wrapped to the last, it still crawls (%.2f)" % quarry.current_speed())
 	quarry.queue_free()
+
+
+# --- going after it by hand ----------------------------------------------
+
+## The third way into the same loop: throw yourself at something and bite it.
+##
+## No wait on it, because the risk is the cost — you end up standing next to the
+## thing, and for anything that hunts you that is the whole price. What gates it
+## is range, which is why slowing something down is what makes it reachable.
+func _test_going_after_it_by_hand() -> void:
+	var slab := add_slab(Vector3(-20, 0.0, 150), Vector3(20, 0.5, 20))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	if not check(await wait_until(
+			func() -> bool: return spider.climb.is_attached(), 120),
+			"standing on something to push off"):
+		return
+	clear_prey_near(slab.global_position, 26.0, null)
+	await physics_frame
+
+	var mark := spawn("wasp", spider.global_position + Vector3(2.5, 0.3, 0.0))
+	if not check(mark != null, "a wasp to go after"):
+		return
+	mark.move_speed = 0.0
+	mark.aggression = 0.0
+	await physics_frame
+	aim_at(mark.global_position)
+	await physics_frame
+
+	check(spider.jaws.lunge_range() > spider.jaws.fang_reach(),
+		"a lunge reaches further than the fangs do (%.1fm against %.1fm)"
+		% [spider.jaws.lunge_range(), spider.jaws.fang_reach()])
+	check(spider.jaws.aimed_quarry() == mark, "and the cross is on something alive")
+
+	var stood := spider.global_position
+	if not check(spider.jaws.lunge(), "so the click throws you at it"):
+		return
+	await wait_until(func() -> bool: return not spider.climb.is_grappling(), 240)
+	await run_frames(4)
+	check(spider.global_position.distance_to(stood) > 1.0,
+		"you cross the gap (%.1fm)" % spider.global_position.distance_to(stood))
+	check(mark.is_poisoned(), "and bite it when you land")
+
+	# The bite works silk in from the inside, so it feeds the same number
+	# everything else does.
+	var before := mark.bound
+	await run_frames(180)
+	check(mark.bound > before,
+		"venom works silk into it while it runs (%d%% from %d%%)"
+		% [roundi(mark.bound * 100.0), roundi(before * 100.0)])
+
+	# Fangs are what the venom branch has always promised and never delivered: a
+	# kill that needs no web. They take anything inside the bite outright, and the
+	# slow version is for everything bigger.
+	var small := spawn_fly(spider.global_position + Vector3(0.5, 0.2, 0.0))
+	if check(small != null, "a fly, which is inside a grown spider's bite"):
+		small.move_speed = 0.0
+		traits.owned["hunting_fangs"] = true
+		traits.changed.emit()
+		await physics_frame
+		check(traits.has_fangs(), "with hunting fangs bought")
+		aim_at(small.global_position)
+		await physics_frame
+		if spider.jaws.lunge():
+			await wait_until(func() -> bool: return not spider.climb.is_grappling(), 240)
+			await run_frames(4)
+		check(small.subdued or not is_instance_valid(small),
+			"fangs finish something that small where it stands")
+		if is_instance_valid(small):
+			small.queue_free()
+
+	# Out of reach is a refusal with a reason, not a silent nothing.
+	var far := spawn("wasp", spider.global_position
+		+ Vector3(spider.jaws.lunge_range() + 4.0, 0.3, 0.0))
+	if check(far != null, "another wasp, well out of reach"):
+		far.move_speed = 0.0
+		far.aggression = 0.0
+		await physics_frame
+		aim_at(far.global_position)
+		await physics_frame
+		check(not spider.jaws.lunge(), "which you cannot reach from here")
+		far.queue_free()
+	mark.queue_free()
+
+
+## What a bite is worth, against what a bolt is worth. The two have to stay on
+## the right sides of each other or one of them stops being a choice.
+##
+## Shooting is the efficient way to soften something: it lands a large share at
+## once from somewhere safe. The bite trades that away for having no wait at all
+## and for closing the distance, so it has to be the slower of the two — otherwise
+## nobody would ever shoot.
+func _test_what_a_bite_is_worth() -> void:
+	var sample := spawn("wasp", spider.global_position + Vector3(5.0, 0.4, 0.0))
+	if not check(sample != null, "a wasp to reckon against"):
+		return
+	sample.move_speed = 0.0
+	sample.aggression = 0.0
+
+	var orb := pattern_named("orb_web")
+	if not check(orb != null, "and an orb web to compare with"):
+		return
+	var bolt_share: float = sample.bind_share(orb.hold_strength)
+	var bolt_wait: float = builder.shot_cooldown * maxf(orb.spin_time, 0.1)
+	var bolt_rate := bolt_share / bolt_wait
+	var venom_rate: float = Prey.VENOM_BIND - Prey.BIND_SHRUG
+
+	check(venom_rate > 0.0,
+		"venom goes on faster than it comes off, or it does nothing (%.3f)" % venom_rate)
+	check(venom_rate < bolt_rate,
+		"and slower than shooting, so silk from across the room stays worth it (%.3f against %.3f a second)"
+		% [venom_rate, bolt_rate])
+
+	# Biting twice is not twice the venom. Without this the answer to everything
+	# is to keep biting, which is the button-mashing the risk is there to prevent.
+	sample.poison(8.0)
+	var one := sample.venom
+	sample.poison(8.0)
+	check(is_equal_approx(sample.venom, one),
+		"and a second bite refreshes rather than stacks (%.1fs, not %.1f)"
+		% [sample.venom, one * 2.0])
+	sample.queue_free()

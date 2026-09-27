@@ -216,6 +216,15 @@ one spills it: whatever you had **wrapped** in it lands as a bundle you can stil
 collect, and anything still fighting gets loose. So wrap your catches before you
 haul. Lines can't be hauled — a road is the floor you walk on.
 
+**Go after it by hand.** Point at something alive and in range and click: you
+throw yourself at it and bite it on landing. The bite works silk into it from the
+inside over the next several seconds, so it softens the same way a thrown web
+does — just by hand, with no wait, and with you standing next to whatever you
+just bit. Slower than shooting on purpose; the point of it is that there's no
+wheel to wait for and you closed the distance. Bite it twice and the venom
+refreshes rather than doubling. With **Hunting Fangs**, anything inside your bite
+goes down where it stands.
+
 **Leave one somewhere to work.** Fit a web to a corner prey walks past, drop a
 **Scent Lure** on the far side so traffic comes *through* the web to reach it,
 and wire a **Signal Bell** in so you get told when it catches. Then go

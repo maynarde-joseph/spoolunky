@@ -279,7 +279,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	# to you instead — which is the same act read the only way that makes sense
 	# for a thing that is already wrapped up and going nowhere.
 	elif event.is_action_pressed(input_place_anchor):
-		if not tether.grab_aimed():
+		# Three readings of one click, in order of how specific the target is:
+		# something already caught comes to you, something alive you throw
+		# yourself at, and anything else is a surface to grapple to. Each is the
+		# only sensible thing to do with what was under the cross.
+		if not tether.grab_aimed() and not jaws.lunge():
 			web_builder.place()
 	elif _web_tool_active() and event.is_action_pressed(input_cancel_anchor):
 		web_builder.undo()
