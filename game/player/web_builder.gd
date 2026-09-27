@@ -730,6 +730,8 @@ func place_rim() -> PackedVector3Array:
 	if pattern != null:
 		inset = maxf(pattern.strand_thickness * sqrt(_quality()) * 0.75, 0.002)
 	place_anchored = 0
+	var spans := PackedFloat32Array()
+	var directions: Array[Vector3] = []
 	for i in PLACE_SIDES:
 		var angle := TAU * float(i) / float(PLACE_SIDES)
 		var direction := (right * cos(angle) + up * sin(angle)).normalized()
@@ -742,9 +744,34 @@ func place_rim() -> PackedVector3Array:
 		if not hit.is_empty():
 			span = maxf(place_centre.distance_to(hit["position"]) - inset, floor_span)
 			place_anchored += 1
-		rim.append(place_centre + direction * span)
+		directions.append(direction)
+		spans.append(span)
+
+	for i in PLACE_SIDES:
+		rim.append(place_centre + directions[i] * _eased_span(spans, i))
 	place_area = _polygon_area(rim)
 	return rim
+
+
+## One rim corner, pulled into line with the two beside it.
+##
+## Sixteen rays clipped independently give a rim with spikes in it, because one
+## ray slipping past the edge of something reaches full size between two that
+## stopped short. A web like that reads as randomly chewed rather than as fitted
+## to the space it is in — which is most of why a thrown web's size felt like it
+## was rolled rather than aimed.
+##
+## Only ever shortens. Averaging in both directions would push a corner out
+## through the wall its neighbour found, so the measured distance stays the
+## ceiling and the smoothing is free to come in under it.
+func _eased_span(spans: PackedFloat32Array, at: int) -> float:
+	var count := spans.size()
+	if count < 3:
+		return spans[at]
+	var before: float = spans[(at - 1 + count) % count]
+	var here: float = spans[at]
+	var after: float = spans[(at + 1) % count]
+	return minf(here, (before + here * 2.0 + after) * 0.25)
 
 
 ## The ghost for a throw. Which room the bolt lands in is not known yet, so

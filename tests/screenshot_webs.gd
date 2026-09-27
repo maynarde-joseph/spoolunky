@@ -30,6 +30,9 @@ func _run() -> void:
 	_spin(builder, "orb_web", Vector3(12, 1.0, 0.0), 0.75)
 	_spin(builder, "sheet_web", Vector3(10.0, 1.0, 0.0), 0.6)
 	_spin(builder, "pressure_snare", Vector3(14.0, 1.0, 0.0), 0.6)
+	# The three builds side by side, which is the point of the shot: an orb, a mat
+	# and a cone should not be mistakable for each other.
+	_spin(builder, "funnel_lure", Vector3(16.0, 1.0, 0.0), 0.6)
 	_strand(builder, "silk_bridge", Vector3(9.0, 1.7, 0.6), Vector3(15.0, 1.7, 0.6))
 	_strand(builder, "trip_line", Vector3(9.0, 0.25, -0.6), Vector3(15.0, 0.25, -0.6))
 	await physics_frame
@@ -56,6 +59,31 @@ func _run() -> void:
 	image.save_png("user://webs_overview.png")
 	print("saved ", ProjectSettings.globalize_path("user://webs_overview.png"),
 		"  ", image.get_width(), "x", image.get_height())
+
+	# The builds in a row, close enough to tell apart and with the readout out of
+	# the way. This is the shot that answers "do these look like different webs",
+	# which the overview cannot: from across a room an orb, a mat and a cone are
+	# all just grey.
+	# Every overlay, not just the HUD: the example level puts its own help text up
+	# on a second layer, and one of the two covered the webs whichever I hid.
+	var overlays: Array[CanvasLayer] = []
+	for node in _all_under(level):
+		var layer := node as CanvasLayer
+		if layer != null and layer.visible:
+			layer.visible = false
+			overlays.append(layer)
+	camera.global_position = Vector3(13.0, 1.2, 4.0)
+	camera.look_at(Vector3(13.0, 1.0, 0.0), Vector3.UP)
+	camera.fov = 68.0
+	for i in 8:
+		await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("user://webs_builds.png")
+	print("saved ", ProjectSettings.globalize_path("user://webs_builds.png"),
+		"  — sheet, orb, snare, funnel across the frame")
+	for layer in overlays:
+		layer.visible = true
+	camera.fov = 60.0
 
 	# Second angle: close on the orb web.
 	camera.global_position = Vector3(12.9, 1.25, 1.35)
@@ -167,3 +195,11 @@ func _strand(builder: WebBuilder, id: String, a: Vector3, b: Vector3) -> void:
 	builder.add_anchor(a)
 	builder.add_anchor(b)
 	builder.stop()
+
+
+func _all_under(node: Node) -> Array[Node]:
+	var found: Array[Node] = []
+	for child in node.get_children():
+		found.append(child)
+		found.append_array(_all_under(child))
+	return found

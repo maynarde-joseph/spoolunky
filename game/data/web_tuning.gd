@@ -112,6 +112,11 @@ func apply_to(pattern: WebPattern) -> WebPattern:
 		tuned.ring_count = maxi(1, roundi(pattern.ring_count * (1.0 - 0.3 * m)))
 	tuned.min_catch_size = pattern.min_catch_size + maxi(0, mesh - NEUTRAL)
 
+	# A tight web hangs straighter and a slack one droops, which is the first time
+	# the tension dial has been visible from across the room rather than only in
+	# the numbers. Heavier silk pulls down harder, so weight adds a little back.
+	tuned.sag = maxf(pattern.sag * (1.0 - 0.7 * t) * (1.0 + 0.3 * w), 0.0)
+
 	return tuned
 
 

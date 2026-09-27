@@ -1,6 +1,9 @@
 #!/bin/bash
 # Puts a Godot binary on PATH so the smoke suites can run in this session.
 #
+# "Remote" below means Claude Code running in a cloud container rather than on
+# someone's machine. Nothing here has anything to do with silk.
+#
 # Without one, the only local check is gdparse, which reads syntax and nothing
 # else: an undeclared identifier, a renamed method, a wrong argument count and a
 # stale test assumption all parse clean and all fail in the engine. Every one of
@@ -8,7 +11,7 @@
 # told, so having the engine here turns most of those rounds into seconds.
 set -euo pipefail
 
-# Web sessions start from a fresh container; a local checkout has its own Godot.
+# A cloud container starts empty; a local checkout has its own Godot already.
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
 	exit 0
 fi
