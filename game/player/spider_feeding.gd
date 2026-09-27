@@ -183,8 +183,17 @@ func gulp() -> float:
 
 ## Whether a meal is close enough to keep drinking. On the line counts at any
 ## length; anything else has to be within reach of the fangs.
+##
+## A web on the line counts too, for everything caught in it. That is what reeling
+## one in is for: you pull the larder to somewhere safe and drink it there, rather
+## than standing out in the open next to it.
 func within_reach(prey: Prey) -> bool:
-	if _tether != null and _tether.cargo == prey:
+	if _tether == null:
+		return _spider.global_position.distance_to(prey.global_position) <= fang_reach()
+	if _tether.cargo == prey:
+		return true
+	var web := prey.held_by()
+	if web != null and _tether.cargo == web:
 		return true
 	return _spider.global_position.distance_to(prey.global_position) <= fang_reach()
 

@@ -134,6 +134,13 @@ func hook(target: Node3D) -> bool:
 	if not can_carry(target):
 		notice.emit("Not something you can drag along")
 		return false
+	# A web comes off its anchors as the line goes on. Done before the line is
+	# recorded so a web that will not come — a road, or one already on the line —
+	# does not end up as cargo nothing can haul.
+	var web := target as WebStructure
+	if web != null and not web.reel():
+		notice.emit("A %s is a road, not something to haul in" % web.label())
+		return false
 	# Paid out to wherever it is. A long shot is a long line, and then it reels.
 	_rope_length = maxf(_resting_length(), _hand().distance_to(target.global_position))
 	cargo = target
@@ -185,6 +192,9 @@ func can_carry(target: Node3D) -> bool:
 	var prey := target as Prey
 	if prey != null:
 		return not prey.eaten and (prey.wrapped or prey.is_secured())
+	var web := target as WebStructure
+	if web != null:
+		return web.can_be_reeled()
 	return target is SilkDevice
 
 
@@ -205,7 +215,10 @@ func aimed_cargo() -> Node3D:
 
 	var best: Node3D = null
 	var best_gap := INF
-	for group in ["prey", "silk_devices"]:
+	# Webs last, so a bundle hanging in one is picked over the web around it: the
+	# creature is the smaller, more deliberate target, and taking just the catch is
+	# the cheaper of the two moves.
+	for group in ["prey", "silk_devices", "silk_webs"]:
 		for node in get_tree().get_nodes_in_group(group):
 			var target := node as Node3D
 			if target == null or not can_carry(target):
@@ -321,6 +334,12 @@ func _let_go(text: String) -> void:
 	var was := cargo
 	_watch_cargo(false)
 	cargo = null
+	# A web off its anchors is not a web. Dropping one spills it: what was wrapped
+	# falls as bundles and anything still fighting gets its chance, which is what
+	# makes wrapping a catch before you haul the web worth doing.
+	var web := was as WebStructure
+	if web != null and web.reeled:
+		web.spill()
 	_rope.clear()
 	_previous.clear()
 	_draw()
@@ -392,6 +411,12 @@ func _label(target: Node3D) -> String:
 	var prey := target as Prey
 	if prey != null:
 		return prey.species
+	var web := target as WebStructure
+	if web != null:
+		# What is in it, not just which pattern it is: the whole reason to be
+		# dragging one home is its contents, so the line should say so.
+		var held := web.snared_count()
+		return web.label() if held <= 0 else "%s with %d in it" % [web.label(), held]
 	var device := target as SilkDevice
 	return device.label() if device != null else target.name
 

@@ -55,6 +55,12 @@ var area := 0.0
 
 var mesh_instance: MeshInstance3D
 var catch_area: Area3D
+
+## Off its anchors and on the spider's line. A web being carried is a wad of silk
+## with whatever was in it: it catches nothing more, there is nothing to stand on,
+## and it triggers nothing — but it still holds what it already held, which is the
+## whole point of dragging it home.
+var reeled := false
 var catch_shape: CollisionShape3D
 
 ## What this web took the moment it went up, and how much of that it wrapped
@@ -253,6 +259,53 @@ func tear() -> void:
 		_release(prey, true)
 	torn.emit(self)
 	queue_free()
+
+
+## Whether the spider can put a line on this and pull it off the wall.
+##
+## Nets only. A line is a road — hauling one in would be pulling up the floor you
+## walk on, and it holds nothing to be worth collecting anyway.
+func can_be_reeled() -> bool:
+	return not reeled and pattern != null and catch_area != null \
+		and pattern.shape == WebPattern.Shape.NET and not is_queued_for_deletion()
+
+
+## Pulled off its anchors onto the line.
+##
+## Everything that made it part of the room stops: it catches nothing else, it
+## cannot be walked on, and it signals nothing. What it is holding stays held —
+## the catches travel with it, because a web brought home with its larder in it is
+## the reason to bother.
+func reel() -> bool:
+	if not can_be_reeled():
+		return false
+	reeled = true
+	unlink_all()
+	if catch_area != null:
+		# The signals come off first, and that order matters. Turning monitoring off
+		# makes the engine report every body currently inside as having left, which
+		# runs _on_body_exited on each of them and releases the very catches the
+		# reeling was for — the web arrived home empty.
+		if catch_area.body_entered.is_connected(_on_body_entered):
+			catch_area.body_entered.disconnect(_on_body_entered)
+		if catch_area.body_exited.is_connected(_on_body_exited):
+			catch_area.body_exited.disconnect(_on_body_exited)
+		catch_area.monitoring = false
+		catch_area.monitorable = false
+	var walkway := get_node_or_null("Walkway") as StaticBody3D
+	if walkway != null:
+		# Off the walk layer entirely rather than hidden: a carried web you can
+		# still stand on is a lift, and that is a different game.
+		walkway.collision_layer = 0
+	state_changed.emit(self)
+	return true
+
+
+## Dropped while it was being carried. A web off its anchors is not a web, so
+## letting go of one is losing it: what was wrapped in it falls as bundles, and
+## anything still fighting gets its chance.
+func spill() -> void:
+	demolish()
 
 
 ## Take the web down on purpose.

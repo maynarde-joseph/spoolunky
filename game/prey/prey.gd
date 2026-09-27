@@ -129,6 +129,11 @@ var _target := Vector3.ZERO
 var _wander_timer := 0.0
 var _web: WebStructure = null
 var _stuck_point := Vector3.ZERO
+
+## Where in the web it is caught, in the web's own space. Kept so a catch travels
+## with its web instead of being held to the patch of air the web used to occupy —
+## which is what lets a web be reeled in with its catches still in it.
+var _hold_offset := Vector3.ZERO
 var _struggle := 0.0
 var _fight_left := 0.0
 var _snap_timer := 0.0
@@ -256,6 +261,7 @@ func can_be_snared() -> bool:
 func on_snared(web: WebStructure, point: Vector3, snap_time: float) -> void:
 	_web = web
 	_stuck_point = point
+	_hold_offset = web.to_local(point) if is_instance_valid(web) else Vector3.ZERO
 	_snap_timer = snap_time
 	_struggle = 0.0
 	_fight_left = struggle_stamina
@@ -281,6 +287,13 @@ func on_freed(_web_that_tore: WebStructure) -> void:
 func on_tripped(_web: WebStructure, mark_time: float) -> void:
 	_marked_timer = maxf(_marked_timer, mark_time)
 	_set_marked(true)
+
+
+## The web holding it, if one is. What the tether asks so that drinking something
+## off a web on your line works at any length, the way drinking the creature
+## itself already does.
+func held_by() -> WebStructure:
+	return _web if is_instance_valid(_web) else null
 
 
 func is_stuck() -> bool:
@@ -492,6 +505,11 @@ func consume() -> void:
 # --- behaviour ----------------------------------------------------------
 
 func _process_stuck(delta: float) -> void:
+	# Read off the web every frame rather than remembered from the catch. A web
+	# that does not move gives the same answer it always did; one being dragged
+	# home brings what it is holding along.
+	if is_instance_valid(_web):
+		_stuck_point = _web.to_global(_hold_offset)
 	var pull: float = 12.0 if _snap_timer > 0.0 else 5.0
 	var jitter := Vector3.ZERO
 	if _state == State.STUCK and _snap_timer <= 0.0:

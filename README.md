@@ -200,6 +200,17 @@ enough. So the two tools work together — soften it with shots, then take it wi
 web — and the silk works off again if you leave it alone, so it is a burst of
 commitment rather than a slow grind from safety.
 
+**Haul one in.** Point at a web you have left somewhere and click: the line goes
+onto the web itself, it comes off its anchors, and it follows you with whatever is
+caught in it. Anything in a web on your line is in reach at any length, so the move
+is to drag a full larder somewhere safe and eat there rather than standing out in
+the open next to it.
+
+It costs you the web, mind. Off its anchors it is a wad of silk, so letting go of
+one spills it: whatever you had **wrapped** in it lands as a bundle you can still
+collect, and anything still fighting gets loose. So wrap your catches before you
+haul. Lines can't be hauled — a road is the floor you walk on.
+
 **Leave one somewhere to work.** Fit a web to a corner prey walks past, drop a
 **Scent Lure** on the far side so traffic comes *through* the web to reach it,
 and wire a **Signal Bell** in so you get told when it catches. Then go

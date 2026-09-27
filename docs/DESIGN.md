@@ -85,6 +85,15 @@ Three changes, and they only work together:
   standing, a web thrown over something, a bolt square on — now ask the creature the
   same question, and all three see the silk already on it.
 
+* **A web can be hauled home.** Put a line on a net and it comes off its anchors
+  onto the tether with its catches still in it, and everything caught in a web on
+  your line is in fang reach at any length. So a larder is no longer somewhere you
+  have to go and stand in the open — you drag it somewhere safe and drink it there.
+  It costs the web: off its anchors it is a wad of silk, and letting go of one
+  spills it, so what was *wrapped* in it lands as bundles and anything still
+  fighting gets its chance. Which gives wrapping a second job — you wrap before you
+  haul. Lines are not haulable; a road is the floor you walk on.
+
 So the web stops competing with the gun. It is not a better way to acquire food —
 it is **the place you can eat what you acquired**, which is a job nothing else in
 the game does. That is §8's old line, *"your web is your cover, not just your
