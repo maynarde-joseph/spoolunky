@@ -62,6 +62,7 @@ func _sections() -> Array[Callable]:
 		_test_hitching_something_to_the_ground,
 		_test_bailing_off_something,
 		_test_taking_a_web_home,
+		_test_the_click_finds_the_whole_web,
 		_test_a_road_is_not_collected,
 		_test_taking_aim,
 		_test_how_far_silk_goes,
@@ -3783,6 +3784,105 @@ func _test_taking_a_web_home() -> void:
 		"and it is bundled all the same, not shaken loose")
 	if is_instance_valid(fighter):
 		fighter.queue_free()
+
+
+## Where the click has to land, and what it must not be distracted by.
+##
+## Two ways it went wrong in play, both of them the pick rather than the taking.
+##
+## The web was found by measuring its *origin point* against the line of sight,
+## with the tolerance cargo uses — a slice of the screen, half a metre at ten. A
+## bundle is small enough to be a point and a web is a surface metres across, so
+## only a shot at the dead centre landed: probed across the face of a sheet web it
+## came back one time in fifteen, and the other fourteen clicks fell through to the
+## grapple. It is cast at the web's own collider now.
+##
+## And a catch inside a web counted as cargo, so the moment one tired out or got
+## wrapped it answered for the web and the click tethered the creature out instead.
+## Taking the web takes everything in it, so a catch in one is not the tether's any
+## more — but a bundle lying loose in *front* of a web still is, and that is the
+## third check here: nearest along the line of sight wins, both ways round.
+func _test_the_click_finds_the_whole_web() -> void:
+	var tether := spider.tether
+	grow_to_spin("orb_web")
+	var slab := add_slab(Vector3(140, 0.0, 90), Vector3(16, 0.5, 16))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	await run_frames(6)
+	clear_prey_near(slab.global_position, 24.0, null)
+	await physics_frame
+
+	var centre := spider.global_position + Vector3(0, 0.5, -2.0)
+	var web := await _sheet_at(centre)
+	if not check(web != null, "a sheet web to point at"):
+		return
+
+	# Across the face, not just the middle of it.
+	var found := 0
+	var tried := 0
+	for dx in [-0.45, 0.0, 0.45]:
+		for dy in [-0.45, 0.0, 0.45]:
+			aim_at(centre + Vector3(dx, dy, 0.0))
+			await physics_frame
+			tried += 1
+			if tether.aimed_web() == web:
+				found += 1
+	check(found == tried,
+		"the cross finds it anywhere on its face, not only dead centre (%d of %d)"
+		% [found, tried])
+
+	# A catch settled in it does not answer for it.
+	var settled := spawn_fly(centre)
+	if not check(settled != null, "a fly in it"):
+		return
+	settled.move_speed = 0.0
+	if not check(await wait_until(func() -> bool: return settled.is_stuck(), 120),
+			"stuck in it"):
+		return
+	settled.wrap()
+	await physics_frame
+	check(settled.is_secured() and settled.held_by() == web,
+		"wrapped, and still hanging in the web")
+	check(not tether.can_carry(settled),
+		"which is not something to put a line on — the web it is in is")
+	aim_at(centre)
+	await physics_frame
+	check(tether.aimed_cargo() == null, "so the cross is not on cargo")
+	if not check(tether.take_aimed(), "and the click takes the web"):
+		return
+	await run_frames(4)
+	check(not is_instance_valid(web) or web.is_queued_for_deletion(),
+		"the web came down")
+	check(is_instance_valid(settled) and settled.is_bundled(),
+		"with the fly bundled at your feet, rather than towed out of it")
+	if is_instance_valid(settled):
+		settled.queue_free()
+	await physics_frame
+
+	# The other way round: a bundle on the floor in front of a web is what you
+	# pointed at, and the web behind it is not.
+	var second := await _sheet_at(spider.global_position + Vector3(0, 0.5, -3.0))
+	if not check(second != null, "another web, further off"):
+		return
+	var loose := spawn_fly(spider.global_position + Vector3(0, 0.3, -1.0))
+	if not check(loose != null, "and a bundle lying between you and it"):
+		return
+	loose.move_speed = 0.0
+	loose.bundle()
+	await physics_frame
+	check(loose.is_bundled() and loose.held_by() == null,
+		"loose on the floor, in no web at all")
+	aim_at(loose.global_position)
+	await physics_frame
+	check(tether.aimed_cargo() == loose, "the cross is on it")
+	if not check(tether.take_aimed(), "and the click deals with it"):
+		return
+	check(tether.cargo == loose,
+		"by putting a line on the bundle (%s)" % tether.cargo_name())
+	check(is_instance_valid(second) and not second.is_queued_for_deletion(),
+		"leaving the web behind it standing")
+	tether.cut()
+	loose.queue_free()
 
 
 ## A road is not a larder. Lines are the floor you walk on, and picking one up

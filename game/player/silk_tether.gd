@@ -188,7 +188,14 @@ func can_carry(target: Node3D) -> bool:
 		return false
 	var prey := target as Prey
 	if prey != null:
-		return not prey.eaten and (prey.wrapped or prey.is_secured())
+		# Not one still hanging in a web. Taking the web takes everything in it
+		# now, so a catch that is in one has nothing left to gain from a line —
+		# and while it counted as cargo, a click meant for the web picked the
+		# creature out of it instead the moment that creature tired out or got
+		# wrapped. Eating one where it hangs is still F, at fang reach.
+		if prey.eaten or prey.held_by() != null:
+			return false
+		return prey.wrapped or prey.is_secured()
 	return target is SilkDevice
 
 
@@ -229,39 +236,68 @@ func aimed_cargo() -> Node3D:
 
 
 ## How far off the line of sight something can sit at that distance and still be
-## what you meant: a slice of the screen, with a floor and a ceiling on it. Shared
-## by the two picks so a bundle and the web around it are judged the same way.
+## what you meant: a slice of the screen, with a floor and a ceiling on it.
+##
+## Only cargo is picked this way, and only because a bundle is small enough to be
+## a point. A web is not — see [method _aimed_web], which casts at the thing
+## itself because this rule finds a web roughly one time in fifteen.
 func _aim_tolerance(along: float, height: float) -> float:
 	return clampf(along * 0.05, height * 0.5, height * 2.0)
 
 
 ## The net worth taking down along the line of sight, near or far.
 func aimed_web() -> WebStructure:
+	var found := _aimed_web()
+	return found.get("web") as WebStructure if not found.is_empty() else null
+
+
+## The same, with how far down the line of sight it was hit, so a click can tell
+## which of a web and a bundle was actually in front.
+##
+## Cast against the web's own colliders rather than measured against its origin
+## point. The point version looked reasonable and was almost never right: a web is
+## a surface metres across and the tolerance is a slice of the screen — half a
+## metre at ten — so only a shot at the dead centre landed. Probed across the face
+## of a sheet web it found it **once in fifteen**, and the other fourteen clicks
+## fell through to the grapple, which is exactly what it looked like in play.
+func _aimed_web() -> Dictionary:
 	if _view == null or _spider == null:
-		return null
+		return {}
 	var origin := _view.aim_origin()
 	var forward := _view.aim_forward()
-	var wall := _wall_distance(origin, forward)
-	var height := _height()
+	var space := get_world_3d().direct_space_state
+	var exclude: Array[RID] = [_spider.get_rid()]
+	# WORLD as well as WEB, so the nearest hit wins and a web on the far side of a
+	# wall is not something you can see, let alone take down.
+	var query := PhysicsRayQueryParameters3D.create(origin,
+		origin + forward * WALL_REACH, GameLayers.WORLD | GameLayers.WEB, exclude)
+	# The sticky face is an Area3D, and it is the part of a web you can see and
+	# therefore the part you point at.
+	query.collide_with_areas = true
+	var hit := space.intersect_ray(query)
+	if hit.is_empty():
+		return {}
+	var web := _web_under(hit.get("collider"))
+	# A road is a hit and not a web to take: the click falls through to the
+	# grapple, which is how you get onto one.
+	if web == null or not web.can_be_collected():
+		return {}
+	var along: float = origin.distance_to(hit["position"])
+	if reach > 0.0 and along > reach:
+		return {}
+	return {"web": web, "along": along}
 
-	var best: WebStructure = null
-	var best_gap := INF
-	for node in get_tree().get_nodes_in_group("silk_webs"):
+
+## The web a collider belongs to. A web's catch area and walkway are children of
+## it, so this walks up rather than asking the collider itself.
+func _web_under(collider: Variant) -> WebStructure:
+	var node := collider as Node
+	while node != null:
 		var web := node as WebStructure
-		if web == null or not is_instance_valid(web) or not web.can_be_collected():
-			continue
-		var offset := web.global_position - origin
-		var along := offset.dot(forward)
-		if along <= 0.0 or along > wall:
-			continue
-		if reach > 0.0 and along > reach:
-			continue
-		var gap := (offset - forward * along).length()
-		if gap > _aim_tolerance(along, height) or gap >= best_gap:
-			continue
-		best_gap = gap
-		best = web
-	return best
+		if web != null:
+			return web
+		node = node.get_parent()
+	return null
 
 
 ## What left mouse asks the tether first, and whether it dealt with the click.
@@ -270,14 +306,27 @@ func aimed_web() -> WebStructure:
 ## Firing silk at either should do something to *it* rather than haul you over to
 ## stand next to it, which is what the grapple would otherwise do.
 ##
-## Cargo is asked first and shuts the door behind it: a bundle hanging in a web is
-## the smaller, more deliberate target, and taking just the catch is the cheaper of
-## the two moves. Without the early return, a click on a bundle you cannot pick up
-## — because you are already towing one — would quietly take the whole web instead.
+## Whichever of the two is nearer along the line of sight wins. That is the only
+## rule that matches what you can see: a bundle lying on the floor in *front* of a
+## web is the thing you pointed at, and the web behind it is not — and the other
+## way round just as much. Asking cargo first regardless was the first cut, and it
+## meant a web with anything settled in it could not be taken at all, because the
+## catch answered for it.
 func take_aimed() -> bool:
-	if aimed_cargo() != null:
+	var found := _aimed_web()
+	var target := aimed_cargo()
+	if found.is_empty():
 		return grab_aimed()
-	return collect_aimed()
+	if target != null and _along_aim(target.global_position) <= float(found["along"]):
+		return grab_aimed()
+	return _collect(found["web"] as WebStructure)
+
+
+## How far down the line of sight something sits.
+func _along_aim(point: Vector3) -> float:
+	if _view == null:
+		return INF
+	return (point - _view.aim_origin()).dot(_view.aim_forward())
 
 
 ## Puts a line on the catch under the crosshair, and says whether it did.
@@ -296,8 +345,11 @@ func grab_aimed() -> bool:
 ## same bargain [method WebStructure.on_prey_taken] already makes one catch at a
 ## time; this is the whole shelf at once.
 func collect_aimed() -> bool:
-	var web := aimed_web()
-	if web == null:
+	return _collect(aimed_web())
+
+
+func _collect(web: WebStructure) -> bool:
+	if web == null or not is_instance_valid(web):
 		return false
 	var label := web.label()
 	var took := web.collect(_hand(), _height() * 1.5)
