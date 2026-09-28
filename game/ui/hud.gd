@@ -12,8 +12,8 @@ const HOTBAR_MARGIN := 16.0
 
 const HELP_TEXT := """[ Spoolunky ]
 WASD / Space           move and jump
-Shift                  bail — throws you backwards off whatever you are
-                       looking at, creature or wall or nothing at all
+Shift                  sprint — it runs out, and it runs out faster the
+                       heavier the thing you have on your line
 walk into a wall       climb it — walls and ceilings are floors to you
 silk is sticky         stand on it and it holds you; jump to come off
 
@@ -60,6 +60,7 @@ var _pockets: Array[Panel] = []
 var _tree: TraitTree
 var _condition_label: Label
 var _condition_bar: ProgressBar
+var _wind_bar: ProgressBar
 
 @onready var stage_label: Label = $Stats/StageLabel
 @onready var state_label: Label = $Stats/StateLabel
@@ -193,6 +194,8 @@ func _set_sizes() -> void:
 	biomass_bar.custom_minimum_size = Vector2(0.0, 16.0)
 	if _condition_bar != null:
 		_condition_bar.custom_minimum_size = Vector2(0.0, 16.0)
+	if _wind_bar != null:
+		_wind_bar.custom_minimum_size = Vector2(0.0, 8.0)
 
 
 ## What is left of you, built here rather than in the scene because it belongs
@@ -214,6 +217,14 @@ func _build_condition() -> void:
 	_condition_bar.max_value = 1.0
 	stats.add_child(_condition_bar)
 	stats.move_child(_condition_bar, 2)
+	# Under it, and unlabelled while it is full. Wind is the cheap one — waiting
+	# gets all of it back — so it earns a line of its own only once it is short.
+	_wind_bar = ProgressBar.new()
+	_wind_bar.name = "WindBar"
+	_wind_bar.show_percentage = false
+	_wind_bar.max_value = 1.0
+	stats.add_child(_wind_bar)
+	stats.move_child(_wind_bar, 3)
 
 
 ## Reads the spider rather than waiting to be told, the same way the silk limits
@@ -229,6 +240,12 @@ func _refresh_condition() -> void:
 	else:
 		_condition_label.text = "Hurt      %d / %d" % [
 			ceili(_spider.health), roundi(top)]
+	if _wind_bar != null:
+		var wind := _spider.wind_left()
+		_wind_bar.value = wind
+		_wind_bar.visible = wind < 0.999
+		_wind_bar.modulate = Color(1, 1, 1, 1) if _spider.can_sprint() \
+			else Color(1.0, 0.55, 0.45, 1.0)
 
 
 # --- the tree -----------------------------------------------------------

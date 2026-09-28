@@ -1,29 +1,26 @@
 class_name LiveLine
 extends Node3D
 
-## The spider's two silk moves against something that is still on its feet: a
-## line tied round it, and a shove off it.
+## What a click on something that is still on its feet does, if anything.
 ##
-## They used to share left mouse with everything else, on the theory that "silk
-## connects me to that" reads the target and does the obvious thing. It does not
-## survive play. A creature standing in front of a wall is a creature *and* a
-## wall, so the same click is a grapple one moment and a bail the next depending
-## on a couple of pixels — and a move you cannot be sure of is worse than no move,
-## because now you cannot be sure of the grapple either.
+## Left mouse means *silk connects me to that*, and every other target answers
+## "which end moves" before the line lands: a wall is fixed so the spider moves,
+## a wrapped catch is finished so it comes to you, a web comes down with what is
+## in it. A creature still standing is the one case where both ends can pull.
 ##
-## So the bail has its own key. Shift used to be sprint, and sprint was doing
-## nothing a spider needs; now it throws you backwards off whatever you are
-## looking at, with or without a creature there. One key, one thing, every time.
+## It ships answering **nothing**, and that is a decision rather than a gap. A
+## creature standing in front of a wall is a creature *and* a wall, so a click
+## that reads the creature means one thing or the other depending on a couple of
+## pixels — and the cost of that is not the move you did not get, it is that the
+## grapple stops being trustworthy, and the grapple is how you get about.
 ##
-## The hitch is still on left mouse, still read off the target, and still off by
-## default ([member move]) for exactly the reason above — it is kept because it
-## is worth playing again once there is a reason to be sure which you meant.
+## The hitch is here behind [member move] for when there is a way to be sure
+## which you meant. It is a good mechanic sharing a bad button.
 
 ## Said out loud to the player. The spider passes these through.
 signal notice(text: String)
 
 signal hitched(hitch: SilkHitch)
-signal bailed(off: Node3D)
 
 ## What a click on something alive does.
 ##
@@ -42,17 +39,12 @@ enum Move {
 }
 
 ## ---------------------------------------------------------------------------
-## THE CLICK SWITCH. NOTHING or HITCH. The bail is not in here any more — it is
-## its own key (Shift), always available, and never competes with a grapple.
+## THE CLICK SWITCH. NOTHING or HITCH.
 ## ---------------------------------------------------------------------------
 @export var move: Move = Move.NOTHING
 
 ## Seconds between hitches.
 @export var hitch_cooldown := 2.5
-
-## Seconds between bails. Its own, because it is its own key now: what a bail
-## should cost has nothing to do with what a hitch should cost.
-@export var bail_cooldown := 1.6
 
 ## How much of silk's reach a hitch pays out, as the radius the creature is left
 ## with. A share rather than a number, so it grows with the spider like every
@@ -63,24 +55,6 @@ enum Move {
 ## Spent by what the creature can still thrash with, so anything you have already
 ## put silk on stays tied far longer. See [member SilkHitch.strength].
 @export var hitch_hold := 30.0
-
-## How hard a bail throws the spider, as a multiple of its own running speed.
-@export var bail_push := 2.6
-
-## How much of that is upward, as a share of the jump the tier already has.
-##
-## Flat, a bail skids you along the floor and into the next wall; this makes it an
-## arc you can steer. A share of the jump rather than a number of body heights,
-## which was the first cut and was wrong by a factor of five: body height is how
-## *big* the spider is and jump velocity is how hard it can push, and at a
-## spiderling's 0.25m the lift came out at 1.0m/s against a jump of 5.6 — a five
-## centimetre hop, which read on screen as no lift at all.
-##
-## A whole jump's worth, because falling here runs at about three times the
-## project's gravity: a full jump only clears half a metre, so anything less than
-## all of it puts the top of the arc below the spider's own height and the bail
-## looks like a shove along the floor.
-@export_range(0.0, 1.5, 0.05) var bail_lift := 1.0
 
 ## How far off the line of sight a creature can sit and still be what you meant,
 ## as a share of the distance to it. The same slice-of-the-screen rule the tether
@@ -94,7 +68,6 @@ var _view: SpiderCamera
 var _climb: SpiderClimb
 var _builder: WebBuilder
 var _hitch_cooling := 0.0
-var _bail_cooling := 0.0
 
 
 func setup(spider: SpiderPlayer, growth: SpiderGrowth, view: SpiderCamera,
@@ -108,7 +81,6 @@ func setup(spider: SpiderPlayer, growth: SpiderGrowth, view: SpiderCamera,
 
 func _physics_process(delta: float) -> void:
 	_hitch_cooling = maxf(0.0, _hitch_cooling - delta)
-	_bail_cooling = maxf(0.0, _bail_cooling - delta)
 
 
 ## The click, as far as live creatures are concerned. Returns whether it did
@@ -193,47 +165,6 @@ func hitch(mark: Prey) -> bool:
 	return true
 
 
-## Throws the spider backwards off whatever it is looking at.
-##
-## Every other thing silk does to an anchor pulls you towards it. This one pushes,
-## which is the whole read: the thing chasing you is the thing you kick off.
-##
-## It takes no target on purpose. It began as a click on a creature, and a
-## creature standing in front of a wall is a creature *and* a wall, so the same
-## click was a bail one moment and a grapple the next depending on a couple of
-## pixels. Off its own key and off the aim direction alone, it is the same move
-## every time whether or not anything is there — and pointing at the floor to get
-## height is a use, not a failure.
-##
-## No silk lands on anything, so against a hunter what you bought is distance,
-## not safety. It is still coming.
-func bail() -> bool:
-	if _climb == null or _spider == null or _view == null:
-		return false
-	if _bail_cooling > 0.0:
-		notice.emit("Still winding up — %.1fs" % _bail_cooling)
-		return false
-
-	# Yaw only. The pitch decides nothing, because the lift is a fixed share of
-	# the tier's jump: looking down must not shorten the hop and looking up must
-	# not turn it into a rocket. One arc, aimed by where you are facing.
-	var away := -_view.aim_forward()
-	away.y = 0.0
-	if away.length_squared() < 0.000001:
-		away = -_spider.global_basis.z
-		away.y = 0.0
-	if away.length_squared() < 0.000001:
-		away = Vector3.FORWARD
-	away = away.normalized()
-
-	_climb.fling(away * _spider.speed * bail_push + Vector3.UP * _jump() * bail_lift)
-	_bail_cooling = bail_cooldown
-	var off := aimed_creature()
-	bailed.emit(off)
-	notice.emit("Kicked off the %s" % off.species if off != null else "Bailed out")
-	return true
-
-
 ## The hitch already on something, if there is one.
 func hitch_on(mark: Prey) -> SilkHitch:
 	if mark == null or _spider == null:
@@ -245,7 +176,7 @@ func hitch_on(mark: Prey) -> SilkHitch:
 	return null
 
 
-## How far either move reaches. Silk's own reach, because there is exactly one
+## How far a hitch reaches. Silk's own reach, because there is exactly one
 ## answer to "how far can I put silk" in this game and a second one would make
 ## both unreadable.
 func reach() -> float:
@@ -254,12 +185,7 @@ func reach() -> float:
 	return _builder.silk_reach()
 
 
-## Whether a bail would be refused for having just been used.
-func bail_cooling() -> bool:
-	return _bail_cooling > 0.0
-
-
-## Whether a hitch would be.
+## Whether a hitch would be refused for having just been used.
 func hitch_cooling() -> bool:
 	return _hitch_cooling > 0.0
 
@@ -278,10 +204,6 @@ func _footing() -> Vector3:
 
 func _height() -> float:
 	return _growth.current_stage().body_height if _growth != null else 0.35
-
-
-func _jump() -> float:
-	return _growth.current_stage().jump_velocity if _growth != null else 4.5
 
 
 func _quality() -> float:

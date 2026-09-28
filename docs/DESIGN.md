@@ -98,31 +98,40 @@ Three changes, and they only work together:
   was to grow. Half wrapped, that wasp comes down to 2.3 and a spiderling can walk
   after it. Never quite stopped, though — something held still where it stands
   without being wrapped is a pin, and a pin is a different mechanic.
-* **A move you cannot be sure of is worse than no move.** Left mouse means *silk
-  connects me to that*, and every target but one answers "which end moves" before
-  the line lands: a wall is fixed, a wrapped catch is finished, a web off its
-  anchors comes along. A creature still standing is the case where both ends can
-  pull — and the attempt to answer it *on the same button* is what failed. A
-  creature standing in front of a wall is a creature **and** a wall, so the click
-  was a bail one moment and a grapple the next depending on a couple of pixels.
-  The cost is not the wasted bail; it is that the grapple stopped being
-  trustworthy too, and the grapple is how you get about.
-* **So the bail is its own key.** Shift, which used to be sprint and is no loss:
-  a spider that walks on ceilings and travels on silk has no use for a slightly
-  faster walk. It throws the spider backwards off whatever it is facing, with or
-  without a creature there — yaw only, because the lift is a fixed share of the
-  tier's jump and looking down must not shorten the hop. The one anchor that
-  *pushes* rather than pulls, the counterplay to a hunter that is faster than you,
-  and no silk lands on anything: what you bought is distance, not safety.
+* **Sprinting is a pool, and hauling drains it faster.** A few seconds of it,
+  refilled by walking, and spent at `1 + tow_effort * (weight - 1)` per second —
+  so a size-3 wasp on the line costs a sprint 2.1x its own length. Weight already
+  made a haul *slower* (`haul_drag`), and on its own that only makes the slow way
+  worse than the fast way, with nothing to weigh against it. This is the half that
+  makes walking a catch home a choice.
+
+  It is deliberately **not** the pool a bite takes. `SpiderVitals` holds both and
+  they answer different questions: **condition** is what you cannot get back by
+  waiting and what being driven off costs; **wind** is a tax on running and
+  nothing else. Running out of it bars a sprint until `second_wind` of it is back,
+  rather than letting an empty tank buy a frame of sprint per frame of recovery —
+  which reads on screen as a stutter rather than as being out of breath.
+
+  `max_wind()` does not scale with the tier on purpose. A bigger spider gets a
+  sprint of the same *length* that covers more ground because it is faster;
+  scaling the seconds as well would be paying the ladder twice.
 * **A click on something alive does nothing special.** `LiveLine.move` ships as
   `NOTHING`: the aim reads straight through the creature to the wall behind it,
-  exactly as it would with no creature there. One meaning for the button. The
-  **HITCH** is parked behind the same switch and off by default — it ties the
+  exactly as it would with no creature there. One meaning for the button.
+
+  This is where a bail lived for a while — throw the spider backwards off what it
+  was facing — and it came off the mouse for being unsure of itself: a creature
+  standing in front of a wall is a creature *and* a wall, so the click was a bail
+  or a grapple depending on a couple of pixels, and the cost of that is that the
+  *grapple* stops being trustworthy. Moved to Shift it was dependable and still
+  did not earn the key, so Shift is sprint again.
+
+  The **HITCH** is parked behind the same switch and off by default — it ties the
   creature to the ground you were standing on, so it keeps its legs but only
   inside a radius and the *level* is what beats it, and what spends the silk is
-  the creature's own `thrash_power()`, the number binding already eats into. It
-  is a good mechanic sharing a bad button, and it is kept for when there is a way
-  to be sure which you meant.
+  the creature's own `thrash_power()`, the number binding already eats into. It is
+  a good mechanic sharing a bad button, and it is kept for when there is a way to
+  be sure which you meant.
 * **What a click on it is *not* is a pounce.** This was tried — a lunge that threw
   the spider at the thing and bit it on landing, softening it over the seconds
   that followed — and it was cut, because it failed on three counts that only
@@ -1393,7 +1402,7 @@ hold in their head on the first screen.
 | **WASD** | Move — on whatever surface you are stuck to |
 | **Mouse** | Look |
 | **Space** | Jump. Also the only way off silk, which is sticky |
-| **Shift** | **Bail.** Throws the spider backwards off whatever it is facing, with or without a creature there. The one anchor that pushes rather than pulls, and no silk lands on it — distance, not safety. Was sprint, which a wall-walking spider had no use for (§2) |
+| **Shift** | **Sprint**, out of a pool of a few seconds that fills back up while you walk. It costs more per size class of whatever is on your line, which is what makes hauling something home at a run a decision rather than the obvious move (§2) |
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
 | **Left Mouse** | **Go there, trailing a line.** A surface pulls you over; a line puts you on it; something you already caught comes to you instead. A creature still on its feet is none of those, so the aim reads straight through it to whatever is behind (§2). As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5) |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). Then a short wait before the next (§5) |

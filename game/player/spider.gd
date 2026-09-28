@@ -49,10 +49,6 @@ signal skill_tree_toggled()
 @export var input_device_mode := "device_mode"
 @export var input_throw_mode := "web_throw_mode"
 @export var input_tether := "web_tether"
-## Shift. Used to be sprint, which is a thing a spider has no use for — it
-## walks on walls and travels on silk, and a slightly faster walk was never
-## the answer to anything. See [method LiveLine.bail].
-@export var input_bail := "web_bail"
 @export var input_shoot := "web_shoot"
 @export var input_skill_tree := "skill_tree"
 
@@ -143,6 +139,7 @@ func _physics_process(delta: float) -> void:
 	var input_axis := Vector2.ZERO
 	var jump_tapped := false
 	var jump_held := false
+	var sprint := false
 	var down := false
 	var release_line := false
 
@@ -151,6 +148,7 @@ func _physics_process(delta: float) -> void:
 			input_back_action_name, input_forward_action_name)
 		jump_tapped = Input.is_action_just_pressed(input_jump_action_name)
 		jump_held = Input.is_action_pressed(input_jump_action_name)
+		sprint = Input.is_action_pressed(input_sprint_action_name)
 		down = Input.is_action_pressed(input_crouch_action_name)
 		# Right mouse means "undo anchor" while building, "let go" while hanging.
 		release_line = not _web_tool_active() and not _device_tool_active() \
@@ -162,10 +160,22 @@ func _physics_process(delta: float) -> void:
 	view.update(stage().body_height)
 	climb.update_orientation(delta)
 
-	if climb.handles_movement():
+	var on_legs := climb.handles_movement()
+	# Asked and paid for in one call, so nothing can run at sprint speed for free.
+	# Outside this call there is no other place wind is spent or recovered, which
+	# is why it is made before the branch rather than inside one: miss a frame on
+	# either path and the spider either sprints free or never gets its breath
+	# back. Wind goes on the key being down and the legs being able to use it —
+	# forward, on a surface, or under way in water.
+	var running := vitals.sprint(delta, sprint
+		and (not on_legs or (climb.is_attached() and input_axis.y >= 0.5)))
+
+	if on_legs:
 		# Spiders don't obey the floor, so the climb component drives the body
 		# and we feed the template's bob and footstep bookkeeping by hand.
-		climb.step(delta, input_axis, jump_tapped, down, jump_held, release_line)
+		sprint_ability.set_active(running)
+		climb.step(delta, input_axis, jump_tapped, running, down, jump_held,
+			release_line)
 		_horizontal_velocity = climb.tangent_velocity
 		_check_landed()
 		if climb.is_attached():
@@ -174,7 +184,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		# Swimming and free-fly stay with the character controller.
 		climb.release()
-		move(delta, input_axis, jump_tapped, down, false, down, jump_held)
+		move(delta, input_axis, jump_tapped, down, running, down, jump_held)
 
 	if global_position.y < kill_plane:
 		global_transform = _spawn_transform
@@ -297,12 +307,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			web_builder.place()
 	elif _web_tool_active() and event.is_action_pressed(input_cancel_anchor):
 		web_builder.undo()
-	elif event.is_action_pressed(input_bail):
-		# Its own key, never shared: a move you cannot be sure of is worse than no
-		# move. Works pointing at open air, which is what makes it the same thing
-		# every time rather than a thing that depends on what happened to be under
-		# the cross. See [method LiveLine.bail].
-		live_line.bail()
 	elif event.is_action_pressed(input_ride):
 		climb.toggle_ride()
 	else:
@@ -440,6 +444,16 @@ func condition() -> float:
 
 func is_hurt() -> bool:
 	return vitals.is_hurt()
+
+
+## How much sprint is left, 0 to 1.
+func wind_left() -> float:
+	return vitals.wind_left() if vitals != null else 1.0
+
+
+## Whether the sprint key would do anything at all right now.
+func can_sprint() -> bool:
+	return vitals.can_sprint() if vitals != null else true
 
 
 ## Something bit you.

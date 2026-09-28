@@ -33,7 +33,7 @@ something down.
 | Input | Action |
 |-------|--------|
 | WASD / Space | move and jump — **jump is also how you let go of silk** |
-| **Shift** | **bail** — throws you backwards off whatever you are looking at, creature or wall or nothing at all |
+| **Shift** | **sprint** — it runs out, and it runs out faster the heavier the thing on your line |
 | *walk into a wall* | climb it — walls and ceilings are floors to a spider |
 | *stand on silk* | it holds you — a thread runs one way, and **jump** is how you come off |
 | **F** or **middle mouse** | ride a silk line like a zipline — again to let go |
@@ -230,22 +230,17 @@ drops for you to put a line on and drag off; short of enough, it's carrying that
 silk around and the next shot starts from there. A heavier pattern doesn't catch
 better, it just gets there in fewer shots.
 
-**Shift bails you out.** It throws the spider backwards off whatever it's
-looking at — creature, wall, or nothing at all — with enough lift to clear what's
-between you. The one anchor in the game that *pushes* instead of pulling, and the
-answer to being chased by something faster than you. No silk lands on anything,
-so what you bought is distance, not safety: it's still coming.
+**Shift sprints, and it runs out.** You have a few seconds of it, and they come
+back on their own while you walk. What makes it worth a pool rather than a free
+button is the second half: **it costs more the heavier the thing on your line**.
+Weight already makes a haul slower, but on its own that only makes the slow way
+worse than the fast way, with nothing to weigh. Now running a wasp home is
+something you spend, and walking it home is a real choice.
 
-It takes no target on purpose. It started life on left mouse, as a thing you did
-*to a creature*, and that's where it broke: a creature standing in front of a wall
-is a creature **and** a wall, so the same click was a bail one moment and a grapple
-the next depending on a couple of pixels. A move you can't be sure of is worse than
-no move, because now you can't be sure of the grapple either. Off its own key and
-read off your facing alone, it's the same throw every time — and pointing at the
-floor to get height is a use, not a mistake.
-
-Shift used to be sprint. A spider that walks on ceilings and travels on silk had
-no use for a slightly faster walk.
+It is not the pool a bite takes. That one is **condition** — you can't wait it
+back, and emptying it throws you across the room. Running out of wind costs you
+nothing but a walk, and the bar under the condition bar only shows up while you
+are short.
 
 A click on something still alive deliberately does **nothing special** — the aim
 reads straight through it to the wall behind, exactly as it would if the creature

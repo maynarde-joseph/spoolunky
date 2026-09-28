@@ -103,6 +103,7 @@ func reset() -> void:
 	rewind_builder()
 	rewind_view()
 	rewind_live_line()
+	catch_breath()
 	clear_webs()
 	clear_hitches()
 	clear_prey()
@@ -126,15 +127,25 @@ func rewind_view() -> void:
 
 
 ## Puts the live-creature click back to whatever the scene ships with, and lets
-## both moves fire at once. All three matter: the move is what the click *means*,
-## and a cooldown left running is why a second use in the next section quietly did
+## it fire at once. Both halves matter: the move is what the click *means*, and a
+## cooldown left running is why a second hitch in the next section quietly did
 ## nothing at all.
 func rewind_live_line() -> void:
 	if live == null:
 		return
 	live.move = _live_was
 	live._hitch_cooling = 0.0
-	live._bail_cooling = 0.0
+
+
+## A whole spider's sprint back. A section that ran the tank dry leaves the next
+## one unable to sprint at all, and the recovery is slow enough that nothing would
+## notice except the check that was about sprinting.
+func catch_breath() -> void:
+	if spider == null or spider.vitals == null:
+		return
+	spider.vitals.breath = spider.vitals.max_wind()
+	spider.vitals.wind_quiet = 0.0
+	spider.vitals._blown = false
 
 
 ## Cuts every hitch standing. They are level children like webs, not the spider's,

@@ -171,9 +171,7 @@ func slack() -> float:
 ## What the spider's speed is multiplied by while hauling. Nothing towed is
 ## free of it, and something three sizes up is a genuine haul.
 func drag_factor() -> float:
-	if not is_towing():
-		return 1.0
-	return 1.0 / (1.0 + maxf(_weight_of(cargo) - 1.0, 0.0) * haul_drag)
+	return 1.0 / (1.0 + maxf(cargo_weight() - 1.0, 0.0) * haul_drag)
 
 
 ## Anything already dealt with — a bundle, a wrapped catch, a catch that has
@@ -522,6 +520,14 @@ func _label(target: Node3D) -> String:
 		return prey.species
 	var device := target as SilkDevice
 	return device.label() if device != null else target.name
+
+
+## What is on the line, in size classes — one when there is nothing. What slows
+## the spider down ([method drag_factor]) and what makes a sprint cost more
+## ([method SpiderVitals.sprint_effort]) are the same number, read from here so
+## they cannot drift apart.
+func cargo_weight() -> float:
+	return _weight_of(cargo) if is_towing() else 1.0
 
 
 func _weight_of(target: Node3D) -> float:

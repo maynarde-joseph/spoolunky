@@ -6,6 +6,12 @@ extends Node
 ## Running out is not death. You drop the catch, you are thrown clear, and you
 ## walk home — the cost of losing a fight is the trip back, which is enough. A
 ## sandbox with no save has no business killing you.
+##
+## Two pools live here and they are not the same thing. **Condition** is what a
+## bite takes and what being driven off costs; **wind** is what a sprint spends.
+## Condition is the one you cannot get back by waiting somewhere safe. Wind is
+## nothing but waiting: it is a tax on running, and the whole of it is that the
+## tax goes up with what you are dragging.
 
 ## Something bit you: how much it took, and the share you have left.
 signal hurt(amount: float, left: float)
@@ -29,7 +35,39 @@ signal notice(text: String)
 ## Quiet seconds before it starts coming back.
 @export var mend_delay := 3.0
 
+## How many seconds of sprint the spider has in it, carrying nothing.
+##
+## Seconds rather than metres, and deliberately not scaled by the tier: a sprint
+## lasts as long whatever size you are, and a bigger spider covers more ground in
+## it because it is faster. Scaling this as well would be paying the ladder twice.
+@export var wind := 4.0
+
+## Seconds of sprint back per second of not sprinting. Under one on purpose — a
+## sprint costs more than it gives back, so it is something you spend rather than
+## something you hold down.
+@export var wind_recovery := 0.8
+
+## Quiet seconds after a sprint before the wind starts coming back.
+@export var wind_delay := 0.7
+
+## How much harder a sprint is per size class of cargo past the first.
+##
+## This is the point of the whole pool. Hauling a wasp home at a run should be a
+## decision, and [member SilkTether.haul_drag] already makes it slower; this makes
+## it *tiring*, which is the half that makes the slow version a real alternative
+## rather than simply the worse one.
+@export_range(0.0, 2.0, 0.05) var tow_effort := 0.55
+
+## How much of the wind has to be back before a blown spider can sprint again.
+##
+## Without it, an empty tank buys you one frame of sprint per frame of recovery,
+## which reads on screen as a stutter rather than as being out of breath.
+@export_range(0.0, 1.0, 0.05) var second_wind := 0.35
+
 var health := 0.0
+
+## Seconds of sprint left.
+var breath := 0.0
 
 var _spider: SpiderPlayer
 var _climb: SpiderClimb
@@ -40,6 +78,11 @@ var _jaws: SpiderFeeding
 ## has to be able to say "nothing has bitten me for a while".
 var quiet := 0.0
 
+## Quiet seconds still to wait before the wind comes back, and whether the spider
+## is barred from sprinting until it has [member second_wind] of it again.
+var wind_quiet := 0.0
+var _blown := false
+
 
 func setup(spider: SpiderPlayer, climb: SpiderClimb, tether: SilkTether,
 		jaws: SpiderFeeding) -> void:
@@ -48,6 +91,7 @@ func setup(spider: SpiderPlayer, climb: SpiderClimb, tether: SilkTether,
 	_tether = tether
 	_jaws = jaws
 	health = max_stamina()
+	breath = max_wind()
 
 
 ## What the spider can take at this size. Bigger is tougher, which is the whole
@@ -116,6 +160,70 @@ func _route(from: Node3D) -> void:
 		* _spider.stage().jump_velocity * 1.3
 	routed.emit()
 	notice.emit("Driven off — you dropped everything and ran")
+
+
+# --- wind ----------------------------------------------------------------
+
+## Seconds of sprint a whole spider has. Not scaled by the tier — see
+## [member wind].
+func max_wind() -> float:
+	return maxf(wind, 0.0001)
+
+
+## 0 to 1, for the readout.
+func wind_left() -> float:
+	return clampf(breath / max_wind(), 0.0, 1.0)
+
+
+## Whether a sprint would go at all, which is the thing a readout wants to say
+## and the thing being out of breath actually means.
+func can_sprint() -> bool:
+	return not _blown and breath > 0.0
+
+
+## How fast a sprint burns wind: one second a second on your own legs, more for
+## every size class you are dragging behind you.
+func sprint_effort() -> float:
+	var load := _tether.cargo_weight() if _tether != null else 1.0
+	return 1.0 + tow_effort * maxf(load - 1.0, 0.0)
+
+
+## One frame of wanting to sprint. Returns whether the spider actually is.
+##
+## The asking and the spending are one call on purpose. Two — a `can_sprint()`
+## the caller checks and a `spend()` it then calls — is two places that have to
+## agree about what a sprint costs, and the version of that bug you get is a
+## spider that runs at sprint speed for nothing.
+func sprint(delta: float, wants: bool) -> bool:
+	if not wants or _blown or breath <= 0.0:
+		if wants and not _blown and breath <= 0.0:
+			_blow()
+		_catch_breath(delta)
+		return false
+	breath = maxf(0.0, breath - sprint_effort() * delta)
+	wind_quiet = wind_delay
+	if breath <= 0.0:
+		_blow()
+	return true
+
+
+func _blow() -> void:
+	if _blown:
+		return
+	_blown = true
+	notice.emit("Out of breath")
+
+
+## Wind back, after a moment of not asking for any.
+func _catch_breath(delta: float) -> void:
+	if wind_quiet > 0.0:
+		wind_quiet = maxf(0.0, wind_quiet - delta)
+		return
+	if breath >= max_wind():
+		return
+	breath = minf(max_wind(), breath + wind_recovery * delta)
+	if _blown and breath >= max_wind() * second_wind:
+		_blown = false
 
 
 ## Comes back on its own after a quiet spell, so a bad trip costs you time

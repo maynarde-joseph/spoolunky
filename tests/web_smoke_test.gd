@@ -60,7 +60,6 @@ func _sections() -> Array[Callable]:
 		_test_a_bolt_at_a_creature_leaves_no_web,
 		_test_clicking_something_alive_grapples_past_it,
 		_test_hitching_something_to_the_ground,
-		_test_bailing_off_something,
 		_test_taking_a_web_home,
 		_test_the_click_finds_the_whole_web,
 		_test_a_road_is_not_collected,
@@ -68,6 +67,7 @@ func _sections() -> Array[Callable]:
 		_test_how_far_silk_goes,
 		_test_a_shot_fits_a_corner,
 		_test_silk_sits_on_what_it_sticks_to,
+		_test_a_sprint_costs_wind,
 		_test_a_spiders_jump,
 		_test_the_bar,
 		_test_the_larder,
@@ -112,7 +112,7 @@ func _test_starting_state() -> void:
 func _test_input_map() -> void:
 	for action in ["web_build_mode", "web_place", "web_cancel", "web_finish",
 			"web_next_pattern", "web_prev_pattern", "web_remove", "interact",
-			"device_mode", "web_throw_mode", "web_tether", "web_shoot", "web_bail",
+			"device_mode", "web_throw_mode", "web_tether", "web_shoot", "move_sprint",
 			"skill_tree", "hotbar_1", "hotbar_9", "hotbar_next", "toggle_help"]:
 		check(InputMap.has_action(action), "input action '%s' is set up" % action)
 
@@ -2233,7 +2233,7 @@ func _test_tethering() -> void:
 				"a wasp is heavier going than a fly (%.2f against %.2f)"
 				% [tether.drag_factor(), light])
 			spider.climb.haul = tether.drag_factor()
-			check(spider.climb._surface_speed() < spider.stage().move_speed,
+			check(spider.climb._surface_speed(false) < spider.stage().move_speed,
 				"which you feel in your own legs")
 			tether.cut()
 			spider.climb.haul = 1.0
@@ -3142,6 +3142,100 @@ func _test_how_far_silk_goes() -> void:
 	slab.queue_free()
 	await physics_frame
 	await process_frame
+
+
+## Sprinting costs wind, and hauling something costs more of it.
+##
+## The point of the pool is the second half. Weight already makes a haul *slower*
+## ([member SilkTether.haul_drag]); on its own that just makes the slow version
+## worse than the fast one, with nothing to weigh. Wind makes running with a catch
+## on your line something you spend, so walking it home is a real alternative
+## rather than what you do when you have forgotten about Shift.
+##
+## Wind is deliberately **not** the pool a bite takes. That one is condition, you
+## cannot wait it back, and running out of it throws you across the room. Running
+## out of wind costs you nothing but a walk.
+func _test_a_sprint_costs_wind() -> void:
+	var vitals := spider.vitals
+	var tether := spider.tether
+	var slab := add_slab(Vector3(-140, 0.0, 140), Vector3(20, 0.5, 20))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	if not check(await wait_until(
+			func() -> bool: return spider.climb.is_attached(), 120),
+			"standing on something to run along"):
+		return
+	clear_prey_near(slab.global_position, 26.0, null)
+	await physics_frame
+
+	check(vitals.max_wind() > 0.0, "there is a sprint to spend (%.1fs)" % vitals.max_wind())
+	check(is_equal_approx(vitals.wind_left(), 1.0), "and it starts full")
+	check(spider.can_sprint(), "so the key would do something")
+	# A tier does not buy a longer sprint — it buys a faster one, which covers more
+	# ground in the same seconds. Scaling both would be paying the ladder twice.
+	var small := vitals.max_wind()
+	grow_to_tier(2)
+	check(is_equal_approx(vitals.max_wind(), small),
+		"and growing does not lengthen it (%.1fs against %.1f)"
+		% [vitals.max_wind(), small])
+	check(spider.stage().move_speed > 0.0, "it just makes the same seconds go further")
+
+	# Carrying nothing: one second of sprint costs one second of wind.
+	check(is_equal_approx(vitals.sprint_effort(), 1.0),
+		"empty-handed a sprint costs its own length (%.2fx)" % vitals.sprint_effort())
+	var bare := vitals.breath
+	check(vitals.sprint(0.5, true), "you can run")
+	var spent_bare := bare - vitals.breath
+	check(is_equal_approx(spent_bare, 0.5),
+		"half a second of running is half a second of wind (%.2f)" % spent_bare)
+
+	# With a wasp on the line it costs more, which is the whole mechanic.
+	catch_breath()
+	var load := spawn("wasp", spider.global_position + Vector3(1.2, 0.3, 0.0))
+	if not check(load != null, "a wasp to drag about"):
+		return
+	load.move_speed = 0.0
+	load.aggression = 0.0
+	load.bundle()
+	await physics_frame
+	if not check(tether.hook(load), "on the line"):
+		return
+	check(tether.cargo_weight() > 1.0,
+		"which weighs something (%d size classes)" % roundi(tether.cargo_weight()))
+	check(vitals.sprint_effort() > 1.0,
+		"so a sprint costs more than its own length (%.2fx)" % vitals.sprint_effort())
+	var laden := vitals.breath
+	check(vitals.sprint(0.5, true), "you can still run")
+	var spent_laden := laden - vitals.breath
+	check(spent_laden > spent_bare,
+		"and the same half second costs more of it (%.2f against %.2f)"
+		% [spent_laden, spent_bare])
+	tether.cut()
+	load.queue_free()
+
+	# Run it out. Being blown is a bar rather than a number going to zero, so an
+	# empty tank does not buy a frame of sprint per frame of recovery.
+	catch_breath()
+	var frames := 0
+	while vitals.sprint(1.0 / 60.0, true) and frames < 2000:
+		frames += 1
+	check(frames > 0 and frames < 2000,
+		"holding it down runs the tank dry (%.1fs of frames)" % (frames / 60.0))
+	check(not spider.can_sprint(), "and then the key does nothing")
+	await run_frames(6)
+	check(not vitals.sprint(1.0 / 60.0, true),
+		"still nothing a moment later, rather than a stutter of one frame each")
+
+	# It all comes back on its own, which is what makes it a tax on running and
+	# not a wound.
+	var gasping := vitals.breath
+	await run_frames(150)
+	check(vitals.breath > gasping,
+		"it comes back while you walk (%.2fs from %.2f)" % [vitals.breath, gasping])
+	check(spider.can_sprint(),
+		"and you get your legs back without doing anything about it")
+	check(not spider.is_hurt(),
+		"with condition untouched throughout — a sprint is not a wound")
 
 
 ## A spider's jump, not a person's scaled down.
@@ -4131,95 +4225,6 @@ func _test_hitching_something_to_the_ground() -> void:
 	check(not is_instance_valid(hitch) or hitch.is_queued_for_deletion(),
 		"and takes itself away with it")
 	mark.queue_free()
-
-
-## BAIL: Shift throws you backwards off whatever you are looking at.
-##
-## The one anchor in the game that pushes instead of pulling, and the answer to
-## being chased by something faster than you. It was a click on a creature first,
-## and the click was the problem: a creature standing in front of a wall is a
-## creature *and* a wall, so the same button was a bail or a grapple depending on
-## a couple of pixels. On its own key and off the aim direction alone it is the
-## same move every time — which is why the creature here is a bystander, and why
-## the second half of this does it at open air and expects the same throw.
-func _test_bailing_off_something() -> void:
-	var slab := add_slab(Vector3(-180, 0.0, -60), Vector3(24, 0.5, 24))
-	await physics_frame
-	stand_on(slab.global_position + Vector3(0, 0.25, 0))
-	if not check(await wait_until(
-			func() -> bool: return spider.climb.is_attached(), 120),
-			"standing on something to push off"):
-		return
-	clear_prey_near(slab.global_position, 30.0, null)
-	await physics_frame
-
-	var mark := spawn("wasp", spider.global_position + Vector3(2.2, 0.3, 0.0))
-	if not check(mark != null, "a wasp coming at you"):
-		return
-	mark.move_speed = 0.0
-	mark.aggression = 0.0
-	await physics_frame
-	aim_at(mark.global_position)
-	await physics_frame
-
-	var stood := spider.global_position
-	var gap := stood.distance_to(mark.global_position)
-	var was_bound := mark.bound
-	send_action(spider.input_bail)
-	await physics_frame
-	check(not spider.climb.is_attached(), "Shift throws you off the floor")
-	# The top of the arc, not wherever it happens to be at the end: a bail that
-	# threw you a metre up and back down again inside the sample window would read
-	# as having no lift at all. The first cut of it genuinely had none, and the
-	# check passed anyway at 0.00m, because a hop of five centimetres is still up.
-	var peak := stood.y
-	for i in 20:
-		await physics_frame
-		peak = maxf(peak, spider.global_position.y)
-	var opened := spider.global_position.distance_to(mark.global_position)
-	check(opened > gap,
-		"away from what you were looking at (%.1fm from %.1f)" % [opened, gap])
-	check(peak - stood.y > spider.stage().body_height,
-		"with real lift in it, so it clears what is between you (%.2fm up, taller than the %.2fm spider)"
-		% [peak - stood.y, spider.stage().body_height])
-	check(is_equal_approx(mark.bound, was_bound),
-		"and no silk lands on the wasp — you bought room, not safety")
-
-	# Not a thing to hold down. Measured on the cooldown rather than on where the
-	# spider ends up: a second bail would re-arm it to its full length, and a frame
-	# of flight moves the spider about a tenth of a metre either way.
-	check(live.bail_cooling(), "it goes on a cooldown (%.1fs)" % live.bail_cooldown)
-	var ticking := live._bail_cooling
-	send_action(spider.input_bail)
-	await physics_frame
-	check(live._bail_cooling < ticking,
-		"so a second Shift straight away is refused rather than throwing you again (%.2fs from %.2f)"
-		% [live._bail_cooling, ticking])
-
-	# And the whole point of taking it off the mouse: it does not need a target.
-	# Same throw at an empty room, which is what makes it something you can count
-	# on rather than something that depends on what was under the cross.
-	mark.queue_free()
-	await physics_frame
-	stand_on(slab.global_position + Vector3(0, 0.25, 0))
-	if not check(await wait_until(
-			func() -> bool: return spider.climb.is_attached(), 180),
-			"back on the floor, with nothing in front of you"):
-		return
-	live._bail_cooling = 0.0
-	aim_at(spider.global_position + Vector3(6.0, 0.4, 0.0))
-	await physics_frame
-	check(live.aimed_creature() == null, "and nothing under the cross to bail off")
-	var empty := spider.global_position
-	send_action(spider.input_bail)
-	await physics_frame
-	check(not spider.climb.is_attached(), "Shift still throws you")
-	await run_frames(14)
-	var went := spider.global_position - empty
-	check(Vector2(went.x, went.z).length() > spider.stage().body_height,
-		"and still backwards, at open air (%.2fm)" % Vector2(went.x, went.z).length())
-	check(went.dot(Vector3(-1.0, 0.0, 0.0)) > 0.0,
-		"away from where you were facing rather than towards it")
 
 
 ## A click on something alive reads straight through it, as the game ships.
