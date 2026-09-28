@@ -189,6 +189,39 @@ Three changes, and they only work together:
   a catch inside a web on your line is in fang reach — a bundle at your feet is in
   reach by the ordinary rule, so that case had nothing left to cover.
 
+* **A snagged line pays out and lifts, rather than parting.** A rope pulls in a
+  straight line and the world is not straight: haul a catch home with a wall in
+  between and the pull is *into* the wall, so the catch cannot follow, you keep
+  walking, and the line breaks. That is a real thing for a rope to do and a
+  stupid way to lose a catch you had already won — there was nothing you could
+  have done differently short of not going that way.
+
+  A line that is pulling and getting nowhere now lifts as well, and pays out so
+  the breaking point moves with it. Both halves were wrong first time and both
+  are worth recording. Progress has to be measured **along the pull**, not as
+  plain movement: plain movement oscillates, because the lift is its own undoing
+  — the catch rises, rising counts as moving, moving cancels the lift, the catch
+  drops back, and over a 1.2m wall it got 0.44m up and then lost the catch. And
+  the lift alone is not enough on anything tall: with the old fixed breaking
+  point the catch crested a 3m wall at the exact moment the span passed the
+  limit. The climb is a governed *rate*, so a taller wall takes longer rather
+  than the catch being thrown further.
+
+  The payout is bounded, not infinite. Past it the catch really is somewhere the
+  line cannot get it out of, and a leash with no end is worse than a break.
+* **Webs have a cap too, and it is not the lines' cap.** Three lines is a number
+  you hold in your head while moving; webs are *sites*, one fills up and a full
+  one catches nothing, so running several is the play and capping them at three
+  would argue with the thing the game asks for. `MAX_WEBS` is six, and it only
+  ever takes down a web that is **empty** — a web you filled is what you went
+  away and came back for, and clearing it to make room loses you the catch
+  rather than the silk. If all six are working, none goes.
+
+  Measured before this existed: ten shots at a wall left ten webs standing. The
+  line cap was fine all along — ten grapples left three lines, as designed —
+  which is worth writing down, because "old silk is not cleaned up" pointed at
+  the wrong mechanic.
+
 So the web stops competing with the gun. It is not a better way to acquire food —
 it is **the place you can eat what you acquired**, which is a job nothing else in
 the game does. That is §8's old line, *"your web is your cover, not just your

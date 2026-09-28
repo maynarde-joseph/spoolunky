@@ -44,6 +44,45 @@ const WALL_REACH := 4096.0
 ## How hard the cargo is pulled back to the end of its line, per second.
 @export var haul_force := 9.0
 
+## How hard a snagged catch is lifted, on top of being pulled along.
+##
+## A rope pulls in a straight line and the world is not straight. Haul something
+## towards you with a wall in between and the pull is *into* the wall: the catch
+## cannot follow, you keep walking, and the line stretches until it parts. Which
+## is a real thing for a rope to do and a stupid way to lose a catch you had
+## already won, because there is nothing you could have done differently short of
+## not going that way.
+##
+## So a line that is pulling and getting nowhere starts lifting as well, and the
+## catch goes up and over. That is what a spider hauling something up a wall
+## looks like anyway. Has to beat gravity — about 9.8 — or it lifts nothing.
+@export var snag_lift := 20.0
+
+## Seconds of getting nowhere before the lift is at full strength. Short enough
+## that a wall is a pause rather than a problem, long enough that a catch merely
+## bumping over a kerb does not fly.
+@export var snag_patience := 0.3
+
+## How much line a snagged catch is given, as a multiple of the resting length.
+##
+## A line caught on a wall is not an over-stretched line, and snapping it is
+## answering the wrong question — you did nothing wrong, you walked round a
+## corner. So while the catch is stuck the line pays out and the breaking point
+## goes with it; once the catch is coming again the line reels back in on its
+## own, which it already did.
+##
+## Bounded rather than infinite: past this the catch really is somewhere the line
+## cannot get it out of, and a leash with no end is worse than a break.
+@export_range(1.0, 6.0, 0.25) var snag_slack := 3.0
+
+## How fast a snagged catch is worked upward, in metres a second.
+##
+## A governed rate rather than a shove, and it is what makes the height of the
+## wall stop mattering: the lift runs until the catch is climbing this fast and
+## then holds, so a tall wall takes longer and nothing gets flung. Ungoverned,
+## the same numbers threw a catch to three metres over a wall of one.
+@export var snag_climb := 2.2
+
 ## How much the cargo slows you down, per size class over the first. Towing a
 ## wasp home should be a decision, not a free ride.
 @export_range(0.0, 0.5, 0.01) var haul_drag := 0.13
@@ -63,6 +102,10 @@ var _climb: SpiderClimb
 var _rope := PackedVector3Array()
 var _previous := PackedVector3Array()
 var _rope_length := 0.0
+## Where the cargo was last frame, and how long it has been going nowhere while
+## the line pulls. See [member snag_lift].
+var _cargo_was := Vector3.ZERO
+var _snagged := 0.0
 var _mesh: ImmediateMesh
 var _material: StandardMaterial3D
 var _view_node: MeshInstance3D
@@ -103,7 +146,10 @@ func _physics_process(delta: float) -> void:
 	# A shot fired across the room pays out the whole distance, then winds
 	# back to a length you can walk with. That is what makes hooking something
 	# at range a harpoon rather than a yank.
-	_rope_length = move_toward(_rope_length, _resting_length(), reel_speed * delta)
+	# Paid out while the catch is caught on something, reeled back in once it is
+	# coming. The breaking point is a multiple of this, so it moves with it.
+	var rest := _resting_length() * (snag_slack if _snagged > 0.0 else 1.0)
+	_rope_length = move_toward(_rope_length, rest, reel_speed * delta)
 
 	_haul(delta, hand, tail)
 	_simulate_rope(delta, hand, cargo.global_position)
@@ -136,6 +182,8 @@ func hook(target: Node3D) -> bool:
 		return false
 	# Paid out to wherever it is. A long shot is a long line, and then it reels.
 	_rope_length = maxf(_resting_length(), _hand().distance_to(target.global_position))
+	_cargo_was = target.global_position
+	_snagged = 0.0
 	cargo = target
 	_watch_cargo(true)
 	_reset_rope(_hand(), target.global_position)
@@ -386,15 +434,36 @@ func _resting_length() -> float:
 ## it is pulled rather than placed, so it swings in behind you instead of
 ## snapping to a fixed distance.
 func _haul(delta: float, hand: Vector3, tail: Vector3) -> void:
+	var shifted := tail - _cargo_was
+	_cargo_was = tail
 	var offset := hand - tail
 	var span := offset.length()
 	if span <= _rope_length or span < 0.0001:
+		# Slack line, so getting nowhere is not the line's fault.
+		_snagged = maxf(0.0, _snagged - delta * 2.0)
 		return
 	var along := offset / span
 	var pull := along * (span - _rope_length) * haul_force
 	var prey := cargo as Prey
 	if prey != null:
-		prey.tow(pull * delta)
+		# Pulling hard and the catch is not coming: it is against something. Ramp
+		# a lift in and it goes over, then let go twice as fast as it built so the
+		# swing settles the moment the catch is moving again.
+		#
+		# Progress is measured *along the pull*, not as plain movement. Plain
+		# movement was the first cut and it oscillated, because the lift is its
+		# own undoing: the catch rises, rising counts as moving, moving cancels
+		# the lift, the catch drops back. Projected onto the line, going up is not
+		# progress, so the lift holds until the catch is actually coming.
+		if shifted.dot(along) < _height() * 0.02:
+			_snagged += delta
+		else:
+			_snagged = maxf(0.0, _snagged - delta * 2.0)
+		var ramp := clampf(_snagged / maxf(snag_patience, 0.01), 0.0, 1.0)
+		var lift := Vector3.ZERO
+		if ramp > 0.0 and prey.velocity.y < snag_climb * ramp:
+			lift = Vector3.UP * snag_lift * ramp
+		prey.tow((pull + lift) * delta)
 		return
 	# A device has no physics of its own, so it simply comes along.
 	cargo.global_position = tail + along * (span - _rope_length)
@@ -447,6 +516,7 @@ func _let_go(text: String) -> void:
 	var was := cargo
 	_watch_cargo(false)
 	cargo = null
+	_snagged = 0.0
 	_rope.clear()
 	_previous.clear()
 	_draw()

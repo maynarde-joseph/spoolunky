@@ -33,6 +33,16 @@ enum Problem {
 ## while you are moving, which is the only time it matters.
 const MAX_LINES := 3
 
+## How many webs the world keeps standing for you.
+##
+## Higher than [constant MAX_LINES] on purpose, because the two are different
+## things. A line is traversal, and three is a number you can hold in your head
+## while moving. A web is a *site*, and running several is exactly what the game
+## asks for — a web fills up and a full one catches nothing, so spreading out is
+## the play. This is not a budget on that; it is here to stop the wall you were
+## practising against ending up papered with the ones you shot and forgot.
+const MAX_WEBS := 6
+
 ## Most anchors one run round a frame may have.
 @export var max_chain := 12
 
@@ -195,6 +205,7 @@ var _chain: Array[WebStrand] = []
 
 ## Every line the grapple has left up, oldest first.
 var _lines: Array[WebStrand] = []
+var _webs: Array[WebNet] = []
 var _pending_anchor := Vector3.ZERO
 var _awaiting_grapple := false
 
@@ -309,6 +320,7 @@ func commit_place() -> bool:
 
 	web.tuning = dials.copy()
 	web.place_in(_resolve_container())
+	_remember_web(web)
 	_loop_source = -1
 	web_built.emit(web)
 	if web.bundled_on_arrival > 0 and web.snared_count() == 0:
@@ -687,6 +699,7 @@ func _open_web_at(at: Vector3, surface: Vector3, facing: Vector3, prey: Node3D,
 
 	web.tuning = dials.copy()
 	web.place_in(_resolve_container())
+	_remember_web(web)
 	_loop_source = -1
 	web_built.emit(web)
 	if web.bundled_on_arrival > 0 and web.snared_count() == 0:
@@ -1040,6 +1053,56 @@ func _remember_line(strand: WebStrand) -> void:
 	state_changed.emit()
 
 
+## How many webs are standing.
+func web_count() -> int:
+	_forget_dead_webs()
+	return _webs.size()
+
+
+## Files a web and takes down the oldest **empty** one if that put us over.
+##
+## Never one with something in it. A web you filled is the thing you went away
+## and came back for, and taking it down to make room loses you the catch rather
+## than the silk. So if every web is working, none goes: being at the limit
+## because all of them are full is a good problem, and not one to answer by
+## throwing a meal away.
+##
+## Oldest first, which is also what makes a saved design safe — its pieces are
+## all new, so they are the last things that would ever be dropped, and placing a
+## four-piece design clears room ahead of itself rather than eating itself.
+func _remember_web(piece: WebStructure) -> void:
+	# Nets only. A design can have strand pieces in it, and a strand is a road
+	# rather than a site — the frame-walking builder's own lines are already
+	# outside the line cap for the same reason, and counting them here would let
+	# one design's scaffolding evict another design's larder.
+	var web := piece as WebNet
+	if web == null:
+		return
+	_webs.append(web)
+	_forget_dead_webs()
+	while _webs.size() > MAX_WEBS:
+		var going := -1
+		for i in _webs.size():
+			if _webs[i].snared_count() == 0:
+				going = i
+				break
+		if going < 0:
+			return
+		var old_web: WebNet = _webs[going]
+		_webs.remove_at(going)
+		old_web.demolish()
+		notice.emit("The oldest empty web came down")
+	state_changed.emit()
+
+
+func _forget_dead_webs() -> void:
+	var living: Array[WebNet] = []
+	for web in _webs:
+		if is_instance_valid(web) and not web.is_queued_for_deletion():
+			living.append(web)
+	_webs = living
+
+
 ## Drops lines that are already gone — torn, or pulled down by hand.
 func _forget_dead() -> void:
 	var living: Array[WebStrand] = []
@@ -1206,6 +1269,7 @@ func finish() -> void:
 
 	web.tuning = dials.copy()
 	web.place_in(_resolve_container())
+	_remember_web(web)
 	_end_chain()
 	state_changed.emit()
 	web_built.emit(web)
@@ -1442,6 +1506,10 @@ func place_design() -> bool:
 		web.place_in(container)
 	for i in design.link_count():
 		spun[design.link_from[i]].link_to(spun[design.link_to[i]])
+	# After the links, not during placement: pruning mid-design could take down a
+	# piece the next line is about to wire something to.
+	for web in spun:
+		_remember_web(web)
 
 	notice.emit("%s spun (%d silk)" % [design.display_name, roundi(total)])
 	web_built.emit(spun[0])
@@ -1535,6 +1603,7 @@ func fill_aimed_loop() -> bool:
 		return false
 	web.tuning = dials.copy()
 	web.place_in(_resolve_container())
+	_remember_web(web)
 	_loop_source = -1
 	state_changed.emit()
 	web_built.emit(web)

@@ -291,6 +291,8 @@ func stand_on(at: Vector3) -> void:
 ## Pulls down every web. The leak that cost the most: silk left standing catches
 ## the next check's prey, and a fly stuck in a web is not a loose fly.
 func clear_webs() -> void:
+	if builder != null:
+		builder._webs.clear()
 	if not is_instance_valid(webs):
 		return
 	for child in webs.get_children():

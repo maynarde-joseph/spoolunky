@@ -215,6 +215,15 @@ it legs. That matters more than it sounds: almost everything outruns you when it
 bolts, so a creature you haven't softened is a creature you simply cannot chase.
 Half-wrapped, a wasp is slow enough for even a spiderling to walk after.
 
+A catch on the line comes **over** walls rather than being lost against them: a
+line that's pulling and getting nowhere starts lifting too, and pays out so it
+doesn't part while it works. You can haul a bundle home across broken ground
+without having to think about the route.
+
+Silk doesn't pile up for ever. Three grapple lines at a time, and six webs — but
+the web rule only ever takes down an **empty** one, because a web you filled is
+the thing you came back for.
+
 It costs you the web, mind — the same bargain taking one catch out already makes,
 paid for the whole shelf at once. Lines can't be taken down this way: a road is
 the floor you walk on, so the click on one stays a grapple.

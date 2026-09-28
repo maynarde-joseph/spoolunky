@@ -46,6 +46,7 @@ func _sections() -> Array[Callable]:
 		_test_throwing_a_bolt,
 		_test_species,
 		_test_tethering,
+		_test_a_catch_comes_over_a_wall,
 		_test_a_meal_takes_time,
 		_test_something_hunts_you,
 		_test_a_hunt_runs_out,
@@ -73,6 +74,7 @@ func _sections() -> Array[Callable]:
 		_test_the_bar,
 		_test_the_larder,
 		_test_three_lines,
+		_test_webs_do_not_pile_up,
 		_test_a_web_ends_with_its_catch,
 		_test_the_bag,
 		_test_sandbox_wiring,
@@ -970,6 +972,77 @@ func _test_demolish() -> void:
 	web.demolish()
 	await process_frame
 	check(web_count() == count - 1, "the web is gone")
+
+
+## Webs do not pile up for ever either, but the rule is not the lines' rule.
+##
+## Lines are capped at three because a line is traversal and three is a number
+## you hold in your head. Webs are *sites* — one fills up and a full one catches
+## nothing, so running several is the play — and capping them at three would be
+## arguing with the thing the game asks for. So the cap is higher, and it only
+## ever takes down a web that is **empty**: a web you filled is what you went away
+## and came back for, and clearing it to make room loses you the catch rather than
+## the silk.
+##
+## Measured before this existed: ten shots at a wall left ten webs standing, which
+## is what a wall papered with silk actually was.
+func _test_webs_do_not_pile_up() -> void:
+	check(WebBuilder.MAX_WEBS > WebBuilder.MAX_LINES,
+		"more webs than lines, because they are not the same kind of thing (%d against %d)"
+		% [WebBuilder.MAX_WEBS, WebBuilder.MAX_LINES])
+	grow_to_spin("orb_web")
+	select_pattern("orb_web")
+	ignore_shot_cooldown()
+	var slab := add_slab(Vector3(560, 0.0, 560), Vector3(30, 0.5, 30))
+	var wall := add_slab(Vector3(560, 3.0, 552), Vector3(30, 6.0, 0.6))
+	await physics_frame
+	stand_on(Vector3(560, 0.4, 560))
+	await run_frames(10)
+	clear_prey_near(slab.global_position, 40.0, null)
+	clear_webs()
+	builder._webs.clear()
+	await physics_frame
+
+	# Two more than the cap, all of them empty.
+	var wanted := WebBuilder.MAX_WEBS + 2
+	for i in wanted:
+		builder._cooling = 0.0
+		aim_at(Vector3(560.0 - 5.0 + 1.4 * float(i), 1.4, 552.5))
+		await physics_frame
+		builder.shoot()
+		await wait_until(func() -> bool: return not builder.shot_in_flight(), 240)
+		await run_frames(4)
+	check(builder.web_count() <= WebBuilder.MAX_WEBS,
+		"%d shots leave %d webs, not %d" % [wanted, builder.web_count(), wanted])
+	check(builder.web_count() == WebBuilder.MAX_WEBS,
+		"and it is the cap they stop at (%d)" % builder.web_count())
+
+	# But a web with something in it is never the one that goes. The oldest is
+	# the one that would be taken, so that is the one to fill.
+	var oldest: WebNet = builder._webs[0] as WebNet
+	if not check(oldest != null and is_instance_valid(oldest),
+			"there is an oldest web to keep"):
+		return
+	var fly := spawn_fly(oldest.to_global(oldest.centre_local))
+	if not check(fly != null, "a fly in it"):
+		return
+	fly.move_speed = 0.0
+	if not check(await wait_until(func() -> bool: return fly.is_stuck(), 180),
+			"caught, so the web is a larder now"):
+		return
+	check(builder._webs[0] == oldest, "still the oldest of them")
+
+	builder._cooling = 0.0
+	aim_at(Vector3(560.0 + 6.0, 1.4, 552.5))
+	await physics_frame
+	builder.shoot()
+	await wait_until(func() -> bool: return not builder.shot_in_flight(), 240)
+	await run_frames(4)
+	check(is_instance_valid(oldest) and not oldest.is_queued_for_deletion(),
+		"and it survives the next web going up, because it is holding something")
+	check(oldest.snared_count() > 0, "with the fly still in it")
+	if is_instance_valid(fly):
+		fly.queue_free()
 
 
 ## Three lines at a time, and the fourth takes the oldest down.
@@ -2162,6 +2235,80 @@ func _hold_of(id: String, quality: float) -> float:
 
 
 # --- dragging things about ----------------------------------------------
+
+## A catch on the line comes over a wall instead of being lost against it.
+##
+## A rope pulls in a straight line and the world is not straight. Haul something
+## home with a wall in between and the pull is *into* the wall: the catch cannot
+## follow, you keep walking, and the line parts. Which is a real thing for a rope
+## to do and a stupid way to lose a catch you had already won, because there was
+## nothing you could have done differently short of not going that way.
+##
+## So a line that is pulling and getting nowhere lifts as well, and the catch goes
+## up and over — which is what a spider hauling something up a wall looks like
+## anyway. Two pieces make it work and both were wrong first time:
+##
+## Progress is measured **along the pull**, not as plain movement. Plain movement
+## oscillated, because the lift is its own undoing — the catch rises, rising
+## counts as moving, moving cancels the lift, the catch drops back. Measured over
+## a 1.2m wall it got 0.44m up and then lost the catch.
+##
+## And a snagged line **pays out** rather than stretching, so the breaking point
+## moves with it. Without that the lift worked and the line parted anyway on
+## anything tall: the catch crested a 3m wall at the exact moment the span passed
+## the limit.
+func _test_a_catch_comes_over_a_wall() -> void:
+	var tether := spider.tether
+	var slab := add_slab(Vector3(600, 0.0, 600), Vector3(40, 0.5, 40))
+	var wall := add_slab(Vector3(600, 0.9, 596), Vector3(40, 1.8, 0.6))
+	await physics_frame
+	stand_on(Vector3(600, 0.4, 599.5))
+	await run_frames(20)
+	clear_prey_near(slab.global_position, 50.0, null)
+	await physics_frame
+
+	var load := spawn_fly(Vector3(600, 0.4, 599.8))
+	if not check(load != null, "a bundle to haul home"):
+		return
+	load.move_speed = 0.0
+	load.bundle()
+	await run_frames(10)
+	if not check(tether.hook(load), "on the line"):
+		return
+	var wall_top: float = wall.global_position.y + 0.9
+	check(load.global_position.y < wall_top,
+		"and starting below the wall between you and home (%.2f under %.2f)"
+		% [load.global_position.y, wall_top])
+
+	# Walk away over the wall at a walking pace, which is the case that lost it.
+	var step: float = spider.stage().move_speed / 60.0
+	var top := 0.0
+	var over := false
+	for i in 400:
+		if not tether.is_towing():
+			break
+		var at := spider.global_position
+		at.z -= step
+		at.y = wall_top + 0.15 if at.z < 596.6 and at.z > 595.0 else 0.4
+		spider.global_position = at
+		await physics_frame
+		top = maxf(top, load.global_position.y)
+		if load.global_position.z < 595.6:
+			over = true
+			break
+
+	check(tether.is_towing(), "the line holds rather than parting on the wall")
+	check(top > wall_top,
+		"because the catch is lifted over it (%.2fm, wall top %.2f)" % [top, wall_top])
+	check(over, "so it ends up on your side of it")
+	# Lifted, not launched: the climb is a governed rate, so a taller wall takes
+	# longer rather than throwing the catch further.
+	check(top < wall_top * 2.5,
+		"without being flung (%.2fm over a %.2fm wall)" % [top, wall_top])
+	tether.cut()
+	if is_instance_valid(load):
+		load.queue_free()
+
 
 ## A catch used to be something you walked back to. A tether makes it cargo:
 ## hook it and it comes with you. What matters is that it is a rope and not a
