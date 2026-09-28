@@ -61,8 +61,8 @@ func _sections() -> Array[Callable]:
 		_test_clicking_something_alive_grapples_past_it,
 		_test_hitching_something_to_the_ground,
 		_test_bailing_off_something,
-		_test_reeling_a_web_in,
-		_test_what_a_reeled_web_costs,
+		_test_taking_a_web_home,
+		_test_a_road_is_not_collected,
 		_test_taking_aim,
 		_test_how_far_silk_goes,
 		_test_a_shot_fits_a_corner,
@@ -3697,16 +3697,21 @@ func _test_it_takes_more_than_one_shot() -> void:
 	second.queue_free()
 
 
-# --- hauling the larder home ---------------------------------------------
+# --- taking the larder home ----------------------------------------------
 
 ## A web is a larder, and a larder you have to stand next to in the open is worth
-## less than one you can drag somewhere safe. Grapple a net and it comes off its
-## anchors onto the line with its catches still in it.
+## less than one you can take with you. Click a net and it comes down: what was in
+## it arrives at your feet as bundles, and the web is gone.
 ##
 ## No new key for it: left mouse has always meant "silk connects me to that", and
-## the tether is already what it asks first. A web is simply something worth
-## hooking now.
-func _test_reeling_a_web_in() -> void:
+## the tether is what it asks first.
+##
+## This replaced dragging the web home on a rope. The rope was fiddly and it made
+## the catch depend on the trip — walk it through a corner and half of it spilled —
+## and the thing you actually wanted was the contents, not a web you could no
+## longer use anyway.
+func _test_taking_a_web_home() -> void:
+	var tether := spider.tether
 	grow_to_spin("orb_web")
 	var slab := add_slab(Vector3(60, 0.0, -60), Vector3(14, 0.5, 14))
 	await physics_frame
@@ -3717,55 +3722,74 @@ func _test_reeling_a_web_in() -> void:
 
 	var centre := spider.global_position + Vector3(0, 0.4, -1.2)
 	var web := await _sheet_at(centre)
-	if not check(web != null, "a sheet web to haul in"):
+	if not check(web != null, "a sheet web to take home"):
 		return
-	check(web.can_be_reeled(), "which is a net, so it can be hauled")
+	check(web.can_be_collected(), "which is a net, so there is something to take")
 
 	var catch_it := spawn_fly(centre)
 	if not check(catch_it != null, "with a fly caught in it"):
 		return
 	catch_it.move_speed = 0.0
-	var stuck: bool = await wait_until(func() -> bool: return catch_it.is_stuck(), 120)
-	if not check(stuck, "properly stuck in it"):
+	if not check(await wait_until(func() -> bool: return catch_it.is_stuck(), 120),
+			"properly stuck in it"):
 		return
+	check(not catch_it.is_bundled(), "and hanging there rather than bundled")
 
-	# On the line, web and all.
-	if not check(spider.tether.hook(web), "a line goes onto the web itself"):
-		return
-	check(web.reeled, "which takes it off its anchors")
-	check(web.snared_count() == 1,
-		"and it keeps what it was holding (%d) — the whole reason to bother"
-		% web.snared_count())
-	check(spider.tether.cargo_name().contains("1 in it"),
-		"the line says what is in it: %s" % spider.tether.cargo_name())
-	check(spider.jaws.within_reach(catch_it),
-		"a catch on a web on your line is in reach at any length")
-
-	# It follows. Walked rather than teleported, so the rope takes up its slack the
-	# way it would in play.
-	var web_was := web.global_position
-	var fly_was := catch_it.global_position
-	for i in 90:
-		spider.global_position += Vector3(0.06, 0.0, 0.0)
-		await physics_frame
-	check(web.global_position.distance_to(web_was) > 1.0,
-		"walking off drags the web along (%.1fm)"
-		% web.global_position.distance_to(web_was))
-	check(catch_it.global_position.distance_to(fly_was) > 1.0,
-		"and the fly in it comes too (%.1fm)"
-		% catch_it.global_position.distance_to(fly_was))
-	check(catch_it.is_stuck(), "still caught, rather than shaken out on the way")
-
-	# And it can be drunk from where it now is.
-	var got: float = await eat(catch_it, 900)
-	check(got > 0.0, "drinking it off the line works (+%.1f biomass)" % got)
-
-	spider.tether.cut()
+	aim_at(web.global_position)
 	await physics_frame
+	check(tether.aimed_web() == web, "the cross is on it")
+	var webs_before := web_count()
+	if not check(tether.take_aimed(), "and the click takes it"):
+		return
+	await run_frames(4)
+
+	check(not is_instance_valid(web) or web.is_queued_for_deletion(),
+		"the web is gone (%d webs, started %d)" % [web_count(), webs_before])
+	if not check(is_instance_valid(catch_it) and not catch_it.eaten,
+			"but the fly is not"):
+		return
+	# The whole point: it keeps its silk. Freed, it would simply fly off, and a
+	# larder you have to chase is not a larder.
+	check(catch_it.is_bundled(), "it comes back bundled rather than loose")
+	check(catch_it.held_by() == null, "and held by nothing, since there is no web")
+	check(catch_it.global_position.distance_to(spider.global_position) < 2.0,
+		"at your feet rather than where the web was (%.2fm)"
+		% catch_it.global_position.distance_to(spider.global_position))
+
+	# And it is a meal like any other bundle, by the ordinary in-reach rule.
+	check(spider.jaws.within_reach(catch_it), "close enough to drink")
+	var got: float = await eat(catch_it, 900)
+	check(got > 0.0, "and drinking it works (+%.1f biomass)" % got)
+
+	# Something still fighting comes too. Taking the web is taking the catch: a
+	# catch that squirmed off because it happened to be mid-struggle would be a
+	# coin flip rather than a decision.
+	var second := await _sheet_at(spider.global_position + Vector3(0, 0.4, -1.4))
+	if not check(second != null, "a second web, for something that is still fighting"):
+		return
+	var fighter := spawn_fly(second.global_position)
+	if not check(fighter != null, "with a fly in it"):
+		return
+	fighter.move_speed = 0.0
+	if not check(await wait_until(func() -> bool: return fighter.is_stuck(), 120),
+			"stuck, and not yet wrapped"):
+		return
+	check(not fighter.wrapped, "still fighting it, in fact")
+	aim_at(second.global_position)
+	await physics_frame
+	check(tether.take_aimed(), "the click takes that one too")
+	await run_frames(4)
+	check(is_instance_valid(fighter) and fighter.is_bundled(),
+		"and it is bundled all the same, not shaken loose")
+	if is_instance_valid(fighter):
+		fighter.queue_free()
 
 
-## Two things a reeled web is not: a road, and something you can put back.
-func _test_what_a_reeled_web_costs() -> void:
+## A road is not a larder. Lines are the floor you walk on, and picking one up
+## would be pulling that up — so the click on one stays a grapple, which is how
+## you get onto it in the first place.
+func _test_a_road_is_not_collected() -> void:
+	var tether := spider.tether
 	grow_to_spin("orb_web")
 	var slab := add_slab(Vector3(-60, 0.0, -60), Vector3(14, 0.5, 14))
 	await physics_frame
@@ -3774,40 +3798,18 @@ func _test_what_a_reeled_web_costs() -> void:
 	clear_prey_near(slab.global_position, 20.0, null)
 	await physics_frame
 
-	# A line is the floor you walk on. Hauling one in would be pulling that up.
 	select_pattern("frame_line")
 	var road := await _run_a_line(spider.global_position + Vector3(-0.8, 0.4, -1.0),
 		spider.global_position + Vector3(0.8, 0.4, -1.0))
-	if check(road != null, "a frame line, which is a road"):
-		check(not road.can_be_reeled(), "and is not something to haul in")
-		check(not spider.tether.hook(road), "so a line on it is refused")
-
-	# Letting go of a hauled web loses it: off its anchors it is a wad of silk, and
-	# what was in it lands on the floor.
-	var centre := spider.global_position + Vector3(0, 0.4, -2.4)
-	var web := await _sheet_at(centre)
-	if not check(web != null, "a sheet web to haul and then drop"):
+	if not check(road != null, "a frame line, which is a road"):
 		return
-	var catch_it := spawn_fly(centre)
-	if not check(catch_it != null, "with something in it"):
-		return
-	catch_it.move_speed = 0.0
-	if not await wait_until(func() -> bool: return catch_it.is_stuck(), 120):
-		check(false, "stuck in it first")
-		return
-	# Wrapped, so it survives the drop as a bundle. That is what wrapping is for,
-	# and it is why you wrap before you haul.
-	catch_it.wrap()
+	check(not road.can_be_collected(), "and not something to take down")
+	aim_at(road.global_position)
 	await physics_frame
-	if not check(spider.tether.hook(web), "hauled onto the line"):
-		return
-	spider.tether.cut()
-	await physics_frame
-	await physics_frame
-	check(not is_instance_valid(web) or web.is_queued_for_deletion(),
-		"dropping it loses the web — a web off its anchors is not a web")
-	check(is_instance_valid(catch_it) and not catch_it.eaten,
-		"but what was wrapped in it is still yours to collect")
+	check(tether.aimed_web() == null, "so the cross finds nothing to take")
+	check(not tether.take_aimed(), "and the click falls through to the grapple")
+	check(is_instance_valid(road) and not road.is_queued_for_deletion(),
+		"leaving the road where it is")
 
 
 ## Silk costs a creature its legs as well as its fight, which is the thing that

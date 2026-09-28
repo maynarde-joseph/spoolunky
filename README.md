@@ -201,21 +201,27 @@ enough. So the two tools work together — soften it with shots, then take it wi
 web — and the silk works off again if you leave it alone, so it is a burst of
 commitment rather than a slow grind from safety.
 
-**Haul one in.** Point at a web you have left somewhere and click: the line goes
-onto the web itself, it comes off its anchors, and it follows you with whatever is
-caught in it. Anything in a web on your line is in reach at any length, so the move
-is to drag a full larder somewhere safe and eat there rather than standing out in
-the open next to it.
+**Take one home.** Point at a web you left somewhere and click: it comes down,
+and what was in it lands at your feet as **bundles** — silk still on them, going
+nowhere, yours to drain whenever. So a larder isn't somewhere you have to go and
+stand in the open any more; you cash it in from where you are.
+
+Everything in it comes, including anything still fighting. Taking the web is
+taking the catch; a catch that squirmed off because it happened to be mid-struggle
+would be a coin flip rather than a decision.
 
 Silk you land also slows the thing down — the same silk that costs it fight costs
 it legs. That matters more than it sounds: almost everything outruns you when it
 bolts, so a creature you haven't softened is a creature you simply cannot chase.
 Half-wrapped, a wasp is slow enough for even a spiderling to walk after.
 
-It costs you the web, mind. Off its anchors it is a wad of silk, so letting go of
-one spills it: whatever you had **wrapped** in it lands as a bundle you can still
-collect, and anything still fighting gets loose. So wrap your catches before you
-haul. Lines can't be hauled — a road is the floor you walk on.
+It costs you the web, mind — the same bargain taking one catch out already makes,
+paid for the whole shelf at once. Lines can't be taken down this way: a road is
+the floor you walk on, so the click on one stays a grapple.
+
+(This replaced dragging the web home on a rope. The rope was fiddly, and it made
+the catch depend on the trip — walk it through a corner and half of it spilled.
+What you actually wanted was the contents.)
 
 **Shoot it.** A bolt that lands on a creature puts silk on it and does nothing
 else — no web is left where it was standing, so shooting something down by your

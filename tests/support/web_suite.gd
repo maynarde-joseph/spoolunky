@@ -283,9 +283,8 @@ func clear_webs() -> void:
 	if not is_instance_valid(webs):
 		return
 	for child in webs.get_children():
-		# Skip what is already on its way out: cutting the line on a web that was
-		# being hauled spills it, which queues it, and freeing that by hand as well
-		# is one free too many.
+		# Skip what is already on its way out — a web a check took down queues
+		# itself, and freeing that by hand as well is one free too many.
 		if not child.is_queued_for_deletion():
 			child.free()
 

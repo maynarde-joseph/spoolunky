@@ -161,14 +161,24 @@ Three changes, and they only work together:
   standing, a web thrown over something, a bolt square on — now ask the creature the
   same question, and all three see the silk already on it.
 
-* **A web can be hauled home.** Put a line on a net and it comes off its anchors
-  onto the tether with its catches still in it, and everything caught in a web on
-  your line is in fang reach at any length. So a larder is no longer somewhere you
-  have to go and stand in the open — you drag it somewhere safe and drink it there.
-  It costs the web: off its anchors it is a wad of silk, and letting go of one
-  spills it, so what was *wrapped* in it lands as bundles and anything still
-  fighting gets its chance. Which gives wrapping a second job — you wrap before you
-  haul. Lines are not haulable; a road is the floor you walk on.
+* **A web can be taken home.** Click a net and it comes down, with everything in
+  it arriving at the spider's feet as **bundles** — the state something wrapped
+  and cut loose is already in, so they keep their silk and go nowhere. A larder
+  stops being somewhere you have to go and stand in the open; you cash it in from
+  where you are. It costs the web, which is the same bargain `on_prey_taken` makes
+  one catch at a time, paid for the whole shelf at once. Lines are not collected;
+  a road is the floor you walk on.
+
+  Everything comes, a catch still fighting included. The alternative — it gets
+  loose if it was mid-struggle — reads as a coin flip rather than a decision, and
+  it makes the outcome of a trap depend on the frame you happened to click on.
+
+  This replaced hauling the web home on a rope. The rope was fiddly, and worse, it
+  made the catch depend on the *trip*: walk it through a corner and half of it
+  spilled. The thing the player wanted was the contents, not a web that was no
+  longer usable anyway. What went with it: `reel()`, `spill()`, and the rule that
+  a catch inside a web on your line is in fang reach — a bundle at your feet is in
+  reach by the ordinary rule, so that case had nothing left to cover.
 
 So the web stops competing with the gun. It is not a better way to acquire food —
 it is **the place you can eat what you acquired**, which is a job nothing else in

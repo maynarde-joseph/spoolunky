@@ -134,13 +134,6 @@ func hook(target: Node3D) -> bool:
 	if not can_carry(target):
 		notice.emit("Not something you can drag along")
 		return false
-	# A web comes off its anchors as the line goes on. Done before the line is
-	# recorded so a web that will not come — a road, or one already on the line —
-	# does not end up as cargo nothing can haul.
-	var web := target as WebStructure
-	if web != null and not web.reel():
-		notice.emit("A %s is a road, not something to haul in" % web.label())
-		return false
 	# Paid out to wherever it is. A long shot is a long line, and then it reels.
 	_rope_length = maxf(_resting_length(), _hand().distance_to(target.global_position))
 	cargo = target
@@ -186,15 +179,16 @@ func drag_factor() -> float:
 ## Anything already dealt with — a bundle, a wrapped catch, a catch that has
 ## worn itself out — and anything you put down yourself. A thing still fighting
 ## is not cargo: wrap it first, which is what the wrapping is for.
+##
+## Webs are not cargo any more. Dragging one home on a rope was fiddly and it made
+## the catch depend on the trip — walk it through a corner and half of it spilled.
+## A web comes home in one go now, and is gone: see [method collect_aimed].
 func can_carry(target: Node3D) -> bool:
 	if target == null or not is_instance_valid(target):
 		return false
 	var prey := target as Prey
 	if prey != null:
 		return not prey.eaten and (prey.wrapped or prey.is_secured())
-	var web := target as WebStructure
-	if web != null:
-		return web.can_be_reeled()
 	return target is SilkDevice
 
 
@@ -215,10 +209,7 @@ func aimed_cargo() -> Node3D:
 
 	var best: Node3D = null
 	var best_gap := INF
-	# Webs last, so a bundle hanging in one is picked over the web around it: the
-	# creature is the smaller, more deliberate target, and taking just the catch is
-	# the cheaper of the two moves.
-	for group in ["prey", "silk_devices", "silk_webs"]:
+	for group in ["prey", "silk_devices"]:
 		for node in get_tree().get_nodes_in_group(group):
 			var target := node as Node3D
 			if target == null or not can_carry(target):
@@ -230,22 +221,94 @@ func aimed_cargo() -> Node3D:
 			if reach > 0.0 and along > reach:
 				continue
 			var gap := (offset - forward * along).length()
-			var tolerance: float = clampf(along * 0.05, height * 0.5, height * 2.0)
-			if gap > tolerance or gap >= best_gap:
+			if gap > _aim_tolerance(along, height) or gap >= best_gap:
 				continue
 			best_gap = gap
 			best = target
 	return best
 
 
-## Hooks whatever the crosshair is on, and says whether it did. This is what
-## the grapple asks first: firing silk at something you have already caught
-## should put a line on it, not haul you over to stand next to it.
+## How far off the line of sight something can sit at that distance and still be
+## what you meant: a slice of the screen, with a floor and a ceiling on it. Shared
+## by the two picks so a bundle and the web around it are judged the same way.
+func _aim_tolerance(along: float, height: float) -> float:
+	return clampf(along * 0.05, height * 0.5, height * 2.0)
+
+
+## The net worth taking down along the line of sight, near or far.
+func aimed_web() -> WebStructure:
+	if _view == null or _spider == null:
+		return null
+	var origin := _view.aim_origin()
+	var forward := _view.aim_forward()
+	var wall := _wall_distance(origin, forward)
+	var height := _height()
+
+	var best: WebStructure = null
+	var best_gap := INF
+	for node in get_tree().get_nodes_in_group("silk_webs"):
+		var web := node as WebStructure
+		if web == null or not is_instance_valid(web) or not web.can_be_collected():
+			continue
+		var offset := web.global_position - origin
+		var along := offset.dot(forward)
+		if along <= 0.0 or along > wall:
+			continue
+		if reach > 0.0 and along > reach:
+			continue
+		var gap := (offset - forward * along).length()
+		if gap > _aim_tolerance(along, height) or gap >= best_gap:
+			continue
+		best_gap = gap
+		best = web
+	return best
+
+
+## What left mouse asks the tether first, and whether it dealt with the click.
+##
+## A catch comes to you on a line. A web comes to you in one piece and is gone.
+## Firing silk at either should do something to *it* rather than haul you over to
+## stand next to it, which is what the grapple would otherwise do.
+##
+## Cargo is asked first and shuts the door behind it: a bundle hanging in a web is
+## the smaller, more deliberate target, and taking just the catch is the cheaper of
+## the two moves. Without the early return, a click on a bundle you cannot pick up
+## — because you are already towing one — would quietly take the whole web instead.
+func take_aimed() -> bool:
+	if aimed_cargo() != null:
+		return grab_aimed()
+	return collect_aimed()
+
+
+## Puts a line on the catch under the crosshair, and says whether it did.
 func grab_aimed() -> bool:
 	if cargo != null:
 		return false
 	var target := aimed_cargo()
 	return target != null and hook(target)
+
+
+## Takes down the web under the crosshair and brings it in, catches and all.
+##
+## The catches arrive bundled — silk still on them, going nowhere, yours to drain
+## when you like — and the web is gone. That is the trade: a web is a larder while
+## it stands, and collecting it is how you cash it in, which costs you the web. The
+## same bargain [method WebStructure.on_prey_taken] already makes one catch at a
+## time; this is the whole shelf at once.
+func collect_aimed() -> bool:
+	var web := aimed_web()
+	if web == null:
+		return false
+	var label := web.label()
+	var took := web.collect(_hand(), _height() * 1.5)
+	if took <= 0:
+		notice.emit("Took the %s down — there was nothing in it" % label)
+	elif took == 1:
+		notice.emit("Took the %s and what was in it — a bundle at your feet" % label)
+	else:
+		notice.emit("Took the %s and what was in it — %d bundles at your feet"
+			% [label, took])
+	return true
 
 
 ## How far the crosshair gets before it meets something solid. Cargo behind a
@@ -334,12 +397,6 @@ func _let_go(text: String) -> void:
 	var was := cargo
 	_watch_cargo(false)
 	cargo = null
-	# A web off its anchors is not a web. Dropping one spills it: what was wrapped
-	# falls as bundles and anything still fighting gets its chance, which is what
-	# makes wrapping a catch before you haul the web worth doing.
-	var web := was as WebStructure
-	if web != null and web.reeled:
-		web.spill()
 	_rope.clear()
 	_previous.clear()
 	_draw()
@@ -411,12 +468,6 @@ func _label(target: Node3D) -> String:
 	var prey := target as Prey
 	if prey != null:
 		return prey.species
-	var web := target as WebStructure
-	if web != null:
-		# What is in it, not just which pattern it is: the whole reason to be
-		# dragging one home is its contents, so the line should say so.
-		var held := web.snared_count()
-		return web.label() if held <= 0 else "%s with %d in it" % [web.label(), held]
 	var device := target as SilkDevice
 	return device.label() if device != null else target.name
 

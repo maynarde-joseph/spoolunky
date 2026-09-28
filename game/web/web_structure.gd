@@ -56,11 +56,6 @@ var area := 0.0
 var mesh_instance: MeshInstance3D
 var catch_area: Area3D
 
-## Off its anchors and on the spider's line. A web being carried is a wad of silk
-## with whatever was in it: it catches nothing more, there is nothing to stand on,
-## and it triggers nothing — but it still holds what it already held, which is the
-## whole point of dragging it home.
-var reeled := false
 var catch_shape: CollisionShape3D
 
 ## What this web took the moment it went up, and how much of that it wrapped
@@ -261,51 +256,53 @@ func tear() -> void:
 	queue_free()
 
 
-## Whether the spider can put a line on this and pull it off the wall.
+## Whether the spider can take this one down and keep what is in it.
 ##
-## Nets only. A line is a road — hauling one in would be pulling up the floor you
-## walk on, and it holds nothing to be worth collecting anyway.
-func can_be_reeled() -> bool:
-	return not reeled and pattern != null and catch_area != null \
+## Nets only. A line is a road — collecting one would be pulling up the floor you
+## walk on, and it holds nothing worth collecting anyway. [method demolish] is
+## still there for taking any web down on purpose, catches and all.
+func can_be_collected() -> bool:
+	return pattern != null and catch_area != null \
 		and pattern.shape == WebPattern.Shape.NET and not is_queued_for_deletion()
 
 
-## Pulled off its anchors onto the line.
+## Taken down, with everything in it brought to [param to].
 ##
-## Everything that made it part of the room stops: it catches nothing else, it
-## cannot be walked on, and it signals nothing. What it is holding stays held —
-## the catches travel with it, because a web brought home with its larder in it is
-## the reason to bother.
-func reel() -> bool:
-	if not can_be_reeled():
-		return false
-	reeled = true
-	unlink_all()
-	if catch_area != null:
-		# The signals come off first, and that order matters. Turning monitoring off
-		# makes the engine report every body currently inside as having left, which
-		# runs _on_body_exited on each of them and releases the very catches the
-		# reeling was for — the web arrived home empty.
-		if catch_area.body_entered.is_connected(_on_body_entered):
-			catch_area.body_entered.disconnect(_on_body_entered)
-		if catch_area.body_exited.is_connected(_on_body_exited):
-			catch_area.body_exited.disconnect(_on_body_exited)
-		catch_area.monitoring = false
-		catch_area.monitorable = false
-	var walkway := get_node_or_null("Walkway") as StaticBody3D
-	if walkway != null:
-		# Off the walk layer entirely rather than hidden: a carried web you can
-		# still stand on is a lift, and that is a different game.
-		walkway.collision_layer = 0
-	state_changed.emit(self)
-	return true
-
-
-## Dropped while it was being carried. A web off its anchors is not a web, so
-## letting go of one is losing it: what was wrapped in it falls as bundles, and
-## anything still fighting gets its chance.
-func spill() -> void:
+## This is what a full larder is for: you set the web somewhere, you go away, and
+## when you come back you take the whole thing — web and catches together — rather
+## than standing out in the open draining them one at a time where they hang.
+##
+## What is in it ends up **bundled**, which is the state something wrapped and cut
+## loose is already in: it keeps its silk, it is going nowhere, and you drain it
+## when you like. Not freed, and not still hanging in a web that no longer exists.
+## Something that was still fighting gets bundled along with the rest — taking the
+## web is taking the catch, and a catch that squirmed off at the last moment
+## because it happened to be mid-struggle is a coin flip rather than a decision.
+##
+## [param spread] scatters several catches around the point instead of stacking
+## them in one spot. Returns how many came back.
+func collect(to: Vector3, spread := 0.0) -> int:
+	var held := _snared.duplicate()
+	var taken := 0
+	for i in held.size():
+		var caught := held[i] as Prey
+		# Off the list *before* bundling. [method Prey.bundle] tells the web it was
+		# in that it has been taken, and that call is what tears a web once its last
+		# catch leaves — so a web that is already taking itself down would be doing
+		# it twice, from inside its own loop.
+		_snared.erase(held[i])
+		if caught == null or not is_instance_valid(caught):
+			continue
+		if spread > 0.0 and held.size() > 1:
+			var angle := TAU * float(i) / float(held.size())
+			caught.global_position = to + Vector3(cos(angle), 0.0, sin(angle)) * spread
+		else:
+			caught.global_position = to
+		caught.bundle()
+		taken += 1
+	# _snared is empty by now, so this only takes the web itself down.
 	demolish()
+	return taken
 
 
 ## Take the web down on purpose.
