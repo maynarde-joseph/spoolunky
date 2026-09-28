@@ -111,7 +111,7 @@ func _test_starting_state() -> void:
 func _test_input_map() -> void:
 	for action in ["web_build_mode", "web_place", "web_cancel", "web_finish",
 			"web_next_pattern", "web_prev_pattern", "web_remove", "interact",
-			"device_mode", "web_throw_mode", "web_tether", "web_shoot",
+			"device_mode", "web_throw_mode", "web_tether", "web_shoot", "web_bail",
 			"skill_tree", "hotbar_1", "hotbar_9", "hotbar_next", "toggle_help"]:
 		check(InputMap.has_action(action), "input action '%s' is set up" % action)
 
@@ -2232,7 +2232,7 @@ func _test_tethering() -> void:
 				"a wasp is heavier going than a fly (%.2f against %.2f)"
 				% [tether.drag_factor(), light])
 			spider.climb.haul = tether.drag_factor()
-			check(spider.climb._surface_speed(false) < spider.stage().move_speed,
+			check(spider.climb._surface_speed() < spider.stage().move_speed,
 				"which you feel in your own legs")
 			tether.cut()
 			spider.climb.haul = 1.0
@@ -3947,6 +3947,9 @@ func _test_a_bolt_at_a_creature_leaves_no_web() -> void:
 ## which is the number silk already on it has been eating into, so a softened
 ## catch stays tied far longer than a fresh one and the two mechanics multiply.
 func _test_hitching_something_to_the_ground() -> void:
+	# Off by default — see `_test_clicking_something_alive_grapples_past_it` — so
+	# this section switches it on, and [method WebSuite.rewind_live_line] puts it
+	# back before anything else clicks at a creature.
 	live.move = LiveLine.Move.HITCH
 	var slab := add_slab(Vector3(-180, 0.0, 60), Vector3(20, 0.5, 20))
 	await physics_frame
@@ -3981,7 +3984,7 @@ func _test_hitching_something_to_the_ground() -> void:
 		% hitch.anchor.distance_to(footing))
 
 	# A second click on the same creature is not a second line.
-	live._cooling = 0.0
+	live._hitch_cooling = 0.0
 	send_action(spider.input_place_anchor)
 	await run_frames(4)
 	var lines := 0
@@ -4028,13 +4031,16 @@ func _test_hitching_something_to_the_ground() -> void:
 	mark.queue_free()
 
 
-## BAIL: a click on something alive throws you off it, the other way.
+## BAIL: Shift throws you backwards off whatever you are looking at.
 ##
-## The one anchor in the game that pushes instead of pulling. It is the answer to
-## being chased by something faster than you — and it costs the creature nothing,
-## so what it buys is distance, not safety.
+## The one anchor in the game that pushes instead of pulling, and the answer to
+## being chased by something faster than you. It was a click on a creature first,
+## and the click was the problem: a creature standing in front of a wall is a
+## creature *and* a wall, so the same button was a bail or a grapple depending on
+## a couple of pixels. On its own key and off the aim direction alone it is the
+## same move every time — which is why the creature here is a bystander, and why
+## the second half of this does it at open air and expects the same throw.
 func _test_bailing_off_something() -> void:
-	live.move = LiveLine.Move.BAIL
 	var slab := add_slab(Vector3(-180, 0.0, -60), Vector3(24, 0.5, 24))
 	await physics_frame
 	stand_on(slab.global_position + Vector3(0, 0.25, 0))
@@ -4053,17 +4059,16 @@ func _test_bailing_off_something() -> void:
 	await physics_frame
 	aim_at(mark.global_position)
 	await physics_frame
-	check(live.aimed_creature() == mark, "under the cross and still on its feet")
 
 	var stood := spider.global_position
 	var gap := stood.distance_to(mark.global_position)
 	var was_bound := mark.bound
-	send_action(spider.input_place_anchor)
+	send_action(spider.input_bail)
 	await physics_frame
-	check(not spider.climb.is_attached(), "the click throws you off the floor")
+	check(not spider.climb.is_attached(), "Shift throws you off the floor")
 	# The top of the arc, not wherever it happens to be at the end: a bail that
 	# threw you a metre up and back down again inside the sample window would read
-	# as having no lift at all. The first cut of it genuinely had none, and this
+	# as having no lift at all. The first cut of it genuinely had none, and the
 	# check passed anyway at 0.00m, because a hop of five centimetres is still up.
 	var peak := stood.y
 	for i in 20:
@@ -4071,40 +4076,61 @@ func _test_bailing_off_something() -> void:
 		peak = maxf(peak, spider.global_position.y)
 	var opened := spider.global_position.distance_to(mark.global_position)
 	check(opened > gap,
-		"and away from it rather than at it (%.1fm from %.1f)" % [opened, gap])
+		"away from what you were looking at (%.1fm from %.1f)" % [opened, gap])
 	check(peak - stood.y > spider.stage().body_height,
 		"with real lift in it, so it clears what is between you (%.2fm up, taller than the %.2fm spider)"
 		% [peak - stood.y, spider.stage().body_height])
 	check(is_equal_approx(mark.bound, was_bound),
 		"and no silk lands on the wasp — you bought room, not safety")
 
-	# Not a thing to hold down. The cooldown is what stops a bail being the whole
-	# game once something is chasing you.
-	check(live.cooling(), "it goes on a cooldown (%.1fs)" % live.cooldown)
-	# Measured on the cooldown rather than on where the spider ends up: a second
-	# bail would re-arm it to its full length, and a frame of flight moves the
-	# spider about a tenth of a metre either way, so position proves nothing here.
-	var ticking := live._cooling
-	send_action(spider.input_place_anchor)
+	# Not a thing to hold down. Measured on the cooldown rather than on where the
+	# spider ends up: a second bail would re-arm it to its full length, and a frame
+	# of flight moves the spider about a tenth of a metre either way.
+	check(live.bail_cooling(), "it goes on a cooldown (%.1fs)" % live.bail_cooldown)
+	var ticking := live._bail_cooling
+	send_action(spider.input_bail)
 	await physics_frame
-	check(live._cooling < ticking,
-		"so a second click straight away is refused rather than throwing you again (%.2fs from %.2f)"
-		% [live._cooling, ticking])
+	check(live._bail_cooling < ticking,
+		"so a second Shift straight away is refused rather than throwing you again (%.2fs from %.2f)"
+		% [live._bail_cooling, ticking])
+
+	# And the whole point of taking it off the mouse: it does not need a target.
+	# Same throw at an empty room, which is what makes it something you can count
+	# on rather than something that depends on what was under the cross.
 	mark.queue_free()
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	if not check(await wait_until(
+			func() -> bool: return spider.climb.is_attached(), 180),
+			"back on the floor, with nothing in front of you"):
+		return
+	live._bail_cooling = 0.0
+	aim_at(spider.global_position + Vector3(6.0, 0.4, 0.0))
+	await physics_frame
+	check(live.aimed_creature() == null, "and nothing under the cross to bail off")
+	var empty := spider.global_position
+	send_action(spider.input_bail)
+	await physics_frame
+	check(not spider.climb.is_attached(), "Shift still throws you")
+	await run_frames(14)
+	var went := spider.global_position - empty
+	check(Vector2(went.x, went.z).length() > spider.stage().body_height,
+		"and still backwards, at open air (%.2fm)" % Vector2(went.x, went.z).length())
+	check(went.dot(Vector3(-1.0, 0.0, 0.0)) > 0.0,
+		"away from where you were facing rather than towards it")
 
 
-## With the live-creature move switched off, a click reads straight through it.
+## A click on something alive reads straight through it, as the game ships.
 ##
-## This is the floor the other two stand on. [member LiveLine.move] decides what a
-## click on something alive does, and `NOTHING` is the answer the game had between
-## cutting the lunge and adding the hitch: the aim cast is `WORLD | WEB_WALK` and
-## prey is on its own layer, so the silk finds the *wall behind* the creature and
-## the spider goes past it. That has to keep working, because it is what every
-## click that is not about a creature already does — "silk connects me to that" is
-## the whole contract of this button, and a special case for live prey is what
-## broke it the last time.
+## [member LiveLine.move] is `NOTHING` by default and this is what that means: the
+## aim cast is `WORLD | WEB_WALK` and prey is on its own layer, so the silk finds
+## the *wall behind* the creature and the spider goes past it — the same thing the
+## click does when no creature is there at all. That is the whole contract of the
+## button, and a click that means two things depending on a couple of pixels costs
+## you confidence in the grapple as well as in the other move.
 func _test_clicking_something_alive_grapples_past_it() -> void:
-	live.move = LiveLine.Move.NOTHING
+	check(live.move == LiveLine.Move.NOTHING,
+		"the game ships with a click on something alive doing nothing special")
 	var middle := Vector3(-120, 0.0, -40)
 	var slab := add_slab(middle, Vector3(22, 0.5, 22))
 	await physics_frame

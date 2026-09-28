@@ -32,7 +32,8 @@ something down.
 
 | Input | Action |
 |-------|--------|
-| WASD / Space / Shift | move, jump, sprint — **jump is also how you let go of silk** |
+| WASD / Space | move and jump — **jump is also how you let go of silk** |
+| **Shift** | **bail** — throws you backwards off whatever you are looking at, creature or wall or nothing at all |
 | *walk into a wall* | climb it — walls and ceilings are floors to a spider |
 | *stand on silk* | it holds you — a thread runs one way, and **jump** is how you come off |
 | **F** or **middle mouse** | ride a silk line like a zipline — again to let go |
@@ -223,47 +224,37 @@ drops for you to put a line on and drag off; short of enough, it's carrying that
 silk around and the next shot starts from there. A heavier pattern doesn't catch
 better, it just gets there in fewer shots.
 
-**Click it while it's still on its feet.** Left mouse has one meaning — *silk
-connects me to that* — and what happens is read off the target: a wall pulls you
-over, a web off its anchors follows you home, a wrapped catch comes to you. A
-creature still standing is the case where both ends can pull, and there are
-**two candidate answers in the build at once**, because the only way to know
-which is right is to play them.
+**Shift bails you out.** It throws the spider backwards off whatever it's
+looking at — creature, wall, or nothing at all — with enough lift to clear what's
+between you. The one anchor in the game that *pushes* instead of pulling, and the
+answer to being chased by something faster than you. No silk lands on anything,
+so what you bought is distance, not safety: it's still coming.
 
-*Hitch* ties it to the ground you're standing on. It keeps its legs — this is
-not a pin — but only inside a radius, so what beats it is *where* you tied it: a
-wasp hitched beside a doorway can't follow you through, one hitched inside a web
-you already built is one you can keep shooting at. It comes undone eventually,
-and what spends the silk is the creature's own thrash, which is the number your
-bolts have been eating into — so a half-wrapped catch stays tied far longer than
-a fresh one.
+It takes no target on purpose. It started life on left mouse, as a thing you did
+*to a creature*, and that's where it broke: a creature standing in front of a wall
+is a creature **and** a wall, so the same click was a bail one moment and a grapple
+the next depending on a couple of pixels. A move you can't be sure of is worse than
+no move, because now you can't be sure of the grapple either. Off its own key and
+read off your facing alone, it's the same throw every time — and pointing at the
+floor to get height is a use, not a mistake.
 
-*Bail* uses it as an anchor to throw yourself the other way. The only target in
-the game that pushes instead of pulling, and the answer to being chased by
-something faster than you. No silk lands on it, so what you bought is distance,
-not safety.
+Shift used to be sprint. A spider that walks on ceilings and travels on silk had
+no use for a slightly faster walk.
 
-Switch between them on the Spider scene's **LiveLine** node (`move`), or change
-the default in `game/player/live_line.gd`. `NOTHING` restores the older
-behaviour, where the aim reads straight through the creature and you grapple to
-whatever is behind it.
+A click on something still alive deliberately does **nothing special** — the aim
+reads straight through it to the wall behind, exactly as it would if the creature
+weren't there. There's a second move parked behind `LiveLine.move`, off by
+default: *hitch* ties the creature to the ground you're standing on, so it keeps
+its legs but only inside a radius, and *where* you tied it is what beats it. It
+shares left mouse with the grapple, which is the unsolved part; flip it to `HITCH`
+on the Spider scene's LiveLine node if you want to play with it.
 
-What *doesn't* live here any more is a pounce: for a while, clicking a creature
-threw the spider at it and bit on landing, and that turned out to be a second way
-of doing exactly what a bolt already does, on an animal whose whole offensive
-vocabulary is supposed to be wrapping. **Hunting Fangs** still halve what counts
-as "much bigger than me", so a fanged spider can take anything inside its bite
-where it stands, and a **Venom Spur** rigged into a web still kills what it
-catches outright.
-
-**When one comes for you.** Anything aggressive and bigger than your bite will
-come looking, and while it has a sprint in it it is half again its own speed —
-faster than any spider small enough for it to bother with. It can't keep that up.
-After a few seconds it tires, drops to a crawl you can plainly see yourself
-pulling away from, and then breaks off and leaves you alone for a while. So
-running buys you the end of a chase, not safety: silk is still the real answer,
-because silk that costs it fight costs it legs too. Grow past its size and it
-stops seeing you as anything but lunch.
+What doesn't live here any more is a pounce: for a while, clicking a creature threw
+the spider at it and bit on landing, and that turned out to be a second way of doing
+exactly what a bolt already does, on an animal whose whole offensive vocabulary is
+supposed to be wrapping. **Hunting Fangs** still halve what counts as "much bigger
+than me", so a fanged spider can take anything inside its bite where it stands, and
+a **Venom Spur** rigged into a web still kills what it catches outright.
 
 **Leave one somewhere to work.** Fit a web to a corner prey walks past, drop a
 **Scent Lure** on the far side so traffic comes *through* the web to reach it,

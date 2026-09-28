@@ -829,9 +829,9 @@ func _test_lines_are_roads() -> void:
 
 	# Standing on it is quicker than standing on the floor.
 	_spider.climb.on_silk = false
-	var ground_speed := _spider.climb._surface_speed(false)
+	var ground_speed := _spider.climb._surface_speed()
 	_spider.climb.on_silk = true
-	var silk_speed := _spider.climb._surface_speed(false)
+	var silk_speed := _spider.climb._surface_speed()
 	_spider.climb.on_silk = false
 	check(silk_speed > ground_speed,
 		"and silk is quicker underfoot (%.2f vs %.2f)" % [silk_speed, ground_speed])

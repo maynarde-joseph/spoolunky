@@ -49,6 +49,10 @@ signal skill_tree_toggled()
 @export var input_device_mode := "device_mode"
 @export var input_throw_mode := "web_throw_mode"
 @export var input_tether := "web_tether"
+## Shift. Used to be sprint, which is a thing a spider has no use for — it
+## walks on walls and travels on silk, and a slightly faster walk was never
+## the answer to anything. See [method LiveLine.bail].
+@export var input_bail := "web_bail"
 @export var input_shoot := "web_shoot"
 @export var input_skill_tree := "skill_tree"
 
@@ -139,7 +143,6 @@ func _physics_process(delta: float) -> void:
 	var input_axis := Vector2.ZERO
 	var jump_tapped := false
 	var jump_held := false
-	var sprint := false
 	var down := false
 	var release_line := false
 
@@ -148,7 +151,6 @@ func _physics_process(delta: float) -> void:
 			input_back_action_name, input_forward_action_name)
 		jump_tapped = Input.is_action_just_pressed(input_jump_action_name)
 		jump_held = Input.is_action_pressed(input_jump_action_name)
-		sprint = Input.is_action_pressed(input_sprint_action_name)
 		down = Input.is_action_pressed(input_crouch_action_name)
 		# Right mouse means "undo anchor" while building, "let go" while hanging.
 		release_line = not _web_tool_active() and not _device_tool_active() \
@@ -163,8 +165,7 @@ func _physics_process(delta: float) -> void:
 	if climb.handles_movement():
 		# Spiders don't obey the floor, so the climb component drives the body
 		# and we feed the template's bob and footstep bookkeeping by hand.
-		sprint_ability.set_active(sprint and climb.is_attached() and input_axis.y >= 0.5)
-		climb.step(delta, input_axis, jump_tapped, sprint, down, jump_held, release_line)
+		climb.step(delta, input_axis, jump_tapped, down, jump_held, release_line)
 		_horizontal_velocity = climb.tangent_velocity
 		_check_landed()
 		if climb.is_attached():
@@ -173,7 +174,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		# Swimming and free-fly stay with the character controller.
 		climb.release()
-		move(delta, input_axis, jump_tapped, down, sprint, down, jump_held)
+		move(delta, input_axis, jump_tapped, down, false, down, jump_held)
 
 	if global_position.y < kill_plane:
 		global_transform = _spawn_transform
@@ -284,16 +285,22 @@ func _unhandled_input(event: InputEvent) -> void:
 	# to you instead — which is the same act read the only way that makes sense
 	# for a thing that is already wrapped up and going nowhere.
 	elif event.is_action_pressed(input_place_anchor):
-		# Three readings of one click, in order of how specific the target is:
-		# something already caught comes to you, something still alive gets
-		# whatever [LiveLine] is set to do to it, and anything else is a surface
-		# to grapple to. The middle one is the open question — hitch it to the
-		# ground, or kick off it — and which it does is a switch on the LiveLine
-		# node rather than a decision made here. See [member LiveLine.move].
+		# Something already caught comes to you; anything else is a surface to
+		# grapple to. [LiveLine] gets asked in between, but it ships set to do
+		# nothing, so by default this is two readings and not three — a creature
+		# standing in front of a wall is a creature *and* a wall, and a click that
+		# means one thing or the other depending on a couple of pixels costs you
+		# confidence in the grapple as well. See [member LiveLine.move].
 		if not tether.grab_aimed() and not live_line.act():
 			web_builder.place()
 	elif _web_tool_active() and event.is_action_pressed(input_cancel_anchor):
 		web_builder.undo()
+	elif event.is_action_pressed(input_bail):
+		# Its own key, never shared: a move you cannot be sure of is worse than no
+		# move. Works pointing at open air, which is what makes it the same thing
+		# every time rather than a thing that depends on what happened to be under
+		# the cross. See [method LiveLine.bail].
+		live_line.bail()
 	elif event.is_action_pressed(input_ride):
 		climb.toggle_ride()
 	else:

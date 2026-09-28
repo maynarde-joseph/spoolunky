@@ -11,7 +11,9 @@ const HOTBAR_GAP := 8.0
 const HOTBAR_MARGIN := 16.0
 
 const HELP_TEXT := """[ Spoolunky ]
-WASD / Space / Shift   move, jump, sprint
+WASD / Space           move and jump
+Shift                  bail — throws you backwards off whatever you are
+                       looking at, creature or wall or nothing at all
 walk into a wall       climb it — walls and ceilings are floors to you
 silk is sticky         stand on it and it holds you; jump to come off
 

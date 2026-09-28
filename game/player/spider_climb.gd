@@ -306,7 +306,7 @@ func update_orientation(delta: float) -> void:
 
 
 ## One step of spider movement.
-func step(delta: float, input_axis: Vector2, want_jump: bool, want_sprint: bool,
+func step(delta: float, input_axis: Vector2, want_jump: bool,
 		want_line_out: bool, want_line_in: bool, want_release: bool) -> void:
 	if _spider == null:
 		return
@@ -320,7 +320,7 @@ func step(delta: float, input_axis: Vector2, want_jump: bool, want_sprint: bool,
 	elif mode == Mode.HANGING:
 		_step_hanging(delta, input_axis, want_line_out, want_line_in, want_release)
 	else:
-		_step_surface(delta, input_axis, want_jump, want_sprint, want_line_out)
+		_step_surface(delta, input_axis, want_jump, want_line_out)
 
 
 ## Drops everything and falls. Used when handing back to the template.
@@ -339,7 +339,7 @@ func release() -> void:
 # --- surfaces -----------------------------------------------------------
 
 func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
-		want_sprint: bool, want_line_out: bool) -> void:
+		want_line_out: bool) -> void:
 	var height := _body_height()
 	var wish := _wish_direction(input_axis, _current_up)
 	var hit := _find_surface(height, wish)
@@ -374,7 +374,7 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	wish = _wish_direction(input_axis, _current_up)
 	if thread != null:
 		wish = _along_thread(thread, wish)
-	var speed := _surface_speed(want_sprint)
+	var speed := _surface_speed()
 	var velocity := _spider.velocity
 	var tangent := velocity - _current_up * velocity.dot(_current_up)
 	var target := wish * speed
@@ -627,10 +627,8 @@ func _note_surface(collider: Variant) -> void:
 	on_silk = body != null and (body.collision_layer & GameLayers.WEB_WALK) != 0
 
 
-func _surface_speed(want_sprint: bool) -> float:
+func _surface_speed() -> float:
 	var speed := _spider.speed
-	if want_sprint:
-		speed *= _spider.sprint_speed_multiplier
 	var steepness := clampf(1.0 - maxf(0.0, _current_up.dot(Vector3.UP)), 0.0, 1.0)
 	speed *= lerpf(1.0, steep_speed_factor, steepness)
 	if on_silk:
