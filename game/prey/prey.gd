@@ -67,6 +67,40 @@ const FANG_VENOM := 2.2
 ## always has something left.
 const CRAWL := 0.15
 
+## How long a hunter has in it before it breaks off, in seconds.
+##
+## Hunters move at [constant CHASE_DASH] times their own speed, which is faster
+## than any spider that is small enough to be worth hunting. That is on purpose —
+## something that has decided to attack you should read as having decided — but
+## with nothing else on it, it means a hunt you cannot end by running, only by
+## dealing with the thing or by outgrowing it. Giving up was distance-only
+## (`hunt_range * 1.8`), which is a distance a creature faster than you never lets
+## you reach, so the only real out was silk.
+##
+## Silk should stay the *good* answer, not the only one. So a hunt is a thing that
+## runs out: it sprints, it tires, and then it breaks off and leaves you alone for
+## a while. Running away buys you the last stretch of it, not safety.
+const CHASE_STAMINA := 7.0
+
+## How much faster than its own speed a hunter moves while it still has a sprint.
+const CHASE_DASH := 1.5
+
+## What is left of the sprint over the last stretch, as a share of its speed.
+##
+## Deliberately below any spider's pace: this is the window, and it has to be
+## visible from behind. Something still gaining on you until the instant it turns
+## around reads as a bug, however honest the timer underneath is.
+const CHASE_SPENT := 0.45
+
+## The share of [constant CHASE_STAMINA] spent at the full sprint. The rest is
+## the wind-down at [constant CHASE_SPENT].
+const CHASE_SECOND_WIND := 0.6
+
+## How long a hunter that has broken off leaves you alone before it will come
+## again. Without this it re-acquires on the next look, 0.9 seconds later, and
+## breaking off means nothing.
+const CHASE_COOLDOWN := 6.0
+
 ## How long a creature ignores the spider after it appears.
 ##
 ## Something that spawns already locked on gives you nothing to react to — the
@@ -176,6 +210,8 @@ var _recatch_cooldown := 0.0
 var _marked_timer := 0.0
 var _lure_timer := 0.0
 var _hunt_timer := 0.0
+var _chase_left := 0.0
+var _chase_rest := 0.0
 var _bite_timer := 0.0
 var _quarry: Node3D = null
 var _life := 0.0
@@ -254,6 +290,8 @@ func _physics_process(delta: float) -> void:
 
 	if _bite_timer > 0.0:
 		_bite_timer -= delta
+	if _chase_rest > 0.0:
+		_chase_rest -= delta
 	# Venom first, so a creature working off silk while venom puts it back on ends
 	# the frame wherever the two of them leave it.
 	if venom > 0.0 and not eaten and _state != State.BUNDLED:
@@ -650,11 +688,34 @@ func would_hunt(spider: Node3D) -> bool:
 	return size_class > bite
 
 
+## Whether it is coming for someone right now.
+func is_hunting() -> bool:
+	return _state == State.HUNTING
+
+
+## Gives up on whatever it was chasing and goes back to its own business, and
+## will not come for anyone again for [constant CHASE_COOLDOWN] seconds.
+##
+## Every way out of a hunt goes through here — the chase running out, losing the
+## spider over distance, the spider growing past it, being put back on its post —
+## so that breaking off always means the same thing and always sticks. The three
+## call sites used to set the state back by hand and none of them set a cooldown,
+## which is why a hunter put back where it belonged simply turned round and came
+## again 0.9 seconds later.
+func break_off() -> void:
+	_quarry = null
+	_chase_left = 0.0
+	_chase_rest = CHASE_COOLDOWN
+	if _state == State.HUNTING:
+		_state = State.WANDER
+	_pick_target()
+
+
 ## Looks for a spider small enough to be worth attacking. Cheap, and only every
 ## so often, because there is exactly one spider and no need to check per frame.
 func _look_for_a_spider() -> void:
 	_hunt_timer = 0.9
-	if aggression <= 0.0 or _life < SETTLE_IN:
+	if aggression <= 0.0 or _life < SETTLE_IN or _chase_rest > 0.0:
 		return
 	var spiders := get_tree().get_nodes_in_group("spider")
 	if spiders.is_empty():
@@ -667,6 +728,7 @@ func _look_for_a_spider() -> void:
 	if randf() > aggression:
 		return
 	_quarry = spider
+	_chase_left = CHASE_STAMINA
 	_state = State.HUNTING
 
 
@@ -677,22 +739,27 @@ func _look_for_a_spider() -> void:
 ## straight back to wandering rather than following you round the level for ever.
 func _process_hunt(delta: float) -> void:
 	if not would_hunt(_quarry):
-		_quarry = null
-		_state = State.WANDER
-		_pick_target()
+		break_off()
 		return
 	var span := global_position.distance_to(_quarry.global_position)
 	if span > hunt_range * 1.8:
-		_quarry = null
-		_state = State.WANDER
-		_pick_target()
+		break_off()
+		return
+
+	# The chase runs out whether or not it gets anywhere. See
+	# [constant CHASE_STAMINA] for why distance alone was not enough of an out.
+	_chase_left -= delta
+	if _chase_left <= 0.0:
+		break_off()
 		return
 
 	_target = _quarry.global_position
-	# Faster than it wanders: something that has decided to attack you should
-	# read as having decided, and a hunter you can simply walk away from is not
-	# pressure, it is scenery.
-	_steer(delta, current_speed() * 1.5)
+	# Faster than it wanders while the sprint lasts: something that has decided to
+	# attack you should read as having decided, and a hunter you can simply walk
+	# away from is not pressure, it is scenery. Then it tires, and the last
+	# stretch is the window — slow enough that you can see you are pulling away.
+	var winded := _chase_left < CHASE_STAMINA * (1.0 - CHASE_SECOND_WIND)
+	_steer(delta, current_speed() * (CHASE_SPENT if winded else CHASE_DASH))
 
 	# Off the spider's size, not the hunter's: what has to be true is that it has
 	# reached *you*, and a wasp closing on a spiderling covers the last few

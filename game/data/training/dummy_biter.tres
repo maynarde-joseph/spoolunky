@@ -6,7 +6,7 @@
 script = ExtResource("1_species")
 id = "dummy_biter"
 display_name = "Biter"
-description = "Comes for you and keeps coming. For the other half of a fight: what it costs to stand next to something while you bite it."
+description = "Comes for you while you are in its half of the gym, then tires and breaks off. For the other half of a fight: what it costs to stand next to something while you wrap it or drink it."
 sort_order = 92
 biomass = 60.0
 size_class = 3
@@ -20,7 +20,7 @@ wander_height = Vector2(0.4, 2.4)
 wander_interval = 1.6
 lure_susceptibility = 0.0
 aggression = 1.0
-hunt_range = 14.0
+hunt_range = 5.0
 bite_damage = 2.0
 bite_interval = 1.3
 colour = Color(0.8, 0.55, 0.5, 1)

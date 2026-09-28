@@ -232,6 +232,15 @@ still halve what counts as "much bigger than me", so a fanged spider can take
 anything inside its bite where it stands, and a **Venom Spur** rigged into a web
 still kills what it catches outright.
 
+**When one comes for you.** Anything aggressive and bigger than your bite will
+come looking, and while it has a sprint in it it is half again its own speed —
+faster than any spider small enough for it to bother with. It can't keep that up.
+After a few seconds it tires, drops to a crawl you can plainly see yourself
+pulling away from, and then breaks off and leaves you alone for a while. So
+running buys you the end of a chase, not safety: silk is still the real answer,
+because silk that costs it fight costs it legs too. Grow past its size and it
+stops seeing you as anything but lunch.
+
 **Leave one somewhere to work.** Fit a web to a corner prey walks past, drop a
 **Scent Lure** on the far side so traffic comes *through* the web to reach it,
 and wire a **Signal Bell** in so you get told when it catches. Then go

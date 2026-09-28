@@ -282,6 +282,25 @@ func _test_the_dummies(bed: Node) -> void:
 		"one that stands, one that runs, one that bites (%d/%d/%d)"
 		% [still, runners, hunters])
 
+	# And the one that bites can never see further than the post will let it walk.
+	# The biter shipped with a 14m acquire radius against a 9m leash, so it picked
+	# fights with anyone who spawned across the gym and then spent the whole thing
+	# being snapped back to its plinth — which from in front read as one creature
+	# that would not let go. The post clamps it now, so a `.tres` edited by hand
+	# cannot put it back.
+	for post in posts:
+		var hunter: Prey = post._standing
+		if hunter.aggression <= 0.0:
+			continue
+		check(hunter.hunt_range < post.leash,
+			"%s cannot see past its own leash (%.1fm against %.1f)"
+			% [post.species_id, hunter.hunt_range, post.leash])
+		# Losing the spider on distance is `hunt_range * 1.8`, so that has to fit
+		# inside the leash too, or it never gives up that way either.
+		check(hunter.hunt_range * 1.8 <= post.leash,
+			"and gives up on distance inside it (%.1fm against %.1f)"
+			% [hunter.hunt_range * 1.8, post.leash])
+
 	# The readout is the whole reason the station exists.
 	var target: Prey = posts[0]._standing
 	target.bind(0.4)
@@ -311,6 +330,27 @@ func _test_the_dummies(bed: Node) -> void:
 	await run_frames(20)
 	check(posts[0]._standing != was and is_instance_valid(posts[0]._standing),
 		"and finishing one puts a fresh one up")
+
+	# The clamp above is what makes the leash rule true, not the `.tres` happening
+	# to agree with it today — and with the clamp in place the two checks up there
+	# cannot fail, so this is the one that has anything to prove. Put the shipped
+	# 14m back on the species and stand a fresh one up.
+	var biter: TrainingDummy = null
+	for post in posts:
+		if is_instance_valid(post._standing) and post._standing.aggression > 0.0:
+			biter = post
+	if check(biter != null, "the gym has a hunter to try that on"):
+		var kind: PreySpecies = biter._kind
+		var was_range := kind.hunt_range
+		kind.hunt_range = 14.0
+		biter._standing.eaten = true
+		biter._waiting = 0.05
+		await run_frames(20)
+		check(is_instance_valid(biter._standing)
+				and biter._standing.hunt_range <= biter.leash * 0.6,
+			"and a 14m species on a %.0fm leash still stands up seeing %.1fm"
+			% [biter.leash, biter._standing.hunt_range])
+		kind.hunt_range = was_range
 
 	# Practice targets stay out of the game: the spawner, the larder and the
 	# catalogue all read the species folder, and none of them want these.

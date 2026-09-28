@@ -79,6 +79,12 @@ func _physics_process(delta: float) -> void:
 			and _standing.global_position.distance_to(_home) > leash:
 		_standing.global_position = _home
 		_standing.velocity = Vector3.ZERO
+		# And make it stop chasing, not just stand somewhere else while it does.
+		# A biter put back on its post kept its quarry, so it charged straight
+		# off again — the post snapped it home two or three times a second and
+		# from in front it read as one creature that would not let go.
+		if _standing.is_hunting():
+			_standing.break_off()
 
 	_readout.text = _lines()
 
@@ -132,6 +138,13 @@ func _stand_one_up() -> void:
 		return
 	get_parent().add_child(_standing)
 	_standing.global_position = _home + Vector3(0.0, 0.4, 0.0)
+	# It can never see further than it is allowed to walk. A dummy whose species
+	# out-ranges its own leash acquires you from outside the ground it is allowed
+	# to cover, so it spends the whole fight being yanked back to its post — and
+	# worse, it picks fights across the room with someone who never came to the
+	# gym. Held here rather than in the `.tres` so the guarantee belongs to the
+	# post, which is the thing that knows how far it will let the creature go.
+	_standing.hunt_range = minf(_standing.hunt_range, leash * 0.6)
 	_standing.eaten_by_spider.connect(_on_finished)
 	_waiting = replace_after
 

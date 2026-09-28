@@ -48,6 +48,7 @@ func _sections() -> Array[Callable]:
 		_test_tethering,
 		_test_a_meal_takes_time,
 		_test_something_hunts_you,
+		_test_a_hunt_runs_out,
 		_test_wrapped_things_fall,
 		_test_shooting,
 		_test_softening_something_big,
@@ -2400,6 +2401,115 @@ func _test_a_meal_takes_time() -> void:
 	slab.queue_free()
 	await physics_frame
 	await process_frame
+
+
+## A hunt is a thing that runs out.
+##
+## Giving up used to be distance-only: `hunt_range * 1.8` away and it loses you.
+## But a hunter moves at [constant Prey.CHASE_DASH] times its own speed and a
+## creature is only worth hunting while it out-sizes your bite — so the thing
+## chasing you is always faster than you, and a distance you cannot open is not an
+## escape. The only real outs were silk and growing a tier, and from in front that
+## reads as a creature that simply will not stop.
+##
+## So the sprint is finite. It tires, the last stretch is slower than you are so
+## you can *see* it going, and then it breaks off and leaves you alone for a while.
+## Silk stays the good answer; running is now an answer at all.
+func _test_a_hunt_runs_out() -> void:
+	var tick := float(Engine.physics_ticks_per_second)
+	var stage := spider.stage()
+
+	# The numbers first, because this is where it goes wrong: a wind-down that is
+	# still faster than the spider is a wind-down nobody can tell is happening.
+	var sprint: float = 2.6 * Prey.CHASE_DASH
+	var spent: float = 2.6 * Prey.CHASE_SPENT
+	check(sprint > stage.move_speed,
+		"a hunter's sprint beats the spider it is hunting (%.1f against %.1f)"
+		% [sprint, stage.move_speed])
+	check(spent < stage.move_speed,
+		"and what it has left at the end does not (%.1f against %.1f), which is the window"
+		% [spent, stage.move_speed])
+	var winding: float = Prey.CHASE_STAMINA * (1.0 - Prey.CHASE_SECOND_WIND)
+	check(winding > 1.0,
+		"and the window is long enough to use (%.1fs of %.1f)"
+		% [winding, Prey.CHASE_STAMINA])
+	check(Prey.CHASE_COOLDOWN > 1.0,
+		"breaking off means something, rather than re-acquiring on the next look (%.1fs)"
+		% Prey.CHASE_COOLDOWN)
+
+	var slab := add_slab(Vector3(60, 0.0, 200), Vector3(20, 0.5, 20))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+	clear_prey_near(slab.global_position, 60.0, null)
+	await physics_frame
+
+	# Far enough that it cannot arrive inside its sprint, so what is measured is
+	# the chase rather than a wasp sitting on the spider's face biting it.
+	var wasp := spawn("wasp", spider.global_position + Vector3(0.0, 0.6, 26.0))
+	if not check(wasp != null, "a wasp, well across the room"):
+		slab.queue_free()
+		return
+	if not check(wasp.would_hunt(spider),
+			"which out-sizes this spider's bite, so it is the hunting sort (size %d against bite %d)"
+			% [wasp.size_class, stage.bite_power]):
+		wasp.queue_free()
+		slab.queue_free()
+		return
+	# Its own acquire radius is 6m and it is 26m out; the chase is what is under
+	# test, not how far it can see. Past the settling-in grace for the same reason.
+	wasp.hunt_range = 40.0
+	wasp.aggression = 1.0
+	wasp._life = Prey.SETTLE_IN + 1.0
+	wasp._hunt_timer = 0.0
+
+	if not check(await wait_until(func() -> bool: return wasp.is_hunting(), 120),
+			"it comes for you"):
+		wasp.queue_free()
+		slab.queue_free()
+		return
+
+	# A second at full sprint, against a second at the end of one. Both measured
+	# after a lead-in, because steering lerps towards the speed it is given rather
+	# than taking it — measured from the moment it changes, the two seconds overlap
+	# enough that the difference nearly vanishes and the check becomes a coin flip.
+	await run_frames(roundi(tick))
+	var from := wasp.global_position
+	await run_frames(roundi(tick))
+	var dashed := from.distance_to(wasp.global_position)
+	check(dashed > stage.move_speed,
+		"and covers more ground than you can while it is fresh (%.1fm in a second)" % dashed)
+
+	# Run it down to the wind-down rather than waiting the whole sprint out: what
+	# is being checked is that the slow stretch exists and is slow, and six seconds
+	# of watching a wasp fly in a straight line proves that no better.
+	wasp._chase_left = winding
+	await run_frames(roundi(tick * 0.8))
+	from = wasp.global_position
+	await run_frames(roundi(tick))
+	var limped := from.distance_to(wasp.global_position)
+	check(wasp.is_hunting(), "it is still coming as it tires")
+	check(limped < dashed * 0.7,
+		"but slower than it started (%.1fm against %.1fm in the same second)"
+		% [limped, dashed])
+	check(limped < stage.move_speed,
+		"and slower than you, so you can see yourself pulling away (%.1fm against %.1f)"
+		% [limped, stage.move_speed])
+
+	# And then it stops, without the spider having done anything at all.
+	if not check(await wait_until(func() -> bool: return not wasp.is_hunting(),
+			roundi(winding * tick) + 60), "then it breaks off on its own"):
+		wasp.queue_free()
+		slab.queue_free()
+		return
+
+	# The cooldown is the difference between breaking off and blinking. Its quarry
+	# never moved and is still well inside the 40m it can see.
+	await run_frames(roundi(tick * 2.0))
+	check(not wasp.is_hunting(),
+		"and stays off you for a while rather than turning straight round")
+	wasp.queue_free()
+	slab.queue_free()
 
 
 ## Everything you can eat can also eat you at the wrong size — which is the one

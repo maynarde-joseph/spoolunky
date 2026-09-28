@@ -63,6 +63,17 @@ Three changes, and they only work together:
   and aggressive comes looking for you. Being bitten costs you the mouthful, and
   running out of stamina drives you off — you drop what you were carrying and get
   thrown clear.
+* **But a hunt runs out.** A hunter moves at `CHASE_DASH` (1.5×) its own speed,
+  and it only bothers with you while you are *under* its size — so the thing
+  chasing you is always faster than you are. Giving up was distance-only
+  (`hunt_range * 1.8`), which is a gap something faster than you never lets you
+  open, so the only real answers were silk and outgrowing it. That is one answer
+  too few: it reads from in front as a creature that simply will not stop, which
+  is what a fresh spiderling meets first. So the sprint is finite — `CHASE_STAMINA`
+  seconds, the last 40% of it at `CHASE_SPENT` (0.45×, deliberately slower than
+  any spider, so the window is *visible* from in front) — and then it breaks off
+  and leaves you alone for `CHASE_COOLDOWN`. Running buys you the end of a chase,
+  not safety, so silk stays the good answer rather than the only one.
 * **Your web is somewhere to stand and eat.** Anything that comes at you through
   silk goes into the silk first. Not a fortress: whether it *holds* is the same
   `hold_strength × ESCAPE_MARGIN` sum every other catch uses, so a wasp sticks in
