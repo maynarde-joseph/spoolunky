@@ -63,6 +63,7 @@ func _sections() -> Array[Callable]:
 		_test_taking_a_web_home,
 		_test_the_click_finds_the_whole_web,
 		_test_a_road_is_not_collected,
+		_test_the_camera_tells_the_truth,
 		_test_taking_aim,
 		_test_how_far_silk_goes,
 		_test_a_shot_fits_a_corner,
@@ -2897,6 +2898,91 @@ func _test_shooting() -> void:
 	slab.queue_free()
 	await physics_frame
 	await process_frame
+
+
+## The crosshair tells the truth, and the arm stays out of the walls.
+##
+## Both were the same mistake made twice: reasoning about a third-person camera as
+## if it were the spider's eye.
+##
+## **Aiming.** The silk used to be fired from the spider along the *camera's*
+## direction. The camera sits behind and above, so those are two different shots
+## and only one of them goes where the cross is — measured against a wasp three
+## metres off, the old aim landed 0.45m away from it, on a creature 0.05m across.
+## The cross's own ray is cast now, and the spider aims at what it finds.
+##
+## **The arm.** The pivot lifted along world up, so on a ceiling it sat *inside*
+## the ceiling — and a ray that starts inside a solid does not report hitting it,
+## so the arm found nothing in the way and put the camera through the roof. It is
+## measured off the surface the spider is standing on now, which is open air
+## whichever way up that is.
+func _test_the_camera_tells_the_truth() -> void:
+	var view := spider.view
+	var slab := add_slab(Vector3(-200, 0.0, 200), Vector3(16, 0.5, 16))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	if not check(await wait_until(
+			func() -> bool: return spider.climb.is_attached(), 120),
+			"standing on the floor"):
+		return
+	clear_prey_near(slab.global_position, 24.0, null)
+	await physics_frame
+	check(view.third_person, "and looking at the spider rather than out of it")
+
+	var mark := spawn("wasp", spider.global_position + Vector3(0, 0.35, -3.0))
+	if not check(mark != null, "a wasp three metres off"):
+		return
+	mark.move_speed = 0.0
+	mark.aggression = 0.0
+	await physics_frame
+	aim_at(mark.global_position)
+	await physics_frame
+
+	# What the cross is on is what the silk is aimed at.
+	var span := view.aim_origin().distance_to(mark.global_position)
+	var lands := view.aim_origin() + view.aim_forward() * span
+	var miss := lands.distance_to(mark.global_position)
+
+	# The old rule, for something to measure against: from the spider, towards a
+	# point far down the camera's own forward.
+	var was := (view.camera.global_position + view.forward() * 200.0
+		- view.aim_origin()).normalized()
+	var old_miss := (view.aim_origin() + was * span).distance_to(mark.global_position)
+
+	check(miss < mark.kind.body_radius * 2.0,
+		"the silk goes where the cross is, inside the wasp itself (%.3fm off)" % miss)
+	check(miss < old_miss * 0.25,
+		"which the camera's own direction did not (%.3fm off, against %.3f)"
+		% [miss, old_miss])
+	check(view.aim_focus().distance_to(mark.global_position) < 0.2,
+		"because the cross is cast at the world and finds the wasp (%.3fm)"
+		% view.aim_focus().distance_to(mark.global_position))
+	mark.queue_free()
+
+	# Upside down, the arm still has to end up in the room.
+	var roof := add_slab(Vector3(-200, 4.0, 200), Vector3(14, 0.5, 14))
+	await physics_frame
+	spider.global_position = Vector3(-200, 3.55, 200)
+	spider.climb.release()
+	if not check(await wait_until(
+			func() -> bool: return spider.climb.body_up().y < -0.5, 180),
+			"hanging under a ceiling, the other way up"):
+		return
+	view.pitch = 0.0
+	view.update(spider.stage().body_height, spider.climb.body_up())
+	var under: float = roof.global_position.y - 0.25
+	check(view.aim_pivot().y < spider.global_position.y,
+		"the pivot goes away from the ceiling, not into it (%.2f under the spider's %.2f)"
+		% [view.aim_pivot().y, spider.global_position.y])
+	check(view.camera.global_position.y < under,
+		"so the camera is in the room and not in the roof (%.2f, under %.2f)"
+		% [view.camera.global_position.y, under])
+	# And the arm keeps at least the room it always kept — the near plane needs
+	# about a centimetre, which is *less* than this, so the old margin was never
+	# what was letting the camera through a wall.
+	check(view._clearance() >= spider.stage().body_height * 0.35,
+		"with the arm's old clearance intact (%.4fm)" % view._clearance())
+	roof.queue_free()
 
 
 ## Holding the shoot key: a ball of silk wound up over the spider's back, which

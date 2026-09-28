@@ -372,10 +372,18 @@ func spawn(id: String, at: Vector3) -> Prey:
 
 ## Points the spider's crosshair at a spot in the world, yaw and pitch both.
 func aim_at(point: Vector3) -> void:
-	var offset := point - spider.view.aim_origin()
+	# Measured from the pivot, not the spider. The crosshair's ray goes through
+	# the pivot — see [method SpiderCamera.aim_pivot] — so this is what puts the
+	# cross *on* the point, which is what a player does and what every check that
+	# calls this actually means. From the spider it aimed the silk at the point
+	# and left the cross a little above it, which is the same gap the truthful
+	# crosshair exists to close.
+	spider.view.update(spider.stage().body_height, spider.climb.body_up())
+	var offset := point - spider.view.aim_pivot()
 	var flat := Vector2(offset.x, offset.z).length()
 	spider.view.face(Vector3(offset.x, 0.0, offset.z))
 	spider.view.pitch = atan2(offset.y, maxf(flat, 0.0001))
+	spider.view.update(spider.stage().body_height, spider.climb.body_up())
 
 
 func select_pattern(id: String) -> void:

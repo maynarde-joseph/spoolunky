@@ -157,7 +157,7 @@ func _physics_process(delta: float) -> void:
 			fly_ability.set_active(not fly_ability.is_actived())
 
 	# Keep the rig current before anything asks it which way forward is.
-	view.update(stage().body_height)
+	view.update(stage().body_height, climb.body_up())
 	climb.update_orientation(delta)
 
 	var on_legs := climb.handles_movement()
@@ -339,7 +339,7 @@ func _process(delta: float) -> void:
 	vitals.mend(delta)
 	climb.haul = tether.drag_factor()
 	climb.glide = traits.glide() if traits != null else 0.0
-	view.update(stage().body_height)
+	view.update(stage().body_height, climb.body_up())
 	_rush(delta)
 	if body != null:
 		body.visible = view.third_person

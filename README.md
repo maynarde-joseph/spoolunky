@@ -230,6 +230,13 @@ drops for you to put a line on and drag off; short of enough, it's carrying that
 silk around and the next shot starts from there. A heavier pattern doesn't catch
 better, it just gets there in fewer shots.
 
+**The camera** sits behind and above you and never rolls — the horizon stays
+level however far up a wall you are. The crosshair is truthful: it's cast at the
+world, and silk goes from the spider to whatever it lands on, so what's under the
+cross is what you hit. That matters more in third person than it sounds, because
+firing along the *camera's* direction and firing at what the camera is *looking
+at* are two different shots — the first missed a wasp three metres off by 0.45m.
+
 **Shift sprints, and it runs out.** You have a few seconds of it, and they come
 back on their own while you walk. What makes it worth a pool rather than a free
 button is the second half: **it costs more the heavier the thing on your line**.

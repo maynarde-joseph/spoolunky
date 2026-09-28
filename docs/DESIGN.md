@@ -1230,6 +1230,34 @@ What a wall does to the *controls* is then fixed where the controls are, in the
 mover — see **Walking on a wall** below. The camera and the walking agree without
 the camera having to move.
 
+**The pivot is measured off the surface, not off world up.** This is the whole
+of the ceiling bug. The arm orbits a point lifted from the spider, and lifting it
+along world up puts that point *inside* the ceiling when the spider is hanging
+under one — and a ray that starts inside a solid does not report hitting it, so
+the arm found nothing in the way and placed the camera through the roof. Measured
+along `climb.body_up()` the pivot is in open air whichever way up the spider is.
+Measured: on a ceiling the pivot used to land at y=3.98 inside a slab spanning
+3.75–4.25, and now sits at 3.27, in the room.
+
+The arm also sweeps a ball down its length rather than casting a line, so a
+doorframe inside the frustum but off the centre ray pulls it in. Worth recording
+what that is *not*: the clearance it keeps is the larger of the near plane's
+corner and the old share of body height, because the corner turns out to be about
+a centimetre for a spiderling against the old margin's nine — so the old margin
+was never what was letting the camera through a wall, and dropping to the strictly
+correct number would have quietly pulled the camera much tighter into walls.
+
+**The crosshair is cast, and the spider aims at what it finds.** Third person puts
+the camera behind and above, so "fire along the camera's direction" and "fire at
+what the camera is looking at" are two different shots, and only the second goes
+where the cross is. Against a wasp three metres off the first one landed 0.45m
+away from it — on a creature 0.05m across. So `aim_focus()` casts the cross's own
+ray (which passes through the pivot, since the camera sits at `pivot - look *
+distance`) and `aim_forward()` runs from the spider to whatever it finds; the same
+shot now lands 0.03m off. What the cross can land on is deliberately wider than
+what stops the camera: prey and webs count, or the cross reads straight through a
+wasp to the floor behind it and the silk goes where the floor is.
+
 The second half reverses an earlier call, twice reversed now, so here is the
 reasoning rather than a quiet edit. Third person wins because **the size ladder
 is the whole progression** and you cannot judge your own size from inside your

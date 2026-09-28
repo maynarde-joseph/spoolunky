@@ -217,8 +217,9 @@ func _build_condition() -> void:
 	_condition_bar.max_value = 1.0
 	stats.add_child(_condition_bar)
 	stats.move_child(_condition_bar, 2)
-	# Under it, and unlabelled while it is full. Wind is the cheap one — waiting
-	# gets all of it back — so it earns a line of its own only once it is short.
+	# Under it, and always there. It was hidden while full, which is the sort of
+	# tidiness that costs you the thing the bar is for: you cannot pace a sprint
+	# you only find out about once you are already short.
 	_wind_bar = ProgressBar.new()
 	_wind_bar.name = "WindBar"
 	_wind_bar.show_percentage = false
@@ -241,9 +242,7 @@ func _refresh_condition() -> void:
 		_condition_label.text = "Hurt      %d / %d" % [
 			ceili(_spider.health), roundi(top)]
 	if _wind_bar != null:
-		var wind := _spider.wind_left()
-		_wind_bar.value = wind
-		_wind_bar.visible = wind < 0.999
+		_wind_bar.value = _spider.wind_left()
 		_wind_bar.modulate = Color(1, 1, 1, 1) if _spider.can_sprint() \
 			else Color(1.0, 0.55, 0.45, 1.0)
 

@@ -838,8 +838,16 @@ func _test_lines_are_roads() -> void:
 
 	# Point at it and grapple: you get on the line rather than stringing a new
 	# one to it.
-	_spider.view.face(Vector3.RIGHT)
-	_spider.view.pitch = 0.0
+	#
+	# Aimed at the line rather than levelled at it. The crosshair's ray goes
+	# through the camera's pivot, which sits above the spider, so looking dead
+	# level in third person puts the cross *over* a line at your own height — it
+	# used to pick the line anyway, because the aim was taken from the spider and
+	# the cross was a decoration that happened to be near it.
+	var on_line := (a + b) * 0.5
+	var toward := on_line - _spider.view.aim_pivot()
+	_spider.view.face(Vector3(toward.x, 0.0, toward.z))
+	_spider.view.pitch = atan2(toward.y, maxf(Vector2(toward.x, toward.z).length(), 0.0001))
 	await run_frames(2)
 	builder._update_aim()
 	var aimed := builder.aimed_line()
@@ -928,11 +936,19 @@ func _test_lines_are_roads() -> void:
 		check(not _spider.climb.on_silk, "leaving the silk behind")
 
 	_spider.climb.release()
-	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
+	# Further off than the line's own thickness, and to one side, so the grapple
+	# comes in across the thread rather than creeping along its edge. Arrival
+	# stops within half a body height of the target, and against a plank a few
+	# centimetres thick that is the difference between landing on it and landing
+	# beside it.
+	_spider.global_position = Vector3(-2.0, -ROOM_HALF.y + 0.6, -1.0)
 	_spider.velocity = Vector3.ZERO
 	await run_frames(20)
-	_spider.view.face(Vector3.RIGHT)
-	_spider.view.pitch = 0.0
+	# At the line, not level with it — see the pick above.
+	var at_line := (line.point_a + line.point_b) * 0.5 - _spider.view.aim_pivot()
+	_spider.view.face(Vector3(at_line.x, 0.0, at_line.z))
+	_spider.view.pitch = atan2(at_line.y,
+		maxf(Vector2(at_line.x, at_line.z).length(), 0.0001))
 	await run_frames(2)
 	builder._update_aim()
 
