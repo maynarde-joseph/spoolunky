@@ -59,6 +59,8 @@ func _sections() -> Array[Callable]:
 		_test_it_takes_more_than_one_shot,
 		_test_a_bolt_at_a_creature_leaves_no_web,
 		_test_clicking_something_alive_grapples_past_it,
+		_test_hitching_something_to_the_ground,
+		_test_bailing_off_something,
 		_test_reeling_a_web_in,
 		_test_what_a_reeled_web_costs,
 		_test_taking_aim,
@@ -3937,15 +3939,172 @@ func _test_a_bolt_at_a_creature_leaves_no_web() -> void:
 	low.queue_free()
 
 
-## Left mouse on something alive grapples straight past it.
+## HITCH: a click on something alive ties it to the ground you are standing on.
 ##
-## One click reads two ways — a catch comes to you, anything else is a surface —
-## and a creature still fighting is deliberately neither. It used to be the middle
-## of three: you threw yourself at it and bit it on landing. That is gone, so the
-## thing worth pinning is that the click now finds the *wall behind* the creature
-## and not the creature, because "silk connects me to that" is the whole contract
-## of this button and a special case for live prey is what broke it before.
+## It keeps its legs — this is not a pin — but only inside a radius, so what beats
+## the creature is where you tied it rather than the line itself. And it comes
+## undone: what spends the silk is the creature's own [method Prey.thrash_power],
+## which is the number silk already on it has been eating into, so a softened
+## catch stays tied far longer than a fresh one and the two mechanics multiply.
+func _test_hitching_something_to_the_ground() -> void:
+	live.move = LiveLine.Move.HITCH
+	var slab := add_slab(Vector3(-180, 0.0, 60), Vector3(20, 0.5, 20))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	if not check(await wait_until(
+			func() -> bool: return spider.climb.is_attached(), 120),
+			"standing on something to tie a line to"):
+		return
+	clear_prey_near(slab.global_position, 30.0, null)
+	await physics_frame
+
+	var mark := spawn("wasp", spider.global_position + Vector3(2.2, 0.3, 0.0))
+	if not check(mark != null, "a wasp in front of you"):
+		return
+	mark.aggression = 0.0
+	await physics_frame
+	aim_at(mark.global_position)
+	await physics_frame
+	check(live.aimed_creature() == mark, "under the cross and still on its feet")
+
+	var footing := spider.global_position
+	send_action(spider.input_place_anchor)
+	await run_frames(4)
+	var hitch := live.hitch_on(mark)
+	if not check(hitch != null, "the click ties it to the floor"):
+		return
+	check(hitch.length > 0.0 and hitch.length < live.reach(),
+		"on a line shorter than silk reaches, so it is a radius and not a leash to nowhere (%.1fm of %.1f)"
+		% [hitch.length, live.reach()])
+	check(hitch.anchor.distance_to(footing) < 1.0,
+		"anchored where you were standing (%.2fm off)"
+		% hitch.anchor.distance_to(footing))
+
+	# A second click on the same creature is not a second line.
+	live._cooling = 0.0
+	send_action(spider.input_place_anchor)
+	await run_frames(4)
+	var lines := 0
+	for node in spider.get_tree().get_nodes_in_group("silk_hitches"):
+		if (node as SilkHitch).cargo == mark:
+			lines += 1
+	check(lines == 1, "and clicking again does not tie a second one (%d)" % lines)
+
+	# Now put it well outside its radius and let go: the line hauls it back.
+	var out := hitch.anchor + Vector3(hitch.length * 1.6, 0.4, 0.0)
+	mark.global_position = out
+	mark.move_speed = 0.0
+	await physics_frame
+	check(hitch.is_taut(), "walked out past the end of it, the line goes tight")
+	var before := hitch.anchor.distance_to(mark.global_position)
+	await run_frames(30)
+	check(hitch.anchor.distance_to(mark.global_position) < before,
+		"and pulls it back in (%.1fm from %.1f)"
+		% [hitch.anchor.distance_to(mark.global_position), before])
+
+	# Fighting it is what spends it, and silk already on the creature is fight it
+	# does not have. Two identical hitches, one on a half-wrapped wasp.
+	var fresh: float = mark.thrash_power()
+	mark.bind(0.5)
+	check(mark.thrash_power() < fresh,
+		"silk on it costs it what it can pull with (%.1f from %.1f)"
+		% [mark.thrash_power(), fresh])
+
+	var left := hitch.strength
+	await run_frames(30)
+	check(hitch.strength < left,
+		"a wasp on the end of a tight line wears it through (%.1f from %.1f)"
+		% [hitch.strength, left])
+
+	# And it always gets free in the end, which is the difference between this and
+	# a pin. Wound down to nothing rather than waited out: what is being checked is
+	# that running out cuts the line, not how long that takes — the wearing itself
+	# is the check above.
+	hitch.strength = 0.0
+	await run_frames(4)
+	check(live.hitch_on(mark) == null, "and when it runs out, the line parts")
+	check(not is_instance_valid(hitch) or hitch.is_queued_for_deletion(),
+		"and takes itself away with it")
+	mark.queue_free()
+
+
+## BAIL: a click on something alive throws you off it, the other way.
+##
+## The one anchor in the game that pushes instead of pulling. It is the answer to
+## being chased by something faster than you — and it costs the creature nothing,
+## so what it buys is distance, not safety.
+func _test_bailing_off_something() -> void:
+	live.move = LiveLine.Move.BAIL
+	var slab := add_slab(Vector3(-180, 0.0, -60), Vector3(24, 0.5, 24))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	if not check(await wait_until(
+			func() -> bool: return spider.climb.is_attached(), 120),
+			"standing on something to push off"):
+		return
+	clear_prey_near(slab.global_position, 30.0, null)
+	await physics_frame
+
+	var mark := spawn("wasp", spider.global_position + Vector3(2.2, 0.3, 0.0))
+	if not check(mark != null, "a wasp coming at you"):
+		return
+	mark.move_speed = 0.0
+	mark.aggression = 0.0
+	await physics_frame
+	aim_at(mark.global_position)
+	await physics_frame
+	check(live.aimed_creature() == mark, "under the cross and still on its feet")
+
+	var stood := spider.global_position
+	var gap := stood.distance_to(mark.global_position)
+	var was_bound := mark.bound
+	send_action(spider.input_place_anchor)
+	await physics_frame
+	check(not spider.climb.is_attached(), "the click throws you off the floor")
+	# The top of the arc, not wherever it happens to be at the end: a bail that
+	# threw you a metre up and back down again inside the sample window would read
+	# as having no lift at all. The first cut of it genuinely had none, and this
+	# check passed anyway at 0.00m, because a hop of five centimetres is still up.
+	var peak := stood.y
+	for i in 20:
+		await physics_frame
+		peak = maxf(peak, spider.global_position.y)
+	var opened := spider.global_position.distance_to(mark.global_position)
+	check(opened > gap,
+		"and away from it rather than at it (%.1fm from %.1f)" % [opened, gap])
+	check(peak - stood.y > spider.stage().body_height,
+		"with real lift in it, so it clears what is between you (%.2fm up, taller than the %.2fm spider)"
+		% [peak - stood.y, spider.stage().body_height])
+	check(is_equal_approx(mark.bound, was_bound),
+		"and no silk lands on the wasp — you bought room, not safety")
+
+	# Not a thing to hold down. The cooldown is what stops a bail being the whole
+	# game once something is chasing you.
+	check(live.cooling(), "it goes on a cooldown (%.1fs)" % live.cooldown)
+	# Measured on the cooldown rather than on where the spider ends up: a second
+	# bail would re-arm it to its full length, and a frame of flight moves the
+	# spider about a tenth of a metre either way, so position proves nothing here.
+	var ticking := live._cooling
+	send_action(spider.input_place_anchor)
+	await physics_frame
+	check(live._cooling < ticking,
+		"so a second click straight away is refused rather than throwing you again (%.2fs from %.2f)"
+		% [live._cooling, ticking])
+	mark.queue_free()
+
+
+## With the live-creature move switched off, a click reads straight through it.
+##
+## This is the floor the other two stand on. [member LiveLine.move] decides what a
+## click on something alive does, and `NOTHING` is the answer the game had between
+## cutting the lunge and adding the hitch: the aim cast is `WORLD | WEB_WALK` and
+## prey is on its own layer, so the silk finds the *wall behind* the creature and
+## the spider goes past it. That has to keep working, because it is what every
+## click that is not about a creature already does — "silk connects me to that" is
+## the whole contract of this button, and a special case for live prey is what
+## broke it the last time.
 func _test_clicking_something_alive_grapples_past_it() -> void:
+	live.move = LiveLine.Move.NOTHING
 	var middle := Vector3(-120, 0.0, -40)
 	var slab := add_slab(middle, Vector3(22, 0.5, 22))
 	await physics_frame

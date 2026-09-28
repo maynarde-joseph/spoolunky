@@ -797,13 +797,27 @@ func _process_wander(delta: float) -> void:
 
 
 func _steer(delta: float, speed: float) -> void:
+	# Whatever has a line on this is spent here, not where it was added: the thing
+	# doing the towing runs in its own physics step and the movement belongs in
+	# ours. See [method tow].
+	#
+	# This is the living half of that, and until a hitch wanted it there was no
+	# such half — [method _fall] spent the pull and nothing else did, so `tow()`
+	# on anything still on its feet simply vanished. It never showed, because the
+	# only thing towing was the tether and the tether will not hook a creature
+	# that is not already finished.
+	var pull := _tow_pull
+	_tow_pull = Vector3.ZERO
 	var to_target := _target - global_position
-	if to_target.length() < 0.001:
+	var going := to_target.length() >= 0.001
+	if not going and pull.length_squared() < 0.000001:
 		return
-	var desired := to_target.normalized() * speed
+	# Standing on its target and being dragged: no steering to do, but it still
+	# has to come.
+	var desired := to_target.normalized() * speed if going else velocity
 	if not flying:
 		desired.y = velocity.y - _gravity * delta
-	velocity = velocity.lerp(desired, clampf(3.0 * delta, 0.0, 1.0))
+	velocity = velocity.lerp(desired, clampf(3.0 * delta, 0.0, 1.0)) + pull
 	move_and_slide()
 	if is_on_wall():
 		_pick_target()

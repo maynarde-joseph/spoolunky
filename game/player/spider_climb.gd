@@ -737,6 +737,19 @@ func _warn(text: String) -> void:
 
 # --- grappling ----------------------------------------------------------
 
+## Throws the spider off whatever it is on, at a velocity someone else chose.
+##
+## The general form of what jumping and letting go of a zipline both do by hand.
+## [method _set_mode] already drops the hang length and the ridden line, so all
+## this has to forget is the strand underfoot; the grace is what stops the very
+## next frame re-attaching the spider to the thing it just left.
+func fling(thrown: Vector3) -> void:
+	standing_on = null
+	_grace = release_grace
+	_set_mode(Mode.AIRBORNE)
+	_spider.velocity = thrown
+
+
 ## Hauls the spider to a point it is going to anchor silk to. Building a web is
 ## a journey around its frame rather than a thing done at arm's length, so every
 ## anchor is somewhere the spider actually went.

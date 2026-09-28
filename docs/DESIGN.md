@@ -98,11 +98,24 @@ Three changes, and they only work together:
   was to grow. Half wrapped, that wasp comes down to 2.3 and a spiderling can walk
   after it. Never quite stopped, though — something held still where it stands
   without being wrapped is a pin, and a pin is a different mechanic.
-* **There is no move against a creature you have not caught.** Left mouse on a
-  live creature grapples to whatever is *behind* it: the spider goes past, it does
-  not pounce. This was tried the other way — a lunge that threw the spider at the
-  thing and bit it on landing, softening it over the seconds that followed — and
-  it was cut, because it failed on three counts that only showed up once it was
+* **A click on something still on its feet is the one open question.** Left mouse
+  means *silk connects me to that*, and every other target answers "which end
+  moves" before the line lands: a wall is fixed, a wrapped catch is finished, a
+  web off its anchors comes along. A creature still standing is the case where
+  both ends can pull. Two answers are in the build at once behind
+  `LiveLine.move`, because this is a thing to play rather than to argue about:
+  **HITCH** ties it to the ground you were standing on, so it keeps its legs but
+  only inside a radius and the *level* is what beats it — and what spends the
+  silk is the creature's own `thrash_power()`, the number binding already eats
+  into, so the two mechanics multiply instead of sitting side by side. **BAIL**
+  uses it as an anchor to throw the spider the other way: the only target that
+  pushes rather than pulls, and the counterplay to a hunter that is faster than
+  you. Neither is a pin and neither does damage. `NOTHING` is the third setting
+  and the floor the other two stand on.
+* **What a click on it is *not* is a pounce.** This was tried — a lunge that threw
+  the spider at the thing and bit it on landing, softening it over the seconds
+  that followed — and it was cut, because it failed on three counts that only
+  showed up once it was
   playable. It spent `bound` from a second place, so it was the bolt again with
   the range and the wait swapped out rather than a different idea. It overloaded
   the fangs, which are how you *drain* something already caught, so "bite" stopped

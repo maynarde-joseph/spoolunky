@@ -30,6 +30,7 @@ var builder: WebBuilder
 var webs: Node3D
 var traits: SpiderTraits
 var placer: DevicePlacer
+var live: LiveLine
 
 ## What the builder looked like before any check touched it, captured once so the
 ## reset can put it back without this file holding a list of defaults that drifts
@@ -39,6 +40,11 @@ var _builder_was := {}
 ## Which way the camera was facing the world when the level was opened. Checks
 ## toggle it and some of them only put it back on the happy path.
 var _was_third_person := false
+
+## Which move a click on a live creature made when the level was opened. Two of
+## them share that click and both are under test, so a section that switches is
+## a section that changes what every later click means.
+var _live_was := LiveLine.Move.HITCH
 
 
 ## Opens the sandbox and finds everything in it. Returns whether it worked, so a
@@ -56,8 +62,10 @@ func open_sandbox() -> bool:
 	builder = spider.web_builder
 	traits = spider.traits
 	placer = spider.device_placer
+	live = spider.live_line
 	builder.notice.connect(note)
 	placer.notice.connect(note)
+	_live_was = live.move
 
 	for field in _BUILDER_STATE:
 		_builder_was[field] = builder.get(field)
@@ -94,7 +102,9 @@ func reset() -> void:
 	drop_everything()
 	rewind_builder()
 	rewind_view()
+	rewind_live_line()
 	clear_webs()
+	clear_hitches()
 	clear_prey()
 	clear_props()
 	rewind_growth()
@@ -113,6 +123,27 @@ func rewind_view() -> void:
 		spider.view.toggle_mode()
 	spider.view.aim_blend = 0.0
 	spider.view.update(spider.stage().body_height)
+
+
+## Puts the live-creature click back to whatever the scene ships with, and lets
+## it fire at once. Both halves matter: the move is what the click *means*, and
+## the cooldown is why a second click in the same section quietly did nothing.
+func rewind_live_line() -> void:
+	if live == null:
+		return
+	live.move = _live_was
+	live._cooling = 0.0
+
+
+## Cuts every hitch standing. They are level children like webs, not the spider's,
+## so nothing else clears them and one left tied goes on hauling a creature that
+## the next section spawned in its place.
+func clear_hitches() -> void:
+	if spider == null:
+		return
+	for node in spider.get_tree().get_nodes_in_group("silk_hitches"):
+		if is_instance_valid(node) and not node.is_queued_for_deletion():
+			node.free()
 
 
 ## Puts the builder back as the level built it: nothing half-built, nothing in

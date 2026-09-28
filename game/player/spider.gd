@@ -75,6 +75,9 @@ signal skill_tree_toggled()
 @onready var traits: SpiderTraits = $Traits
 @onready var jaws: SpiderFeeding = $Feeding
 @onready var vitals: SpiderVitals = $Vitals
+## What a click on something still alive does. The move it makes is a switch on
+## the node itself — see [member LiveLine.move].
+@onready var live_line: LiveLine = $LiveLine
 
 var _spawn_transform: Transform3D
 var _stage: GrowthStage
@@ -111,6 +114,7 @@ func _ready() -> void:
 	tether.setup(self, growth, view, climb)
 	jaws.setup(self, growth, traits, view, tether)
 	vitals.setup(self, climb, tether, jaws)
+	live_line.setup(self, growth, view, climb, web_builder)
 	growth.shaped_by(traits)
 	web_builder.notice.connect(_on_notice)
 	device_placer.notice.connect(_on_notice)
@@ -118,6 +122,7 @@ func _ready() -> void:
 	tether.notice.connect(_on_notice)
 	jaws.notice.connect(_on_notice)
 	vitals.notice.connect(_on_notice)
+	live_line.notice.connect(_on_notice)
 	# Passed through rather than listened for directly: what bit the spider is the
 	# spider's news to announce, and the HUD and the tests already watch it here.
 	vitals.hurt.connect(func(amount: float, left: float) -> void: hurt.emit(amount, left))
@@ -279,14 +284,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	# to you instead — which is the same act read the only way that makes sense
 	# for a thing that is already wrapped up and going nowhere.
 	elif event.is_action_pressed(input_place_anchor):
-		# Two readings of one click: something already caught comes to you, and
-		# anything else is a surface to grapple to. Something still *alive* is
-		# neither, so the silk goes past it to whatever is behind — the spider
-		# has no move it makes against a creature it has not caught yet, and the
-		# one that used to live here was a lunge that bit on landing. That put a
-		# second offensive verb on the animal whose only offensive verb is meant
-		# to be wrapping, and it read as a wolf rather than a spider.
-		if not tether.grab_aimed():
+		# Three readings of one click, in order of how specific the target is:
+		# something already caught comes to you, something still alive gets
+		# whatever [LiveLine] is set to do to it, and anything else is a surface
+		# to grapple to. The middle one is the open question — hitch it to the
+		# ground, or kick off it — and which it does is a switch on the LiveLine
+		# node rather than a decision made here. See [member LiveLine.move].
+		if not tether.grab_aimed() and not live_line.act():
 			web_builder.place()
 	elif _web_tool_active() and event.is_action_pressed(input_cancel_anchor):
 		web_builder.undo()

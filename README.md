@@ -223,14 +223,38 @@ drops for you to put a line on and drag off; short of enough, it's carrying that
 silk around and the next shot starts from there. A heavier pattern doesn't catch
 better, it just gets there in fewer shots.
 
-There's deliberately no third move against a creature you haven't caught yet.
-Clicking at something alive grapples to whatever is *behind* it — the spider goes
-past, it doesn't pounce. For a while it did pounce, and biting on landing turned
-out to be a second way of doing exactly what a bolt already does, on an animal
-whose whole offensive vocabulary is supposed to be wrapping. **Hunting Fangs**
-still halve what counts as "much bigger than me", so a fanged spider can take
-anything inside its bite where it stands, and a **Venom Spur** rigged into a web
-still kills what it catches outright.
+**Click it while it's still on its feet.** Left mouse has one meaning — *silk
+connects me to that* — and what happens is read off the target: a wall pulls you
+over, a web off its anchors follows you home, a wrapped catch comes to you. A
+creature still standing is the case where both ends can pull, and there are
+**two candidate answers in the build at once**, because the only way to know
+which is right is to play them.
+
+*Hitch* ties it to the ground you're standing on. It keeps its legs — this is
+not a pin — but only inside a radius, so what beats it is *where* you tied it: a
+wasp hitched beside a doorway can't follow you through, one hitched inside a web
+you already built is one you can keep shooting at. It comes undone eventually,
+and what spends the silk is the creature's own thrash, which is the number your
+bolts have been eating into — so a half-wrapped catch stays tied far longer than
+a fresh one.
+
+*Bail* uses it as an anchor to throw yourself the other way. The only target in
+the game that pushes instead of pulling, and the answer to being chased by
+something faster than you. No silk lands on it, so what you bought is distance,
+not safety.
+
+Switch between them on the Spider scene's **LiveLine** node (`move`), or change
+the default in `game/player/live_line.gd`. `NOTHING` restores the older
+behaviour, where the aim reads straight through the creature and you grapple to
+whatever is behind it.
+
+What *doesn't* live here any more is a pounce: for a while, clicking a creature
+threw the spider at it and bit on landing, and that turned out to be a second way
+of doing exactly what a bolt already does, on an animal whose whole offensive
+vocabulary is supposed to be wrapping. **Hunting Fangs** still halve what counts
+as "much bigger than me", so a fanged spider can take anything inside its bite
+where it stands, and a **Venom Spur** rigged into a web still kills what it
+catches outright.
 
 **When one comes for you.** Anything aggressive and bigger than your bite will
 come looking, and while it has a sprint in it it is half again its own speed —
