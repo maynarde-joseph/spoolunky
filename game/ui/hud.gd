@@ -21,8 +21,9 @@ Left Mouse             grapple there, trailing a line — three at a time,
                        and a fourth takes the oldest down
 Right Mouse            tap: shoot a web — it sticks where it lands, and
                        wraps whatever it lands on. Then a short wait
-Right Mouse  (hold)    wind up a ball of silk; hold a creature in the
-                       cross for a second and the throw cannot miss
+Right Mouse  (hold)    wind up a bigger ball: a bigger web, easier to hit
+                       Brackets on a creature: the silk goes where it is
+                       heading, so keep the cross on it and let go
 1-9 / wheel            pick a pocket on the bar
 X                      pick up the item you are looking at
 E                      the tree — spend what you have eaten
@@ -62,6 +63,7 @@ var _tree: TraitTree
 var _condition_label: Label
 var _condition_bar: ProgressBar
 var _wind_bar: ProgressBar
+var _crosshair: Crosshair
 
 @onready var stage_label: Label = $Stats/StageLabel
 @onready var state_label: Label = $Stats/StateLabel
@@ -79,6 +81,11 @@ var _wind_bar: ProgressBar
 
 
 func _ready() -> void:
+	# Drawn first, so every panel sits over it rather than under it.
+	_crosshair = Crosshair.new()
+	_crosshair.name = "Crosshair"
+	add_child(_crosshair)
+	move_child(_crosshair, 0)
 	_set_sizes()
 	help_label.text = HELP_TEXT
 	toast_label.modulate.a = 0.0
@@ -129,6 +136,7 @@ func _bind() -> void:
 		push_warning("HUD could not find the spider")
 		return
 
+	_crosshair.spider = _spider
 	_spider.notice.connect(show_message)
 	_spider.skill_tree_toggled.connect(_on_tree_asked_for)
 	if _spider.traits != null:
@@ -536,18 +544,18 @@ func _refresh_aim_panel(builder: WebBuilder) -> void:
 	problem_label.text = _charge_bar(builder.charge)
 
 
-## The creature under the cross and how a shot at it would go, or an empty string
+## The creature a shot would be thrown at and how it would go, or an empty string
 ## when the cross is on scenery.
 ##
-## Worked out from the same numbers the landing uses, so what this promises is what
-## happens: silk with enough hold takes it outright, and silk without only puts
-## more on it. Something already wrapped is not news.
+## Worked out from the same numbers the shot uses, so what this promises is what
+## happens: the creature is the one the shot picks — see
+## [method WebBuilder.shot_target] — and silk with enough hold takes it outright,
+## where silk without only puts more on it. It used to name whatever the fangs
+## would pick, which is anything in a cone a third of the screen wide, and so
+## promised catches a shot at the cross was never going to make.
 func _aimed_quarry(builder: WebBuilder) -> String:
-	var jaws := _spider.jaws
-	if jaws == null:
-		return ""
-	var prey := jaws.aimed_prey()
-	if prey == null or prey.wrapped:
+	var prey := builder.shot_target()
+	if prey == null:
 		return ""
 	var hold := builder.shot_hold(builder.current_pattern(),
 		_spider.global_position.distance_to(prey.global_position))

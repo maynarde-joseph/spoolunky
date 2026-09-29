@@ -6,8 +6,9 @@ extends Node3D
 ## The other way to make a web: instead of the web appearing where the
 ## crosshair is, a bolt of silk flies there and opens out where it lands. It
 ## travels, so it can miss, and it takes a moment, so a moving target has to be
-## led — which is a different skill from pointing at a spot, and the reason it
-## is worth having both.
+## led. Put the cross on a creature and the builder does that sum — see
+## [method intercept] — because how long the silk will take is the one thing the
+## screen never tells you. The bolt itself flies dead straight either way.
 ##
 ## It holds the line it was fired along. It used to be pulled down a little,
 ## which meant the honest thing — aim at a wall, hit the wall — was only true
@@ -24,7 +25,9 @@ signal landed(at: Vector3, normal: Vector3, prey: Node3D, heading: Vector3)
 ## Gave up without hitting anything worth opening on.
 signal fizzled()
 
-@export var speed := 26.0
+## How fast a bolt flies, in body heights a second — of a body counted as at
+## least 0.3m tall, so a spiderling's silk is not a crawl. See [method pace_for].
+const SPEED := 26.0
 
 ## How big the ball of silk is, and so how close it has to pass to catch
 ## something alive: it takes a creature when the ball touches the creature's
@@ -65,11 +68,51 @@ static func fire(from: Vector3, direction: Vector3, body_height: float,
 	var shot := SilkShot.new()
 	shot.name = "SilkShot"
 	shot._exclude = exclude
-	shot._velocity = direction.normalized() * shot.speed * maxf(body_height, 0.3)
+	shot._velocity = direction.normalized() * pace_for(body_height)
 	# Plain position, not global: nothing has a parent yet, and asking a Node3D
 	# for its place in the world before it is in the tree is an error.
 	shot.position = from
 	return shot
+
+
+## How fast a bolt thrown by a body [param body_height] tall flies, in metres a
+## second.
+static func pace_for(body_height: float) -> float:
+	return SPEED * maxf(body_height, 0.3)
+
+
+## Where to throw from [param from], at [param pace], to meet something at
+## [param at] moving at [param velocity] — if it keeps going the way it is going.
+##
+## The straight answer to a moving target: the point where silk and creature
+## arrive at the same moment. It is where a good shot would lead to by eye, worked
+## out so the player does not have to guess how long the silk will take, which
+## the screen never shows them. It promises nothing — anything that turns while
+## the silk is in the air has turned away from where it was going to be.
+##
+## Something too fast to catch at all, or not moving, gets thrown at where it is.
+static func intercept(from: Vector3, pace: float, at: Vector3, velocity: Vector3) -> Vector3:
+	var gap := at - from
+	# |gap + velocity t| = pace t, solved for the soonest t after now.
+	var a := velocity.dot(velocity) - pace * pace
+	var b := 2.0 * gap.dot(velocity)
+	var c := gap.dot(gap)
+	var soonest := -1.0
+	if absf(a) < 0.000001:
+		if absf(b) > 0.000001:
+			soonest = -c / b
+	else:
+		var room := b * b - 4.0 * a * c
+		if room >= 0.0:
+			var first := (-b - sqrt(room)) / (2.0 * a)
+			var second := (-b + sqrt(room)) / (2.0 * a)
+			for t in [minf(first, second), maxf(first, second)]:
+				if t > 0.0:
+					soonest = t
+					break
+	if soonest <= 0.0:
+		return at
+	return at + velocity * soonest
 
 
 ## Holds the throw to a distance, and gives it just enough life to fly it.

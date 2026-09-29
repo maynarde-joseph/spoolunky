@@ -262,12 +262,27 @@ It has to actually touch the thing, mind. The bead you watch fly is exactly the
 size that counts, against the creature's own body — a near miss is a miss.
 Holding right mouse winds up a bigger ball, which is the help on offer.
 
+**Anything moving is led for you.** Put the cross on a creature — brackets close
+round it — and the silk is thrown at where it will be when the silk gets there,
+marked with a dot out ahead of it. Aimed at where a fly *is*, a shot never catches
+one that's moving: the silk takes most of a second to cross a room, and the fly
+is a metre on by then. Led, a steady flier is caught nine times in ten; a midge or
+a wasp that keeps changing its mind, about six. The silk still flies dead
+straight, so anything that turns while it's in the air gets away.
+
 **The camera** sits behind and above you and never rolls — the horizon stays
 level however far up a wall you are. The crosshair is truthful: it's cast at the
 world, and silk goes from the spider to whatever it lands on, so what's under the
 cross is what you hit. That matters more in third person than it sounds, because
 firing along the *camera's* direction and firing at what the camera is *looking
 at* are two different shots — the first missed a wasp three metres off by 0.45m.
+
+And it says what silk will do. **Bright** when there's something in reach to land
+on, **faint** when there isn't; **amber, with brackets**, on a creature a shot would
+be thrown at, and a dot where the shot will meet it. The camera sees over things
+the spider can't, so when a ledge is in the way a small **red ring** shows where
+a grapple would really land. An arc round the cross fills while the next shot is
+spun, and while a throw is wound up.
 
 **Shift sprints, and it runs out.** You have a few seconds of it, and they come
 back on their own while you walk. What makes it worth a pool rather than a free

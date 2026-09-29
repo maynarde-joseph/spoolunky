@@ -87,6 +87,7 @@ func open_sandbox() -> bool:
 ## of them were asserting that a wait exists against a builder that had none.
 const _BUILDER_STATE := [
 	"pattern_index", "weave", "design_index", "placing_design", "shot_cooldown",
+	"shot_pick_angle",
 ]
 
 

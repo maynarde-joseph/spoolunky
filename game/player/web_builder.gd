@@ -106,6 +106,19 @@ const MAX_WEBS := 6
 ## watching said nothing about whether you would hit.
 @export var held_bodies := Vector2(0.12, 0.4)
 
+## How far off the cross a creature can be and still be what a shot is thrown at,
+## in degrees past the edge of the creature itself as the camera sees it.
+## Negative turns picking off, and every shot goes straight down the cross.
+##
+## Picking is only half of it; the other half is where the silk goes once a
+## creature is picked, which is where the creature will be when the silk gets
+## there — see [method shot_lead]. Aimed at where a fly *is*, a tap never catches
+## one that is moving: across five metres it has flown a metre by the time the
+## silk arrives, more than twenty times its own width. The two degrees are there
+## because a fly five metres off is about one degree across, and asking for that
+## exactly is asking for a hairline again.
+@export var shot_pick_angle := 2.0
+
 ## Pattern dragged between anchors when the chosen one is a net.
 const FRAME_PATTERN := "frame_line"
 
@@ -383,8 +396,15 @@ func shoot() -> bool:
 	var radius := shot_radius()
 
 	var from := _view.aim_origin()
-	var shot := SilkShot.fire(from, _view.aim_forward(),
-		_stage().body_height, _exclusions())
+	var heading := _view.aim_forward()
+	# Something alive under the cross is thrown at where it is going to be, and
+	# the bolt flies straight there — nothing steers it once it has gone.
+	var quarry := shot_target()
+	if quarry != null:
+		var lead := shot_lead(quarry) - from
+		if lead.length_squared() > 0.000001:
+			heading = lead.normalized()
+	var shot := SilkShot.fire(from, heading, _stage().body_height, _exclusions())
 	shot.catch_radius = catch_radius(radius)
 	shot.limit_to(silk_reach())
 	shot.landed.connect(_on_shot_landed.bind(pattern, radius, from))
@@ -407,6 +427,71 @@ func silk_reach() -> float:
 	if grapple_reach > 0.0:
 		return grapple_reach
 	return maxf(_stage().max_strand_length * silk_span, _stage().body_height * 4.0)
+
+
+## The creature the next shot will be thrown at, or null.
+##
+## The one nearest the cross whose outline comes within [member shot_pick_angle]
+## of it — measured as the camera sees it, because the cross is on the screen —
+## inside the silk's reach, and in plain sight of the spider: silk that would hit
+## a wall on the way is not a shot at what is behind the wall. One rule, asked by
+## the shot, the crosshair and the readout alike, so none of them can promise what
+## another will not do.
+func shot_target() -> Prey:
+	if _view == null or _view.camera == null or _spider == null or shot_pick_angle < 0.0:
+		return null
+	var eye := _view.camera.global_position
+	var look := -_view.camera.global_basis.z.normalized()
+	var from := _view.aim_origin()
+	var reach := silk_reach()
+	var best: Prey = null
+	var best_slack := INF
+	for node in get_tree().get_nodes_in_group("prey"):
+		var prey := node as Prey
+		if prey == null or not is_instance_valid(prey) or prey.eaten or prey.wrapped:
+			continue
+		if prey.is_bundled():
+			continue
+		var at := prey.global_position
+		if from.distance_to(at) > reach:
+			continue
+		var sight := at - eye
+		var distance := sight.length()
+		if distance < 0.001:
+			continue
+		# How far outside its own outline the cross is, in degrees.
+		var slack := rad_to_deg(look.angle_to(sight)) \
+			- rad_to_deg(atan2(prey.hit_radius(), distance))
+		if slack > shot_pick_angle or slack >= best_slack:
+			continue
+		if not _in_sight(from, prey):
+			continue
+		best_slack = slack
+		best = prey
+	return best
+
+
+## Where a shot at [param prey] has to go to meet it: where it will be when the
+## silk gets there, if it keeps going the way it is going. See
+## [method SilkShot.intercept].
+func shot_lead(prey: Prey) -> Vector3:
+	if prey == null or _view == null:
+		return aim_point
+	return SilkShot.intercept(_view.aim_origin(), SilkShot.pace_for(_stage().body_height),
+		prey.global_position, prey.velocity)
+
+
+## Whether silk from [param from] gets to [param prey] without landing on
+## something else first. Close counts: a fly stuck in a web sits in the web's
+## own plank, and the silk that meets the web there meets the fly.
+func _in_sight(from: Vector3, prey: Prey) -> bool:
+	var query := PhysicsRayQueryParameters3D.create(from, prey.global_position,
+		GameLayers.WORLD | GameLayers.WEB_WALK, _exclusions())
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return true
+	var stopped: Vector3 = hit.get("position", from)
+	return stopped.distance_to(prey.global_position) <= prey.hit_radius() * 1.5
 
 
 ## True while the spider is still spinning the next one.

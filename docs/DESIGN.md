@@ -1627,7 +1627,7 @@ hold in their head on the first screen.
 | **Shift** | **Sprint**, out of a pool of a few seconds that fills back up while you walk. It costs more per size class of whatever is on your line, which is what makes hauling something home at a run a decision rather than the obvious move (§2) |
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
 | **Left Mouse** | **Go there, trailing a line.** A surface pulls you over; a line puts you on it; something you already caught comes to you instead. A creature still on its feet is none of those, so the aim reads straight through it to whatever is behind (§2). As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5) |
-| **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). Then a short wait before the next (§5) |
+| **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
 | **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |
 | **1–9 / wheel** | Pick a pocket on the bar |
 | **E** | The tree — spend what you have eaten |
@@ -1689,6 +1689,72 @@ tried it was that it was too easy. Nothing homes now. The wind-up is the whole
 of the help, it is legible — the thing you watch grow is the thing that got
 easier to hit with — and one rule covers web size everywhere, because it is the
 same span a held place grows through.
+
+### Leading what the cross is on
+
+**Decided: a shot at a creature is thrown at where it will be, and the bolt still
+flies dead straight.**
+
+The ball and the wind-up made a *still* creature fair to hit. A moving one was
+still out of reach, and the reason is arithmetic. A spiderling's silk flies at
+under eight metres a second, so it takes most of a second to cross a room, and a
+fly covers a metre in that time: twenty times its own width. Aimed at where a fly
+*is*, a shot can never catch one that's moving. We fired perfect taps at wandering
+creatures, forty each, with the cross dead on:
+
+| Creature | Aimed where it is | Aimed where it will be |
+|---|---|---|
+| Fly, 3m | 0% | 98% |
+| Fly, 6m | 0% | 90% |
+| Mosquito, 5m | 5% | 80% |
+| Wasp, 5m | 0% | 62% |
+| Midge, 5m | 0% | 58% |
+| Butterfly, 5m | 5% | 100% |
+
+So leading was never a skill the player could learn. The screen never shows how
+long the silk will take, and without that there's nothing to judge a lead by.
+The game does the sum instead, and the crosshair shows the result:
+
+* **Picking.** A shot goes for the creature nearest the cross whose outline comes
+  within two degrees of it (`WebBuilder.shot_pick_angle`), measured as the camera
+  sees it, in reach, and in plain sight of the spider. A fly five metres off is
+  about a degree across, and asking for that exactly is the hairline problem again.
+* **Leading.** The bolt is thrown at the point where it and the creature arrive
+  together, if the creature keeps going as it is (`SilkShot.intercept`).
+* **Showing.** Brackets close round the picked creature and a dot marks where the
+  shot will meet it, so you can see the lead being taken and judge it.
+
+This is not the lock-on come back. That one steered the bolt all the way in and
+promised the catch. This promises nothing. The bolt flies straight, so a creature
+that changes course while the silk is in the air has changed course away from
+it. Those are the midges and the wasps, which is right: the ladder of what is
+hard to catch comes from how creatures fly, not from how well the player can
+guess flight times. You still have to put the cross on the creature, the pick is
+a small ring rather than a cone a third of the screen wide, and a wind-up still
+buys a bigger ball.
+
+### The crosshair
+
+**Decided: the crosshair shows what silk will do, and draws nothing it can't back
+up.**
+
+It was a four-pixel dot. It is drawn now, and everything in it comes from the
+answers the grapple and the shot act on:
+
+* **A ring the size of the pick.** A creature whose outline reaches inside it is
+  what a shot will be thrown at.
+* **Three states.** Bright when there is something in reach for silk to land on,
+  faint when there isn't, amber when a creature is picked.
+* **A red ring where the grapple will really land**, whenever that isn't the
+  middle. The camera sits above the spider and sees over things the spider can't,
+  so silk can stop short on a ledge the cross is looking past. Before, the only
+  sign of that was a grapple going somewhere unexpected.
+* **An arc round the ring** that fills while the next shot is spun, and fills
+  amber while a throw is wound up.
+
+The readout beside it changed for the same reason. It used to name whatever the
+fangs would pick, a cone a third of the screen wide, so it could promise catches
+that a shot at the cross would never make. It names what the shot will pick now.
 
 **The camera frames the wind-up instead of hiding it.** Aiming used to drop to
 first person, on the reasoning that third person has the cross and the silk

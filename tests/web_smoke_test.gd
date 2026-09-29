@@ -66,6 +66,7 @@ func _sections() -> Array[Callable]:
 		_test_a_road_is_not_collected,
 		_test_the_camera_tells_the_truth,
 		_test_taking_aim,
+		_test_leading_a_moving_target,
 		_test_how_far_silk_goes,
 		_test_a_shot_fits_a_corner,
 		_test_silk_sits_on_what_it_sticks_to,
@@ -3035,13 +3036,17 @@ func _test_shooting() -> void:
 	var grazed := spawn("fly", beside)
 	if check(grazed != null, "a fly beside the line, not on it"):
 		# Held still: this is about where the ball goes, not about a test keeping
-		# a crosshair on something that wanders.
+		# a crosshair on something that wanders. And picking held off, or the
+		# shot would be thrown at the fly instead of past it — that has a section
+		# of its own.
 		grazed.move_speed = 0.0
+		builder.shot_pick_angle = -1.0
 		await physics_frame
 		check(builder.shoot(), "a shot past it")
 		var near: bool = await wait_until(func() -> bool: return grazed.wrapped, 240)
 		check(near, "a graze is enough — the ball touched it, and it is wrapped")
 		grazed.queue_free()
+		builder.shot_pick_angle = 2.0
 		await physics_frame
 
 	# And near is not touching. Clear of the ball by a fly's own width, which the
@@ -3079,6 +3084,134 @@ func _test_shooting() -> void:
 	slab.queue_free()
 	await physics_frame
 	await process_frame
+
+
+## A creature under the cross is thrown at where it is going to be.
+##
+## Aimed at where a fly *is*, a tap never catches one that is moving: at the pace
+## silk flies, a spiderling's shot takes the best part of a second to cross the
+## room, and a fly has gone twenty times its own width by then. Measured on a
+## wandering fly with the cross dead on it, that was none in forty, where a shot
+## led to where the fly was going caught nine in ten.
+##
+## So a shot picks the creature under the cross — one whose outline comes within a
+## couple of degrees of it — and throws at the point where silk and creature meet.
+## The crosshair brackets what it picked and marks that point. It promises
+## nothing: the bolt still flies dead straight, and a creature that turns while it
+## is in the air has turned away from it.
+func _test_leading_a_moving_target() -> void:
+	var slab := add_slab(Vector3(-150, 0.0, -150), Vector3(24, 0.5, 24))
+	await physics_frame
+	place(slab.global_position + Vector3(0, 0.6, 0))
+	if not check(await wait_until(
+			func() -> bool: return spider.climb.is_attached(), 120),
+			"standing on the floor"):
+		slab.queue_free()
+		return
+	clear_prey_near(slab.global_position, 30.0, null)
+	await physics_frame
+	builder.shot_cooldown = 0.0
+	var hair := level.find_child("Crosshair", true, false) as Crosshair
+	check(hair != null, "the HUD draws a crosshair")
+
+	# A fly crossing in front, four metres off, going steadily one way. Steered by
+	# the test rather than by itself, so this is about the aim and not about luck.
+	var start := spider.global_position + Vector3(-1.2, 0.8, -4.0)
+	var fly := _crossing_fly(start)
+	if not check(fly != null, "a fly flying across"):
+		slab.queue_free()
+		return
+	aim_at(fly.global_position)
+	await process_frame
+	aim_at(fly.global_position)
+	check(builder.shot_target() == fly, "the cross on it picks it")
+	if hair != null:
+		hair.read()
+		check(hair.mark == Crosshair.Mark.CREATURE and hair.target == fly,
+			"and the crosshair brackets it")
+	var from := spider.view.aim_origin()
+	var lead := builder.shot_lead(fly)
+	var pace := SilkShot.pace_for(spider.stage().body_height)
+	var arrives := from.distance_to(lead) / pace
+	var meets := fly.global_position + fly.velocity * arrives
+	check((lead - fly.global_position).dot(fly.velocity) > 0.0,
+		"leading it: the shot goes ahead of it, the way it is flying")
+	check(lead.distance_to(meets) < 0.01,
+		"to where it will be when the silk gets there (%.2fm ahead, %.2fs out)"
+		% [lead.distance_to(fly.global_position), arrives])
+	check(builder.shoot(), "a tap")
+	var caught := await _fly_until_over(fly)
+	check(caught, "and the silk meets it where it had got to")
+	if is_instance_valid(fly):
+		fly.queue_free()
+	await physics_frame
+
+	# The same shot at where it was, which is all a straight throw can do.
+	builder.shot_pick_angle = -1.0
+	var other := _crossing_fly(start)
+	if check(other != null, "the same fly again, crossing the same way"):
+		aim_at(other.global_position)
+		await process_frame
+		aim_at(other.global_position)
+		check(builder.shot_target() == null, "with picking off, nothing is picked")
+		check(builder.shoot(), "the same tap, straight down the cross")
+		var hit := await _fly_until_over(other)
+		check(not hit, "misses — by the time the silk arrives it has flown on")
+		if is_instance_valid(other):
+			other.queue_free()
+	builder.shot_pick_angle = 2.0
+	await physics_frame
+
+	# Well off the cross is not under it, however near.
+	var aside := spawn("fly", spider.global_position + Vector3(0.0, 0.8, -4.0))
+	if check(aside != null, "a fly straight ahead"):
+		aside.set_physics_process(false)
+		aim_at(aside.global_position + Vector3(0.9, 0.0, 0.0))
+		await process_frame
+		aim_at(aside.global_position + Vector3(0.9, 0.0, 0.0))
+		check(builder.shot_target() == null,
+			"with the cross a hand's width beside it, it is not picked")
+		# And a wall between the spider and it takes it out of the question: silk
+		# thrown at it would land on the wall.
+		var wall := add_slab(spider.global_position + Vector3(0.0, 0.5, -2.0),
+			Vector3(3.0, 1.6, 0.2))
+		await physics_frame
+		aim_at(aside.global_position)
+		await process_frame
+		aim_at(aside.global_position)
+		check(builder.shot_target() == null,
+			"and behind a wall the silk would hit first, it is not picked either")
+		wall.queue_free()
+		aside.queue_free()
+	slab.queue_free()
+	await physics_frame
+
+
+## A fly at [param at] crossing the room at a fly's pace in a straight line, the
+## test's hand on it instead of its own wandering.
+func _crossing_fly(at: Vector3) -> Prey:
+	var fly := spawn("fly", at)
+	if fly == null:
+		return null
+	fly.set_physics_process(false)
+	fly.velocity = Vector3(1.0, 0.0, 0.0) * PreyLibrary.find("fly").move_speed
+	return fly
+
+
+## Keeps [param fly] flying straight until the shot in the air is over, and says
+## whether the shot took it.
+func _fly_until_over(fly: Prey) -> bool:
+	for i in 180:
+		await physics_frame
+		if not is_instance_valid(fly):
+			return true
+		if fly.wrapped or fly.bound > 0.0:
+			return true
+		fly.global_position += fly.velocity / float(Engine.physics_ticks_per_second)
+		if not builder.shot_in_flight():
+			break
+	await physics_frame
+	return is_instance_valid(fly) and (fly.wrapped or fly.bound > 0.0)
 
 
 ## The crosshair tells the truth, and the arm stays out of the walls.
