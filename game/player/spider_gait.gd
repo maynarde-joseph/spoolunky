@@ -169,7 +169,7 @@ func bind(skeleton: Skeleton3D) -> void:
 			leg.side = -1.0 if s == 0 else 1.0
 			leg.group = (pair + s) % 2
 			leg.label = "Leg.%s%d" % [SpiderRig.SIDES[s], pair + 1]
-			for part in ["Coxa", "Femur", "Tibia", "Tarsus"]:
+			for part in SpiderRig.LEG_PARTS:
 				leg.bones.append(skeleton.find_bone("%s.%s" % [leg.label, part]))
 			leg.lengths = PackedFloat32Array([SpiderRig.COXA, spec["femur"], spec["tibia"],
 				spec["tarsus"]])

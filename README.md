@@ -56,6 +56,7 @@ something down.
 | **B** | keep the rig you're looking at as a design |
 | **V** | place a saved design — wheel to pick, left mouse to spin it |
 | **L** | camera: third person or first person |
+| **O** | the spider's look: detailed, low poly or minimal |
 | **K** | switch weave: stretched or inscribed |
 | **;** | pick a tuning dial |
 | **[** / **]** | turn that dial down / up |
@@ -176,6 +177,11 @@ and step in two sets of four so four are always down. Falling, grappling, hangin
 riding, winding up a throw, feeding and being bitten each have a pose of their
 own. `SpiderRig` builds the bones and mesh, `SpiderGait` moves them; the reasoning
 is in `docs/DESIGN.md` §7, *The body*.
+
+It comes in three looks on that one skeleton: **detailed** (banded legs, markings,
+eight eyes), **low poly** (the same parts cut into flat faces) and **minimal** (two
+blobs on eight thin legs). **O** switches between them in game; to start in a
+different one, set `look` on the spider's `Body` node.
 
 From a wall or ceiling, **Ctrl** drops you onto a dragline. It costs silk by
 the metre (half back when you reel in), it's a real pendulum so you can swing
@@ -516,8 +522,9 @@ xvfb-run -a godot --rendering-driver opengl3 --resolution 1100x740 \
     --script res://tests/screenshot_weave.gd
 ```
 
-And the spider's body, close up, in every state the gait has a pose for (add
-`-- walk`, `-- wall` and so on after it to render just one):
+And the spider's body, close up, in every state the gait has a pose for and in
+every look. Name states or looks after `--` to render only those, for instance
+`-- low_poly minimal portrait walk`:
 
 ```sh
 xvfb-run -a godot --rendering-driver opengl3 --resolution 800x600 \

@@ -9,8 +9,9 @@ extends RefCounted
 ##
 ## Every bone points along its own +Y, the way imported rigs do. That is so a
 ## modelled spider can be dropped onto the same bone names later and the gait will
-## drive it unchanged; the mesh built here is a stand-in for that model, not the
-## thing the animation is written against.
+## drive it unchanged. The meshes built here, one per [enum Look], are stand-ins
+## for that model, not the thing the animation is written against — and that all
+## of them wear the one skeleton is the proof that a model would too.
 ##
 ## A spider is a rigid exoskeleton in segments, so nothing is blended: every
 ## vertex belongs to exactly one bone, and each segment turns as a piece at its
@@ -45,6 +46,29 @@ const GROUND := -0.5
 ## middle.
 const HIP_OUT := 0.095
 const HIP_DROP := -0.04
+
+## The ways the spider can be drawn. Each is one skinned mesh on the same bones,
+## so the gait drives them all alike and never knows which it has.
+enum Look {
+	DETAILED,  ## banded legs, a marked back, jaws, palps and eight eyes
+	LOW_POLY,  ## the same parts cut into flat faces, a colour to each face
+	MINIMAL,   ## two smooth blobs on eight thin legs, two eyes, one colour
+}
+
+## What each look is called on screen, in [enum Look] order.
+const LOOK_NAMES := ["detailed", "low poly", "minimal"]
+
+## A leg's four segments, hip to foot.
+const LEG_PARTS := ["Coxa", "Femur", "Tibia", "Tarsus"]
+
+## The eyes on one side of the head: where each sits on the head bone, and how
+## big it is. The big front pair looks ahead.
+const EYES := [
+	[Vector3(0.022, 0.05, -0.058), 0.019],
+	[Vector3(0.05, 0.045, -0.045), 0.012],
+	[Vector3(0.03, 0.078, -0.02), 0.011],
+	[Vector3(0.058, 0.066, -0.005), 0.01],
+]
 
 
 ## Adds every bone to [param skeleton], with its rest pose.
@@ -162,9 +186,43 @@ static func _add(skeleton: Skeleton3D, bone_name: String, parent: int,
 
 # --- the mesh ------------------------------------------------------------
 
-## The stand-in body, one skinned mesh on [param skeleton]'s rest pose: a body
-## surface coloured per vertex, and a second for the eyes, which want to shine.
-static func build_mesh(skeleton: Skeleton3D, palette: Dictionary) -> ArrayMesh:
+## How finely a look cuts a limb: [member sides] round it, [member rows] down it
+## between its two ends, and [member cap] rings in each end — none leaves the tube
+## open, one brings it to a point, more round it off. [member twist] turns the
+## cross-section about the limb, and [member flat] shades each face as the flat
+## thing it is.
+class Cut:
+	var sides := 8
+	var rows := 4
+	var cap := 3
+	var twist := 0.0
+	var flat := false
+
+	func _init(sides_round := 8, rows_down := 4, cap_rings := 3, faceted := false,
+			turn := 0.0) -> void:
+		sides = sides_round
+		rows = rows_down
+		cap = cap_rings
+		flat = faceted
+		twist = turn
+
+
+## Dresses [param skeleton] in [param look]: one mesh skinned to its rest pose,
+## with a surface for the body and a second for the eyes, which want a material of
+## their own. [param palette] holds the colours, by the names [SpiderBody] uses.
+static func build_mesh(skeleton: Skeleton3D, palette: Dictionary,
+		look := Look.DETAILED) -> ArrayMesh:
+	match look:
+		Look.LOW_POLY:
+			return _low_poly(skeleton, palette)
+		Look.MINIMAL:
+			return _minimal(skeleton, palette)
+	return _detailed(skeleton, palette)
+
+
+## Banded legs, a marked carapace and abdomen, jaws, palps and eight eyes, all
+## smooth-shaded.
+static func _detailed(skeleton: Skeleton3D, palette: Dictionary) -> ArrayMesh:
 	var body := _begin()
 	var eyes := _begin()
 	var shell: Color = palette.get("body", Color(0.09, 0.075, 0.08))
@@ -172,6 +230,7 @@ static func build_mesh(skeleton: Skeleton3D, palette: Dictionary) -> ArrayMesh:
 	var band: Color = palette.get("band", Color(0.42, 0.33, 0.24))
 	var mark: Color = palette.get("marking", Color(0.55, 0.43, 0.3))
 	var gloss: Color = palette.get("eyes", Color(0.02, 0.02, 0.025))
+	var rounded := Cut.new()
 
 	var thorax := skeleton.find_bone("Thorax")
 	var head := skeleton.find_bone("Head")
@@ -181,20 +240,11 @@ static func build_mesh(skeleton: Skeleton3D, palette: Dictionary) -> ArrayMesh:
 		func(n: Vector3, _p: Vector3) -> Color:
 			return shell.lerp(mark, clampf(n.y, 0.0, 1.0) * clampf(0.35 - absf(n.x) * 1.4, 0.0, 1.0)))
 	_ellipsoid(body, skeleton, thorax, Vector3(0.0, -0.025, -0.06), Vector3(0.1, 0.045, 0.13),
-		func(_n: Vector3, _p: Vector3) -> Color: return shell.lerp(band, 0.35))
-	# The raised eye mound, and eight eyes on it: the big front pair looking ahead.
+		_plain(shell.lerp(band, 0.35)))
+	# The raised eye mound, and eight eyes on it.
 	_ellipsoid(body, skeleton, head, Vector3(0.0, 0.03, -0.01), Vector3(0.075, 0.05, 0.06),
-		func(_n: Vector3, _p: Vector3) -> Color: return shell)
-	for side in [-1.0, 1.0]:
-		for eye in [
-				[Vector3(0.022, 0.05, -0.058), 0.019],
-				[Vector3(0.05, 0.045, -0.045), 0.012],
-				[Vector3(0.03, 0.078, -0.02), 0.011],
-				[Vector3(0.058, 0.066, -0.005), 0.01]]:
-			var at: Vector3 = eye[0]
-			var size: float = eye[1]
-			_ellipsoid(eyes, skeleton, head, Vector3(at.x * side, at.y, at.z),
-				Vector3.ONE * size, func(_n: Vector3, _p: Vector3) -> Color: return gloss, 8, 5)
+		_plain(shell))
+	_eight_eyes(eyes, skeleton, head, _plain(gloss), 8, 5, false)
 
 	# The abdomen, with the pale folium down its back that most house spiders wear.
 	_ellipsoid(body, skeleton, abdomen, Vector3(0.0, 0.25, -0.01), Vector3(0.2, 0.27, 0.17),
@@ -204,37 +254,164 @@ static func build_mesh(skeleton: Skeleton3D, palette: Dictionary) -> ArrayMesh:
 			var chevron := absf(fposmod(along * 4.0 + absf(p.x) * 9.0, 1.0) - 0.5) * 2.0
 			var lit := back * clampf(1.0 - absf(p.x) * 7.0 + 0.25, 0.0, 1.0)
 			return shell.lerp(mark, lit * smoothstep(0.25, 0.75, chevron)), 14, 9)
-	_segment(body, skeleton, skeleton.find_bone("Spinnerets"), 0.05, 0.03, 0.012, shell, shell)
+	_segment(body, skeleton, skeleton.find_bone("Spinnerets"), 0.05, 0.03, 0.012, _plain(shell),
+		rounded)
+	_mouthparts(body, skeleton, rounded, rounded, shell, legs, band)
+	_eight_legs(body, skeleton, rounded, _leg_widths(), _leg_colours(legs, band))
+	return _commit(body, eyes, _shell_material(), _eye_material(
+		palette.get("eyeshine", Color(0.9, 0.55, 0.2))))
 
+
+## The same parts as the detailed look, cut into flat faces: four-sided legs that
+## come to a point at every joint, blobs of a few dozen faces, and a colour to each
+## face. The markings survive as whole faces picked out in the paler colour.
+static func _low_poly(skeleton: Skeleton3D, palette: Dictionary) -> ArrayMesh:
+	var body := _begin()
+	var eyes := _begin()
+	var shell: Color = palette.get("body", Color(0.09, 0.075, 0.08))
+	var legs: Color = palette.get("legs", Color(0.12, 0.1, 0.1))
+	var band: Color = palette.get("band", Color(0.42, 0.33, 0.24))
+	var mark: Color = palette.get("marking", Color(0.55, 0.43, 0.3))
+	var gloss: Color = palette.get("eyes", Color(0.02, 0.02, 0.025))
+	# Square legs with a face on top, and three-sided fangs.
+	var facets := Cut.new(4, 1, 1, true, PI * 0.25)
+	var blade := Cut.new(3, 1, 1, true)
+
+	var thorax := skeleton.find_bone("Thorax")
+	var head := skeleton.find_bone("Head")
+	var abdomen := skeleton.find_bone("Abdomen")
+	# Carapace with a pale ridge along the top, and the sternum under it.
+	_ellipsoid(body, skeleton, thorax, Vector3(0.0, 0.025, -0.07), Vector3(0.13, 0.075, 0.17),
+		func(n: Vector3, _p: Vector3) -> Color:
+			return shell.lerp(mark, 0.55) if n.y > 0.6 and absf(n.x) < 0.3 else shell, 8, 4, true)
+	_ellipsoid(body, skeleton, thorax, Vector3(0.0, -0.025, -0.06), Vector3(0.1, 0.045, 0.13),
+		_plain(shell.lerp(band, 0.35)), 6, 3, true)
+	_ellipsoid(body, skeleton, head, Vector3(0.0, 0.03, -0.01), Vector3(0.075, 0.05, 0.06),
+		_plain(shell), 6, 3, true)
+	# Every eye an octahedron.
+	_eight_eyes(eyes, skeleton, head, _plain(gloss), 4, 2, true)
+
+	# The folium as a leaf of pale faces down the back: the middle row of faces
+	# the length of it, and the rows either side where it is widest.
+	_ellipsoid(body, skeleton, abdomen, Vector3(0.0, 0.25, -0.01), Vector3(0.2, 0.27, 0.17),
+		func(n: Vector3, p: Vector3) -> Color:
+			var across := Vector2(n.x, n.z).length()
+			var back := -n.z / maxf(across, 0.0001)
+			var lat := asin(clampf((p.y - 0.25) / 0.27, -1.0, 1.0))
+			var ring := int(floorf((lat / PI + 0.5) * 6.0))
+			var middle := back > 0.95 and ring >= 1 and ring <= 4
+			var flank := back > 0.7 and ring >= 2 and ring <= 3
+			return shell.lerp(mark, 0.8) if middle or flank else shell, 10, 6, true)
+	_segment(body, skeleton, skeleton.find_bone("Spinnerets"), 0.05, 0.03, 0.012, _plain(shell),
+		facets)
+	_mouthparts(body, skeleton, facets, blade, shell, legs, band)
+	_eight_legs(body, skeleton, facets, _leg_widths(), _leg_colours(legs, band))
+	return _commit(body, eyes, _shell_material(0.8, 0.0, 0.2), _eye_material(
+		palette.get("eyeshine", Color(0.9, 0.55, 0.2))))
+
+
+## As little as still reads as a spider: two smooth blobs, eight thin legs bent at
+## round joints, two pale eyes, and one colour for everything else. No jaws, no
+## palps, no markings.
+static func _minimal(skeleton: Skeleton3D, palette: Dictionary) -> ArrayMesh:
+	var body := _begin()
+	var eyes := _begin()
+	var shell: Color = palette.get("body", Color(0.09, 0.075, 0.08))
+	# The eyes are the one thing not in the body colour: pale, so the face has a front.
+	var pale := Color(0.92, 0.9, 0.84)
+	# Round all the way along, and a round end at every joint, so each leg reads
+	# as one bent rod rather than four pieces.
+	var rod := Cut.new(8, 1, 3)
+
+	var thorax := skeleton.find_bone("Thorax")
+	var abdomen := skeleton.find_bone("Abdomen")
+	var front := Vector3(0.0, 0.03, -0.08)
+	var front_size := Vector3(0.12, 0.08, 0.16)
+	_ellipsoid(body, skeleton, thorax, front, front_size, _plain(shell), 16, 10)
+	_ellipsoid(body, skeleton, abdomen, Vector3(0.0, 0.24, -0.01), Vector3(0.19, 0.25, 0.18),
+		_plain(shell), 18, 12)
+	var thin := [0.014, 0.014]
+	var one := [shell, shell]
+	_eight_legs(body, skeleton, rod, [thin, thin, thin, [0.014, 0.011]], [one, one, one, one])
+	# Two eyes, set into the front of the carapace. On the thorax rather than the
+	# head, because that is the bone the carapace they sit in hangs off.
+	for side in [-1.0, 1.0]:
+		var toward := Vector3(0.34 * side, 0.52, -0.78).normalized()
+		_ellipsoid(eyes, skeleton, thorax, front + toward * front_size, Vector3.ONE * 0.022,
+			_plain(pale), 10, 6)
+	return _commit(body, eyes, _matte_material(shell), _eye_material(
+		palette.get("eyeshine", Color(0.9, 0.55, 0.2)), pale, 0.2))
+
+
+# --- the parts every look is built from -----------------------------------
+
+## Jaws, fangs and palps, both sides. [param fang_cut] cuts the fangs, which are
+## thin enough to want fewer sides than anything else.
+static func _mouthparts(tool: SurfaceTool, skeleton: Skeleton3D, cut: Cut, fang_cut: Cut,
+		shell: Color, legs: Color, band: Color) -> void:
 	for tag in SIDES:
-		_segment(body, skeleton, skeleton.find_bone("Chelicera.%s" % tag), 0.1, 0.03, 0.022,
-			shell, shell.lerp(band, 0.3))
-		_segment(body, skeleton, skeleton.find_bone("Fang.%s" % tag), 0.055, 0.011, 0.002,
-			Color(0.22, 0.08, 0.05), Color(0.1, 0.03, 0.02))
-		_segment(body, skeleton, skeleton.find_bone("Palp.%s.1" % tag), 0.11, 0.016, 0.014,
-			legs, band)
-		_segment(body, skeleton, skeleton.find_bone("Palp.%s.2" % tag), 0.1, 0.014, 0.018,
-			legs, band)
+		_segment(tool, skeleton, skeleton.find_bone("Chelicera.%s" % tag), 0.1, 0.03, 0.022,
+			_banded(shell, shell.lerp(band, 0.3), 0.1), cut)
+		_segment(tool, skeleton, skeleton.find_bone("Fang.%s" % tag), 0.055, 0.011, 0.002,
+			_banded(Color(0.22, 0.08, 0.05), Color(0.1, 0.03, 0.02), 0.055), fang_cut)
+		_segment(tool, skeleton, skeleton.find_bone("Palp.%s.1" % tag), 0.11, 0.016, 0.014,
+			_banded(legs, band, 0.11), cut)
+		_segment(tool, skeleton, skeleton.find_bone("Palp.%s.2" % tag), 0.1, 0.014, 0.018,
+			_banded(legs, band, 0.1), cut)
 
+
+## Eight legs of four segments. [param widths] is each segment's radius at its root
+## and its tip, and [param colours] its colour and the colour it shades to at the
+## far joint, both in [constant LEG_PARTS] order.
+static func _eight_legs(tool: SurfaceTool, skeleton: Skeleton3D, cut: Cut, widths: Array,
+		colours: Array) -> void:
 	for pair in LEGS.size():
 		var spec: Dictionary = LEGS[pair]
+		var lengths := [COXA, float(spec["femur"]), float(spec["tibia"]), float(spec["tarsus"])]
 		for tag in SIDES:
-			var leg := "Leg.%s%d" % [tag, pair + 1]
-			_segment(body, skeleton, skeleton.find_bone(leg + ".Coxa"), COXA, 0.026, 0.024,
-				legs, legs)
-			_segment(body, skeleton, skeleton.find_bone(leg + ".Femur"), spec["femur"],
-				0.026, 0.021, legs, band)
-			_segment(body, skeleton, skeleton.find_bone(leg + ".Tibia"), spec["tibia"],
-				0.021, 0.016, legs, band)
-			_segment(body, skeleton, skeleton.find_bone(leg + ".Tarsus"), spec["tarsus"],
-				0.015, 0.006, legs, legs.lerp(band, 0.4))
+			for part in LEG_PARTS.size():
+				var bone := skeleton.find_bone("Leg.%s%d.%s" % [tag, pair + 1, LEG_PARTS[part]])
+				var width: Array = widths[part]
+				var colour: Array = colours[part]
+				var length: float = lengths[part]
+				_segment(tool, skeleton, bone, length, width[0], width[1],
+					_banded(colour[0], colour[1], length), cut)
 
-	var mesh := ArrayMesh.new()
-	body.commit(mesh)
-	eyes.commit(mesh)
-	mesh.surface_set_material(0, _shell_material())
-	mesh.surface_set_material(1, _eye_material(palette.get("eyeshine", Color(0.9, 0.55, 0.2))))
-	return mesh
+
+## How thick each segment of a leg is, root and tip: thick at the hip, fine at
+## the foot. Pairs of floats rather than a Vector2, which would round them.
+static func _leg_widths() -> Array:
+	return [[0.026, 0.024], [0.026, 0.021], [0.021, 0.016], [0.015, 0.006]]
+
+
+## Each segment's colour and the band it ends in. The coxa has none, and the
+## tarsus only a faint one: the bands sit at the knee and the ankle.
+static func _leg_colours(legs: Color, band: Color) -> Array:
+	return [[legs, legs], [legs, band], [legs, band], [legs, legs.lerp(band, 0.4)]]
+
+
+## Eight eyes on [param head], in [constant EYES] and its mirror image.
+static func _eight_eyes(tool: SurfaceTool, skeleton: Skeleton3D, head: int, paint: Callable,
+		sides: int, rings: int, flat: bool) -> void:
+	for side in [-1.0, 1.0]:
+		for eye in EYES:
+			var at: Vector3 = eye[0]
+			var size: float = eye[1]
+			_ellipsoid(tool, skeleton, head, Vector3(at.x * side, at.y, at.z),
+				Vector3.ONE * size, paint, sides, rings, flat)
+
+
+## Paints everything [param colour].
+static func _plain(colour: Color) -> Callable:
+	return func(_n: Vector3, _p: Vector3) -> Color: return colour
+
+
+## Paints a segment [param length] long [param colour], shading to [param tip]
+## over its last quarter — spiders' legs are banded, and the bands sit at the
+## joints.
+static func _banded(colour: Color, tip: Color, length: float) -> Callable:
+	return func(_n: Vector3, p: Vector3) -> Color:
+		return colour.lerp(tip, smoothstep(0.72, 1.0, clampf(p.y / length, 0.0, 1.0)))
 
 
 static func _begin() -> SurfaceTool:
@@ -243,6 +420,16 @@ static func _begin() -> SurfaceTool:
 	tool.set_skin_weight_count(SurfaceTool.SKIN_4_WEIGHTS)
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	return tool
+
+
+static func _commit(body: SurfaceTool, eyes: SurfaceTool, body_material: Material,
+		eye_material: Material) -> ArrayMesh:
+	var mesh := ArrayMesh.new()
+	body.commit(mesh)
+	eyes.commit(mesh)
+	mesh.surface_set_material(0, body_material)
+	mesh.surface_set_material(1, eye_material)
+	return mesh
 
 
 ## One vertex, in [param bone]'s rest space, put into the skeleton's rest space
@@ -257,10 +444,10 @@ static func _vertex(tool: SurfaceTool, rest: Transform3D, bone: int, at: Vector3
 
 
 ## An ellipsoid on [param bone], centred at [param centre] in its space.
-## [param paint] colours each vertex from its unit normal and its position.
+## [param paint] colours it from the unit normal and the position, both in the
+## bone's space; with [param flat], once per face rather than once per vertex.
 static func _ellipsoid(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, centre: Vector3,
-		radii: Vector3, paint: Callable, sides := 12, rings := 8) -> void:
-	var rest := skeleton.get_bone_global_rest(bone)
+		radii: Vector3, paint: Callable, sides := 12, rings := 8, flat := false) -> void:
 	var grid: Array = []
 	for r in rings + 1:
 		var row: Array = []
@@ -271,84 +458,122 @@ static func _ellipsoid(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, centr
 			var at := centre + unit * radii
 			# The true normal of a squashed sphere, not the sphere's.
 			var normal := Vector3(unit.x / radii.x, unit.y / radii.y, unit.z / radii.z).normalized()
-			row.append([at, normal, paint.call(normal, at)])
+			row.append([at, normal, Color.BLACK if flat else paint.call(normal, at)])
 		grid.append(row)
-	# Clockwise seen from outside, which is Godot's front face.
-	for r in rings:
-		for s in sides:
-			var a: Array = grid[r][s]
-			var b: Array = grid[r + 1][s]
-			var c: Array = grid[r + 1][s + 1]
-			var d: Array = grid[r][s + 1]
-			for corner in [a, c, b, a, d, c]:
-				_vertex(tool, rest, bone, corner[0], corner[1], corner[2])
+	_sew(tool, skeleton.get_bone_global_rest(bone), bone, grid, paint, flat)
 
 
 ## A limb segment on [param bone]: a tapered tube from its root to [param length]
-## along +Y, with a rounded cap at each end so the joints read as joints.
-## [param tip] is the colour it shades to at the far joint — spiders' legs are
-## banded, and the bands sit at the joints.
+## along +Y, closed at each end the way [param cut] says, so the joints read as
+## joints. [param paint] colours it, as for [method _ellipsoid].
 static func _segment(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, length: float,
-		root_radius: float, tip_radius: float, colour: Color, tip: Color, sides := 8) -> void:
+		root_radius: float, tip_radius: float, paint: Callable, cut: Cut) -> void:
 	if bone < 0:
 		return
-	var rest := skeleton.get_bone_global_rest(bone)
 	var rows: Array = []
-	var cap := 3
 	# Root cap, from the pole round to the equator.
-	for r in cap:
-		var angle := PI * 0.5 * float(cap - r) / float(cap)
-		rows.append([-sin(angle) * root_radius, cos(angle) * root_radius, -sin(angle), 0.0])
-	for r in 5:
-		var t := float(r) / 4.0
-		rows.append([length * t, lerpf(root_radius, tip_radius, t), 0.0, t])
-	for r in range(1, cap + 1):
-		var angle := PI * 0.5 * float(r) / float(cap)
-		rows.append([length + sin(angle) * tip_radius, cos(angle) * tip_radius, sin(angle), 1.0])
+	for r in cut.cap:
+		var angle := PI * 0.5 * float(cut.cap - r) / float(cut.cap)
+		rows.append([-sin(angle) * root_radius, cos(angle) * root_radius, -sin(angle)])
+	for r in cut.rows + 1:
+		var t := float(r) / float(cut.rows)
+		rows.append([length * t, lerpf(root_radius, tip_radius, t), 0.0])
+	for r in range(1, cut.cap + 1):
+		var angle := PI * 0.5 * float(r) / float(cut.cap)
+		rows.append([length + sin(angle) * tip_radius, cos(angle) * tip_radius, sin(angle)])
 	var grid: Array = []
 	for row in rows:
 		var y: float = row[0]
 		var radius: float = row[1]
 		var tilt: float = row[2]
-		var t: float = row[3]
-		var shade := colour.lerp(tip, smoothstep(0.72, 1.0, t))
 		var ring: Array = []
-		for s in sides + 1:
-			var angle := TAU * float(s) / float(sides)
+		for s in cut.sides + 1:
+			var angle := TAU * float(s) / float(cut.sides) + cut.twist
 			var around := Vector3(cos(angle), 0.0, sin(angle))
 			var normal := (around * sqrt(maxf(1.0 - tilt * tilt, 0.0)) + Vector3.UP * tilt).normalized()
-			ring.append([Vector3(around.x * radius, y, around.z * radius), normal, shade])
+			var at := Vector3(around.x * radius, y, around.z * radius)
+			ring.append([at, normal, Color.BLACK if cut.flat else paint.call(normal, at)])
 		grid.append(ring)
+	_sew(tool, skeleton.get_bone_global_rest(bone), bone, grid, paint, cut.flat)
+
+
+## Sews rings of vertices — each one [position, normal, colour], in the bone's
+## space — into triangles on [param bone].
+##
+## With [param flat], every face gets one normal and one colour of its own, which
+## is what makes low poly read as low poly rather than as a sphere drawn badly:
+## the normal is the face's own, and the colour is [param paint]'s at its middle,
+## a shade lighter or darker from face to face the way a faceted model is painted.
+static func _sew(tool: SurfaceTool, rest: Transform3D, bone: int, grid: Array,
+		paint: Callable, flat: bool) -> void:
 	for r in grid.size() - 1:
-		for s in sides:
+		for s in (grid[r] as Array).size() - 1:
 			var a: Array = grid[r][s]
 			var b: Array = grid[r + 1][s]
 			var c: Array = grid[r + 1][s + 1]
 			var d: Array = grid[r][s + 1]
-			for corner in [a, c, b, a, d, c]:
-				_vertex(tool, rest, bone, corner[0], corner[1], corner[2])
+			# Clockwise seen from outside, which is Godot's front face.
+			for face in [[a, c, b], [a, d, c]]:
+				if not flat:
+					for corner in face:
+						_vertex(tool, rest, bone, corner[0], corner[1], corner[2])
+					continue
+				var p0: Vector3 = face[0][0]
+				var p1: Vector3 = face[1][0]
+				var p2: Vector3 = face[2][0]
+				var normal := (p1 - p0).cross(p2 - p0)
+				# Two corners on one pole: a face with no area, and no way it faces.
+				if normal.length_squared() < 1e-14:
+					continue
+				normal = normal.normalized()
+				var outward: Vector3 = face[0][1] + face[1][1] + face[2][1]
+				if normal.dot(outward) < 0.0:
+					normal = -normal
+				var middle := (p0 + p1 + p2) / 3.0
+				var colour: Color = paint.call(normal, middle)
+				var shade := 0.94 + 0.12 * _noise(middle)
+				colour = Color(colour.r * shade, colour.g * shade, colour.b * shade, colour.a)
+				for corner in face:
+					_vertex(tool, rest, bone, corner[0], normal, colour)
 
 
-static func _shell_material() -> StandardMaterial3D:
+## A number from 0 to 1 that is the same every time for the same point.
+static func _noise(at: Vector3) -> float:
+	return fposmod(sin(at.dot(Vector3(12.9898, 78.233, 37.719))) * 43758.5453, 1.0)
+
+
+static func _shell_material(roughness := 0.5, metallic := 0.08, rim := 0.35) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.vertex_color_use_as_albedo = true
-	material.roughness = 0.5
-	material.metallic = 0.08
+	material.roughness = roughness
+	material.metallic = metallic
 	# A little rim light for the hairs, so a dark spider against a dark wall still
 	# has an outline.
 	material.rim_enabled = true
-	material.rim = 0.35
+	material.rim = rim
 	material.rim_tint = 0.6
 	return material
 
 
-static func _eye_material(shine: Color) -> StandardMaterial3D:
+## One flat colour, soft and matte, with the same rim to keep an outline.
+static func _matte_material(colour: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.02, 0.02, 0.025)
+	material.albedo_color = colour
+	material.roughness = 0.8
+	material.rim_enabled = true
+	material.rim = 0.3
+	material.rim_tint = 0.5
+	return material
+
+
+static func _eye_material(shine: Color, albedo := Color(0.02, 0.02, 0.025),
+		glow := 0.35) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = albedo
 	material.roughness = 0.05
 	material.metallic = 0.3
 	# Eyeshine, faint: enough to find the head from across a room.
 	material.emission_enabled = true
 	material.emission = shine
-	material.emission_energy_multiplier = 0.35
+	material.emission_energy_multiplier = glow
 	return material

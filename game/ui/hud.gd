@@ -28,6 +28,7 @@ X                      pick up the item you are looking at
 E                      the tree — spend what you have eaten
 F                      wrap prey, then drain it
 X                      pull down the web you're looking at
+O                      the spider's look: detailed, low poly or minimal
 
 L  camera   T  free the mouse   H  hide this   Esc  quit"""
 

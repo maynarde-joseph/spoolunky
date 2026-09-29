@@ -1,14 +1,15 @@
 class_name SpiderBody
 extends Node3D
 
-## The spider you see: a skeleton, one skinned mesh riding it, and a gait that
-## puts eight feet down on whatever the spider is standing on.
+## The spider you see: a skeleton, one skinned mesh riding it in whichever
+## [member look] is chosen, and a gait that puts eight feet down on whatever the
+## spider is standing on.
 ##
 ## It was a stand-in built from primitives, with legs that swung in two sets and
 ## never touched anything, which was enough to read the spider's size and which
-## way it faced. It is a rig now — see [SpiderRig] for the bones and [SpiderGait]
-## for how they move — and this node's job is only to build it and to tell the
-## gait, every frame, what the rest of the spider is doing.
+## way it faced. It is a rig now — see [SpiderRig] for the bones and the looks,
+## and [SpiderGait] for how they move — and this node's job is only to build it,
+## dress it, and tell the gait, every frame, what the rest of the spider is doing.
 ##
 ## Local forward is -Z, matching the body it hangs off, and the node is scaled to
 ## the tier, so everything under it is in body heights.
@@ -21,6 +22,15 @@ extends Node3D
 ## Eyeshine: faint, so the head can be found across a dark room.
 @export var eye_colour := Color(0.9, 0.55, 0.2)
 
+## Which mesh the skeleton wears — see [enum SpiderRig.Look]. Every look hangs off
+## the same bones, so this changes what the spider looks like and nothing about
+## how it moves. O cycles through them in game.
+@export var look: SpiderRig.Look = SpiderRig.Look.DETAILED:
+	set(value):
+		look = value
+		if mesh != null:
+			_dress()
+
 var skeleton: Skeleton3D
 var gait: SpiderGait
 var mesh: MeshInstance3D
@@ -28,6 +38,10 @@ var mesh: MeshInstance3D
 var _spider: SpiderPlayer
 var _height := 0.25
 var _was_visible := true
+
+## Each look's mesh, built the first time it is worn and kept, so going back to
+## one is only a swap.
+var _wardrobe := {}
 
 
 func _ready() -> void:
@@ -125,6 +139,16 @@ func _stance() -> SpiderGait.Stance:
 	return SpiderGait.Stance.AIR
 
 
+## Changes to the next look along, or back one with a negative [param step].
+func cycle_look(step := 1) -> void:
+	look = wrapi(int(look) + step, 0, SpiderRig.Look.size()) as SpiderRig.Look
+
+
+## What the look being worn is called, for telling the player.
+func look_name() -> String:
+	return SpiderRig.LOOK_NAMES[look]
+
+
 ## Where each foot was drawn last frame — the tip of every tarsus, in the world,
 ## in leg order: L1 R1 L2 R2 L3 R3 L4 R4. See [method SpiderGait.drawn_feet] for
 ## why the gait keeps these rather than the skeleton.
@@ -140,15 +164,23 @@ func _build() -> void:
 
 	mesh = MeshInstance3D.new()
 	mesh.name = "Shell"
-	mesh.mesh = SpiderRig.build_mesh(skeleton, {
-		"body": body_colour, "legs": leg_colour, "band": band_colour,
-		"marking": marking_colour, "eyeshine": eye_colour,
-	})
 	skeleton.add_child(mesh)
 	mesh.skeleton = NodePath("..")
+	# One skin for every look: they are all built on the same rest pose.
 	mesh.skin = skeleton.create_skin_from_rest_transforms()
+	_dress()
 
 	gait = SpiderGait.new()
 	gait.name = "Gait"
 	skeleton.add_child(gait)
 	gait.bind(skeleton)
+
+
+## Puts the skeleton in the mesh for [member look].
+func _dress() -> void:
+	if not _wardrobe.has(look):
+		_wardrobe[look] = SpiderRig.build_mesh(skeleton, {
+			"body": body_colour, "legs": leg_colour, "band": band_colour,
+			"marking": marking_colour, "eyeshine": eye_colour,
+		}, look)
+	mesh.mesh = _wardrobe[look]

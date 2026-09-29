@@ -46,6 +46,7 @@ signal skill_tree_toggled()
 @export var input_weave_toggle := "web_weave_toggle"
 @export var input_ride := "web_ride"
 @export var input_toggle_camera := "toggle_camera"
+@export var input_cycle_look := "cycle_look"
 @export var input_device_mode := "device_mode"
 @export var input_throw_mode := "web_throw_mode"
 @export var input_tether := "web_tether"
@@ -288,6 +289,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed(input_toggle_camera):
 		view.toggle_mode()
 		notice.emit("Camera: %s" % ("third person" if view.third_person else "first person"))
+	elif event.is_action_pressed(input_cycle_look) and body != null:
+		body.cycle_look()
+		notice.emit("Spider: %s" % body.look_name())
 	elif _device_tool_active() and event.is_action_pressed(input_place_anchor):
 		device_placer.place()
 	elif _device_tool_active() and event.is_action_pressed(input_cancel_anchor):

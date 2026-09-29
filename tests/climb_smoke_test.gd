@@ -41,6 +41,7 @@ func run_checks() -> void:
 	await _test_corners_do_not_bounce()
 	await _test_off_a_line_onto_a_wall()
 	await _test_the_body_is_a_skeleton()
+	await _test_three_looks_on_one_skeleton()
 	await _test_eight_feet_on_whatever_is_underfoot()
 	await _test_ziplining()
 	await _test_grappling()
@@ -451,6 +452,95 @@ func _test_the_body_is_a_skeleton() -> void:
 	var size := skeleton.global_transform.basis.get_scale().x
 	check(is_equal_approx(size, _spider.stage().body_height),
 		"sized to the tier (%.3f for a %.2fm body)" % [size, _spider.stage().body_height])
+
+
+## The spider can be drawn three ways, and every one of them is a mesh on the same
+## bones: detailed, low poly — the same parts cut into flat faces — and minimal,
+## two blobs on eight thin legs. O goes round them. Changing look swaps the mesh
+## and touches nothing else, which is also the proof that a modelled spider could
+## go onto these bones the same way.
+func _test_three_looks_on_one_skeleton() -> void:
+	var body := _spider.body
+	var skeleton := body.skeleton
+	var shell := body.mesh
+	var bones := skeleton.get_bone_count()
+	var was := body.look
+	body.look = SpiderRig.Look.DETAILED
+	await _set_down(Vector3(0.0, -ROOM_HALF.y + 0.5, 0.6), Vector3.FORWARD, -0.2)
+	await wait_until(func() -> bool: return body.gait.lifted() == 0, 120)
+	await run_frames(10)
+	var feet := body.feet()
+	var faces := {}
+	for look in SpiderRig.Look.size():
+		body.look = look as SpiderRig.Look
+		var label := body.look_name()
+		var mesh := shell.mesh as ArrayMesh
+		if not check(mesh != null and mesh.get_surface_count() == 2,
+				"the %s look is one mesh: a body and its eyes" % label):
+			continue
+		var stray := 0
+		var count := 0
+		var used := {}
+		for surface in mesh.get_surface_count():
+			var arrays := mesh.surface_get_arrays(surface)
+			var ids: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
+			var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
+			for v in range(0, ids.size(), 4):
+				if ids[v] < 0 or ids[v] >= bones or not is_equal_approx(weights[v], 1.0):
+					stray += 1
+				used[ids[v]] = true
+			count += mesh.surface_get_array_len(surface) / 3
+		faces[look] = count
+		check(stray == 0, "with every vertex on one of the skeleton's bones (%d not)" % stray)
+		check(shell.skin != null and shell.get_node_or_null(shell.skeleton) == skeleton,
+			"worn on the same skeleton")
+		if look == SpiderRig.Look.LOW_POLY:
+			var normals: PackedVector3Array = mesh.surface_get_arrays(0)[Mesh.ARRAY_NORMAL]
+			var smooth := 0
+			for i in range(0, normals.size(), 3):
+				if not (normals[i].is_equal_approx(normals[i + 1])
+						and normals[i].is_equal_approx(normals[i + 2])):
+					smooth += 1
+			check(smooth == 0, "shaded flat, one normal to a face (%d faces smooth)" % smooth)
+		if look == SpiderRig.Look.MINIMAL:
+			var extras: Array[String] = []
+			for bone in used:
+				var bone_name := skeleton.get_bone_name(bone)
+				if not (bone_name == "Thorax" or bone_name == "Abdomen" or bone_name.begins_with("Leg.")):
+					extras.append(bone_name)
+			check(extras.is_empty(), "nothing on it but a body, an abdomen and legs (%s besides)"
+				% (", ".join(extras) if not extras.is_empty() else "nothing"))
+	if faces.size() == SpiderRig.Look.size():
+		check(faces[SpiderRig.Look.LOW_POLY] * 4 < faces[SpiderRig.Look.DETAILED],
+			"low poly is a fraction of the detailed look's faces (%d against %d)"
+			% [faces[SpiderRig.Look.LOW_POLY], faces[SpiderRig.Look.DETAILED]])
+		check(faces[SpiderRig.Look.MINIMAL] < faces[SpiderRig.Look.DETAILED],
+			"and minimal is fewer too (%d)" % faces[SpiderRig.Look.MINIMAL])
+
+	# O, from the start: round every look and back to where it began.
+	check(InputMap.has_action(_spider.input_cycle_look), "there is a key for the spider's look")
+	body.look = SpiderRig.Look.DETAILED
+	var said: Array[String] = []
+	var listen := func(text: String) -> void: said.append(text)
+	_spider.notice.connect(listen)
+	var seen: Array[String] = []
+	for i in SpiderRig.Look.size():
+		send_action(_spider.input_cycle_look)
+		release_action(_spider.input_cycle_look)
+		await process_frame
+		seen.append(body.look_name())
+	_spider.notice.disconnect(listen)
+	check(seen == ["low poly", "minimal", "detailed"],
+		"O goes round them all and back (%s)" % ", ".join(seen))
+	check(said.size() == seen.size() and said.back().contains("detailed"),
+		"saying which each time (%s)" % " / ".join(said))
+	var moved := 0.0
+	var now := body.feet()
+	for leg in mini(feet.size(), now.size()):
+		moved = maxf(moved, feet[leg].distance_to(now[leg]))
+	check(moved < _spider.stage().body_height * 0.02,
+		"and not one foot moved for it (%.3f body heights)" % (moved / _spider.stage().body_height))
+	body.look = was
 
 
 ## Feet go down on whatever the spider is on, stay where they are put, and walk in

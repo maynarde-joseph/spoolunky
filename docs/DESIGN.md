@@ -1523,9 +1523,26 @@ silhouette is what makes it read as a spider rather than a table.
 
 Every bone points along its own +Y, the way imported rigs do, so a modelled spider
 can later be put on the same bone names and the gait will drive it unchanged. The
-mesh that ships is built in code and stands in for that model. It is one skinned
+meshes that ship are built in code and stand in for that model. Each is one skinned
 surface with every vertex on exactly one bone, because an exoskeleton turns in
 pieces at its joints rather than bending.
+
+**Three looks, one skeleton, and O to switch between them.** Which one the game
+settles on is still open, so all three are kept and can be tried in play:
+
+* **Detailed**: banded legs, a marked carapace and abdomen, jaws, palps and eight
+  glossy eyes, all smooth-shaded.
+* **Low poly**: the same parts cut into flat faces, about a ninth of the
+  triangles. Legs are four-sided and come to a point at every joint, and each face
+  has one normal and one colour, so the markings survive as whole faces picked out
+  in the paler colour.
+* **Minimal**: two smooth blobs on eight thin legs with round joints, two pale
+  eyes, and one colour for everything else. It uses no bones but the thorax, the
+  abdomen and the legs.
+
+Changing look swaps the mesh and nothing else. The skin, the gait and every foot
+stay exactly where they were. That is also the working proof of the claim above:
+a mesh built by anyone, on these bone names, is driven the same way.
 
 A trap for anything that reads the bones back: once the frame is drawn, the
 skeleton hands back its *unmodified* pose, so `get_bone_global_pose` answers with
@@ -1579,6 +1596,7 @@ hold in their head on the first screen.
 | **F** | Wrap the prey you are looking at, then drain it |
 | **X** | Pull down the web or line you are looking at |
 | **L** | Camera: third person or first person |
+| **O** | The spider's look: detailed, low poly or minimal (§7, *The body*) |
 | **H** | Toggle help · **T** Release mouse · **Esc** Quit |
 
 ### Parked, not deleted

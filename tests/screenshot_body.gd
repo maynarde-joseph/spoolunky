@@ -1,21 +1,23 @@
 extends SceneTree
 
-## Renders the spider's body in every state the gait has a pose for, close up, to
-## PNG files — for checking how the rig reads without opening the editor. Needs a
-## display; on a headless machine run it through xvfb:
+## Renders the spider's body in every state the gait has a pose for, close up, in
+## every look, to PNG files — for checking how the rig reads without opening the
+## editor. Needs a display; on a headless machine run it through xvfb:
 ##
 ##     xvfb-run -a godot --rendering-driver opengl3 --resolution 800x600 \\
 ##         --script res://tests/screenshot_body.gd
 ##
-## Pass a state's name after `--` to render only that one. The shots land in the
-## user data folder; the paths are printed on the way out.
+## Name states (`walk`, `wall` ...) or looks (`detailed`, `low_poly`, `minimal`)
+## after `--` to render only those. The shots land in the user data folder as
+## `body_<look>_<state>.png`; the paths are printed on the way out.
 
 const ROOM_HALF := Vector3(3.0, 1.6, 3.0)
 
 var _room: Node3D
 var _spider: SpiderPlayer
 var _eye: Camera3D
-var _only := ""
+var _states: Array[String] = []
+var _look := ""
 
 
 func _initialize() -> void:
@@ -23,8 +25,17 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var args := OS.get_cmdline_user_args()
-	_only = args[0] if args.size() > 0 else ""
+	var names: Array[String] = []
+	for label in SpiderRig.LOOK_NAMES:
+		names.append(String(label).replace(" ", "_"))
+	var looks: Array[int] = []
+	for arg in OS.get_cmdline_user_args():
+		if names.has(arg):
+			looks.append(names.find(arg))
+		else:
+			_states.append(arg)
+	if looks.is_empty():
+		looks.assign(range(names.size()))
 	_build_room()
 	await physics_frame
 
@@ -42,11 +53,26 @@ func _run() -> void:
 	_eye = Camera3D.new()
 	_eye.fov = 45.0
 	_room.add_child(_eye)
-	await _reset()
+	for look in looks:
+		_spider.body.look = look as SpiderRig.Look
+		_look = names[look]
+		await _pose_all()
 
+	current_scene = null
+	_room.free()
+	quit(0)
+
+
+## Every state asked for, in the look being worn.
+func _pose_all() -> void:
+	await _reset()
 	if _want("stand"):
 		await _save("stand_front", Vector3(0.9, 0.9, -2.6))
 		await _save("stand_side", Vector3(3.0, 0.6, 0.0))
+	# Close, from above and in front: the back, the face and the finish of the
+	# mesh, which is what tells one look from another.
+	if _want("portrait"):
+		await _save("portrait", Vector3(1.0, 1.1, -0.9))
 	if _want("walk"):
 		Input.action_press("move_forward")
 		await _frames(20)
@@ -125,14 +151,14 @@ func _run() -> void:
 		_spider.climb.toggle_ride()
 		await _frames(12)
 		await _save("ride", Vector3(0.5, 0.3, 3.0), 0, true)
-
-	current_scene = null
-	_room.free()
-	quit(0)
+		# Off it and down, so the next look's shots are not strung with it.
+		_spider.climb.release()
+		line.demolish()
+		await _frames(2)
 
 
 func _want(what: String) -> bool:
-	return _only == "" or _only == what
+	return _states.is_empty() or _states.has(what)
 
 
 ## Back to standing in the middle of the room, or wherever [param at] says,
@@ -177,7 +203,7 @@ func _save(label: String, offset: Vector3, settle := 20, world := false) -> void
 	for i in 2:
 		await process_frame
 	await RenderingServer.frame_post_draw
-	var path := "user://body_%s.png" % label
+	var path := "user://body_%s_%s.png" % [_look, label]
 	root.get_texture().get_image().save_png(path)
 	print("saved ", ProjectSettings.globalize_path(path))
 	_spider.view.camera.make_current()
