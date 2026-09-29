@@ -1573,6 +1573,44 @@ wasp that drives a spiderling off a corpse is a Huntsman's dinner, and growing
 *flips the relationship* rather than swapping the cast. Wasps hunt hard and fast;
 beetles hunt slowly and on the ground; midges never hunt anything.
 
+### Bodies
+
+**Decided: every creature is drawn the minimal way, on a skeleton, with a few
+simple poses. The spider is the only thing with a gait.**
+
+Of the spider's three looks, minimal is the one the game is taking forward, and
+its creatures follow it: smooth parts, thin limbs of one width with round joints,
+a few flat colours and clear wings. A creature is small on screen and on screen
+briefly, so what it needs is a silhouette you can name at a glance and a pose that
+says what it is doing. It does not need detail.
+
+* **A body is a resource.** Each kind of animal is a script (`InsectBody` for
+  insects) and each species is a `.tres` of it, in `game/data/bodies/`, holding
+  every size, colour and part as a number — the stripes on a wasp, the length of
+  a mosquito's proboscis. A `PreySpecies` points at one; without one it is still
+  the placeholder ball. So a new creature is still files, never a scene.
+* **One mesh for every creature of a species.** The bones are each creature's
+  own, but the mesh and the skin are built once and shared. A room holding a dozen
+  flies builds one fly.
+* **Five poses, eased between.** *Flying*: wings beating, legs tucked up.
+  *Walking*: legs three at a time, the tripod gait real insects use, wings folded.
+  *Struggling*: in a web and fighting, legs and wings thrashing as hard as it has
+  fight left. *Spent*: fought out, hanging slack. *Curled*: wrapped, head down in
+  the bundle, legs drawn in. The creature itself decides nothing — the view reads
+  the prey's own state, so behaviour and body cannot disagree.
+* **It faces where it is going.** The prey never turned: its collider is a ball,
+  so it had no reason to. The body turns to its heading instead, and pitches nose
+  up when it climbs.
+* **What you see is what you hit.** Each body is laid out so that from the front
+  of its head to the tip of its abdomen it is centred on the creature's middle,
+  about the length of its hitbox. Legs, feelers and wings reach past it, the way
+  the spider's legs reach past its collider. A walker's body drops until its feet
+  reach the bottom of that collider, which is where the floor is.
+
+No foot is planted and nothing looks at the world. That is the spider's gait and
+it is expensive; on something a centimetre long, a leg that swings in the right
+rhythm is indistinguishable from one that grips.
+
 ---
 
 ## 9. Controls (current build)

@@ -11,15 +11,16 @@ The full pitch — the loop, the size tiers, the zones, the trap catalogue — i
 
 ```
 game/
-  data/      web patterns, devices and size tiers (plain resources — edit the numbers)
+  data/      web patterns, devices, size tiers, creatures and their bodies (plain
+             resources — edit the numbers)
   web/       procedural silk geometry and the webs themselves
   player/    the spider, one node per job: growth, climbing, the camera, the
              builder, the tether, the bag, the traits, eating and stamina, and
              the body you see — a skeleton and the gait that walks it
   prey/      things to catch, and something to spawn them
-  rig/       what bodies are built from: bones, and meshes skinned to them
+  rig/       bodies: bones, meshes skinned to them, and the motion that poses them
   ui/        HUD
-tests/       three headless suites and screenshot tools
+tests/       four headless suites and screenshot tools
   support/   what the suites share: the verdict, and the arena a web check runs in
 addons/character-controller/   the movement template the spider is built on
 ```
@@ -323,6 +324,14 @@ And **size** is your bite power, which is why a wasp needs venom or a few more
 meals before you can drain one — and it's what a web's **mesh** dial catches
 or lets through, so spinning coarse to save silk means small things walk out.
 
+A creature with a **body** is drawn from it: a skeleton, one mesh skinned to it,
+and simple motion — wings that beat in flight and fold at rest, six legs that tuck
+up to fly or walk three at a time, thrashing in a web, curled up once wrapped, and
+always facing where it is going. Bodies are resources too, in `game/data/bodies/`.
+An insect's is an `InsectBody`, where every size, colour and part is a number, and
+a species points at one with its `body` field. One without is still drawn as the
+old placeholder ball.
+
 ## Leaving a web and coming back
 
 Prey that hits a web fights hard for about five seconds. Survive that and it
@@ -488,6 +497,14 @@ spider lands on the floor rather than through it:
 godot --headless --script res://tests/world_smoke_test.gd
 ```
 
+A fourth lets every creature that has a body loose in an empty room and checks it
+holds itself the way it should — facing where it goes, wings beating, feet on the
+floor, legs thrashing when it is caught, curled up and still once it is wrapped:
+
+```sh
+godot --headless --script res://tests/creature_smoke_test.gd
+```
+
 Each prints a line per check and exits non-zero if any fail. Together they take
 about a minute.
 
@@ -501,7 +518,7 @@ SPOOLUNKY_SHUFFLE=whatever godot --headless --script res://tests/web_smoke_test.
 ```
 
 They also run on every push: `.github/workflows/tests.yml` fetches the newest
-Linux build matching `GODOT_VERSION` and runs all three. Bump that one variable
+Linux build matching `GODOT_VERSION` and runs all four. Bump that one variable
 when the project moves to a new engine version — the workflow finds the build
 itself rather than holding a URL that rots.
 
@@ -530,4 +547,13 @@ every look. Name states or looks after `--` to render only those, for instance
 ```sh
 xvfb-run -a godot --rendering-driver opengl3 --resolution 800x600 \
     --script res://tests/screenshot_body.gd
+```
+
+And every creature with a body, close up, in each pose it has — in flight or
+walking, at rest, caught, wrapped — plus `creatures.png`, a sheet of all of them.
+Name species or poses after `--` to render only those, for instance `-- fly caught`:
+
+```sh
+xvfb-run -a godot --rendering-driver opengl3 --resolution 800x600 \
+    --script res://tests/screenshot_creatures.gd
 ```

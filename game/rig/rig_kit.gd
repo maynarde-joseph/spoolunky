@@ -152,6 +152,134 @@ static func segment(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, length: 
 	sew(tool, skeleton.get_bone_global_rest(bone), bone, grid, paint, cut.flat)
 
 
+## A body part turned on a lathe: rings round an axis, each one a row of
+## [param rows] — [y, radius across, radius up, colour] — in order along it.
+## [param frame] carries the lathe's own space, where the axis is +Y, into the
+## bone's; that is how an egg is laid along a body that runs front to back.
+##
+## Two rows at the same place give a hard edge between their colours, which is
+## how a band round an abdomen starts where it starts rather than fading in over
+## a row. A row with no radius is a pole.
+static func lathe(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, frame: Transform3D,
+		rows: Array, sides := 12) -> void:
+	if bone < 0 or rows.size() < 2:
+		return
+	var grid: Array = []
+	for i in rows.size():
+		var row: Array = rows[i]
+		var y: float = row[0]
+		var across: float = row[1]
+		var up: float = row[2]
+		# The slope of the profile here, from the nearest rows either side that sit
+		# somewhere else along it: the rows of a hard edge share a place.
+		var before := i
+		while before > 0 and is_equal_approx(float(rows[before][0]), y):
+			before -= 1
+		var after := i
+		while after < rows.size() - 1 and is_equal_approx(float(rows[after][0]), y):
+			after += 1
+		var run: float = float(rows[after][0]) - float(rows[before][0])
+		var widen := 0.0
+		var rise := 0.0
+		if absf(run) > 0.000001:
+			widen = (float(rows[after][1]) - float(rows[before][1])) / run
+			rise = (float(rows[after][2]) - float(rows[before][2])) / run
+		var ring: Array = []
+		for s in sides + 1:
+			var angle := TAU * float(s) / float(sides)
+			var c := cos(angle)
+			var n := sin(angle)
+			var normal := Vector3(up * c, -(up * widen * c * c + across * rise * n * n), across * n)
+			if normal.length_squared() < 0.000000001:
+				normal = Vector3.DOWN if i == 0 else Vector3.UP
+			ring.append([frame * Vector3(across * c, y, up * n),
+				(frame.basis * normal).normalized(), row[3]])
+		grid.append(ring)
+	sew(tool, skeleton.get_bone_global_rest(bone), bone, grid, plain(Color.WHITE), false)
+
+
+## The rows of an egg for [method lathe]: [param radii] across, up and half its
+## length, centred on the lathe's origin, narrowing toward its +Y end by
+## [param point] — 0 is an egg's round end, 1 comes to a point. [param paint]
+## colours it by where along it a row is; [param cuts] are places along it where
+## the colour changes all at once.
+static func ovoid(radii: Vector3, point: float, count: int, paint: Callable,
+		cuts := PackedFloat32Array()) -> Array:
+	var places: Array[float] = []
+	for i in count:
+		# Closer together at the ends, where the curve is.
+		places.append(-radii.z * cos(PI * float(i) / float(count - 1)))
+	for cut in cuts:
+		if cut > -radii.z and cut < radii.z:
+			places.append(cut)
+	places.sort()
+	var rows: Array = []
+	for y in places:
+		var u := clampf(y / radii.z, -1.0, 1.0)
+		var girth := sqrt(maxf(1.0 - u * u, 0.0)) * (1.0 - point * pow(maxf(u, 0.0), 1.5))
+		var at_cut := false
+		for cut in cuts:
+			if is_equal_approx(cut, y):
+				at_cut = true
+		if at_cut:
+			# Both colours, at the same place.
+			rows.append([y, radii.x * girth, radii.y * girth, paint.call(y - 0.0001)])
+		rows.append([y, radii.x * girth, radii.y * girth, paint.call(y + 0.0001)])
+	return rows
+
+
+## The rows of a rod for [method lathe], [param length] long and [param radius]
+## round, from the origin along +Y, with a round end each side.
+static func capsule(length: float, radius: float, colour: Color, ends := 3) -> Array:
+	var rows: Array = []
+	for i in ends + 1:
+		var angle := PI * 0.5 * float(ends - i) / float(ends)
+		rows.append([-sin(angle) * radius, cos(angle) * radius, cos(angle) * radius, colour])
+	rows.append([length, radius, radius, colour])
+	for i in range(1, ends + 1):
+		var angle := PI * 0.5 * float(i) / float(ends)
+		rows.append([length + sin(angle) * radius, cos(angle) * radius, cos(angle) * radius, colour])
+	return rows
+
+
+## Something flat — a wing — on [param bone]: out along its +Y for
+## [param length], [param width] across where it is broadest, which is
+## [param broadest] of the way out. It lies in the bone's X-Y plane with most of
+## its width behind the leading edge, toward +X, the way a wing's stiff front
+## edge runs nearly straight. [param colour] is the membrane and [param rim] a
+## band round its edge.
+##
+## There is only one side to it, so it wants a material that is drawn from both.
+static func membrane(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, length: float,
+		width: float, broadest: float, colour: Color, rim: Color, points := 14) -> void:
+	if bone < 0:
+		return
+	var rest := skeleton.get_bone_global_rest(bone)
+	# How wide the blade is at each fraction of the way out: nothing at the root
+	# and the tip, rounded at both, broadest where it was asked to be.
+	var bulge := log(0.5) / log(clampf(broadest, 0.05, 0.95))
+	var outline: Array[Vector3] = []
+	for i in points + 1:
+		var s := float(i) / float(points)
+		var chord := sqrt(maxf(sin(PI * pow(s, bulge)), 0.0)) * width
+		outline.append(Vector3(-0.3 * chord, s * length, 0.0))
+	for i in range(points - 1, 0, -1):
+		var s := float(i) / float(points)
+		var chord := sqrt(maxf(sin(PI * pow(s, bulge)), 0.0)) * width
+		outline.append(Vector3(0.7 * chord, s * length, 0.0))
+	var middle := Vector3(0.2 * width, 0.5 * length, 0.0)
+	var flat := Vector3.BACK
+	for i in outline.size():
+		var a := outline[i]
+		var b := outline[(i + 1) % outline.size()]
+		var a_in := middle.lerp(a, 0.86)
+		var b_in := middle.lerp(b, 0.86)
+		for corner in [middle, b_in, a_in]:
+			vertex(tool, rest, bone, corner, flat, colour)
+		for corner in [a_in, b_in, b, a_in, b, a]:
+			vertex(tool, rest, bone, corner, flat, rim)
+
+
 ## Sews rings of vertices — each one [position, normal, colour], in the bone's
 ## space — into triangles on [param bone].
 ##
@@ -202,6 +330,12 @@ static func plain(colour: Color) -> Callable:
 	return func(_n: Vector3, _p: Vector3) -> Color: return colour
 
 
+## Paints every row of a lathe [param colour]: [method plain] for the ones
+## coloured by where along them a row is.
+static func solid(colour: Color) -> Callable:
+	return func(_y: float) -> Color: return colour
+
+
 ## Paints a segment [param length] long [param colour], shading to [param tip]
 ## over its last quarter — where the band on a leg sits, at the joint.
 static func banded(colour: Color, tip: Color, length: float) -> Callable:
@@ -234,6 +368,18 @@ static func matte_material(colour: Color) -> StandardMaterial3D:
 	material.rim_enabled = true
 	material.rim = 0.3
 	material.rim_tint = 0.5
+	return material
+
+
+## For a [method membrane]: coloured by the mesh, drawn from both sides, and
+## see-through where its colours are when [param see_through].
+static func membrane_material(see_through: bool) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.roughness = 0.35
+	if see_through:
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	return material
 
 

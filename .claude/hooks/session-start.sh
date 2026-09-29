@@ -96,6 +96,7 @@ most mistakes, the suites are the only thing that catches the rest:
     godot --headless --path . --script res://tests/web_smoke_test.gd    # ~31s
     godot --headless --path . --script res://tests/climb_smoke_test.gd  # ~26s
     godot --headless --path . --script res://tests/world_smoke_test.gd  # ~7s
+    godot --headless --path . --script res://tests/creature_smoke_test.gd  # ~5s
 
 Each suite prints a line per check and exits non-zero if any fail.
 INFO

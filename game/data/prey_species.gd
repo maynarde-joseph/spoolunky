@@ -95,14 +95,23 @@ extends Resource
 
 @export_group("Body")
 
+## What it looks like and how it moves: a skeleton, a mesh on it and the motion
+## that poses it, all from one resource — see [CreatureBody]. A species without
+## one is drawn as a placeholder, a ball in [member colour] with a pair of flat
+## wings if it is [member winged].
+@export var body: CreatureBody
+
+## The placeholder's colour. A [member body] carries its own.
 @export var colour := Color(0.13, 0.12, 0.15, 1.0)
 
-## Faint glow, so a species reads across a dark room.
+## Faint glow on the placeholder, so a species reads across a dark room.
 @export var sheen := Color(0.45, 0.3, 0.08, 1.0)
 
+## How big it is: its hitbox, and the unit its [member body] is drawn in.
 @export var body_radius := 0.045
 
-## Winged things get a pair that beat while they fly.
+## Whether the placeholder gets a pair of wings that beat while it flies. A
+## [member body] says for itself how many it has.
 @export var winged := true
 
 

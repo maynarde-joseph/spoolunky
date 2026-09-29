@@ -889,8 +889,13 @@ func _arrival_distance() -> float:
 ## Fades out as it tires, so you can read a web across the room: still things
 ## are yours, thrashing things are about to not be.
 func _stuck_wobble() -> float:
-	var fight := clampf(_fight_left / maxf(struggle_stamina, 0.001), 0.0, 1.0)
-	return clampf(struggle_power * 0.01, 0.002, 0.05) * fight
+	return clampf(struggle_power * 0.01, 0.002, 0.05) * fight_left()
+
+
+## How much of its fight it has left, 0 to 1: all of it when it is first caught,
+## none once it has tired itself out. What its body thrashes with.
+func fight_left() -> float:
+	return clampf(_fight_left / maxf(struggle_stamina, 0.001), 0.0, 1.0)
 
 
 func _flap() -> void:
@@ -907,18 +912,30 @@ func _flap() -> void:
 
 ## Body, wings and hitbox, all from the species. Built in code rather than
 ## authored per creature, so a new one really is a .tres and nothing else.
+##
+## A species with a [member PreySpecies.body] gets that: a skeleton and a mesh,
+## posed by a [CreatureView] that watches this node to know what to do. One
+## without gets the placeholder, a ball with a pair of flat wings.
 func _build_body() -> void:
 	var radius := 0.045
 	var colour := Color(0.13, 0.12, 0.15, 1.0)
 	var sheen := Color(0.45, 0.3, 0.08, 1.0)
 	var winged := true
+	var shape: CreatureBody = null
 	if kind != null:
 		radius = maxf(kind.body_radius, 0.008)
 		colour = kind.colour
 		sheen = kind.sheen
 		winged = kind.winged
+		shape = kind.body
 
-	_replace_child("Body", _make_body(radius, colour, sheen))
+	if shape != null:
+		var view := shape.make_view()
+		view.scale = Vector3.ONE * radius
+		_replace_child("Body", view)
+		winged = false
+	else:
+		_replace_child("Body", _make_body(radius, colour, sheen))
 	_replace_child("Hitbox", _make_hitbox(radius))
 	_wings.clear()
 	if winged:
