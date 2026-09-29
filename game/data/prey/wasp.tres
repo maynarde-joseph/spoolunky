@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="PreySpecies" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PreySpecies" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://game/data/prey_species.gd" id="1_species"]
+[ext_resource type="Resource" path="res://game/data/bodies/wasp.tres" id="2_body"]
 
 [resource]
 script = ExtResource("1_species")
@@ -25,6 +26,7 @@ bite_damage = 3.5
 bite_interval = 1.1
 colour = Color(0.75, 0.62, 0.12, 1)
 sheen = Color(0.8, 0.45, 0.05, 1)
+body = ExtResource("2_body")
 body_radius = 0.055
 winged = true
 spawn_weight = 0.5

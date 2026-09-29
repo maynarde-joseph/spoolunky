@@ -11,7 +11,7 @@ extends Node3D
 ## itself never does: its collider is a ball, and a ball has no front.
 
 ## How quickly it swings round to a new heading, per second.
-const TURN_RATE := 7.0
+const TURN_RATE := 10.0
 
 var body: CreatureBody
 var skeleton: Skeleton3D
