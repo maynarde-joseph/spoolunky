@@ -417,7 +417,7 @@ func _walk(delta: float, along: Vector3, speed: float, unit: float, up: Vector3,
 		var t := smoothstep(0.0, 1.0, leg.step_t)
 		var arc := sin(PI * leg.step_t) * (step_lift + minf(speed * 0.012, 0.12)) * unit
 		leg.foot = leg.step_from.lerp(land, t) + up * arc
-		leg.ground_normal = leg.ground_normal.slerp(leg.target_normal, t).normalized()
+		leg.ground_normal = _toward(leg.ground_normal, leg.target_normal, t)
 
 	# Whose turn. One set is up at a time; the set that went last goes second.
 	var busy := [false, false]
@@ -473,7 +473,15 @@ func _swing_loose(leg: Leg, delta: float, rate: float, world: Transform3D,
 	leg.loose = leg.loose.lerp(into * leg.target, ease)
 	leg.foot = world * leg.loose
 	leg.planted = leg.foot
-	leg.ground_normal = leg.ground_normal.slerp(leg.target_normal, ease).normalized()
+	leg.ground_normal = _toward(leg.ground_normal, leg.target_normal, ease)
+
+
+## Eases one surface normal toward another. Not slerp: a foot can go from a floor
+## to a ceiling, and two normals pointing almost opposite ways leave slerp no axis
+## to turn about — it says so in the log, every frame the foot is in the air.
+static func _toward(from: Vector3, to: Vector3, weight: float) -> Vector3:
+	var mixed := from.lerp(to, weight)
+	return mixed.normalized() if mixed.length_squared() > 0.000001 else to
 
 
 func _lift_foot(leg: Leg) -> void:
