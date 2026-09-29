@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="PreySpecies" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/data/prey_species.gd" id="1_species"]
+[ext_resource type="Resource" path="res://game/data/bodies/butterfly.tres" id="2_body"]
+
+[resource]
+script = ExtResource("1_species")
+id = "butterfly"
+display_name = "Butterfly"
+description = "Big, slow and all wing: easy to see coming and it fights feebly, but it lives up high with the moths, drifts where it likes, and for all its size there is not much in it."
+sort_order = 22
+biomass = 14.0
+size_class = 2
+struggle_power = 1.5
+struggle_stamina = 5.0
+settled_drain = 0.02
+move_speed = 1.1
+flying = true
+wander_radius = 9.0
+wander_height = Vector2(1.0, 3.8)
+wander_interval = 3.2
+lure_susceptibility = 0.9
+colour = Color(0.95, 0.5, 0.1, 1)
+sheen = Color(0.7, 0.35, 0.05, 1)
+body = ExtResource("2_body")
+body_radius = 0.05
+winged = true
+spawn_weight = 1.0

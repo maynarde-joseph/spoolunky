@@ -91,15 +91,21 @@ const LEG_PARTS := ["Femur", "Tibia", "Tarsus"]
 ## Length and widest width of a forewing, and of a hindwing.
 @export var wing := Vector2(1.3, 0.55)
 @export var hind_wing := Vector2(0.9, 0.4)
-## Where along its length a wing is widest, from the root (0) to the tip (1).
+## Where along its length a wing is widest, from the root (0) to the tip (1): a
+## forewing, and a hindwing.
 @export_range(0.05, 0.95) var wing_broadest := 0.45
+@export_range(0.05, 0.95) var hind_wing_broadest := 0.45
+## How far back each pair is swept when spread, fore and hind: how much it leans
+## toward the tail for every body radius it reaches out. Negative sweeps forward.
+@export var wing_sweep := Vector2(0.22, 0.45)
 ## Held up together over the back at rest, the way a butterfly holds them, rather
 ## than folded flat along it.
 @export var wings_up := false
-## Beats a second, as drawn — a real fly's are a blur, and so are these — and how
-## far each beat swings, in degrees.
+## Beats a second, as drawn — a real fly's are a blur, and so are these — how far
+## each beat swings, and the angle above flat it swings about, in degrees.
 @export var flap_rate := 15.0
 @export var flap_swing := 55.0
+@export var flap_centre := 10.0
 
 
 @export_group("Walking")
@@ -261,7 +267,7 @@ func _wing(hind: bool, side: float) -> Dictionary:
 	return {
 		"at": _layout()["thorax"] + Vector3(side * thorax.x * 0.45, thorax.y * 0.72,
 			thorax.z * (0.2 if hind else -0.2)),
-		"spread": Vector3(side, 0.08, 0.45 if hind else 0.22).normalized(),
+		"spread": Vector3(side, 0.08, wing_sweep.y if hind else wing_sweep.x).normalized(),
 		"size": hind_wing if hind else wing,
 	}
 
@@ -346,7 +352,8 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 		for s in 2:
 			var size: Vector2 = hind_wing if back == 1 else wing
 			RigKit.membrane(blades, skeleton, skeleton.find_bone(wing_bone(back == 1, s)),
-				size.x, size.y, wing_broadest, wing_colour, wing_rim)
+				size.x, size.y, hind_wing_broadest if back == 1 else wing_broadest, wing_colour,
+				wing_rim)
 
 	return RigKit.commit([body, shine, blades], [RigKit.shell_material(0.75, 0.0, 0.3),
 		RigKit.eye_material(eye_colour, eye_colour, 0.15),

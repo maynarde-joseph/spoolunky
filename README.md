@@ -316,6 +316,7 @@ to catch is a file, not a scene and not a line of code.
 | **Fly** | 1 | 5 | anywhere | 8 |
 | **Ant** | 1 | 5.5 | **walks** — ground only | 6 |
 | **Moth** | 2 | 12 | high up, loves a lure | 16 |
+| **Butterfly** | 2 | 7.5 | high up, drifting; loves a lure | 14 |
 | **Bee** | 2 | 18, stings when it outgrows you | anywhere, comes to a lure | 24 |
 | **Beetle** | 3 | 19, slow and long | **walks** — ground only | 30 |
 | **Wasp** | 3 | 31, ignores lures | anywhere | 34 |

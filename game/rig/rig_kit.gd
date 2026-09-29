@@ -252,7 +252,9 @@ static func capsule(length: float, radius: float, colour: Color, ends := 3) -> A
 ## edge runs nearly straight. [param colour] is the membrane and [param rim] a
 ## band round its edge.
 ##
-## There is only one side to it, so it wants a material that is drawn from both.
+## Both faces are built, each with its own normal, so it is lit the same whichever
+## side you see it from. A material drawn from both sides instead lights the back
+## as if it faced away, and a coloured wing seen from below goes muddy.
 static func membrane(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, length: float,
 		width: float, broadest: float, colour: Color, rim: Color, points := 14) -> void:
 	if bone < 0:
@@ -271,16 +273,34 @@ static func membrane(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, length:
 		var chord := sqrt(maxf(sin(PI * pow(s, bulge)), 0.0)) * width
 		outline.append(Vector3(0.7 * chord, s * length, 0.0))
 	var middle := Vector3(0.2 * width, 0.5 * length, 0.0)
-	var flat := Vector3.BACK
 	for i in outline.size():
 		var a := outline[i]
 		var b := outline[(i + 1) % outline.size()]
 		var a_in := middle.lerp(a, 0.86)
 		var b_in := middle.lerp(b, 0.86)
-		for corner in [middle, b_in, a_in]:
-			vertex(tool, rest, bone, corner, flat, colour)
-		for corner in [a_in, b_in, b, a_in, b, a]:
-			vertex(tool, rest, bone, corner, flat, rim)
+		_two_faced(tool, rest, bone, [middle, b_in, a_in], colour)
+		_two_faced(tool, rest, bone, [a_in, b_in, b], rim)
+		_two_faced(tool, rest, bone, [a_in, b, a], rim)
+
+
+## One flat triangle as two, back to back: the corners in one order facing one
+## way and in the other order facing the other, each with the normal of the side
+## it shows.
+static func _two_faced(tool: SurfaceTool, rest: Transform3D, bone: int, corners: Array,
+		colour: Color) -> void:
+	var p0: Vector3 = corners[0]
+	var p1: Vector3 = corners[1]
+	var p2: Vector3 = corners[2]
+	var across := (p1 - p0).cross(p2 - p0)
+	if across.length_squared() < 1e-14:
+		return
+	# Godot's front faces go round clockwise, so the side a triangle shows is the
+	# opposite of the one its corners wind round anticlockwise toward.
+	var shown := -across.normalized()
+	for corner in [p0, p1, p2]:
+		vertex(tool, rest, bone, corner, shown, colour)
+	for corner in [p0, p2, p1]:
+		vertex(tool, rest, bone, corner, -shown, colour)
 
 
 ## Sews rings of vertices — each one [position, normal, colour], in the bone's
@@ -374,12 +394,12 @@ static func matte_material(colour: Color) -> StandardMaterial3D:
 	return material
 
 
-## For a [method membrane]: coloured by the mesh, drawn from both sides, and
-## see-through where its colours are when [param see_through].
+## For a [method membrane]: coloured by the mesh, and see-through where its
+## colours are when [param see_through]. It has two faces of its own, so nothing
+## here has to draw a back.
 static func membrane_material(see_through: bool) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.vertex_color_use_as_albedo = true
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	material.roughness = 0.35
 	if see_through:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA

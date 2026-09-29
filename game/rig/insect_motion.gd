@@ -145,7 +145,7 @@ func _pose_wings(skeleton: Skeleton3D) -> void:
 		var beat := sin((clock * _body.flap_rate + (0.08 if wing["hind"] else 0.0)) * TAU)
 		var buzz := _thrash * clampf(sin(clock * 4.3 + side) * 1.5 + 0.2, 0.0, 1.0)
 		var open := maxf(_air, buzz)
-		var lift := open * (beat * swing + deg_to_rad(10.0))
+		var lift := open * (beat * swing + deg_to_rad(_body.flap_centre))
 		var fold := 0.0
 		var raise := 0.0
 		if _body.wings_up:
