@@ -163,7 +163,10 @@ The spider has no floor — it sticks to whatever it touches, and the body's up
 axis becomes the surface normal. Walk into a wall to climb it, keep going to
 end up on the ceiling. While you are already on a surface you only transfer to
 a new one by pushing into it, so walking beside a wall doesn't throw you up it;
-in mid-air the spider grabs the first thing it touches. Put a collider in the
+in mid-air the spider grabs the first thing it touches. Keep the key down across
+an edge and it keeps meaning the way you were going — into a wall becomes up it,
+up a wall becomes on across the ceiling — until you let go or swing the camera
+well round. Put a collider in the
 `no_climb` group to make it unclimbable.
 
 From a wall or ceiling, **Ctrl** drops you onto a dragline. It costs silk by
@@ -238,6 +241,10 @@ feet doesn't paper the floor. Enough silk wraps it where it stands and the bundl
 drops for you to put a line on and drag off; short of enough, it's carrying that
 silk around and the next shot starts from there. A heavier pattern doesn't catch
 better, it just gets there in fewer shots.
+
+It has to actually touch the thing, mind. The bead you watch fly is exactly the
+size that counts, against the creature's own body — a near miss is a miss.
+Holding right mouse winds up a bigger ball, which is the help on offer.
 
 **The camera** sits behind and above you and never rolls — the horizon stays
 level however far up a wall you are. The crosshair is truthful: it's cast at the

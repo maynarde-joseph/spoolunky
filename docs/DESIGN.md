@@ -1213,7 +1213,10 @@ Two rules keep that from being annoying:
 
 * **You have to mean it.** While you are already on a surface, the spider only
   changes allegiance to a new one if you are pushing into it — so you can walk
-  along a skirting board without being flung onto the wall.
+  along a skirting board without being flung onto the wall. And only onto a
+  surface standing on this side of the one underfoot: an inside corner is the only
+  kind there is to push into. The far face of an edge you have just walked over is
+  behind you, and walking away from the edge points into it just as squarely.
 * **In the air, anything will do.** Falling or jumping, the spider grabs the
   first thing it touches. That is what a spider does, and it makes vertical
   space feel safe to explore.
@@ -1280,6 +1283,39 @@ a centimetre for a spiderling against the old margin's nine — so the old margi
 was never what was letting the camera through a wall, and dropping to the strictly
 correct number would have quietly pulled the camera much tighter into walls.
 
+**Corners: the pivot rides the body, the boom starts inside it, and the arm comes
+back out slowly.** The report was that the camera jittered at every edge and
+corner, and measured it did — up to half a metre in a single frame, twenty-odd
+reversals a second. Four things, and the biggest was not the camera at all (see
+*Across an edge* under **Walking on a wall**: the spider itself was bouncing
+between the two surfaces). The camera's own three:
+
+* The pivot was lifted along `body_up()`, which is a *decision* and jumps the
+  instant the spider takes a new surface — a quarter turn moved the pivot two body
+  lengths in one frame. It is lifted along `view_up()` now, the body's back as far
+  as the body has rolled, so it swings round a corner with the spider.
+* The boom is swept, leg by leg, from the middle of the body: out to the pivot,
+  then down the arm. It used to start at a pivot set down beside the spider, and
+  Jolt **ignores anything a cast starts inside** — measured, a ball a millimetre
+  into a wall passes straight through it in every direction, while one merely
+  touching is stopped dead. Pressed into a corner the arm's ball began a hair
+  inside one wall or a hair outside it, so the camera went through the wall or
+  collapsed onto the spider depending on which. The body is the one place the
+  physics already keeps out of every wall, so the ball is capped just under the
+  body's own radius and every leg starts clear by construction.
+* In at once, out at a rate. Anything coming between is dealt with the frame it
+  arrives, as before; what changed is the *going*. An edge sliding off the arm used
+  to throw the camera most of a metre back in one frame, and an arm grazing a wall
+  flicked in and out. The arm and the pivot's lift now pay back out at
+  `arm_let_out` body heights a second. This is not the easing that was rejected
+  above — the camera still sits exactly on the spider every frame and never trails
+  it; only how fast it recovers room it was denied is limited. A spider *put*
+  somewhere (a respawn, a test setting a scene) calls `settle()`, because easing
+  out from under a ledge that is not there any more is drift for no reason.
+
+What is left is honest: walk in under a ledge lower than the pivot and the camera
+drops the frame it has to, once, because the room over the spider really is gone.
+
 **The crosshair is cast, and the spider aims at what it finds.** Third person puts
 the camera behind and above, so "fire along the camera's direction" and "fire at
 what the camera is looking at" are two different shots, and only the second goes
@@ -1336,6 +1372,26 @@ The one degenerate case is looking *along* a wall's face, where screen-right
 points into it and there is honestly no right to go to. That falls back to the old
 cross product, which is always square to the walk and always somewhere. The view
 is a sliver of wall at that angle and the player is about to turn it.
+
+**Across an edge, the keys keep going the way they were going.** The screen-axis
+walk is right on any one surface and wrong *between* two, because at the edge the
+reading jumps. Walk into a wall with the camera tipped down even a little — which
+in third person is most of the time — and W on the wall means *down* it: straight
+back into the floor. So the spider took the floor, then the wall, then the floor,
+a swap every three tenths of a second for as long as the key was held, and never
+climbed. Nothing said so, because the one check that walked into a wall did it
+with the camera dead level, where the two readings happen to agree. A ceiling did
+the same from the wall, and a silk line did it against whatever it was tied to,
+which is what "I cannot get off the rope" was.
+
+`SpiderClimb._carry_over` turns the keys' own two directions by exactly the turn
+the surface made — forward on the floor becomes up the wall, up the wall becomes
+on across the ceiling, forward over a ledge becomes down its face — and keeps them
+while the keys that were down stay down. It hands back to the camera the moment
+they are let go or the camera swings well away (`carry_release_angle`), because
+both of those are the player asking again. On the gym's climbing station the
+wall-to-overhang run went from eleven bounces and forty-six camera reversals to
+none.
 
 ### Framing a throw
 
@@ -1491,17 +1547,32 @@ something down is not part of it.
 
 The bolt is a **ball of silk with a width**, not a ray. The world is still hit
 exactly — a web has to land on the surface it is built against, and a wall
-deserves no forgiveness — but anything alive is hit with a swept ball a good
-deal wider than the web being thrown. A fly is five centimetres across and
-wandering; asking a player to put a hairline through one is asking for a
-precision no amount of practice reaches, and for a while the honest report was
-"I spent a few minutes shooting and could not catch anything".
+deserves no forgiveness — but anything alive is hit with a swept ball: the ball
+you can see, touching the creature's own hitbox. A fly is five centimetres
+across and wandering; asking a player to put a hairline through one is asking
+for a precision no amount of practice reaches, and for a while the honest report
+was "I spent a few minutes shooting and could not catch anything".
+
+The first answer to that overshot, and the report came back the other way:
+*shooting always hits*. The catch ball was a good deal wider than the web being
+thrown and never less than two and a half body lengths — sixty centimetres either
+side of the line on a spiderling's tap, a metre and a half wound up — so every
+shot anywhere near a creature took it and where you aimed stopped mattering. The
+catch is now the ball itself, `WebBuilder.held_bodies` from 0.12 to 0.4 body
+heights, plus `Prey.hit_radius()`: the bead in flight is drawn at exactly that
+size, so a miss is a miss you could see happen.
+
+It also turned up a test that had been passing for the wrong reason. The web
+suite put the spider back between sections without putting it the right way up,
+so a section that followed one ending on a ceiling aimed from a spider still
+rolling off its back — half a metre wide at three metres, which the old catch
+simply swallowed.
 
 The **wind-up** is the other half of the same problem, and it is a choice
 rather than a fix. A tap is the fast, fallible shot and is unchanged. Holding
 winds a ball of silk up over the spider's back — a wizard with a fireball — and
-what the second buys is **size**: the ball grows from the smallest web this body
-can spin to the biggest, and the catch ball grows with it. A bigger ball is
+what the second buys is **size**: the web grows from the smallest this body can
+spin to the biggest, and the ball carrying it more than triples. A bigger ball is
 easier to hit with, which is the help that was wanted, and the throw is still
 yours to aim.
 

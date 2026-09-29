@@ -38,6 +38,8 @@ func run_checks() -> void:
 	await _test_dragline()
 	await _test_letting_go()
 	await _test_leaping_off_a_wall()
+	await _test_corners_do_not_bounce()
+	await _test_off_a_line_onto_a_wall()
 	await _test_ziplining()
 	await _test_grappling()
 	await _test_grappling_without_a_mode()
@@ -322,6 +324,149 @@ func _test_leaping_off_a_wall() -> void:
 	await run_frames(12)
 	var travelled := (_spider.global_position.x - distance_before) * wall_normal.x
 	check(travelled > 0.05, "and pushes off away from it (%.2fm)" % travelled)
+
+
+## Walking into a wall climbs it, however the camera happens to be tipped, and
+## walking up it carries on over onto the ceiling.
+##
+## W is the camera's forward laid onto the surface, and across an edge that
+## reading jumps. Tipped down even a little, W on a wall means *down* the wall —
+## straight back into the floor. So the spider took the floor, then the wall, then
+## the floor, a swap every three tenths of a second, and never climbed at all; the
+## ceiling did the same from the wall, and every swap threw the camera half a body
+## length. [method SpiderClimb._carry_over] keeps the keys going the way they were
+## going across the edge.
+##
+## [method _test_wall] never saw it, because it walks in with the camera level,
+## where the reading happens to agree.
+func _test_corners_do_not_bounce() -> void:
+	release_all()
+	var floor_y := -ROOM_HALF.y + 0.2
+	for tip in [-0.5, -0.25, 0.0]:
+		await _set_down(Vector3(-ROOM_HALF.x + 0.9, floor_y + 0.2, 0.3), Vector3.LEFT, tip)
+		var start_y := _spider.global_position.y
+		var walk := await _walk_and_watch(80)
+		var normal: Vector3 = walk["normal"]
+		check(normal.dot(Vector3.RIGHT) > 0.9,
+			"walking into a wall with the camera tipped %+.2f puts you on it (normal %.2v)"
+			% [tip, normal])
+		check(_spider.global_position.y > start_y + 0.3,
+			"and climbs it (%.2fm up)" % (_spider.global_position.y - start_y))
+		check(walk["returns"] == 0,
+			"without going back to the floor it left (%d times)" % walk["returns"])
+		check(walk["jerk"] < 1.0,
+			"and the camera swings round the corner rather than jumping (%.2f body heights in a frame)"
+			% walk["jerk"])
+
+	# Up the wall and over onto the ceiling, looking up the way you would.
+	await _set_down(Vector3(-ROOM_HALF.x + 0.35, ROOM_HALF.y - 0.6, 0.3), Vector3.LEFT, 0.3)
+	if not check(_spider.climb.surface_normal.dot(Vector3.RIGHT) > 0.9,
+			"on the wall below the ceiling (normal %.2v)" % _spider.climb.surface_normal):
+		return
+	var from_x := _spider.global_position.x
+	var over := await _walk_and_watch(90)
+	var on: Vector3 = over["normal"]
+	check(on.dot(Vector3.DOWN) > 0.9,
+		"keeping W down carries you over onto the ceiling (normal %.2v)" % on)
+	check(_spider.global_position.x > from_x + 0.2,
+		"and on across it, away from the wall (%.2fm)" % (_spider.global_position.x - from_x))
+	check(over["returns"] == 0,
+		"without dropping back onto the wall (%d times)" % over["returns"])
+
+
+## Walking along a line to the wall it is tied to takes you off the line and onto
+## the wall, once.
+##
+## The same bounce as a corner, and the one that read as being unable to get off
+## the rope: on the wall W pointed back down onto the line, the line took you back,
+## and the line walked you into the wall again — the spider shuttling between the
+## two for as long as the key was held.
+func _test_off_a_line_onto_a_wall() -> void:
+	release_all()
+	var pattern: WebPattern = null
+	for candidate in _spider.web_builder.patterns:
+		if candidate.id == "frame_line":
+			pattern = candidate
+	if not check(pattern != null, "a frame line to walk"):
+		return
+	# Tied to the floor at one end and the +Z wall at the other, sloping up, the
+	# way a grapple from the floor to the wall leaves one.
+	var low := Vector3(0.0, -ROOM_HALF.y + 0.2 + 0.125, -1.0)
+	var high := Vector3(0.0, -0.4, ROOM_HALF.z - 0.2)
+	var line := WebStrand.spin(pattern, low, high, 1.0)
+	if not check(line != null, "the line goes up"):
+		return
+	line.place_in(_room)
+	await physics_frame
+	await _set_down(low.lerp(high, 0.3) + Vector3.UP * 0.1, Vector3.BACK, -0.2)
+	if check(_spider.climb.on_silk and _spider.climb.standing_on == line,
+			"standing on the line"):
+		# Long enough to reach the wall and go on up it, which is where W carries you
+		# now: the wall is the next thing it stands on, whatever comes after.
+		var walk := await _walk_and_watch(150, line)
+		var visited: Array[Vector3] = walk["visited"]
+		var next: Vector3 = visited[1] if visited.size() > 1 else Vector3.ZERO
+		check(next.dot(Vector3.FORWARD) > 0.9,
+			"walking it to the wall puts you on the wall next (normal %.2v)" % next)
+		check(not _spider.climb.on_silk, "and off the silk")
+		check(walk["remounts"] == 0,
+			"without the line taking you back (%d times)" % walk["remounts"])
+		check(walk["returns"] == 0,
+			"or anything else you had already left (%d times)" % walk["returns"])
+	line.queue_free()
+	await physics_frame
+
+
+## Puts the spider down at [param at], lets it take hold of whatever is nearest,
+## and points the camera along [param look] tipped by [param tip] radians.
+func _set_down(at: Vector3, look: Vector3, tip: float) -> void:
+	release_all()
+	_spider.climb.stand_upright()
+	_spider.view.settle()
+	_spider.global_position = at
+	_spider.velocity = Vector3.ZERO
+	_spider.view.face(look)
+	_spider.view.pitch = tip
+	await run_frames(40)
+
+
+## Holds W for [param count] physics frames and says what the walk did: how many
+## times it went back onto a surface it had already left, the surfaces it was on
+## in order, where it ended up, and the most the camera moved in one frame beyond
+## what the spider itself moved, in body heights. With a [param line], also how
+## many times the spider got back onto it after stepping off.
+func _walk_and_watch(count: int, line: WebStrand = null) -> Dictionary:
+	var height: float = _spider.stage().body_height
+	var visited: Array[Vector3] = [_spider.climb.body_up()]
+	var returns := 0
+	var remounts := 0
+	var standing: WebStrand = _spider.climb.standing_on
+	var jerk := 0.0
+	var camera_was := _spider.view.camera.global_position
+	var body_was := _spider.global_position
+	Input.action_press("move_forward")
+	for i in count:
+		await physics_frame
+		var now := _spider.climb.standing_on
+		if line != null and now == line and standing != line:
+			remounts += 1
+		standing = now
+		var up := _spider.climb.body_up()
+		if up.angle_to(visited.back()) > deg_to_rad(45.0):
+			for earlier in visited:
+				if up.angle_to(earlier) < deg_to_rad(10.0):
+					returns += 1
+					break
+			visited.append(up)
+		var camera := _spider.view.camera.global_position
+		var body := _spider.global_position
+		jerk = maxf(jerk, ((camera - camera_was) - (body - body_was)).length() / height)
+		camera_was = camera
+		body_was = body
+	Input.action_release("move_forward")
+	await run_frames(2)
+	return {"returns": returns, "remounts": remounts, "visited": visited,
+		"jerk": jerk, "normal": _spider.climb.surface_normal}
 
 
 ## Stringing a line across the room and riding it: the ride should pick up
@@ -661,9 +806,17 @@ func _test_grappling_without_a_mode() -> void:
 	_spider.climb.release()
 	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
 	_spider.velocity = Vector3.ZERO
+	# Clear the lines the section before strung across this room. Grappling at a
+	# line gets you on it rather than laying another, and the pick is forgiving
+	# about aim, so with those still up whether this click lays a line came down
+	# to a few centimetres of where the crosshair happened to sit.
+	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
+		if is_instance_valid(node):
+			node.queue_free()
 	await run_frames(20)
 
 	var lines_before := _silk_count()
+	check(lines_before == 0, "no silk left over to aim at by mistake (%d)" % lines_before)
 	_spider.view.face(Vector3.FORWARD)
 	_spider.view.pitch = 0.0
 	await run_frames(2)

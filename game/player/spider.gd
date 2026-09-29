@@ -157,7 +157,7 @@ func _physics_process(delta: float) -> void:
 			fly_ability.set_active(not fly_ability.is_actived())
 
 	# Keep the rig current before anything asks it which way forward is.
-	view.update(stage().body_height, climb.body_up())
+	view.update(stage().body_height, climb.view_up())
 	climb.update_orientation(delta)
 
 	var on_legs := climb.handles_movement()
@@ -189,7 +189,8 @@ func _physics_process(delta: float) -> void:
 	if global_position.y < kill_plane:
 		global_transform = _spawn_transform
 		velocity = Vector3.ZERO
-		climb.release()
+		climb.stand_upright()
+		view.settle()
 		respawned.emit()
 		notice.emit("Fell out of the world — put you back")
 
@@ -272,8 +273,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.toggle_throwing()
 	elif event.is_action_pressed(input_tether):
 		tether.toggle()
-	# Right mouse is the web. A tap fires straight away; holding it drops you
-	# into first person to aim, and a second held on a creature promises it.
+	# Right mouse is the web. A tap fires straight away; holding it winds up a
+	# bigger ball, which is a bigger web and a bigger thing to hit with.
 	elif event.is_action_pressed(input_shoot):
 		web_builder.begin_shot()
 	elif event.is_action_released(input_shoot):
@@ -339,7 +340,7 @@ func _process(delta: float) -> void:
 	vitals.mend(delta)
 	climb.haul = tether.drag_factor()
 	climb.glide = traits.glide() if traits != null else 0.0
-	view.update(stage().body_height, climb.body_up())
+	view.update(stage().body_height, climb.view_up())
 	_rush(delta)
 	if body != null:
 		body.visible = view.third_person

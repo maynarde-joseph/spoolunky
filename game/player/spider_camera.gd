@@ -76,6 +76,17 @@ var aim_blend := 0.0
 ## spider has moved since the arm was placed.
 @export_range(1.0, 2.0, 0.05) var clearance := 1.25
 
+## How fast the arm pays back out once whatever pulled it in is out of the way,
+## in body heights per second.
+##
+## It comes *in* at once, always — in is the direction that stops you looking
+## through a wall, and nothing else about the rig is eased either: it is placed
+## where it belongs every frame. Out has no such hurry, and taken at once it was
+## the jerk at every edge: the camera leaping most of a metre back in one frame as
+## a ledge slid off the arm, and flicking in and out along a wall the arm kept
+## grazing. Six gets a spiderling's whole arm back in about half a second.
+@export var arm_let_out := 6.0
+
 ## What the crosshair can come to rest on.
 ##
 ## Wider than [member collide_with], and the two are not the same question. That
@@ -100,6 +111,25 @@ var _body_height := 0.25
 var _ball: SphereShape3D
 var _sweep: PhysicsShapeQueryParameters3D
 
+## The body's own collider, which the swept ball has to fit inside. See
+## [method _boom_radius].
+var _collider: CollisionShape3D
+
+## How long the arm is allowed to be right now, in metres — shortened at once by
+## anything in the way and let back out at [member arm_let_out]. Negative until
+## the arm has first been placed.
+var _arm := -1.0
+
+## How far the pivot is allowed to lift right now, in metres, and whether
+## something over the spider is holding it down — or was, and it is still coming
+## back up. See [method _headroom].
+var _lift := -1.0
+var _lift_held := false
+
+## The frame the rig last paid anything out on. It is placed twice a frame, from
+## physics and from process, and paying out twice would be paying out double.
+var _paid_frame := -1
+
 
 func setup(body: Node3D, first_person_anchor: Node3D) -> void:
 	_body = body
@@ -117,6 +147,7 @@ func setup(body: Node3D, first_person_anchor: Node3D) -> void:
 	var collider := _body as CollisionObject3D
 	if collider != null:
 		_sweep.exclude = [collider.get_rid()]
+	_collider = _body.get_node_or_null("Collision") as CollisionShape3D
 
 
 ## Mouse look, in world terms.
@@ -141,11 +172,27 @@ func toggle_mode() -> void:
 	mode_changed.emit(third_person)
 
 
+## Forgets whatever was holding the rig in, so the next placing puts it straight
+## where it belongs.
+##
+## For when the spider is *put* somewhere — a respawn, a test setting a scene —
+## rather than getting there. The ledge it was under a moment ago is not over it
+## now, and easing back out from under something that is not there is the camera
+## drifting for no reason.
+func settle() -> void:
+	_arm = -1.0
+	_lift = -1.0
+	_lift_held = false
+
+
 ## Places the camera for this frame. [param body_height] scales the rig so a
 ## coin-sized spider and a car-sized one both sit sensibly in frame.
 ##
-## [param body_up] is the surface the spider is standing on, which is what the
-## pivot is measured against. See [member pivot_height].
+## [param body_up] is the way the spider's back is facing, which is what the
+## pivot is measured against — see [member pivot_height]. The spider hands over
+## [method SpiderClimb.view_up], the body as far as it has rolled, rather than the
+## surface it has just decided on, so the pivot swings round a corner instead of
+## jumping to the other side of it.
 func update(body_height: float, body_up := Vector3.UP) -> void:
 	if camera == null or _body == null:
 		return
@@ -155,13 +202,24 @@ func update(body_height: float, body_up := Vector3.UP) -> void:
 	var look_basis := Basis.from_euler(Vector3(pitch, yaw, 0.0))
 	var look := -look_basis.z
 
+	var frame := Engine.get_process_frames()
+	var paying := frame != _paid_frame
+	_paid_frame = frame
+
 	# Winding a throw up raises the point the arm orbits, so the spider sits
 	# lower in frame and you see over its back. The arm's length is untouched.
-	var lift: float = pivot_height + aim_rise * clampf(aim_blend, 0.0, 1.0)
-	_pivot = _body.global_position + _up * lift * body_height
+	var lift: float = (pivot_height + aim_rise * clampf(aim_blend, 0.0, 1.0)) * body_height
+	# Swept out from the middle of the body rather than set down beside it, so it
+	# is never inside anything either — see [method _unobstructed].
+	var root := _body.global_position
+	var room := root.distance_to(_unobstructed(root, root + _up * lift))
+	_pivot = root + _up * _headroom(room, lift, paying)
 
 	if third_person:
-		camera.global_position = _unobstructed(_pivot - look * distance * body_height)
+		var full := distance * body_height
+		var reach := _pivot.distance_to(_unobstructed(_pivot, _pivot - look * full))
+		_arm = _pay_out(_arm, reach, paying)
+		camera.global_position = _pivot - look * _arm
 	elif _anchor != null:
 		camera.global_position = _anchor.global_position
 	else:
@@ -186,6 +244,9 @@ func update(body_height: float, body_up := Vector3.UP) -> void:
 ## about being able to see past the spider at all, and dropping to the near
 ## plane's corner would have quietly pulled the camera much tighter into walls
 ## than it used to sit.
+##
+## What the sweep actually uses is capped a shade under the body's own radius —
+## see [method _boom_radius] for why it has to fit inside the body.
 func _clearance() -> float:
 	var half_height: float = camera.near * tan(deg_to_rad(camera.fov) * 0.5)
 	var half_width := half_height * _aspect()
@@ -203,30 +264,89 @@ func _aspect() -> float:
 	return size.x / size.y
 
 
-## Pulls the camera in if there is anything between it and the spider, so it
-## never ends up looking through a wall.
+## The size of the ball the rig is swept with: as much room as [method _clearance]
+## asks for, but never more than fits inside the spider's own body.
 ##
-## A ball swept down the arm rather than a line cast along it. A line reports the
-## middle of the screen and nothing else, so a corner or a doorframe could be
-## inside the frustum with the centre ray still clear — which is exactly what
-## looking into a corner looked like.
-func _unobstructed(wanted: Vector3) -> Vector3:
+## Because the sweep starts in the middle of the body, and it has to start *clear*
+## rather than nearly clear. Jolt ignores whatever a cast begins inside — measured:
+## a ball starting a millimetre into a wall passes straight through it, in every
+## direction — while one that merely touches is stopped dead. The body is the one
+## place the physics already keeps out of every wall, so a ball that fits inside it
+## starts clear by construction. A ball as big as the body did not: pressed into a
+## corner it began a hair inside one wall or a hair outside it, and the camera went
+## through the wall or collapsed onto the spider depending on which.
+func _boom_radius() -> float:
+	var shape := _collider.shape if _collider != null else null
+	var body := _body_height * 0.35
+	if shape is CapsuleShape3D:
+		body = (shape as CapsuleShape3D).radius
+	elif shape is SphereShape3D:
+		body = (shape as SphereShape3D).radius
+	return minf(_clearance(), body * 0.9)
+
+
+## Carries the rig from [param from] towards [param wanted] until it would touch
+## something, so it never ends up looking through a wall. Used twice: out from the
+## body to the pivot, then from the pivot down the arm.
+##
+## A ball swept rather than a line cast. A line reports the middle of the screen
+## and nothing else, so a corner or a doorframe could be inside the frustum with the
+## centre ray still clear — which is exactly what looking into a corner looked like.
+##
+## The pivot used to be set down off the body directly and the arm swept from
+## there. Near a wall that start was *in* the wall often enough to matter, and a
+## cast that starts inside something ignores it; starting from the body and carrying
+## the start along with each leg is what makes every leg start clear.
+func _unobstructed(from: Vector3, wanted: Vector3) -> Vector3:
 	if _sweep == null or _ball == null:
 		return wanted
-	var travel := wanted - _pivot
+	var travel := wanted - from
 	if travel.length_squared() < 0.000001:
 		return wanted
-	_ball.radius = _clearance()
-	_sweep.transform = Transform3D(Basis.IDENTITY, _pivot)
+	_ball.radius = _boom_radius()
+	_sweep.transform = Transform3D(Basis.IDENTITY, from)
 	_sweep.motion = travel
 	_sweep.collision_mask = collide_with
 	var space := get_world_3d().direct_space_state
 	var reached := space.cast_motion(_sweep)
-	# Empty means the query could not run; starting already inside something
-	# comes back as zero, and sitting on the pivot is the right answer to that.
+	# Empty means the query could not run at all.
 	if reached.size() < 1:
 		return wanted
-	return _pivot + travel * reached[0]
+	return from + travel * reached[0]
+
+
+## [param current] brought to [param reach]: at once if that is shorter, and paid
+## out towards it at [member arm_let_out] if it is longer — once a frame, however
+## many times the rig is placed in it.
+func _pay_out(current: float, reach: float, paying: bool) -> float:
+	if current < 0.0 or reach <= current:
+		return reach
+	if not paying:
+		return current
+	return minf(reach, current + arm_let_out * _body_height * get_process_delta_time())
+
+
+## How far the pivot lifts this frame: all the way while nothing is over the
+## spider, only as far as there is [param room] the moment something is, and back
+## up at [member arm_let_out] once it has gone.
+##
+## The arm's rule, and for the arm's reason. Walking in under a ledge lower than
+## the pivot has to bring the pivot down at once, or it is inside the ledge — which
+## is the ceiling bug over again, a crosshair cast from inside a solid reading
+## straight through it. Walking back out has no such hurry, and taken at once the
+## view sprang up a body length in a frame. Straight up to [param wanted] whenever
+## nothing has been in the way, though, so winding a throw up still lifts the view
+## the frame it is asked to.
+func _headroom(room: float, wanted: float, paying: bool) -> float:
+	if room < wanted - 0.0001:
+		_lift_held = true
+	if not _lift_held:
+		_lift = wanted
+		return wanted
+	_lift = _pay_out(_lift, room, paying)
+	if _lift >= wanted - 0.0001:
+		_lift_held = false
+	return _lift
 
 
 func forward() -> Vector3:

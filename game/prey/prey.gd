@@ -109,6 +109,11 @@ const CHASE_COOLDOWN := 6.0
 ## you.
 const SETTLE_IN := 2.5
 
+## How much bigger the hitbox is than the body it stands for. A shade over one,
+## so a shot that clips the edge of what you can see still counts — and no more
+## than that, because the hitbox is what a bolt has to touch.
+const HITBOX_SCALE := 1.15
+
 ## The one scene every creature is built from.
 const SCENE_PATH := "res://game/prey/prey.tscn"
 
@@ -973,9 +978,17 @@ func _make_wing(radius: float, side: float) -> Node3D:
 	return pivot
 
 
+## How far from its middle something still touches it: the radius of the hitbox,
+## which is also what the crosshair's ray stops on. A bolt that passes further
+## off than this, plus its own size, has missed.
+func hit_radius() -> float:
+	var body: float = kind.body_radius if kind != null else 0.045
+	return maxf(body, 0.008) * HITBOX_SCALE
+
+
 func _make_hitbox(radius: float) -> CollisionShape3D:
 	var shape := SphereShape3D.new()
-	shape.radius = radius * 1.15
+	shape.radius = radius * HITBOX_SCALE
 	var hit := CollisionShape3D.new()
 	hit.shape = shape
 	return hit

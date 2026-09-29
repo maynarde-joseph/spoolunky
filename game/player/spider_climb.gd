@@ -75,6 +75,10 @@ signal notice(text: String)
 ## Colliders in this group cannot be climbed — glass, grease, a hot pipe.
 @export var no_climb_group := "no_climb"
 
+## How far the camera may swing, in degrees, before a walk carried over an edge
+## hands back to the camera's own reading of the keys. See [method _carry_over].
+@export_range(10.0, 180.0, 5.0) var carry_release_angle := 50.0
+
 
 @export_group("Dragline")
 
@@ -182,6 +186,15 @@ var _previous_up := Vector3.ZERO
 var _swap_cooldown := 0.0
 var _grapple_time := 0.0
 
+## The keys' two directions, [right, ahead], carried over the last edge while the
+## keys that were down for it stay down. Empty while the camera's reading is in
+## charge. See [method _carry_over].
+var _carried: Array[Vector3] = []
+
+## Where the camera was looking when the carry began, so swinging it well away
+## hands the walk back to the camera.
+var _carried_look := Vector3.ZERO
+
 ## How far this grapple has to go, measured when it started.
 var _grapple_span := 0.0
 var _silk_warning := 0.0
@@ -249,6 +262,24 @@ func on_steep_surface() -> bool:
 ## Direction the body treats as up right now.
 func body_up() -> Vector3:
 	return _current_up
+
+
+## Which way the body's back actually faces this frame: [method body_up], as far
+## as the body has rolled towards it.
+##
+## What the camera lifts its pivot along. [method body_up] jumps the instant the
+## spider takes a new surface — it is a decision, and movement needs it that way —
+## and a pivot hung off it jumped with it: a quarter turn at a spiderling's size
+## moved the camera half a metre in one frame, at every corner. The body rolls onto
+## the new surface over a few frames instead, so a pivot riding on its back swings
+## round with it.
+func view_up() -> Vector3:
+	if _spider == null:
+		return _current_up
+	var back := _spider.global_basis.y
+	if back.length_squared() < 0.000001:
+		return _current_up
+	return back.normalized()
 
 
 ## Points the view, and so the body, along a direction.
@@ -323,6 +354,25 @@ func step(delta: float, input_axis: Vector2, want_jump: bool, want_sprint: bool,
 		_step_surface(delta, input_axis, want_jump, want_sprint, want_line_out)
 
 
+## Stands the body the right way up on the spot, rather than rolling it there.
+##
+## For being *put* somewhere rather than getting there — a respawn, or a test
+## setting a scene. [method release] lets go and leaves the body to roll upright
+## on its own, which is right in mid-air and wrong here: put down fresh, it spent
+## its first half second turning over from however it was hanging before, and
+## anything aimed in that half second was aimed from a spider on its back.
+func stand_upright() -> void:
+	release()
+	_current_up = Vector3.UP
+	surface_normal = Vector3.UP
+	_previous_up = Vector3.ZERO
+	_swap_cooldown = 0.0
+	var flat := _facing - Vector3.UP * _facing.dot(Vector3.UP)
+	_facing = flat.normalized() if flat.length_squared() > 0.000001 else Vector3.FORWARD
+	if _spider != null:
+		_spider.global_basis = _orientation_basis(Vector3.UP)
+
+
 ## Drops everything and falls. Used when handing back to the template.
 func release() -> void:
 	if mode != Mode.AIRBORNE:
@@ -331,6 +381,7 @@ func release() -> void:
 	standing_on = null
 	ride_speed = 0.0
 	line_length = 0.0
+	_carried.clear()
 	if _spider != null:
 		_spider.up_direction = Vector3.UP
 	_draw_line()
@@ -341,12 +392,13 @@ func release() -> void:
 func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 		want_sprint: bool, want_line_out: bool) -> void:
 	var height := _body_height()
-	var wish := _wish_direction(input_axis, _current_up)
+	var wish := _walk(input_axis)
 	var hit := _find_surface(height, wish)
 
 	if hit.is_empty() or _grace > 0.0:
 		on_silk = false
 		standing_on = null
+		_carried.clear()
 		_set_mode(Mode.AIRBORNE)
 		_move_airborne(delta, input_axis)
 		return
@@ -354,9 +406,13 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	_note_surface(hit.get("collider"))
 	var thread := _strand_under(hit.get("collider")) if on_silk else null
 	standing_on = thread
+	# The frame the keys were read in on the way here. In the air that is the
+	# level one the air steers by, whatever the body is still rolling through.
+	var before := _current_up if mode == Mode.ATTACHED else Vector3.UP
 	# A thread's up comes from the thread, not from the probe. See _thread_up.
 	var found: Vector3 = hit["normal"]
 	_adopt_surface(_thread_up(thread, found) if thread != null else found)
+	_carry_over(before, input_axis)
 	_set_mode(Mode.ATTACHED)
 
 	if want_line_out:
@@ -371,7 +427,7 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 
 	# Walking the surface: all the movement happens in its tangent plane, and
 	# the only force is the one holding the spider onto it.
-	wish = _wish_direction(input_axis, _current_up)
+	wish = _walk(input_axis)
 	if thread != null:
 		wish = _along_thread(thread, wish)
 	var speed := _surface_speed(want_sprint)
@@ -417,7 +473,8 @@ func _move_airborne(delta: float, input_axis: Vector2) -> void:
 
 
 func _leap(input_axis: Vector2) -> void:
-	var wish := _wish_direction(input_axis, _current_up)
+	var wish := _walk(input_axis)
+	_carried.clear()
 	# Whatever you were already carrying comes with you. Jumping out of a skid is
 	# what turns a grapple's landing into the next hop, rather than a full stop
 	# followed by a standing jump — and it is the half of chaining that a launch
@@ -495,7 +552,14 @@ func _find_surface(height: float, wish: Vector3) -> Dictionary:
 	var candidate: Vector3 = best.get("normal", Vector3.UP)
 	if candidate.dot(up) > 0.85:
 		return same
-	if wish.length_squared() > 0.01 and wish.normalized().dot(-candidate) > 0.2:
+	# And only onto a surface standing on this side of the one underfoot: an
+	# inside corner, which is the only kind there is to push into. The far face
+	# of an edge you have just come over is *behind* the face you are on now, and
+	# walking away from the edge points into it just as squarely — counted as a
+	# push, it pulled the spider back over the edge it was walking off.
+	var rise: float = (best.get("position", origin) - same.get("position", origin)).dot(up)
+	if rise > height * 0.05 and wish.length_squared() > 0.01 \
+			and wish.normalized().dot(-candidate) > 0.2:
 		return best
 	return same
 
@@ -925,6 +989,94 @@ func _ride_axis() -> Vector3:
 
 
 # --- helpers ------------------------------------------------------------
+
+## Where the keys want to go on the surface underfoot: the camera's reading of
+## them — see [method _wish_direction] — unless an edge is still carrying the
+## walk that brought you over it. See [method _carry_over].
+func _walk(input_axis: Vector2) -> Vector3:
+	if input_axis.length_squared() < 0.01:
+		# Let go, and the next press is read fresh.
+		_carried.clear()
+		return Vector3.ZERO
+	if _carried.size() == 2 and _view != null \
+			and _view.forward().angle_to(_carried_look) > deg_to_rad(carry_release_angle):
+		_carried.clear()
+	if _carried.size() == 2:
+		var right := _flat(_carried[0], _current_up)
+		var ahead := _flat(_carried[1], _current_up)
+		if right != Vector3.ZERO and ahead != Vector3.ZERO:
+			return (ahead * input_axis.y + right * input_axis.x).normalized()
+		_carried.clear()
+	return _wish_direction(input_axis, _current_up)
+
+
+## Keeps the walk going the way it was going when the surface underfoot turns.
+##
+## The walk is the camera's screen axes fitted to the surface, and across an edge
+## that reading jumps. Walk into a wall with the camera tipped down even a little
+## and W on the wall means *down* — straight back into the floor you came from, so
+## the spider took the floor again, then the wall, then the floor, a swap every
+## three tenths of a second and the camera thrown half a metre each time. It never
+## climbed. A ceiling did the same from the wall, and a line did it against
+## whatever it was tied to, which read as being unable to get off the rope.
+##
+## So the keys' own two directions are carried over the edge, turned by exactly the
+## turn the surface made: forward on the floor becomes up the wall, up the wall
+## becomes on across the ceiling, forward over a ledge becomes down its face. That
+## holds while the keys stay down, and hands back to the camera the moment they are
+## let go or the camera swings well away — both of which are the player asking
+## again. A turn near a half circle, like dropping onto a ceiling from below, has no
+## one way to carry anything, so it is read fresh.
+func _carry_over(before: Vector3, input_axis: Vector2) -> void:
+	if input_axis.length_squared() < 0.01 or before.length_squared() < 0.000001:
+		return
+	var from := before.normalized()
+	var turn := rad_to_deg(from.angle_to(_current_up))
+	if turn < 20.0:
+		return
+	if turn > 150.0:
+		_carried.clear()
+		return
+	# The frame the keys were being read in on the way in: still carried from the
+	# edge before this one, or the camera's.
+	var old_right := Vector3.ZERO
+	var old_ahead := Vector3.ZERO
+	if _carried.size() == 2:
+		old_right = _flat(_carried[0], from)
+		old_ahead = _flat(_carried[1], from)
+	if old_right == Vector3.ZERO or old_ahead == Vector3.ZERO:
+		var lead := _surface_forward(from)
+		if lead.length_squared() < 0.000001:
+			return
+		var axes := _surface_axes(from, lead.normalized())
+		old_right = axes[0]
+		old_ahead = axes[1]
+	var bend := Quaternion(from, _current_up)
+	var right := _flat(bend * old_right, _current_up)
+	var ahead := _flat(bend * old_ahead, _current_up)
+	if right == Vector3.ZERO or ahead == Vector3.ZERO:
+		_carried.clear()
+		return
+	# If the camera already reads the keys this way there is nothing to carry, and
+	# carrying anyway would only stop the mouse steering for no reason.
+	var lead_now := _surface_forward(_current_up)
+	if lead_now.length_squared() > 0.000001:
+		var fresh := _surface_axes(_current_up, lead_now.normalized())
+		if right.dot(fresh[0]) > 0.9 and ahead.dot(fresh[1]) > 0.9:
+			_carried.clear()
+			return
+	_carried = [right, ahead]
+	_carried_look = _view.forward() if _view != null else Vector3.ZERO
+
+
+## [param direction] laid flat on a surface facing [param up], or zero if it
+## stands straight out of it.
+func _flat(direction: Vector3, up: Vector3) -> Vector3:
+	var flat := direction - up * direction.dot(up)
+	if flat.length_squared() < 0.01:
+		return Vector3.ZERO
+	return flat.normalized()
+
 
 ## Where the keys want to go: the camera's own axes, fitted to whatever is
 ## underfoot.

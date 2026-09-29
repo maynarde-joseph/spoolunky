@@ -520,7 +520,7 @@ func _refresh_build_panel() -> void:
 func _refresh_aim_panel(builder: WebBuilder) -> void:
 	var pattern := builder.current_pattern()
 	var span := builder.catch_radius(builder.shot_radius()) * 2.0
-	pattern_label.text = "%s     %.1f m ball" % [
+	pattern_label.text = "%s     %.2f m ball" % [
 		pattern.display_name if pattern != null else "Winding up", span]
 	# What the cross is actually on, if it is on anything. This is the whole
 	# decision while winding up — whether this ball will take it or only wrap it a

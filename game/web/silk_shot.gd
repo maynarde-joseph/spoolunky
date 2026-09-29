@@ -26,17 +26,24 @@ signal fizzled()
 
 @export var speed := 26.0
 
-## How wide the ball of silk counts as, for catching something alive.
+## How big the ball of silk is, and so how close it has to pass to catch
+## something alive: it takes a creature when the ball touches the creature's
+## hitbox, which is this plus [method Prey.hit_radius]. It is also the size the
+## bead is drawn, so what you watch fly is what hits.
 ##
-## The world is hit with a ray and anything alive with a swept ball of this
-## size, which is the split that makes the shot playable. A wall is a wall and
-## deserves no forgiveness — a web has to land on the surface it is built
-## against. A fly is five centimetres across and wandering, and a hairline ray
-## will never touch one, which is why nothing could be caught by shooting at
-## it. The web being thrown is bigger than the thing being thrown at, so "did
-## the web cover it" is the honest question, not "did a line through the middle
-## of it happen to touch".
-@export var catch_radius := 0.6
+## The world is hit with a ray and anything alive with this swept ball, which is
+## the split that makes the shot playable. A wall is a wall and deserves no
+## forgiveness — a web has to land on the surface it is built against. A fly is
+## five centimetres across and wandering, and a hairline will never touch one.
+##
+## It used to be far bigger than the ball — bigger than the web being thrown,
+## and never less than two and a half body lengths — on the reasoning that "did
+## the web cover it" was the honest question. It turned out to answer yes to
+## nearly everything: sixty centimetres either side of the line for a
+## spiderling's tap and a metre and a half wound up, against a fly five
+## centimetres across, so every shot anywhere near a creature was a catch and
+## where you aimed stopped mattering.
+@export var catch_radius := 0.05
 
 ## How far it will travel before giving up, in metres.
 @export var range_limit := 90.0
@@ -50,7 +57,6 @@ var _velocity := Vector3.ZERO
 var _travelled := 0.0
 var _age := 0.0
 var _exclude: Array[RID] = []
-var _size := 0.05
 var _spent := false
 
 
@@ -59,7 +65,6 @@ static func fire(from: Vector3, direction: Vector3, body_height: float,
 	var shot := SilkShot.new()
 	shot.name = "SilkShot"
 	shot._exclude = exclude
-	shot._size = maxf(body_height * 0.25, 0.04)
 	shot._velocity = direction.normalized() * shot.speed * maxf(body_height, 0.3)
 	# Plain position, not global: nothing has a parent yet, and asking a Node3D
 	# for its place in the world before it is in the tree is an error.
@@ -133,8 +138,9 @@ func _physics_process(delta: float) -> void:
 		_give_up()
 
 
-## The nearest creature the ball passes within [member catch_radius] of during
-## this frame's step, and never past what the world stopped it at.
+## The nearest creature the ball touches during this frame's step — passing
+## within [member catch_radius] of its hitbox — and never past what the world
+## stopped it at.
 func _creature_along(step: Vector3, reach: float) -> Prey:
 	var span: float = maxf(step.length_squared(), 0.000001)
 	var best: Prey = null
@@ -152,7 +158,7 @@ func _creature_along(step: Vector3, reach: float) -> Prey:
 		var along := clampf(offset.dot(step) / span, 0.0, reach)
 		if along >= soonest:
 			continue
-		if (offset - step * along).length() > catch_radius:
+		if (offset - step * along).length() > catch_radius + creature.hit_radius():
 			continue
 		soonest = along
 		best = creature
@@ -184,10 +190,13 @@ func _land(hit: Dictionary) -> void:
 	queue_free()
 
 
+## Drawn at [member catch_radius] exactly, so the bead in flight is the ball that
+## has to touch something.
 func _build_visual() -> void:
+	var radius := maxf(catch_radius, 0.005)
 	var mesh := SphereMesh.new()
-	mesh.radius = _size * 0.5
-	mesh.height = _size
+	mesh.radius = radius
+	mesh.height = radius * 2.0
 	mesh.radial_segments = 8
 	mesh.rings = 4
 	var material := WebGeometry.silk_material()

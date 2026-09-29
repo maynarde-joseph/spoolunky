@@ -123,6 +123,7 @@ func rewind_view() -> void:
 	if spider.view.third_person != _was_third_person:
 		spider.view.toggle_mode()
 	spider.view.aim_blend = 0.0
+	spider.view.settle()
 	spider.view.update(spider.stage().body_height)
 
 
@@ -268,8 +269,14 @@ func grow_to_spin_anything() -> void:
 
 
 ## Puts the spider somewhere, standing still and facing level.
+##
+## The right way up, too. Letting go leaves the body to roll back upright on its
+## own, which takes the best part of a second — and the section before may have
+## left it hanging under a ceiling, so a check that aimed straight away was aiming
+## from a spider on its back. The old catch on a bolt was wide enough to hide that.
 func place(at: Vector3) -> void:
-	spider.climb.release()
+	spider.climb.stand_upright()
+	spider.view.settle()
 	spider.global_position = at
 	spider.velocity = Vector3.ZERO
 	spider.view.face(Vector3(0, 0, -1))
@@ -279,7 +286,8 @@ func place(at: Vector3) -> void:
 ## Puts the spider on top of something and points it at the floor, which is where
 ## most of the placement checks want it.
 func stand_on(at: Vector3) -> void:
-	spider.climb.release()
+	spider.climb.stand_upright()
+	spider.view.settle()
 	spider.global_position = at + Vector3(0, 0.6, 0)
 	spider.velocity = Vector3.ZERO
 	spider.view.face(Vector3(0, 0, -1))
@@ -380,12 +388,15 @@ func aim_at(point: Vector3) -> void:
 	# calls this actually means. From the spider it aimed the silk at the point
 	# and left the cross a little above it, which is the same gap the truthful
 	# crosshair exists to close.
-	spider.view.update(spider.stage().body_height, spider.climb.body_up())
+	#
+	# Lifted along the way the body's back faces, as the spider does every frame,
+	# so the pivot this aims from is the one the game will place.
+	spider.view.update(spider.stage().body_height, spider.climb.view_up())
 	var offset := point - spider.view.aim_pivot()
 	var flat := Vector2(offset.x, offset.z).length()
 	spider.view.face(Vector3(offset.x, 0.0, offset.z))
 	spider.view.pitch = atan2(offset.y, maxf(flat, 0.0001))
-	spider.view.update(spider.stage().body_height, spider.climb.body_up())
+	spider.view.update(spider.stage().body_height, spider.climb.view_up())
 
 
 func select_pattern(id: String) -> void:

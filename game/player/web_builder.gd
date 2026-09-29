@@ -96,13 +96,15 @@ const MAX_WEBS := 6
 ## reward for spending it, and you still have to aim.
 @export var charge_time := 0.9
 
-## How big the ball looks, in body heights, from a tap to a full wind-up.
+## How big the ball of silk is, as a radius in body heights, from a tap to a full
+## wind-up.
 ##
-## A readout rather than the hitbox at 1:1 — the real catch radius is metres
-## across at the top end, and a ball drawn that size over the spider's back
-## would be bigger than the spider. It grows with the thing it stands for,
-## which is what a readout has to do.
-@export var held_bodies := Vector2(0.12, 0.3)
+## The hitbox at 1:1: the ball held over the spider's back, the bead in flight
+## and what the bolt has to touch are all this one size, so a creature is caught
+## when the ball you watched grow touches the creature you can see. It used to
+## be a readout for a catch radius metres across, which meant the thing you were
+## watching said nothing about whether you would hit.
+@export var held_bodies := Vector2(0.12, 0.4)
 
 ## Pattern dragged between anchors when the chosen one is a net.
 const FRAME_PATTERN := "frame_line"
@@ -423,14 +425,34 @@ func cooldown_progress() -> float:
 	return clampf(1.0 - _cooling / _cooldown_span, 0.0, 1.0)
 
 
-## How close the bolt has to pass to something alive to take it.
+## How big the ball carrying a web of [param web_radius] is — which is how close
+## it has to pass to something alive, beyond that creature's own hitbox.
 ##
-## Bigger than the web it is carrying, and never smaller than a couple of body
-## lengths. Nothing could be caught by shooting at it before this existed: the
-## bolt was a hairline ray and a fly is five centimetres across, so the shot
-## was asking for a precision no amount of practice would have reached.
+## The ball, and nothing more. It was bigger than the web it carried and never
+## smaller than two and a half body lengths, which took anything within sixty
+## centimetres of a spiderling's tap — a fly is five across — so every shot near a
+## creature caught it and aiming stopped mattering. A hairline was the opposite
+## mistake, and the one this was answering: nothing could be caught at all. A
+## ball the size you can see, against a body the size you can see, sits between
+## them, and winding up still buys a bigger one.
 func catch_radius(web_radius: float) -> float:
-	return maxf(web_radius * 1.25, _stage().body_height * 2.5)
+	return ball_radius(_wound_for(web_radius))
+
+
+## The ball's radius at [param wound], 0 for a tap to 1 for a full wind-up.
+func ball_radius(wound: float) -> float:
+	return _stage().body_height * lerpf(held_bodies.x, held_bodies.y,
+		clampf(wound, 0.0, 1.0))
+
+
+## How far through the wind-up a web of [param web_radius] is, 0 to 1 — the
+## inverse of [method shot_radius], so a size can be traced back to the ball
+## that carries it.
+func _wound_for(web_radius: float) -> float:
+	var span := _max_place_radius() - _min_place_radius()
+	if span <= 0.000001:
+		return 0.0
+	return clampf((web_radius - _min_place_radius()) / span, 0.0, 1.0)
 
 
 ## How big the throw is: the smallest web this body can spin at a tap, up to the
@@ -584,7 +606,7 @@ func _update_held() -> void:
 	if _held == null or not _held.visible or _spider == null:
 		return
 	var height := _stage().body_height
-	var wide: float = height * lerpf(held_bodies.x, held_bodies.y, clampf(charge, 0.0, 1.0))
+	var wide := ball_radius(charge)
 	_held.global_position = _spider.global_position + Vector3.UP * (height * 0.9 + wide)
 	_held.scale = Vector3.ONE * maxf(wide, 0.005)
 	if _held_material != null:

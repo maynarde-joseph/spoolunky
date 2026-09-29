@@ -3013,10 +3013,18 @@ func _test_shooting() -> void:
 	# Off the line on purpose. The bolt is a ball of silk, not a hairline: a fly
 	# is five centimetres across and wandering, so a ray through the middle of
 	# one is a shot nobody can make, which is why nothing could be caught.
+	#
+	# But the ball is the ball you can see. It used to take anything within two
+	# and a half body lengths of its path, which is sixty centimetres either side
+	# for a spiderling's tap, so every shot anywhere near a creature caught it and
+	# where you aimed stopped mattering.
 	builder._update_aim()
 	var reach := builder.catch_radius(builder.shot_radius())
-	check(reach > spider.stage().body_height,
-		"the bolt catches within %.2fm, wider than the spider itself" % reach)
+	check(is_equal_approx(reach, builder.ball_radius(0.0)),
+		"a tap catches with the ball it throws, %.3fm across its middle" % reach)
+	check(reach < spider.stage().body_height * 0.5,
+		"which is smaller than the spider, not wider than it (%.3fm against %.2fm)"
+		% [reach, spider.stage().body_height])
 	var start := spider.view.aim_origin()
 	var sideways := spider.view.aim_forward().cross(Vector3.UP)
 	if sideways.length_squared() < 0.001:
@@ -3026,11 +3034,37 @@ func _test_shooting() -> void:
 	clear_prey_near(beside, 6.0, null)
 	var grazed := spawn("fly", beside)
 	if check(grazed != null, "a fly beside the line, not on it"):
+		# Held still: this is about where the ball goes, not about a test keeping
+		# a crosshair on something that wanders.
+		grazed.move_speed = 0.0
 		await physics_frame
 		check(builder.shoot(), "a shot past it")
 		var near: bool = await wait_until(func() -> bool: return grazed.wrapped, 240)
-		check(near, "passing near enough is enough — it is wrapped")
+		check(near, "a graze is enough — the ball touched it, and it is wrapped")
 		grazed.queue_free()
+		await physics_frame
+
+	# And near is not touching. Clear of the ball by a fly's own width, which the
+	# old catch would have taken without a second look. A quarter of the way down
+	# rather than halfway, so it is out of reach of the web the bolt opens when it
+	# lands on the floor — being caught by that is a web doing its job, which is not
+	# what this is measuring.
+	var clear_of := reach + 0.1
+	var wide := start + (builder.aim_point - start) * 0.25 + sideways * clear_of
+	clear_prey_near(wide, 6.0, null)
+	var missed := spawn("fly", wide)
+	if check(missed != null, "a fly a hand's width off the line"):
+		missed.move_speed = 0.0
+		await physics_frame
+		check(clear_of - missed.hit_radius() > reach,
+			"far enough that the ball and the fly do not touch (%.3fm apart)"
+			% (clear_of - missed.hit_radius() - reach))
+		check(builder.shoot(), "a shot past that one too")
+		await wait_until(func() -> bool: return not builder.shot_in_flight(), 240)
+		await run_frames(2)
+		check(not missed.wrapped and is_zero_approx(missed.bound),
+			"is a miss — no wrap, and no silk on it (%d%%)" % roundi(missed.bound * 100.0))
+		missed.queue_free()
 		await physics_frame
 
 	# At nothing at all: the bolt has to stop being a bolt.
@@ -3106,18 +3140,35 @@ func _test_the_camera_tells_the_truth() -> void:
 		% view.aim_focus().distance_to(mark.global_position))
 	mark.queue_free()
 
-	# Upside down, the arm still has to end up in the room.
+	# Upside down, the arm still has to end up in the room — and on every frame of
+	# getting there. The pivot rides the body's back, which starts out pointing
+	# into the roof and turns over as the body does, so the whole roll is a pivot
+	# pressed against stone: it is carried out from the middle of the body, and has
+	# to stop short of the roof every time rather than be set down inside it.
 	var roof := add_slab(Vector3(-200, 4.0, 200), Vector3(14, 0.5, 14))
 	await physics_frame
+	var under: float = roof.global_position.y - 0.25
 	spider.global_position = Vector3(-200, 3.55, 200)
 	spider.climb.release()
-	if not check(await wait_until(
-			func() -> bool: return spider.climb.body_up().y < -0.5, 180),
-			"hanging under a ceiling, the other way up"):
+	await physics_frame
+	# Watched frame by frame in a plain loop rather than through wait_until: a
+	# lambda gets its own copy of a local, so a running maximum kept inside one
+	# never leaves it and the check below would pass on nothing.
+	var highest := -INF
+	var rolled := false
+	for i in 180:
+		highest = maxf(highest, view.camera.global_position.y)
+		if spider.climb.view_up().y < -0.5:
+			rolled = true
+			break
+		await physics_frame
+	if not check(rolled, "hanging under a ceiling, the other way up"):
 		return
+	check(highest < under,
+		"and the camera stayed in the room the whole way over (%.2f at most, under %.2f)"
+		% [highest, under])
 	view.pitch = 0.0
-	view.update(spider.stage().body_height, spider.climb.body_up())
-	var under: float = roof.global_position.y - 0.25
+	view.update(spider.stage().body_height, spider.climb.view_up())
 	check(view.aim_pivot().y < spider.global_position.y,
 		"the pivot goes away from the ceiling, not into it (%.2f under the spider's %.2f)"
 		% [view.aim_pivot().y, spider.global_position.y])
