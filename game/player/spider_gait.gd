@@ -602,10 +602,10 @@ func _solve(skeleton: Skeleton3D, leg: Leg, foot: Vector3, surface: Vector3,
 	var last := foot - heel
 	var tarsus_final := last.normalized() if last.length_squared() > 0.000001 else tarsus_dir
 
-	skeleton.set_bone_global_pose(leg.bones[0], Transform3D(SpiderRig.along(coxa_dir, normal), hip))
+	skeleton.set_bone_global_pose(leg.bones[0], Transform3D(RigKit.along(coxa_dir, normal), hip))
 	skeleton.set_bone_global_pose(leg.bones[1],
-		Transform3D(SpiderRig.along(femur_dir, normal), knee_base))
-	skeleton.set_bone_global_pose(leg.bones[2], Transform3D(SpiderRig.along(tibia_dir, normal), knee))
+		Transform3D(RigKit.along(femur_dir, normal), knee_base))
+	skeleton.set_bone_global_pose(leg.bones[2], Transform3D(RigKit.along(tibia_dir, normal), knee))
 	skeleton.set_bone_global_pose(leg.bones[3],
-		Transform3D(SpiderRig.along(tarsus_final, normal), heel))
+		Transform3D(RigKit.along(tarsus_final, normal), heel))
 	leg.tip = skeleton.global_transform * (heel + tarsus_final * leg.lengths[3])

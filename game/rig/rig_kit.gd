@@ -1,0 +1,251 @@
+class_name RigKit
+extends RefCounted
+
+## What every creature's body is built from: bones added by where they sit, and
+## meshes skinned to them one bone to a vertex.
+##
+## Everything here works in the space the caller builds in. A body scales its own
+## node to the creature's size, so a rig can be written in whatever unit suits the
+## animal — body heights for the spider, body radii for an insect.
+##
+## Nothing is blended. Every vertex belongs to exactly one bone, because the
+## creatures this has to draw are made of rigid pieces that turn at their joints:
+## exoskeletons, and limbs thin enough that a bend would never be seen.
+
+
+# --- bones --------------------------------------------------------------------
+
+## A basis whose +Y runs along [param direction], with +X as near [param hint]
+## as it can be. Every bone and every pose in the rig is built with this, which is
+## what keeps a segment from spinning about its own length as the leg moves.
+static func along(direction: Vector3, hint: Vector3) -> Basis:
+	var y := direction.normalized()
+	var x := hint - y * hint.dot(y)
+	if x.length_squared() < 0.000001:
+		x = Vector3.RIGHT - y * y.x
+		if x.length_squared() < 0.000001:
+			x = Vector3.BACK - y * y.z
+	x = x.normalized()
+	return Basis(x, y, x.cross(y))
+
+
+## Adds a bone called [param bone_name] under [param parent] (-1 for a root),
+## given where it sits in the skeleton rather than relative to its parent, and
+## returns its index. It starts posed at rest.
+static func add_bone(skeleton: Skeleton3D, bone_name: String, parent: int,
+		global_rest: Transform3D) -> int:
+	skeleton.add_bone(bone_name)
+	var index := skeleton.get_bone_count() - 1
+	var rest := global_rest
+	if parent >= 0:
+		skeleton.set_bone_parent(index, parent)
+		rest = skeleton.get_bone_global_rest(parent).affine_inverse() * global_rest
+	skeleton.set_bone_rest(index, rest)
+	skeleton.set_bone_pose(index, rest)
+	return index
+
+
+# --- meshes -------------------------------------------------------------------
+
+## How finely a look cuts a limb: [member sides] round it, [member rows] down it
+## between its two ends, and [member cap] rings in each end — none leaves the tube
+## open, one brings it to a point, more round it off. [member twist] turns the
+## cross-section about the limb, and [member flat] shades each face as the flat
+## thing it is.
+class Cut:
+	var sides := 8
+	var rows := 4
+	var cap := 3
+	var twist := 0.0
+	var flat := false
+
+	func _init(sides_round := 8, rows_down := 4, cap_rings := 3, faceted := false,
+			turn := 0.0) -> void:
+		sides = sides_round
+		rows = rows_down
+		cap = cap_rings
+		flat = faceted
+		twist = turn
+
+
+## A surface to build into, ready for a bone and a weight on every vertex.
+static func begin() -> SurfaceTool:
+	var tool := SurfaceTool.new()
+	# Before begin(), which refuses to change it after.
+	tool.set_skin_weight_count(SurfaceTool.SKIN_4_WEIGHTS)
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	return tool
+
+
+## One mesh made of [param surfaces], each given the material at the same place
+## in [param materials].
+static func commit(surfaces: Array, materials: Array) -> ArrayMesh:
+	var mesh := ArrayMesh.new()
+	for i in surfaces.size():
+		(surfaces[i] as SurfaceTool).commit(mesh)
+		mesh.surface_set_material(i, materials[i])
+	return mesh
+
+
+## One vertex, in [param bone]'s rest space, put into the skeleton's rest space
+## and tied to that bone alone.
+static func vertex(tool: SurfaceTool, rest: Transform3D, bone: int, at: Vector3,
+		normal: Vector3, colour: Color) -> void:
+	tool.set_color(colour)
+	tool.set_normal((rest.basis * normal).normalized())
+	tool.set_bones(PackedInt32Array([bone, 0, 0, 0]))
+	tool.set_weights(PackedFloat32Array([1.0, 0.0, 0.0, 0.0]))
+	tool.add_vertex(rest * at)
+
+
+## An ellipsoid on [param bone], centred at [param centre] in its space.
+## [param paint] colours it from the unit normal and the position, both in the
+## bone's space; with [param flat], once per face rather than once per vertex.
+static func ellipsoid(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, centre: Vector3,
+		radii: Vector3, paint: Callable, sides := 12, rings := 8, flat := false) -> void:
+	var grid: Array = []
+	for r in rings + 1:
+		var row: Array = []
+		var lat := PI * float(r) / float(rings) - PI * 0.5
+		for s in sides + 1:
+			var lon := TAU * float(s) / float(sides)
+			var unit := Vector3(cos(lat) * cos(lon), sin(lat), cos(lat) * sin(lon))
+			var at := centre + unit * radii
+			# The true normal of a squashed sphere, not the sphere's.
+			var normal := Vector3(unit.x / radii.x, unit.y / radii.y, unit.z / radii.z).normalized()
+			row.append([at, normal, Color.BLACK if flat else paint.call(normal, at)])
+		grid.append(row)
+	sew(tool, skeleton.get_bone_global_rest(bone), bone, grid, paint, flat)
+
+
+## A limb segment on [param bone]: a tapered tube from its root to [param length]
+## along +Y, closed at each end the way [param cut] says, so the joints read as
+## joints. [param paint] colours it, as for [method ellipsoid].
+static func segment(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, length: float,
+		root_radius: float, tip_radius: float, paint: Callable, cut: Cut) -> void:
+	if bone < 0:
+		return
+	var rows: Array = []
+	# Root cap, from the pole round to the equator.
+	for r in cut.cap:
+		var angle := PI * 0.5 * float(cut.cap - r) / float(cut.cap)
+		rows.append([-sin(angle) * root_radius, cos(angle) * root_radius, -sin(angle)])
+	for r in cut.rows + 1:
+		var t := float(r) / float(cut.rows)
+		rows.append([length * t, lerpf(root_radius, tip_radius, t), 0.0])
+	for r in range(1, cut.cap + 1):
+		var angle := PI * 0.5 * float(r) / float(cut.cap)
+		rows.append([length + sin(angle) * tip_radius, cos(angle) * tip_radius, sin(angle)])
+	var grid: Array = []
+	for row in rows:
+		var y: float = row[0]
+		var radius: float = row[1]
+		var tilt: float = row[2]
+		var ring: Array = []
+		for s in cut.sides + 1:
+			var angle := TAU * float(s) / float(cut.sides) + cut.twist
+			var around := Vector3(cos(angle), 0.0, sin(angle))
+			var normal := (around * sqrt(maxf(1.0 - tilt * tilt, 0.0)) + Vector3.UP * tilt).normalized()
+			var at := Vector3(around.x * radius, y, around.z * radius)
+			ring.append([at, normal, Color.BLACK if cut.flat else paint.call(normal, at)])
+		grid.append(ring)
+	sew(tool, skeleton.get_bone_global_rest(bone), bone, grid, paint, cut.flat)
+
+
+## Sews rings of vertices — each one [position, normal, colour], in the bone's
+## space — into triangles on [param bone].
+##
+## With [param flat], every face gets one normal and one colour of its own, which
+## is what makes low poly read as low poly rather than as a sphere drawn badly:
+## the normal is the face's own, and the colour is [param paint]'s at its middle,
+## a shade lighter or darker from face to face the way a faceted model is painted.
+static func sew(tool: SurfaceTool, rest: Transform3D, bone: int, grid: Array,
+		paint: Callable, flat: bool) -> void:
+	for r in grid.size() - 1:
+		for s in (grid[r] as Array).size() - 1:
+			var a: Array = grid[r][s]
+			var b: Array = grid[r + 1][s]
+			var c: Array = grid[r + 1][s + 1]
+			var d: Array = grid[r][s + 1]
+			# Clockwise seen from outside, which is Godot's front face.
+			for face in [[a, c, b], [a, d, c]]:
+				if not flat:
+					for corner in face:
+						vertex(tool, rest, bone, corner[0], corner[1], corner[2])
+					continue
+				var p0: Vector3 = face[0][0]
+				var p1: Vector3 = face[1][0]
+				var p2: Vector3 = face[2][0]
+				var normal := (p1 - p0).cross(p2 - p0)
+				# Two corners on one pole: a face with no area, and no way it faces.
+				if normal.length_squared() < 1e-14:
+					continue
+				normal = normal.normalized()
+				var outward: Vector3 = face[0][1] + face[1][1] + face[2][1]
+				if normal.dot(outward) < 0.0:
+					normal = -normal
+				var middle := (p0 + p1 + p2) / 3.0
+				var colour: Color = paint.call(normal, middle)
+				var shade := 0.94 + 0.12 * noise(middle)
+				colour = Color(colour.r * shade, colour.g * shade, colour.b * shade, colour.a)
+				for corner in face:
+					vertex(tool, rest, bone, corner[0], normal, colour)
+
+
+## A number from 0 to 1 that is the same every time for the same point.
+static func noise(at: Vector3) -> float:
+	return fposmod(sin(at.dot(Vector3(12.9898, 78.233, 37.719))) * 43758.5453, 1.0)
+
+
+## Paints everything [param colour].
+static func plain(colour: Color) -> Callable:
+	return func(_n: Vector3, _p: Vector3) -> Color: return colour
+
+
+## Paints a segment [param length] long [param colour], shading to [param tip]
+## over its last quarter — where the band on a leg sits, at the joint.
+static func banded(colour: Color, tip: Color, length: float) -> Callable:
+	return func(_n: Vector3, p: Vector3) -> Color:
+		return colour.lerp(tip, smoothstep(0.72, 1.0, clampf(p.y / length, 0.0, 1.0)))
+
+
+# --- materials ----------------------------------------------------------------
+
+## Coloured by the mesh's own vertex colours, so one material serves a body
+## painted in several.
+static func shell_material(roughness := 0.5, metallic := 0.08, rim := 0.35) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.roughness = roughness
+	material.metallic = metallic
+	# A little rim light for the hairs, so a dark spider against a dark wall still
+	# has an outline.
+	material.rim_enabled = true
+	material.rim = rim
+	material.rim_tint = 0.6
+	return material
+
+
+## One flat colour, soft and matte, with the same rim to keep an outline.
+static func matte_material(colour: Color) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = colour
+	material.roughness = 0.8
+	material.rim_enabled = true
+	material.rim = 0.3
+	material.rim_tint = 0.5
+	return material
+
+
+## Glossy, with a faint glow of [param shine] so a head can be found across a
+## dark room.
+static func eye_material(shine: Color, albedo := Color(0.02, 0.02, 0.025),
+		glow := 0.35) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = albedo
+	material.roughness = 0.05
+	material.metallic = 0.3
+	material.emission_enabled = true
+	material.emission = shine
+	material.emission_energy_multiplier = glow
+	return material

@@ -17,6 +17,7 @@ game/
              builder, the tether, the bag, the traits, eating and stamina, and
              the body you see — a skeleton and the gait that walks it
   prey/      things to catch, and something to spawn them
+  rig/       what bodies are built from: bones, and meshes skinned to them
   ui/        HUD
 tests/       three headless suites and screenshot tools
   support/   what the suites share: the verdict, and the arena a web check runs in
