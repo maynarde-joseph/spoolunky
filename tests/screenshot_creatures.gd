@@ -94,7 +94,8 @@ func _shoot(kind: PreySpecies, pose: String) -> Image:
 			prey.velocity = Vector3.ZERO
 			view.held = CreatureMotion.Pose.CURLED
 	await _frames(40)
-	var target := at + Vector3.UP * radius * 0.2
+	# At the body, which a walker carries lower than its middle, down on its legs.
+	var target := view.global_position + Vector3.UP * radius * 0.2
 	_eye.global_position = target + Vector3(radius * 2.2, radius * 3.4, radius * 5.6)
 	_eye.look_at(target, Vector3.UP)
 	for i in 2:

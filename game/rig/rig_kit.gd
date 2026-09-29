@@ -78,12 +78,15 @@ static func begin() -> SurfaceTool:
 
 
 ## One mesh made of [param surfaces], each given the material at the same place
-## in [param materials].
+## in [param materials]. A surface nothing was built into — the wings of a thing
+## without any — is left out rather than committed empty.
 static func commit(surfaces: Array, materials: Array) -> ArrayMesh:
 	var mesh := ArrayMesh.new()
 	for i in surfaces.size():
+		var before := mesh.get_surface_count()
 		(surfaces[i] as SurfaceTool).commit(mesh)
-		mesh.surface_set_material(i, materials[i])
+		if mesh.get_surface_count() > before:
+			mesh.surface_set_material(before, materials[i])
 	return mesh
 
 

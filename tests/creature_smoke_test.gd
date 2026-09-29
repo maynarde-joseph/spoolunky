@@ -29,11 +29,12 @@ func run_checks() -> void:
 
 func _test_species(kind: PreySpecies) -> void:
 	var label := kind.display_name.to_lower()
+	var one := ("an " if "aeiou".contains(label.left(1)) else "a ") + label
 	var radius := kind.body_radius
 	var prey := _put_down(kind)
 	await run_frames(3)
 	var view := prey.get_node_or_null("Body") as CreatureView
-	if not check(view != null, "a %s is drawn from its body" % label):
+	if not check(view != null, "%s is drawn from its body" % one):
 		prey.free()
 		return
 	check(prey.get_node_or_null("Hitbox") != null, "and still has a hitbox to shoot")

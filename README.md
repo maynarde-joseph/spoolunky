@@ -314,6 +314,7 @@ to catch is a file, not a scene and not a line of code.
 | **Midge** | 1 | nothing | anywhere, high | 3 — but they come in numbers |
 | **Mosquito** | 1 | 2 | anywhere, in fits and starts; loves a lure | 4 |
 | **Fly** | 1 | 5 | anywhere | 8 |
+| **Ant** | 1 | 5.5 | **walks** — ground only | 6 |
 | **Moth** | 2 | 12 | high up, loves a lure | 16 |
 | **Beetle** | 3 | 19, slow and long | **walks** — ground only | 30 |
 | **Wasp** | 3 | 31, ignores lures | anywhere | 34 |

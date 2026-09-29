@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="PreySpecies" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/data/prey_species.gd" id="1_species"]
+[ext_resource type="Resource" path="res://game/data/bodies/ant.tres" id="2_body"]
+
+[resource]
+script = ExtResource("1_species")
+id = "ant"
+display_name = "Ant"
+description = "Walks, and is strong for its size: about as much fight as a fly in something a third as meaty. Nothing strung in the air will ever see one, and it is quick to bite once it outgrows you."
+sort_order = 15
+biomass = 6.0
+size_class = 1
+struggle_power = 1.1
+struggle_stamina = 5.0
+settled_drain = 0.015
+move_speed = 0.7
+flying = false
+wander_radius = 6.0
+wander_height = Vector2(0, 0.2)
+wander_interval = 2.2
+lure_susceptibility = 0.6
+aggression = 0.3
+hunt_range = 3.0
+bite_damage = 1.5
+bite_interval = 1.2
+colour = Color(0.36, 0.13, 0.07, 1)
+sheen = Color(0.3, 0.1, 0.04, 1)
+body = ExtResource("2_body")
+body_radius = 0.035
+winged = false
+spawn_weight = 1.2

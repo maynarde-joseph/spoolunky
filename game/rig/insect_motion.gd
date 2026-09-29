@@ -34,6 +34,9 @@ var _stride := 0.0
 # How much of each way of holding itself is in the pose right now, 0 to 1.
 var _air := 0.0
 var _walk := 0.0
+## How much of a stride the legs are taking: none standing still, so that an
+## insect that stops puts all six feet down instead of freezing mid-step.
+var _pace := 0.0
 var _thrash := 0.0
 var _slack := 0.0
 var _curl := 0.0
@@ -113,6 +116,7 @@ func _process_modification_with_delta(delta: float) -> void:
 	_curl = move_toward(_curl, 1.0 if pose == Pose.CURLED else 0.0, step)
 	var steps := minf(speed / maxf(_body.stride, 0.01), MOST_STEPS)
 	_stride = fposmod(_stride + steps * delta, 1.0)
+	_pace = move_toward(_pace, clampf(steps / 2.0, 0.0, 1.0), step)
 
 	_pose_body(skeleton)
 	_pose_wings(skeleton)
@@ -170,12 +174,13 @@ func _pose_legs(skeleton: Skeleton3D) -> void:
 		# Forward is positive; in flight the front pair reaches a little ahead and
 		# the rest trail.
 		var tuck := 0.15 if pair == 0 else -0.35
-		var ahead := _walk * swing * 0.4 + _air * tuck + _thrash * flail * 0.5 \
+		var stepping := _walk * _pace
+		var ahead := stepping * swing * 0.4 + _air * tuck + _thrash * flail * 0.5 \
 			+ _slack * twitch * 0.2
-		var up := _walk * lifted * 0.35 - _air * 0.3 + _thrash * flail_too * 0.5 \
+		var up := stepping * lifted * 0.35 - _air * 0.3 + _thrash * flail_too * 0.5 \
 			+ _curl * 0.9 - _slack * 0.15
 		var knee := _air * 0.9 + _curl * 1.25 + _thrash * flail * 0.35 + _slack * 0.3 \
-			+ _walk * lifted * 0.2
+			+ stepping * lifted * 0.2
 		var ankle := _air * 0.5 + _curl * 0.8 + _thrash * flail_too * 0.3
 		_turn(skeleton, bones[0], Quaternion(Vector3.UP, side * ahead)
 			* Quaternion(leg["normal"], up))

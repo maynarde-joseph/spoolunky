@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="InsectBody" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/rig/insect_body.gd" id="1_body"]
+
+[resource]
+script = ExtResource("1_body")
+colour = Color(0.4, 0.14, 0.07, 1)
+abdomen_colour = Color(0.24, 0.09, 0.05, 1)
+leg_colour = Color(0.34, 0.12, 0.06, 1)
+eye_colour = Color(0.05, 0.04, 0.04, 1)
+head = Vector3(0.34, 0.3, 0.32)
+thorax = Vector3(0.2, 0.22, 0.42)
+abdomen = Vector3(0.36, 0.32, 0.46)
+abdomen_droop = 20.0
+abdomen_point = 0.15
+waist = 0.22
+waist_thickness = 0.06
+eyes = Vector3(0.08, 0.1, 0.08)
+leg = Vector3(0.55, 0.6, 0.45)
+leg_pairs = Vector3(0.9, 1, 1.1)
+leg_thickness = 0.04
+leg_splay = Vector3(35, 0, -35)
+antenna = 0.9
+antenna_elbow = 100.0
+antenna_thickness = 0.03
+proboscis = 0.0
+mandibles = 0.22
+wing_pairs = 0
+stride = 1.3

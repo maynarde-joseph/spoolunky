@@ -15,6 +15,7 @@
 [ext_resource type="Resource" path="res://game/data/prey/beetle.tres" id="12_m774e"]
 [ext_resource type="Resource" path="res://game/data/prey/wasp.tres" id="13_tykcr"]
 [ext_resource type="Resource" path="res://game/data/prey/mosquito.tres" id="prey_mosquito"]
+[ext_resource type="Resource" path="res://game/data/prey/ant.tres" id="prey_ant"]
 [ext_resource type="Script" path="res://game/ui/hud.gd" id="15_4tk24"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_3luqe"]
@@ -2452,7 +2453,7 @@ abilities_path = Array[NodePath]([NodePath("Crouch Ability 3D"), NodePath("Sprin
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -76, 46, 0)
 script = ExtResource("5_spawner")
 prey_scene = ExtResource("4_prey")
-stock = Array[ExtResource("8_mqk4b")]([ExtResource("9_lj0gc"), ExtResource("10_3rfcy"), ExtResource("11_par4i"), ExtResource("12_m774e"), ExtResource("13_tykcr"), ExtResource("prey_mosquito")])
+stock = Array[ExtResource("8_mqk4b")]([ExtResource("9_lj0gc"), ExtResource("10_3rfcy"), ExtResource("11_par4i"), ExtResource("12_m774e"), ExtResource("13_tykcr"), ExtResource("prey_mosquito"), ExtResource("prey_ant")])
 spawn_extents = Vector3(26, 10, 26)
 hover_height = Vector2(0.35, 2.4)
 
