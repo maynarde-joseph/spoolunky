@@ -607,7 +607,11 @@ func _update_held() -> void:
 		return
 	var height := _stage().body_height
 	var wide := ball_radius(charge)
-	_held.global_position = _spider.global_position + Vector3.UP * (height * 0.9 + wide)
+	# Over the spider's back, whichever way that faces: world up put the ball
+	# inside the wall or the ceiling the spider was stuck to, out of reach of the
+	# front legs that hold it.
+	var back := _climb.view_up() if _climb != null else Vector3.UP
+	_held.global_position = _spider.global_position + back * (height * 0.9 + wide)
 	_held.scale = Vector3.ONE * maxf(wide, 0.005)
 	if _held_material != null:
 		_held_material.emission_energy_multiplier = lerpf(0.5, 2.2, charge)

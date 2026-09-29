@@ -14,10 +14,11 @@ game/
   data/      web patterns, devices and size tiers (plain resources — edit the numbers)
   web/       procedural silk geometry and the webs themselves
   player/    the spider, one node per job: growth, climbing, the camera, the
-             builder, the tether, the bag, the traits, eating and stamina
+             builder, the tether, the bag, the traits, eating and stamina, and
+             the body you see — a skeleton and the gait that walks it
   prey/      things to catch, and something to spawn them
   ui/        HUD
-tests/       three headless suites and a screenshot tool
+tests/       three headless suites and screenshot tools
   support/   what the suites share: the verdict, and the arena a web check runs in
 addons/character-controller/   the movement template the spider is built on
 ```
@@ -168,6 +169,13 @@ an edge and it keeps meaning the way you were going — into a wall becomes up i
 up a wall becomes on across the ceiling — until you let go or swing the camera
 well round. Put a collider in the
 `no_climb` group to make it unclimbable.
+
+The body you see is a skeleton posed in code, not a set of animations. Its feet
+look for footholds on whatever is underfoot, stay put in the world once planted,
+and step in two sets of four so four are always down. Falling, grappling, hanging,
+riding, winding up a throw, feeding and being bitten each have a pose of their
+own. `SpiderRig` builds the bones and mesh, `SpiderGait` moves them; the reasoning
+is in `docs/DESIGN.md` §7, *The body*.
 
 From a wall or ceiling, **Ctrl** drops you onto a dragline. It costs silk by
 the metre (half back when you reel in), it's a real pendulum so you can swing
@@ -506,4 +514,12 @@ xvfb-run -a godot --rendering-driver opengl3 --resolution 1280x720 \
     --script res://tests/screenshot_climb.gd
 xvfb-run -a godot --rendering-driver opengl3 --resolution 1100x740 \
     --script res://tests/screenshot_weave.gd
+```
+
+And the spider's body, close up, in every state the gait has a pose for (add
+`-- walk`, `-- wall` and so on after it to render just one):
+
+```sh
+xvfb-run -a godot --rendering-driver opengl3 --resolution 800x600 \
+    --script res://tests/screenshot_body.gd
 ```

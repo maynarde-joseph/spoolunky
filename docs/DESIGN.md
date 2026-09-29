@@ -1478,11 +1478,61 @@ This is the traversal answer to a world built vertically, and the reason to
 string silk somewhere you have no intention of catching anything. A line is
 cheap, permanent and yours.
 
-### Still to come
-The body is a placeholder: primitives, with legs that swing in two alternating
-sets when it moves. It is enough to read the spider's size and which way it is
-pointing, which is what third person needed. A real one wants eight legs with
-IK that reach for the surface and take its angle.
+### The body
+
+**Decided: a skeleton posed in code every frame, with no animation clips, and
+feet that find their own footholds.**
+
+The body used to be a stand-in built from primitives, with legs that swung in two
+sets whether or not anything was under them. It showed the spider's size and
+which way it faced, which is what third person needed first, and nothing more.
+
+Clips could not do better. A spider walks on a floor, a wall, a ceiling, a thread
+and into an inside corner, at every size from a coin to a car, and a walk cycle
+made for one of those is wrong on the rest. So the body is a skeleton of 45 bones
+(`SpiderRig`): thorax, head, jaws and fangs, two-part palps, abdomen and
+spinnerets, and eight legs of four segments each. A `SkeletonModifier3D`
+(`SpiderGait`) poses it after everything else has run for the frame:
+
+* **Footholds are looked for, not assumed.** Each foot casts out from its hip
+  toward where it would rest and then down, so a wall beside or ahead is found
+  before the floor under it. In an inside corner the front feet land on the wall
+  before the body has turned to it, and that is most of what makes climbing read
+  as climbing.
+* **A planted foot does not move.** It stays where it was put in the world until
+  the body is half a stride past it. Then it lifts, swings on an arc and lands half
+  a stride ahead. Nothing on the ground ever moves, and that is what stops a walk
+  looking like a slide. Strides get longer and steps quicker with speed, until the
+  legs are a blur.
+* **Four feet down, always.** The legs step in two sets of four, the tetrapod
+  gait real spiders use: L1 R2 L3 R4, then R1 L2 R3 L4. A set only lifts once the
+  other has landed. A leg that has fallen behind to full stretch waits for its
+  turn and makes the set in the air land sooner. It does not break the rule.
+* **Every other state is a pose.** In a fall the legs spread and feel about, wider
+  with wings. On a grapple they tuck and the front pair reaches ahead. On a
+  dragline the front legs reach up the line. On a ride three pairs grip the line
+  overhead. On top of any of these, the front pair lifts to hold the ball while a
+  throw winds up, the front legs and jaws work at a meal, the abdomen breathes and
+  swings round toward whatever is being towed, and the whole body flinches from a
+  bite.
+
+Each leg is solved directly, with no iteration. The coxa turns the leg to face its
+foot, the tarsus comes down onto the surface at a slant, and the femur and tibia
+are a two-bone solve bent so the knees ride high over the carapace. That
+silhouette is what makes it read as a spider rather than a table.
+
+Every bone points along its own +Y, the way imported rigs do, so a modelled spider
+can later be put on the same bone names and the gait will drive it unchanged. The
+mesh that ships is built in code and stands in for that model. It is one skinned
+surface with every vertex on exactly one bone, because an exoskeleton turns in
+pieces at its joints rather than bending.
+
+A trap for anything that reads the bones back: once the frame is drawn, the
+skeleton hands back its *unmodified* pose, so `get_bone_global_pose` answers with
+the rest pose every time. The gait records where it drew each foot
+(`drawn_feet()`), and the checks measure that. The gait also only runs while the
+body can be seen. First person hides the body and switches the gait off, and the
+feet go down fresh when it comes back into view.
 
 ---
 
@@ -1604,12 +1654,13 @@ Anchor-based web construction, procedural web meshes, silk economy, size
 tiers that rescale the player, snaring prey, wrap/drain feeding, HUD.
 Playable in the character-controller example level as a sandbox.
 
-**Milestone 2 — Being a spider** *(half done)*
+**Milestone 2 — Being a spider** *(nearly done)*
 Done: wall and ceiling climbing with surface-aligned movement, a levelled
-horizon, the dragline — drop, pay out, reel in, swing, let go — and ziplines.
-Left: eight-legged procedural body with IK, seen from inside — legs reaching
-for the surface at the edges of the frame. The camera stays first person and
-rolls with the body; that is settled, see section 7.
+horizon, the dragline — drop, pay out, reel in, swing, let go — ziplines, and an
+eight-legged rigged body whose feet find whatever is underfoot (§7, *The body*).
+Left: the legs in first person, reaching for the surface at the edges of the
+frame. First person hides the body for now. The camera defaults to third person
+and never rolls; that is settled, see section 7.
 
 **Milestone 3 — The Room**
 A purpose-built tier-1/2 room at spider scale, real prey lanes, the vent exit,

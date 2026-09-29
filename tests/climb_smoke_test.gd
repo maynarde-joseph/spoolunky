@@ -40,6 +40,8 @@ func run_checks() -> void:
 	await _test_leaping_off_a_wall()
 	await _test_corners_do_not_bounce()
 	await _test_off_a_line_onto_a_wall()
+	await _test_the_body_is_a_skeleton()
+	await _test_eight_feet_on_whatever_is_underfoot()
 	await _test_ziplining()
 	await _test_grappling()
 	await _test_grappling_without_a_mode()
@@ -415,6 +417,147 @@ func _test_off_a_line_onto_a_wall() -> void:
 			"or anything else you had already left (%d times)" % walk["returns"])
 	line.queue_free()
 	await physics_frame
+
+
+## The body is a rig: a skeleton with named bones, one mesh skinned to it, and a
+## gait running in the skeleton's own update. It used to be boxes swinging in two
+## sets, which could say how big the spider was and which way it faced and nothing
+## else; a rig can take a modelled spider later on the same bone names.
+func _test_the_body_is_a_skeleton() -> void:
+	var body := _spider.body
+	var skeleton := body.skeleton
+	if not check(skeleton != null, "the spider's body is a skeleton"):
+		return
+	check(skeleton.get_bone_count() >= 45,
+		"with a bone for every part (%d)" % skeleton.get_bone_count())
+	var missing: Array[String] = []
+	for pair in 4:
+		for side in SpiderRig.SIDES:
+			for part in ["Coxa", "Femur", "Tibia", "Tarsus"]:
+				var bone := "Leg.%s%d.%s" % [side, pair + 1, part]
+				if skeleton.find_bone(bone) < 0:
+					missing.append(bone)
+	for part in ["Thorax", "Head", "Abdomen", "Spinnerets", "Chelicera.L", "Fang.R", "Palp.L.2"]:
+		if skeleton.find_bone(part) < 0:
+			missing.append(part)
+	check(missing.is_empty(), "eight legs of four joints, and the rest of a spider (%s missing)"
+		% (", ".join(missing) if not missing.is_empty() else "none"))
+	var shell := body.mesh
+	check(shell != null and shell.mesh != null and shell.skin != null
+			and shell.get_node_or_null(shell.skeleton) == skeleton,
+		"worn as one mesh, skinned to those bones")
+	check(body.gait != null and body.gait.get_parent() == skeleton,
+		"and moved by a gait that runs inside the skeleton")
+	var size := skeleton.global_transform.basis.get_scale().x
+	check(is_equal_approx(size, _spider.stage().body_height),
+		"sized to the tier (%.3f for a %.2fm body)" % [size, _spider.stage().body_height])
+
+
+## Feet go down on whatever the spider is on, stay where they are put, and walk in
+## two sets of four.
+##
+## That is the whole of the gait. A foot is planted in the world and does not move
+## until the body has gone far enough past it, so nothing slides; the legs step in
+## the tetrapod pattern real spiders use, so there are always four down; and the
+## footholds are found by looking, so on a wall they are on the wall.
+func _test_eight_feet_on_whatever_is_underfoot() -> void:
+	var floor_y := -ROOM_HALF.y + 0.2
+	var height: float = _spider.stage().body_height
+	var gait := _spider.body.gait
+	await _set_down(Vector3(0.0, floor_y + 0.3, 0.6), Vector3.FORWARD, -0.2)
+	# A spider that has just landed shuffles its feet into place; standing is
+	# once that is done.
+	await wait_until(func() -> bool: return gait.lifted() == 0, 120)
+	await run_frames(10)
+	var feet := _spider.body.feet()
+	if not check(feet.size() == 8, "eight feet (%d)" % feet.size()):
+		return
+	var highest := 0.0
+	var nearest := INF
+	for foot in feet:
+		highest = maxf(highest, absf(foot.y - floor_y))
+		var flat := Vector2(foot.x - _spider.global_position.x, foot.z - _spider.global_position.z)
+		nearest = minf(nearest, flat.length())
+	check(highest < height * 0.08,
+		"standing, every foot is on the floor (%.3f body heights off at most)" % (highest / height))
+	check(nearest > height * 0.35,
+		"and spread round the body, not tucked under it (%.2f body heights out at least)"
+		% (nearest / height))
+	check(gait.lifted() == 0, "with none of them lifted (%d)" % gait.lifted())
+
+	# Walking: count what is in the air each frame, and watch the feet that are not.
+	var groups := gait.groups()
+	var most := 0
+	var both := 0
+	var stepped := PackedInt32Array([0, 0, 0, 0, 0, 0, 0, 0])
+	var slid := 0.0
+	var was := gait.stepping()
+	var tips := _spider.body.feet()
+	var start := _spider.global_position
+	Input.action_press("move_forward")
+	# Every drawn frame, not every physics tick: the gait poses the legs once a
+	# drawn frame, and a quick step can start and finish between two ticks. For
+	# fifty ticks, which is well short of the far wall.
+	var until := Engine.get_physics_frames() + 50
+	while Engine.get_physics_frames() < until:
+		await process_frame
+		var up := gait.stepping()
+		var now := _spider.body.feet()
+		var sets := [0, 0]
+		for leg in 8:
+			if up[leg]:
+				sets[groups[leg]] += 1
+				stepped[leg] += 1
+			elif not was[leg]:
+				slid = maxf(slid, now[leg].distance_to(tips[leg]) / height)
+		most = maxi(most, sets[0] + sets[1])
+		if sets[0] > 0 and sets[1] > 0:
+			both += 1
+		was = up
+		tips = now
+	Input.action_release("move_forward")
+	await run_frames(2)
+	check(most <= 4, "walking, never more than four feet up at once (%d)" % most)
+	check(both == 0, "in two sets of four that take turns (%d frames with both up)" % both)
+	var lazy := 0
+	for leg in 8:
+		if stepped[leg] == 0:
+			lazy += 1
+	check(lazy == 0, "and every leg takes its steps (%d never lifted)" % lazy)
+	check(slid < 0.03,
+		"while a foot that is down stays exactly where it was put (%.3f body heights of slide)"
+		% slid)
+
+	# Up a wall: the footholds are on the wall.
+	await _set_down(Vector3(-ROOM_HALF.x + 0.3, 0.0, 0.3), Vector3.LEFT, 0.0)
+	if check(_spider.climb.surface_normal.dot(Vector3.RIGHT) > 0.9, "on the wall"):
+		var wall_x := -ROOM_HALF.x + 0.2
+		var off_wall := 0.0
+		for foot in _spider.body.feet():
+			off_wall = maxf(off_wall, absf(foot.x - wall_x))
+		check(off_wall < height * 0.1,
+			"with every foot on the wall rather than hanging off it (%.3f body heights off)"
+			% (off_wall / height))
+
+	# In the air: nothing under the feet, so none of them are put down, and the
+	# legs spread the way a falling spider's do.
+	_spider.climb.stand_upright()
+	_spider.view.settle()
+	_spider.global_position = Vector3(0.5, 0.6, 0.5)
+	_spider.velocity = Vector3.ZERO
+	await run_frames(12)
+	if check(not _spider.climb.is_attached(), "falling"):
+		var low := INF
+		var tucked := INF
+		for foot in _spider.body.feet():
+			low = minf(low, foot.y)
+			tucked = minf(tucked, Vector2(foot.x - _spider.global_position.x,
+				foot.z - _spider.global_position.z).length())
+		check(low > floor_y + height, "with no foot on the floor (%.2fm above it)" % (low - floor_y))
+		check(tucked > height * 0.35,
+			"and the legs spread wide (%.2f body heights out at least)" % (tucked / height))
+		check(gait.lifted() == 0, "because nothing is stepping in the air")
+	await run_frames(60)
 
 
 ## Puts the spider down at [param at], lets it take hold of whatever is nearest,

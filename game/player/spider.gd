@@ -115,6 +115,8 @@ func _ready() -> void:
 	jaws.setup(self, growth, traits, view, tether)
 	vitals.setup(self, climb, tether, jaws)
 	live_line.setup(self, growth, view, climb, web_builder)
+	if body != null:
+		body.setup(self)
 	growth.shaped_by(traits)
 	web_builder.notice.connect(_on_notice)
 	device_placer.notice.connect(_on_notice)
