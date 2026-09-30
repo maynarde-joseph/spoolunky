@@ -809,24 +809,30 @@ static func _ball() -> Node3D:
 	return it
 
 
-## A signboard on two posts. The board faces -Z; what it says is set where it is
-## put up.
+## A signboard on two posts, the board facing -Z. It is blank: what it says is
+## put on it where it is put up — see [method words_for].
 static func _sign() -> Node3D:
 	var it := WorldKit.body(null, "Sign")
 	for x in [-6.0, 6.0]:
 		WorldKit.box(it, "Post", Vector3(0.8, 14.0, 0.8), WorldKit.at(Vector3(x, 7.0, 0.0)), "wood_dark")
 	WorldKit.block(it, "Board", Vector3(-7.4, 9.0, -0.5), Vector3(7.4, 14.0, 0.0), "green")
+	return it
+
+
+## Words for a [code]sign[/code], to hang on the front of its board. Added to the
+## sign where it is put up rather than built into it, because a change made inside
+## a baked instance is not kept when the level round it is baked.
+static func words_for(text: String) -> Label3D:
 	var words := Label3D.new()
 	words.name = "Words"
-	words.text = "Sign"
+	words.text = text
 	words.font_size = 96
 	words.pixel_size = 0.02
 	words.modulate = Color(0.96, 0.94, 0.86)
 	words.outline_size = 0
 	words.position = Vector3(0.0, 11.5, -0.56)
 	words.rotation = Vector3(0.0, PI, 0.0)
-	it.add_child(words)
-	return it
+	return words
 
 
 ## A water butt under the shed's gutter.

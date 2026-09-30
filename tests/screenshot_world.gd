@@ -25,6 +25,12 @@ const VIEWS := {
 	"sewer_hall": [Vector3(-28.0, -9.0, 18.0), Vector3(-50.0, -18.0, -12.0)],
 	"sewer_pipe": [Vector3(-44.0, -17.0, -24.0), Vector3(-44.0, -19.0, -60.0)],
 	"sewer_storm": [Vector3(13.0, -13.0, 5.0), Vector3(32.0, -9.0, -4.0)],
+	"park_grate": [Vector3(30.0, 4.0, 16.0), Vector3(20.0, 6.0, -30.0)],
+	"park": [Vector3(60.0, 60.0, 110.0), Vector3(-10.0, 0.0, 0.0)],
+	"park_pets": [Vector3(-40.0, 30.0, -10.0), Vector3(-85.0, 8.0, -75.0)],
+	"park_aviary": [Vector3(-96.0, 12.0, -74.0), Vector3(-100.0, 14.0, -96.0)],
+	"park_beds": [Vector3(30.0, 10.0, 20.0), Vector3(12.0, 2.0, 56.0)],
+	"park_from_above": [Vector3(-10.0, 300.0, 1.0), Vector3(-10.0, 0.0, 0.0)],
 }
 
 

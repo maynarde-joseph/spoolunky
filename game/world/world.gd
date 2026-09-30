@@ -118,6 +118,27 @@ const STORM_HI := Vector2(34.0, 0.0)
 const SEWERS_LO := Vector3(-180.0, -28.0, -72.0)
 const SEWERS_HI := Vector3(36.0, -4.0, 24.0)
 
+# --- the park ------------------------------------------------------------
+
+## The park: the grass between the shed and the lake.
+const PARK_LO := Vector3(-130.0, 0.0, -120.0)
+const PARK_HI := Vector3(110.0, 120.0, 120.0)
+
+## Half the width of the main path, which runs from the shed door east to the
+## lake, and the reach of the paved ring round the storm grate on it.
+const PATH_HALF := 9.0
+const PLAZA := 24.0
+
+## The animal area in the north-west corner, and the gap in its fence.
+const PETS_LO := Vector2(-120.0, -110.0)
+const PETS_HI := Vector2(-40.0, -30.0)
+const PETS_GATE := Vector2(-80.0, -60.0)
+
+## How far out the hedge round the park stands, north and south, and at the back
+## of the shed.
+const HEDGE := 124.0
+const HEDGE_WEST := -205.0
+
 
 func _ready() -> void:
 	build()
@@ -128,6 +149,7 @@ func build() -> void:
 	_ground()
 	_shed()
 	_sewers()
+	_park()
 	_place_the_spider()
 
 
@@ -157,7 +179,7 @@ func _sky() -> void:
 
 	var sun := DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.light_energy = 1.2
+	sun.light_energy = 1.0
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 320.0
 	add_child(sun)
@@ -643,11 +665,11 @@ func _tunnel(zone: Node3D, part_name: String, from_x: float, to_x: float) -> voi
 	var n := 0
 	while x < to_x - 3.0:
 		_rib(body, x)
-		if n % 3 == 1:
-			var south := n % 2 == 0
-			_lamp(zone, Vector3(x + 3.0, -17.5, SEWER_Z + (WALKWAY if south else -WALKWAY)),
+		if n % 2 == 1:
+			var south := n % 4 == 1
+			_lamp(zone, Vector3(x + 4.0, -17.5, SEWER_Z + (WALKWAY if south else -WALKWAY)),
 				0.0 if south else 180.0)
-		x += 12.0
+		x += 16.0
 		n += 1
 	WorldKit.water(zone, part_name + "Water", Vector3(length, WATER_TOP - BED, CHANNEL * 2.0),
 		WorldKit.at(Vector3(middle, (BED + WATER_TOP) * 0.5, SEWER_Z)), "slime")
@@ -705,8 +727,8 @@ func _sewer_section() -> Array:
 ## A stone rib round the inside of the arch at [param x], with a pier down each
 ## wall to the walkway: blocks set round the curve, each one square to it.
 func _rib(body: Node3D, x: float) -> void:
-	var pieces := 12
-	var chord := 2.0 * WALKWAY * sin(PI / float(pieces) * 0.5) + 0.25
+	var pieces := 8
+	var chord := 2.0 * WALKWAY * sin(PI / float(pieces) * 0.5) + 0.3
 	for k in pieces:
 		var angle := PI * (float(k) + 0.5) / float(pieces)
 		var out := Vector3(0.0, sin(angle), -cos(angle))
@@ -832,6 +854,171 @@ func _storm_drain(zone: Node3D) -> void:
 	_dress(grate, "iron", 7)
 
 
+# --- the park ------------------------------------------------------------
+
+## The park: lawns either side of the main path from the shed door to the lake,
+## trees and bushes and flower beds, benches along the path and round the grate
+## the spider comes up through, and an animal area in the corner with an aviary
+## for the parrots and a run for the dogs. A hedge goes round it all.
+##
+## It is the first open space, and the first with nothing overhead. At a Sewer
+## Widow's size a bench is a frame and a tree is a building, and the cats are
+## bigger than you are. What it taxes is anchors: they are far apart out here,
+## and a web between two trees is a long one. The lake is past the far end of
+## the path.
+func _park() -> void:
+	var zone := Zone.make(self, "The Park", PARK_LO, PARK_HI, Vector2(2.0, 3.4))
+	_paths(zone)
+	_pets(zone)
+	_planting(zone)
+	_seating(zone)
+	_hedges(zone)
+	_stock(zone, "CatsSouth", Vector3(-50.0, 3.0, 60.0), Vector3(80.0, 6.0, 60.0), ["cat"], 2)
+	_stock(zone, "CatsNorth", Vector3(40.0, 3.0, -64.0), Vector3(80.0, 6.0, 60.0), ["cat"], 2)
+	_stock(zone, "Dogs", Vector3(-58.0, 3.0, -72.0), Vector3(20.0, 6.0, 50.0), ["dog"], 2)
+	_stock(zone, "Aviary", Vector3(-96.0, 3.0, -86.0), Vector3(30.0, 6.0, 26.0), ["parrot"], 4)
+	_stock(zone, "FlowersWest", Vector3(-45.0, 1.0, 32.0), Vector3(18.0, 2.0, 18.0),
+		["bee", "butterfly"], 3)
+	_stock(zone, "FlowersMiddle", Vector3(12.0, 1.0, 56.0), Vector3(18.0, 2.0, 18.0),
+		["bee", "butterfly", "wasp"], 3)
+	_stock(zone, "FlowersEast", Vector3(60.0, 1.0, 28.0), Vector3(18.0, 2.0, 18.0),
+		["bee", "butterfly"], 3)
+
+
+## The main path from the shed door to the lake, with the grate let into it; the
+## paved ring round the grate, its kerb, and the path up to the animal area.
+func _paths(zone: Node3D) -> void:
+	var paths := WorldKit.body(zone, "Paths")
+	var grate: Array[Rect2] = [Rect2(STORM_LO, STORM_HI - STORM_LO)]
+	WorldKit.slab(paths, "Main", Vector3(SHED_HI.x + BOARD, 0.0, -PATH_HALF),
+		Vector3(PARK_HI.x, 0.15, PATH_HALF), grate, "path")
+	WorldKit.block(paths, "ToPets", Vector3(PETS_GATE.x + 2.0, 0.0, PETS_HI.y),
+		Vector3(PETS_GATE.y - 2.0, 0.15, -PATH_HALF), "path")
+	var middle := (STORM_LO + STORM_HI) * 0.5
+	var ring := PackedVector2Array([Vector2(6.0, 0.0), Vector2(6.0, 0.2), Vector2(PLAZA, 0.2),
+		Vector2(PLAZA, 0.0)])
+	var paving := Palette.colour("paving")
+	WorldKit.lathe(paths, "Plaza", ring, PackedColorArray([paving, paving, paving, paving]), 48,
+		WorldKit.at(Vector3(middle.x, 0.0, middle.y)))
+	var lo := STORM_LO
+	var hi := STORM_HI
+	for piece in [
+		[Vector3(lo.x - 2.0, -0.3, lo.y - 2.0), Vector3(hi.x + 2.0, 0.35, lo.y)],
+		[Vector3(lo.x - 2.0, -0.3, hi.y), Vector3(hi.x + 2.0, 0.35, hi.y + 2.0)],
+		[Vector3(lo.x - 2.0, -0.3, lo.y), Vector3(lo.x, 0.35, hi.y)],
+		[Vector3(hi.x, -0.3, lo.y), Vector3(hi.x + 2.0, 0.35, hi.y)],
+	]:
+		WorldKit.block(paths, "Kerb", piece[0], piece[1], "stone_dark")
+
+
+## The animal area: a white fence round it with a gap to come in by, and a sign;
+## the aviary for the parrots, and the dogs' kennel, bowls and balls.
+func _pets(zone: Node3D) -> void:
+	var pets := WorldKit.group(zone, "PetsCorner")
+	var lo := PETS_LO
+	var hi := PETS_HI
+	var x := lo.x + 10.0
+	while x < hi.x:
+		Props.place(pets, "picket_fence", WorldKit.at(Vector3(x, 0.0, lo.y)))
+		if x < PETS_GATE.x or x > PETS_GATE.y:
+			Props.place(pets, "picket_fence", WorldKit.at(Vector3(x, 0.0, hi.y), 180.0))
+		x += 20.0
+	var z := lo.y + 10.0
+	while z < hi.y:
+		Props.place(pets, "picket_fence", WorldKit.at(Vector3(lo.x, 0.0, z), 90.0))
+		Props.place(pets, "picket_fence", WorldKit.at(Vector3(hi.x, 0.0, z), -90.0))
+		z += 20.0
+	var sign := Props.place(pets, "sign", WorldKit.at(Vector3((PETS_GATE.x + PETS_GATE.y) * 0.5,
+		0.0, hi.y + 6.0), 180.0))
+	_letter(sign, "Pets' Corner")
+	Props.place(pets, "aviary", WorldKit.at(Vector3(-96.0, 0.0, -86.0), 180.0))
+	Props.place(pets, "kennel", WorldKit.at(Vector3(-56.0, 0.0, -96.0), 180.0))
+	Props.place(pets, "dog_bowl", WorldKit.at(Vector3(-48.0, 0.0, -86.0)))
+	Props.place(pets, "dog_bowl", WorldKit.at(Vector3(-64.0, 0.0, -86.0)))
+	Props.place(pets, "ball", WorldKit.at(Vector3(-60.0, 0.0, -58.0)))
+	Props.place(pets, "ball", WorldKit.at(Vector3(-47.0, 0.0, -44.0)))
+
+
+## Trees on the lawns either side of the path, bushes about them and along the
+## hedge, and three round flower beds on the south lawn.
+func _planting(zone: Node3D) -> void:
+	var planting := WorldKit.group(zone, "Planting")
+	var trees := [
+		["tree_oak", -100.0, 45.0], ["tree_birch", -86.0, 60.0], ["tree_oak", -58.0, 88.0],
+		["tree_pine", -112.0, 98.0], ["tree_birch", -24.0, 96.0], ["tree_oak", -8.0, 70.0],
+		["tree_pine", 18.0, 104.0], ["tree_oak", 40.0, 72.0], ["tree_birch", 56.0, 86.0],
+		["tree_oak", 84.0, 44.0], ["tree_pine", 96.0, 98.0], ["tree_birch", 72.0, 108.0],
+		["tree_oak", -20.0, -42.0], ["tree_birch", -4.0, -58.0], ["tree_oak", 20.0, -86.0],
+		["tree_pine", 46.0, -50.0], ["tree_birch", 70.0, -30.0], ["tree_oak", 86.0, -82.0],
+		["tree_pine", 60.0, -106.0], ["tree_birch", 100.0, -46.0],
+	]
+	for i in trees.size():
+		Props.place(planting, trees[i][0], WorldKit.at(Vector3(trees[i][1], 0.0, trees[i][2]),
+			float(i) * 47.0))
+	var bushes := [
+		[-120.0, 22.0], [-68.0, 32.0], [-40.0, 112.0], [2.0, 20.0], [28.0, 44.0], [74.0, 14.0],
+		[100.0, 24.0], [-28.0, -22.0], [4.0, -24.0], [62.0, -22.0], [92.0, -22.0], [104.0, -108.0],
+		[-10.0, -110.0], [30.0, -112.0], [-120.0, 112.0], [70.0, 116.0], [-30.0, 60.0], [100.0, 70.0],
+	]
+	for i in bushes.size():
+		var kind := "bush_flowering" if i % 3 == 0 else "bush"
+		Props.place(planting, kind, WorldKit.at(Vector3(bushes[i][0], 0.0, bushes[i][1]),
+			float(i) * 71.0))
+	for bed in [Vector3(-45.0, 0.0, 32.0), Vector3(12.0, 0.0, 56.0), Vector3(60.0, 0.0, 28.0)]:
+		Props.place(planting, "flower_bed", WorldKit.at(bed, bed.x * 3.0))
+
+
+## Benches along the path facing it and round the grate facing in, bins beside
+## some of them, and lamp posts down the path.
+func _seating(zone: Node3D) -> void:
+	var seating := WorldKit.group(zone, "Seating")
+	for x in [-100.0, -60.0, -10.0, 70.0, 96.0]:
+		Props.place(seating, "bench", WorldKit.at(Vector3(x, 0.0, PATH_HALF + 5.0)))
+	for x in [-104.0, -44.0, -10.0, 76.0]:
+		Props.place(seating, "bench", WorldKit.at(Vector3(x, 0.0, -PATH_HALF - 5.0), 180.0))
+	for x in [-84.0, 6.0, 86.0]:
+		Props.place(seating, "bin", WorldKit.at(Vector3(x, 0.0, PATH_HALF + 5.0)))
+	for x in [-60.0, 92.0]:
+		Props.place(seating, "bin", WorldKit.at(Vector3(x, 0.0, -PATH_HALF - 5.0)))
+	var middle := (STORM_LO + STORM_HI) * 0.5
+	for i in 4:
+		var angle := PI * 0.25 + float(i) * PI * 0.5
+		var out := Vector3(cos(angle), 0.0, sin(angle))
+		Props.place(seating, "bench", Transform3D(Basis(Vector3.UP, atan2(out.x, out.z)),
+			Vector3(middle.x, 0.0, middle.y) + out * (PLAZA - 4.4)))
+	var side := 1.0
+	for x in [-120.0, -80.0, -40.0, 0.0, 64.0, 100.0]:
+		Props.place(seating, "lamp_post", WorldKit.at(Vector3(x, 0.0, side * (PATH_HALF + 2.0))))
+		side = -side
+
+
+## The hedge round the park: along the north and the south, and behind the shed.
+func _hedges(zone: Node3D) -> void:
+	var hedges := WorldKit.body(zone, "Hedge")
+	for z in [-HEDGE, HEDGE]:
+		_hedge(hedges, Vector3(HEDGE_WEST, 0.0, z), Vector3(PARK_HI.x, 0.0, z))
+	_hedge(hedges, Vector3(HEDGE_WEST, 0.0, -HEDGE), Vector3(HEDGE_WEST, 0.0, HEDGE))
+
+
+## A clipped hedge along the ground from one point to another: square sides and a
+## rounded top, a man's height and more.
+func _hedge(on: Node3D, from: Vector3, to: Vector3) -> void:
+	var along := to - from
+	var turn := Basis(Vector3.UP, atan2(along.x, along.z))
+	var middle := (from + to) * 0.5
+	var length := along.length() + 8.0
+	WorldKit.box(on, "Hedge", Vector3(8.0, 14.0, length), Transform3D(turn, middle + Vector3(0.0,
+		7.0, 0.0)), "leaf_dark")
+	WorldKit.capsule(on, "Top", 4.0, length, Transform3D(turn * Basis(Vector3.RIGHT, PI * 0.5),
+		middle + Vector3(0.0, 14.0, 0.0)), "leaf_dark")
+
+
+## Puts [param words] on a sign.
+func _letter(sign: Node, words: String) -> void:
+	if sign != null:
+		sign.add_child(Props.words_for(words))
+
+
 ## A room that makes its own light from everywhere, [param lo] to [param hi]: dim
 ## and [param colour] rather than the sky's. The one light from everywhere is the
 ## outdoors' — without this a sewer is as bright as a lawn in its shadows, and
@@ -892,7 +1079,7 @@ func _stock(parent: Node3D, part_name: String, at: Vector3, extents: Vector3, id
 	spawner.spawn_extents = extents
 	spawner.snap_to_ground = snap
 	spawner.position = at
-	parent.add_child(spawner)
+	parent.add_child(spawner, true)
 	return spawner
 
 

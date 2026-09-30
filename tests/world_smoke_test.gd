@@ -21,6 +21,7 @@ const TESTBED_PATH := "res://game/world/testbed.tscn"
 const PLACES := [
 	["The Shed", 0.25, 0.7, ""],
 	["The Sewers", 0.7, 2.0, "sewers"],
+	["The Park", 2.0, 3.4, "park"],
 ]
 
 ## The places that are indoors, and have to bring their own light.

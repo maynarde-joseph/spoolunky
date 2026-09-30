@@ -29,6 +29,13 @@ const LEVELS := {
 ## you start. Stripping them cost two checks the first time round.
 const RUNTIME_GROUPS := ["prey", "silk_webs"]
 
+## Where the props live. An instance of one is kept as an instance, like any other,
+## and so is anything the builder hung on it after putting it down — the words on a
+## sign. A prop has no script to make anything for itself, so whatever is on one
+## that its own scene did not bring was put there by the builder, and is this
+## level's to keep.
+const PROPS_DIR := "res://game/world/props/"
+
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -156,12 +163,18 @@ func _drop_runtime_nodes(root: Node) -> void:
 ##
 ## Instanced scenes are the exception that matters: the instance root gets an
 ## owner so it is written out as an instance, and its insides are left alone so
-## they stay part of *their* scene rather than being flattened into this one.
+## they stay part of *their* scene rather than being flattened into this one —
+## all but what the builder added to a prop, which nothing else would keep.
 func _take_ownership(node: Node, root: Node) -> void:
 	for child in node.get_children():
 		child.owner = root
 		if child.scene_file_path.is_empty():
 			_take_ownership(child, root)
+		elif child.scene_file_path.begins_with(PROPS_DIR):
+			for added in child.get_children():
+				if added.owner == null:
+					added.owner = root
+					_take_ownership(added, root)
 
 
 func _every(node: Node) -> Array[Node]:
