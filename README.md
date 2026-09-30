@@ -370,8 +370,8 @@ them on a stand-in. So far:
   caught, it flaps in bursts; wrapped, it pulls them round itself like a cloak;
 * the **cat**, on the same body as the rat: ginger all over, with pointed ears,
   green eyes and a tail held up in a hook. Caught, its ears go flat;
-* the **dog**, a third: floppy brown ears, a patch over one eye, a saddle on its
-  back and a big black nose. It pants with its tongue out and wags as it trots;
+* the **dog**, a third: cream, with floppy brown ears and a black nose. It pants
+  and wags as it trots;
 * the **parrot**, the bat's body in feathers: a scarlet macaw, red, with yellow
   coverts over blue flight feathers, a bare white face and a hooked beak. On the
   ground it stands up straight on its perch and folds its wings down its sides;
