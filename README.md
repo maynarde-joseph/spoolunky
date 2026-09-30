@@ -383,11 +383,11 @@ them on a stand-in. So far:
   water the way a fly does in air, so a swimmer's species will say `flying`;
 * the **shark**, on the fish's body: one grey, with a pointed snout, a tall
   fin on its back, long fins at its sides and a tail with a long top lobe;
-* the **octopus**, an `OctopusBody`, its own kind: a head with goggling eyes and
-  a little tube of a mouth, a spotted mantle above it, and eight arms of four
-  bones each with pale suckers underneath. Sitting, ripples run down its arms;
-  swimming, it tips mantle-first and pulses, its arms opening wide and snapping
-  shut; caught, every arm flails on its own; wrapped, each one coils up.
+* the **octopus**, an `OctopusBody`, its own kind, drawn the minimal way: a
+  head with two small eyes, a smooth mantle above it and eight tapering arms of
+  four bones each, all one colour. Sitting, ripples run down its arms; swimming,
+  it tips mantle-first and pulses, its arms opening wide and snapping shut;
+  caught, every arm flails on its own; wrapped, each one coils up.
 
 ## Leaving a web and coming back
 
