@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="WingedBody" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/rig/winged_body.gd" id="1_body"]
+
+[resource]
+script = ExtResource("1_body")
+colour = Color(0.34, 0.26, 0.22, 1)
+belly_colour = Color(0.45, 0.35, 0.3, 1)
+wing_colour = Color(0.2, 0.16, 0.17, 1)
+wing_rim = Color(0.15, 0.12, 0.13, 1)
+bone_colour = Color(0.12, 0.09, 0.09, 1)
+nose_colour = Color(0.6, 0.42, 0.42, 1)
+jaw_colour = Color(0.34, 0.26, 0.22, 1)
+ear_colour = Color(0.3, 0.23, 0.2, 1)
+ear_inside = Color(0.7, 0.48, 0.48, 1)
+leg_colour = Color(0.2, 0.15, 0.15, 1)
+gloss = 0.1
+body = Vector3(0.44, 0.42, 0.55)
+body_point = 0.15
+head = Vector3(0.38, 0.35, 0.33)
+head_lift = 0.22
+eye = 0.1
+eye_white = 0.45
+eye_spread = 0.3
+snout = Vector3(0.14, 0.11, 0.14)
+nose = 0.075
+fangs = 0.08
+ears = Vector2(0.3, 0.55)
+ear_lean = 22.0
+arm = Vector2(0.9, 0.95)
+hand = 1.35
+wing_sweep = 0.12
+flap_swing = 55.0
+flap_centre = 8.0
+stance = 0.55
+leg_thickness = 0.045
+toes = 0.09

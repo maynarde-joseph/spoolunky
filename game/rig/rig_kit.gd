@@ -348,6 +348,30 @@ static func membrane(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, length:
 		_two_faced(tool, rest, bone, [a_in, b, a], rim)
 
 
+## Something flat of any outline on [param bone] — a bat's wing between its
+## fingers, a fan of feathers — lying in the bone's X-Y plane, [param lift] along
+## its Z. [param outline] goes round its edge and every point of it has to be in
+## sight of [param middle], which it is filled from. Both faces are built, as for
+## [method membrane], and a band [param rim_width] of the way in from the edge is
+## [param rim].
+static func panel(tool: SurfaceTool, skeleton: Skeleton3D, bone: int,
+		outline: PackedVector2Array, middle: Vector2, colour: Color, rim: Color,
+		rim_width := 0.1, lift := 0.0) -> void:
+	if bone < 0 or outline.size() < 3:
+		return
+	var rest := skeleton.get_bone_global_rest(bone)
+	var centre := Vector3(middle.x, middle.y, lift)
+	for i in outline.size():
+		var a := Vector3(outline[i].x, outline[i].y, lift)
+		var b := Vector3(outline[(i + 1) % outline.size()].x,
+			outline[(i + 1) % outline.size()].y, lift)
+		var a_in := centre.lerp(a, 1.0 - rim_width)
+		var b_in := centre.lerp(b, 1.0 - rim_width)
+		_two_faced(tool, rest, bone, [centre, b_in, a_in], colour)
+		_two_faced(tool, rest, bone, [a_in, b_in, b], rim)
+		_two_faced(tool, rest, bone, [a_in, b, a], rim)
+
+
 ## One flat triangle as two, back to back: the corners in one order facing one
 ## way and in the other order facing the other, each with the normal of the side
 ## it shows.
@@ -461,11 +485,12 @@ static func matte_material(colour: Color) -> StandardMaterial3D:
 
 ## For a [method membrane]: coloured by the mesh, and see-through where its
 ## colours are when [param see_through]. It has two faces of its own, so nothing
-## here has to draw a back.
-static func membrane_material(see_through: bool) -> StandardMaterial3D:
+## here has to draw a back. An insect's wing shines; skin and feathers want a
+## [param roughness] nearer one.
+static func membrane_material(see_through: bool, roughness := 0.35) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.vertex_color_use_as_albedo = true
-	material.roughness = 0.35
+	material.roughness = roughness
 	if see_through:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	return material
