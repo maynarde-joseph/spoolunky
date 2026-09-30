@@ -351,10 +351,17 @@ An insect's is an `InsectBody`, where every size, colour and part is a number, a
 a species points at one with its `body` field. One without is still drawn as the
 old placeholder ball.
 
-Some bodies are drawn ahead of anything to wear them: the creatures of the sewer,
-the park and the pond, before those have anywhere to live. They wait in
-`game/data/bodies/` for a species, and until then the checks and the pictures show
-them on a stand-in. So far:
+Past the insects are the creatures that live somewhere in particular — the sewers,
+the park, the lake — and their species say where with a `habitat`. The insects turn
+up anywhere, and a spawner left to choose its own stock takes only them; a rat is
+put down only where a stock names it, so a room built to test webs in does not
+fill with dogs and sharks. They are built to the tier they are food for, so a rat
+is the size of a Sewer Widow and a shark is bigger than anything but the
+Architect, and a big one bites from the edge of its body rather than from six of
+its own widths away, which was a margin for a wasp and was the far bank for a
+shark. The ones that swim say `swims` as well as `flying`, and keep all of
+themselves under the top of the water they are in: steering at a lure on the bank
+or a spider on a boat, they follow along underneath. Their bodies:
 
 * the **cockroach**, flat and wide under the shield that hides its head, with
   its wings folded flat as its back and feelers longer than it is;
@@ -380,7 +387,7 @@ them on a stand-in. So far:
   It swims in a wave that runs down it from nose to tail; out of water it lies
   on its side and flops when it tries to go anywhere; wrapped, it is bent double.
   Swimming is flying, as far as a creature is concerned: it keeps itself up in
-  water the way a fly does in air, so a swimmer's species will say `flying`;
+  water the way a fly does in air, so a swimmer's species says `flying`;
 * the **shark**, on the fish's body: one grey, with a pointed snout, a tall
   fin on its back, long fins at its sides and a tail with a long top lobe;
 * the **octopus**, an `OctopusBody`, its own kind, drawn the minimal way: a
@@ -555,7 +562,8 @@ godot --headless --script res://tests/world_smoke_test.gd
 ```
 
 A fourth lets every body loose in an empty room — on the species that wears it, or
-on a stand-in if nothing does yet — and checks it holds itself the way it should:
+on a stand-in if a body is ever drawn ahead of anything to wear it — and checks it
+holds itself the way it should:
 facing where it goes, beating what it flies or swims with, feet on the floor,
 thrashing when it is caught, curled up and still once it is wrapped:
 

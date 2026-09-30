@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="PreySpecies" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/data/prey_species.gd" id="1_species"]
+[ext_resource type="Resource" path="res://game/data/bodies/dog.tres" id="2_body"]
+
+[resource]
+script = ExtResource("1_species")
+id = "dog"
+display_name = "Dog"
+description = "Big, fast and interested in everything in its run. It chases you because you are there, it fights twice as hard as a cat, and it is worth more than anything else in the park."
+sort_order = 65
+biomass = 230.0
+size_class = 7
+struggle_power = 6.0
+struggle_stamina = 15.0
+settled_drain = 0.06
+move_speed = 7.6
+flying = false
+swims = false
+wander_radius = 22.0
+wander_height = Vector2(0.0, 0.2)
+wander_interval = 2.4
+lure_susceptibility = 0.4
+aggression = 0.5
+hunt_range = 16.0
+bite_damage = 10.0
+bite_interval = 1.3
+colour = Color(0.9, 0.85, 0.74, 1)
+sheen = Color(0.5, 0.46, 0.4, 1)
+body = ExtResource("2_body")
+body_radius = 2.6
+winged = false
+spawn_weight = 1.0
+habitat = "park"

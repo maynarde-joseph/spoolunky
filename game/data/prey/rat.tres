@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="PreySpecies" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/data/prey_species.gd" id="1_species"]
+[ext_resource type="Resource" path="res://game/data/bodies/rat.tres" id="2_body"]
+
+[resource]
+script = ExtResource("1_species")
+id = "rat"
+display_name = "Rat"
+description = "The first thing down here that fights back. Bigger than a Huntsman and happy to show it, it comes for you until you are big enough to eat it — and then it is worth more than anything in the shed."
+sort_order = 50
+biomass = 70.0
+size_class = 5
+struggle_power = 3.6
+struggle_stamina = 12.0
+settled_drain = 0.04
+move_speed = 4.2
+flying = false
+swims = false
+wander_radius = 14.0
+wander_height = Vector2(0.0, 0.2)
+wander_interval = 2.6
+lure_susceptibility = 0.3
+aggression = 0.6
+hunt_range = 9.0
+bite_damage = 5.0
+bite_interval = 1.2
+colour = Color(0.48, 0.43, 0.4, 1)
+sheen = Color(0.3, 0.26, 0.24, 1)
+body = ExtResource("2_body")
+body_radius = 0.7
+winged = false
+spawn_weight = 1.0
+habitat = "sewers"

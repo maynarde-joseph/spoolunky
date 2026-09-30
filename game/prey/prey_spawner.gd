@@ -5,8 +5,10 @@ extends Node3D
 ##
 ## The mix is what makes a patch worth visiting: a stock of midges is a web you
 ## leave out, a stock with wasps in it is somewhere you go prepared. Leave
-## [member stock] empty and it takes every species in the game, weighted by how
-## often each says it should turn up.
+## [member stock] empty and it takes every species that turns up anywhere,
+## weighted by how often each says it should turn up — the insects, and not the
+## rats, cats and fish, which live somewhere in particular and are only put down
+## where a stock names them.
 ##
 ## A placeholder for real prey lanes — good enough to test webs against, and
 ## the place to hang proper spawn rules later.
@@ -14,7 +16,7 @@ extends Node3D
 ## The one scene every creature is built from. Left unset, prey finds it.
 @export var prey_scene: PackedScene
 
-## Which species turn up here. Empty means all of them.
+## Which species turn up here. Empty means everything that turns up anywhere.
 @export var stock: Array[PreySpecies] = []
 
 ## How many to keep alive at once.
@@ -47,7 +49,7 @@ var _weight_total := 0.0
 
 func _ready() -> void:
 	if stock.is_empty():
-		stock = PreyLibrary.load_species()
+		stock = PreyLibrary.ordinary_mix()
 	_weight_total = 0.0
 	for kind in stock:
 		_weight_total += maxf(kind.spawn_weight, 0.0)
@@ -178,5 +180,9 @@ func _random_point(kind: PreySpecies) -> Vector3:
 	# thing that makes placement a decision.
 	var lift := randf_range(hover_height.x, hover_height.y)
 	if kind != null:
-		lift = randf_range(kind.wander_height.x, kind.wander_height.y) if kind.flying else 0.1
+		# Something that walks starts on its feet: a hair above the floor for an ant,
+		# and its whole body's height for a dog, which put down a hair above the floor
+		# would start the game buried to the shoulders.
+		lift = randf_range(kind.wander_height.x, kind.wander_height.y) if kind.flying \
+			else maxf(0.1, kind.body_radius * Prey.HITBOX_SCALE)
 	return hit["position"] + Vector3.UP * lift

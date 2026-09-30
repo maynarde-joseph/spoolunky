@@ -80,6 +80,12 @@ extends Resource
 ## be on the ground, so it decides where a creature is caught.
 @export var flying := true
 
+## Whether its flying is swimming. Something that swims keeps below the top of
+## the water it is in and goes nowhere above it — not after a lure, not after a
+## spider on the bank — so a fish is caught in the water or not at all. Out of
+## water it has nothing to keep under, and gets about like anything that flies.
+@export var swims := false
+
 ## How far from where it started it will wander.
 @export var wander_radius := 7.0
 
@@ -120,6 +126,15 @@ extends Resource
 ## How often this turns up against the others in the same stock. Zero keeps it
 ## out of the ordinary mix, for something only placed by hand.
 @export var spawn_weight := 1.0
+
+## Where it lives, if that is somewhere in particular — "sewers", "park", "lake".
+##
+## The insects turn up anywhere, and a spawner left to choose its own stock draws
+## from them. A rat does not: it lives in the sewers, so only a spawner that names
+## it puts one down. Without this, a room built to test webs in would fill with
+## dogs and sharks the day they were added, because an empty stock meant every
+## species there is.
+@export var habitat := ""
 
 
 ## Everything it will throw at a web before it tires itself out: the number a

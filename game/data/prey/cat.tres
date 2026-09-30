@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="PreySpecies" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/data/prey_species.gd" id="1_species"]
+[ext_resource type="Resource" path="res://game/data/bodies/cat.tres" id="2_body"]
+
+[resource]
+script = ExtResource("1_species")
+id = "cat"
+display_name = "Cat"
+description = "Sits on the warm paths and watches. Anything smaller than it is a game, and a spider fresh out of the drain is smaller than it. A pressure snare, or be bigger."
+sort_order = 60
+biomass = 150.0
+size_class = 6
+struggle_power = 5.0
+struggle_stamina = 13.0
+settled_drain = 0.05
+move_speed = 6.6
+flying = false
+swims = false
+wander_radius = 28.0
+wander_height = Vector2(0.0, 0.2)
+wander_interval = 3.2
+lure_susceptibility = 0.2
+aggression = 0.7
+hunt_range = 14.0
+bite_damage = 8.0
+bite_interval = 1.1
+colour = Color(0.86, 0.52, 0.22, 1)
+sheen = Color(0.5, 0.3, 0.12, 1)
+body = ExtResource("2_body")
+body_radius = 2.0
+winged = false
+spawn_weight = 1.0
+habitat = "park"

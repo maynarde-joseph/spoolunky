@@ -257,8 +257,11 @@ func _build_room() -> Node3D:
 	var floor_body := StaticBody3D.new()
 	floor_body.collision_layer = GameLayers.WORLD
 	floor_body.position = Vector3(0.0, -0.1, 0.0)
+	# Room for the biggest thing there is to walk about in: a dog wanders twenty-two
+	# metres from where it was put down, and walking off the edge of the floor is
+	# not what the feet check is asking about.
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(40.0, 0.2, 40.0)
+	shape.size = Vector3(400.0, 0.2, 400.0)
 	var collider := CollisionShape3D.new()
 	collider.shape = shape
 	floor_body.add_child(collider)

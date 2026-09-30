@@ -57,6 +57,7 @@ static func wearing(body: CreatureBody, id: String) -> PreySpecies:
 	kind.body = body
 	kind.body_radius = RADIUS
 	kind.flying = FLIERS.has(id)
+	kind.swims = SWIMMERS.has(id)
 	kind.move_speed = RADIUS * (12.0 if kind.flying else 6.0)
 	kind.wander_radius = RADIUS * 30.0
 	kind.wander_height = Vector2(RADIUS * 3.0, RADIUS * 12.0)
@@ -69,7 +70,7 @@ static func wearing(body: CreatureBody, id: String) -> PreySpecies:
 
 ## Whether [param kind] is something that does its flying in water.
 static func swims(kind: PreySpecies) -> bool:
-	return kind.flying and SWIMMERS.has(kind.id)
+	return kind.flying and kind.swims
 
 
 ## What [param kind] is doing when it gets about: flying, swimming or walking.

@@ -45,6 +45,7 @@ func _sections() -> Array[Callable]:
 		_test_spitting_a_web_at_something,
 		_test_throwing_a_bolt,
 		_test_species,
+		_test_creatures_that_live_somewhere,
 		_test_tethering,
 		_test_a_catch_comes_over_a_wall,
 		_test_a_meal_takes_time,
@@ -2224,6 +2225,87 @@ func _test_species() -> void:
 	slab.queue_free()
 	await physics_frame
 	await process_frame
+
+
+## The rats, cats and fish live somewhere, and only turn up there. The insects turn
+## up anywhere, so a spawner left to choose — this room's — draws them and nothing
+## else, however many other species there are.
+##
+## And the ones that swim stay in the water: a fish steering at a lure on the bank,
+## or at a spider on a boat, follows along underneath.
+func _test_creatures_that_live_somewhere() -> void:
+	var placed := 0
+	var anywhere := PreyLibrary.ordinary_mix()
+	for kind in PreyLibrary.load_species():
+		if not kind.habitat.is_empty():
+			placed += 1
+			check(not anywhere.has(kind), "%s lives in the %s and nowhere else"
+				% [_one(kind.id), kind.habitat])
+	check(placed >= 9, "the creatures that live somewhere say where (%d)" % placed)
+	var spawner := level.get_node_or_null("PreySpawner") as PreySpawner
+	if check(spawner != null, "this room has a spawner that chose its own stock"):
+		var strays: Array[String] = []
+		for kind in spawner.stock:
+			if not kind.habitat.is_empty():
+				strays.append(kind.id)
+		check(strays.is_empty() and spawner.stock.size() == anywhere.size(),
+			"and it stocked the insects and nothing else (%d species, %s)"
+			% [spawner.stock.size(), "none from elsewhere" if strays.is_empty()
+				else ", ".join(strays)])
+	for id in ["fish", "octopus", "shark"]:
+		var kind := PreyLibrary.find(id)
+		check(kind != null and kind.flying and kind.swims, "%s swims" % _one(id))
+
+	# A pond, well away from everything, and a fish in it steering at the sky.
+	var at := Vector3(-200.0, 0.0, 260.0)
+	var bed := add_slab(at + Vector3(0.0, -12.0, 0.0), Vector3(60.0, 1.0, 60.0))
+	var pond := WorldKit.water(level, "TestPond", Vector3(60.0, 10.0, 60.0),
+		WorldKit.at(at + Vector3(0.0, -6.5, 0.0)), "pond")
+	await physics_frame
+	await physics_frame
+	var top := Prey.water_top_at(pond, at + Vector3(0.0, -5.0, 0.0))
+	check(is_equal_approx(top, at.y - 1.5), "the pond's top is where it was built (%.2f)" % top)
+	var fish := spawn("fish", at + Vector3(0.0, -6.0, 0.0))
+	await physics_frame
+	if check(fish != null, "there is a fish to put in it"):
+		var highest := -INF
+		for i in 180:
+			if i % 30 == 0:
+				fish._target = at + Vector3(randf_range(-8.0, 8.0), 20.0, randf_range(-8.0, 8.0))
+			await physics_frame
+			highest = maxf(highest, fish.global_position.y + fish.hit_radius())
+		check(highest <= top + 0.01,
+			"steering at the sky, it keeps all of itself under the surface (top of it %.2f, water %.2f)"
+			% [highest, top])
+		fish.queue_free()
+
+	# Something big is put down on its feet, not buried to the shoulders in the floor.
+	var dog := PreyLibrary.find("dog")
+	var kennel := PreySpawner.new()
+	var dogs: Array[PreySpecies] = [dog]
+	kennel.stock = dogs
+	kennel.population = 0
+	kennel.spawn_extents = Vector3(4.0, 2.0, 4.0)
+	level.add_child(kennel)
+	kennel.global_position = bed.global_position + Vector3(0.0, 2.0, 0.0)
+	await physics_frame
+	if check(dog != null, "there is a dog to put down"):
+		var lowest := INF
+		for i in 8:
+			lowest = minf(lowest, kennel._random_point(dog).y)
+		var ground := bed.global_position.y + 0.5
+		check(lowest - ground >= dog.body_radius * Prey.HITBOX_SCALE - 0.01,
+			"a dog is put down standing (%.1f above the floor, %.1f of it)"
+			% [lowest - ground, dog.body_radius * Prey.HITBOX_SCALE])
+	kennel.queue_free()
+	pond.queue_free()
+	bed.queue_free()
+	await physics_frame
+
+
+## "A rat", "an octopus".
+func _one(id: String) -> String:
+	return ("an " if "aeiou".contains(id.left(1)) else "a ") + id
 
 
 ## The most a pattern can hold at a given silk quality, as the escape check

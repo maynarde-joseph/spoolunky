@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="PreySpecies" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/data/prey_species.gd" id="1_species"]
+[ext_resource type="Resource" path="res://game/data/bodies/shark.tres" id="2_body"]
+
+[resource]
+script = ExtResource("1_species")
+id = "shark"
+display_name = "Shark"
+description = "Nobody knows how it got into the boating lake. It will not leave the water, but anything in the water is its business — and so is anything on it, until you are the biggest thing in the park."
+sort_order = 80
+biomass = 700.0
+size_class = 9
+struggle_power = 9.0
+struggle_stamina = 14.0
+settled_drain = 0.08
+move_speed = 7.2
+flying = true
+swims = true
+wander_radius = 40.0
+wander_height = Vector2(-3.0, 3.0)
+wander_interval = 3.0
+lure_susceptibility = 0.1
+aggression = 0.9
+hunt_range = 22.0
+bite_damage = 14.0
+bite_interval = 1.5
+colour = Color(0.42, 0.47, 0.54, 1)
+sheen = Color(0.24, 0.27, 0.3, 1)
+body = ExtResource("2_body")
+body_radius = 5.0
+winged = false
+spawn_weight = 0.35
+habitat = "lake"

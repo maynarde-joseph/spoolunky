@@ -29,6 +29,25 @@ static func load_species() -> Array[PreySpecies]:
 	return species
 
 
+## Every species that turns up anywhere: the ones with no [member
+## PreySpecies.habitat] of their own. What a spawner stocks when it is not told.
+static func ordinary_mix() -> Array[PreySpecies]:
+	var anywhere: Array[PreySpecies] = []
+	for kind in load_species():
+		if kind.habitat.is_empty():
+			anywhere.append(kind)
+	return anywhere
+
+
+## Every species that lives in [param habitat].
+static func living_in(habitat: String) -> Array[PreySpecies]:
+	var found: Array[PreySpecies] = []
+	for kind in load_species():
+		if kind.habitat == habitat:
+			found.append(kind)
+	return found
+
+
 ## The one with this id, or null.
 static func find(id: String) -> PreySpecies:
 	for kind in load_species():

@@ -156,6 +156,10 @@ var move_speed := 1.6
 ## Flying prey ignores gravity and drifts; walking prey falls.
 var flying := true
 
+## Whether its flying is swimming: it goes nowhere above the top of the water it
+## is in. See [member PreySpecies.swims].
+var swims := false
+
 ## How far from its spawn point it will wander.
 var wander_radius := 6.0
 
@@ -226,6 +230,12 @@ var _wings: Array[Node3D] = []
 var _applied := false
 var _tow_pull := Vector3.ZERO
 
+## The top of the water a swimmer is in, as high as its middle may go: its own
+## body's depth under the surface, so none of it breaks the top. INF for anything
+## that does not swim, and for a swimmer that was put down out of the water.
+var _surface := INF
+var _surface_found := false
+
 @onready var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 
 
@@ -259,6 +269,8 @@ func apply_species(from: PreySpecies) -> void:
 	settled_drain = from.settled_drain
 	move_speed = from.move_speed
 	flying = from.flying
+	swims = from.swims
+	_surface_found = false
 	wander_radius = from.wander_radius
 	wander_height = from.wander_height
 	wander_interval = from.wander_interval
@@ -769,8 +781,13 @@ func _process_hunt(delta: float) -> void:
 	# Off the spider's size, not the hunter's: what has to be true is that it has
 	# reached *you*, and a wasp closing on a spiderling covers the last few
 	# centimetres in one frame.
+	#
+	# Six of its own widths is a margin for a wasp and the far side of the lake for a
+	# shark, so for anything big it is the edge of its body instead: something the
+	# size of a dog has reached you when it is touching you.
 	var girth: float = kind.body_radius if kind != null else 0.05
-	var bite_reach: float = maxf(girth * 6.0, _quarry_reach())
+	var bite_reach: float = maxf(minf(girth * 6.0, girth * HITBOX_SCALE + _quarry_reach()),
+		_quarry_reach())
 	if span > bite_reach or _bite_timer > 0.0:
 		return
 	_bite_timer = bite_interval
@@ -813,6 +830,10 @@ func _steer(delta: float, speed: float) -> void:
 	# that is not already finished.
 	var pull := _tow_pull
 	_tow_pull = Vector3.ZERO
+	var ceiling := _water_ceiling()
+	# A swimmer's business is under the surface, whatever it is steering at: a lure on
+	# the bank, a spider on a boat. It follows along underneath instead.
+	_target.y = minf(_target.y, ceiling)
 	var to_target := _target - global_position
 	var going := to_target.length() >= 0.001
 	if not going and pull.length_squared() < 0.000001:
@@ -824,8 +845,52 @@ func _steer(delta: float, speed: float) -> void:
 		desired.y = velocity.y - _gravity * delta
 	velocity = velocity.lerp(desired, clampf(3.0 * delta, 0.0, 1.0)) + pull
 	move_and_slide()
+	if global_position.y > ceiling:
+		global_position.y = ceiling
+		velocity.y = minf(velocity.y, 0.0)
 	if is_on_wall():
 		_pick_target()
+
+
+## How high a swimmer's middle may go: the top of the water it is in, less its own
+## depth. Looked up the first time it is wanted rather than when it arrives,
+## because whatever puts a creature down puts it in the tree first and where it
+## belongs after.
+func _water_ceiling() -> float:
+	if not swims:
+		return INF
+	if not _surface_found:
+		_surface_found = true
+		_surface = INF
+		var top := water_top_at(self, global_position)
+		if top < INF:
+			_surface = top - hit_radius()
+	return _surface
+
+
+## The top of the water at [param point], or INF if it is not in any: the highest
+## point of the area on the water layer that holds it.
+static func water_top_at(from: Node3D, point: Vector3) -> float:
+	if from == null or not from.is_inside_tree():
+		return INF
+	var query := PhysicsPointQueryParameters3D.new()
+	query.position = point
+	query.collide_with_areas = true
+	query.collide_with_bodies = false
+	query.collision_mask = GameLayers.WATER
+	var top := INF
+	for hit in from.get_world_3d().direct_space_state.intersect_point(query, 8):
+		var pool := hit.get("collider") as Area3D
+		if pool == null:
+			continue
+		for child in pool.get_children():
+			var volume := child as CollisionShape3D
+			if volume == null or volume.shape == null:
+				continue
+			var box := volume.global_transform * volume.shape.get_debug_mesh().get_aabb()
+			var high := box.position.y + box.size.y
+			top = high if top == INF else maxf(top, high)
+	return top
 
 
 func _pick_target() -> void:
