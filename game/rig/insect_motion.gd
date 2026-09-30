@@ -125,13 +125,19 @@ func _pose_wings(skeleton: Skeleton3D) -> void:
 		var lift := open * (beat * swing + deg_to_rad(_body.flap_centre))
 		var fold := 0.0
 		var raise := 0.0
+		var roof := 0.0
 		if _body.wings_up:
 			raise = (1.0 - open) * deg_to_rad(85.0)
 		else:
 			fold = (1.0 - open) * deg_to_rad(82.0 if wing["hind"] else 76.0)
-			raise = (1.0 - open) * deg_to_rad(10.0)
-		_turn(skeleton, wing["bone"], Quaternion(Vector3.UP, -side * fold)
-			* Quaternion(Vector3.BACK, side * (lift + raise)))
+			raise = (1.0 - open) * deg_to_rad(_body.fold_raise)
+			# Folded, each leans in to meet the other along the middle of the back like
+			# a roof, rather than lying in one plane with it: two wings that could be
+			# seen through never showed it, but two that cannot flicker where they
+			# overlap.
+			roof = -side * (1.0 - open) * deg_to_rad(6.0)
+		_turn(skeleton, wing["bone"], Quaternion(Vector3.BACK, roof)
+			* Quaternion(Vector3.UP, -side * fold) * Quaternion(Vector3.BACK, side * (lift + raise)))
 
 
 ## Tucked under to fly; three at a time to walk; thrashing, each to its own beat,

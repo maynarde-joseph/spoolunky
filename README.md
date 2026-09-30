@@ -351,6 +351,12 @@ An insect's is an `InsectBody`, where every size, colour and part is a number, a
 a species points at one with its `body` field. One without is still drawn as the
 old placeholder ball.
 
+Some bodies are drawn ahead of anything to wear them: the creatures of the sewer,
+the park and the pond, before those have anywhere to live. They wait in
+`game/data/bodies/` for a species, and until then the checks and the pictures show
+them on a stand-in. So far that is the **cockroach**, flat and glossy under its
+pale-rimmed shield, with feelers longer than it is.
+
 ## Leaving a web and coming back
 
 Prey that hits a web fights hard for about five seconds. Survive that and it

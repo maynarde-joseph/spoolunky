@@ -29,6 +29,11 @@ const LEG_PARTS := ["Femur", "Tibia", "Tarsus"]
 ## A wing's membrane, and the rim round its edge. Clear wings are mostly alpha.
 @export var wing_colour := Color(0.82, 0.86, 0.92, 0.28)
 @export var wing_rim := Color(0.3, 0.3, 0.34, 0.6)
+## The rim of the shield over the thorax, when [member shield] asks for one. Its
+## middle is [member colour].
+@export var shield_colour := Color(0.7, 0.55, 0.3)
+## How glossy the body is, from matte to wet-looking.
+@export_range(0.0, 1.0) var gloss := 0.25
 
 
 @export_group("Body")
@@ -51,6 +56,12 @@ const LEG_PARTS := ["Femur", "Tibia", "Tarsus"]
 @export var sting := 0.0
 ## Each compound eye's radii: across, up and along.
 @export var eyes := Vector3(0.2, 0.24, 0.2)
+## A flat shield over the thorax this big — radii across, up and along — reaching
+## forward over the head, the way a cockroach's hides it from above. Zero for none.
+@export var shield := Vector3.ZERO
+## A pair of feelers this long at the tip of the abdomen, pointing back. Zero for
+## none.
+@export var cerci := 0.0
 
 
 @export_group("Legs")
@@ -70,6 +81,9 @@ const LEG_PARTS := ["Femur", "Tibia", "Tarsus"]
 ## at right angles.
 @export var antenna := 0.3
 @export var antenna_elbow := 25.0
+## How far below the usual the feelers point from the head, in degrees: a
+## cockroach's reach forward rather than up.
+@export var antenna_tilt := 0.0
 ## A knob this big on the end of each feeler. Zero for none.
 @export var antenna_club := 0.0
 @export var antenna_thickness := 0.03
@@ -101,6 +115,9 @@ const LEG_PARTS := ["Femur", "Tibia", "Tarsus"]
 ## Held up together over the back at rest, the way a butterfly holds them, rather
 ## than folded flat along it.
 @export var wings_up := false
+## How far above flat folded wings are held, in degrees: a fly's clear of its
+## abdomen, a cockroach's lying on its back.
+@export var fold_raise := 10.0
 ## Beats a second, as drawn — a real fly's are a blur, and so are these — how far
 ## each beat swings, and the angle above flat it swings about, in degrees.
 @export var flap_rate := 15.0
@@ -238,6 +255,8 @@ func _feeler(side: float) -> Dictionary:
 	var at: Vector3 = _layout()["head"] + Vector3(side * head.x * 0.35, head.y * 0.7,
 		-head.z * 0.65)
 	var first := Vector3(side * 0.35, 0.6, -0.72).normalized()
+	if antenna_tilt != 0.0:
+		first = first.rotated(first.cross(Vector3.UP).normalized(), -deg_to_rad(antenna_tilt))
 	var second := first.rotated(Vector3.RIGHT, -deg_to_rad(antenna_elbow)).normalized()
 	var base_length := antenna * (0.42 if antenna_elbow > 45.0 else 0.3)
 	return {
@@ -292,6 +311,11 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 		RigKit.ovoid(thorax, 0.0, 12, RigKit.solid(colour)), 16)
 	RigKit.lathe(body, skeleton, face, Transform3D(forward, at["head"] - at["neck"]),
 		RigKit.ovoid(head, 0.0, 10, RigKit.solid(colour)), 16)
+	if shield != Vector3.ZERO:
+		# A dome over the thorax, pushed forward far enough to hide most of the head,
+		# pale round its rim.
+		var dome := Vector3(0.0, thorax.y * 0.9, -thorax.z * 0.35)
+		RigKit.ellipsoid(body, skeleton, middle, dome, shield, _rim_paint(dome), 20, 10)
 	var waist_bone := skeleton.find_bone("Waist")
 	if waist_bone >= 0:
 		RigKit.lathe(body, skeleton, waist_bone, backward,
@@ -304,6 +328,14 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 	var edges := _band_edges()
 	RigKit.lathe(body, skeleton, hind, tail,
 		RigKit.ovoid(abdomen, abdomen_point, 18, _band_paint(edges), edges), 18)
+	if cerci > 0.0:
+		for side in [-1.0, 1.0]:
+			var out := Transform3D(RigKit.along(Vector3(side * 0.4, 0.15, 1.0), Vector3.RIGHT),
+				Vector3(side * abdomen.x * 0.2, 0.0, length * 1.8))
+			RigKit.lathe(body, skeleton, hind, out, [
+				[0.0, antenna_thickness * 1.6, antenna_thickness * 1.6, colour],
+				[cerci * 0.6, antenna_thickness * 1.1, antenna_thickness * 1.1, colour],
+				[cerci, 0.0, 0.0, colour]], 6)
 	if sting > 0.0:
 		# From just inside the tip, where its root is hidden, out to a point.
 		RigKit.lathe(body, skeleton, hind, tail, [
@@ -355,9 +387,17 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 				size.x, size.y, hind_wing_broadest if back == 1 else wing_broadest, wing_colour,
 				wing_rim)
 
-	return RigKit.commit([body, shine, blades], [RigKit.shell_material(0.75, 0.0, 0.3),
+	return RigKit.commit([body, shine, blades], [RigKit.shell_material(1.0 - gloss, 0.0, 0.3),
 		RigKit.eye_material(eye_colour, eye_colour, 0.15),
 		RigKit.membrane_material(wing_colour.a < 0.99 or wing_rim.a < 0.99)])
+
+
+## Paints the shield: [member shield_colour] round its rim, [member colour] in the
+## middle, for one centred at [param dome].
+func _rim_paint(dome: Vector3) -> Callable:
+	return func(_n: Vector3, p: Vector3) -> Color:
+		var off := Vector2((p.x - dome.x) / shield.x, (p.z - dome.z) / shield.z)
+		return colour.lerp(shield_colour, smoothstep(0.72, 0.86, off.length()))
 
 
 ## Where the bands on the abdomen start and stop, along it: from a third of the
