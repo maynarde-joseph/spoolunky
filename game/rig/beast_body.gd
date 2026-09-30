@@ -50,8 +50,10 @@ enum Ears {
 ## the one colour.
 @export var tail_tip_colour := Color(1.0, 1.0, 1.0)
 @export_range(0.0, 1.0) var tail_tip := 0.0
-## The middle of each eye, round which [member eye_white] shows.
+## The middle of each eye, and what shows round it as far as [member eye_white]
+## says: white, or a cat's green.
 @export var eye_colour := Color(0.04, 0.03, 0.03)
+@export var eye_ring := Color(0.95, 0.94, 0.9)
 ## Bands over the back and round the tail, when [member stripes] asks for any.
 @export var stripe_colour := Color(0.3, 0.2, 0.1)
 @export var stripes := 0
@@ -315,7 +317,7 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 		var look := Vector3(side * eye_spread, 0.12, -1.0 + eye_spread * 0.4).normalized()
 		var eye_at := head_at + Vector3(side * head.x * lerpf(0.42, 0.62, eye_spread),
 			head.y * 0.3, -head.z * lerpf(0.66, 0.5, eye_spread))
-		RigKit.eye(shine, skeleton, face, eye_at, look, eye, eye_colour, eye_white)
+		RigKit.eye(shine, skeleton, face, eye_at, look, eye, eye_colour, eye_white, eye_ring)
 		var flap := _ear(side)
 		RigKit.ear(fur, skeleton, skeleton.find_bone("Ear.%s" % SIDES[s]), ear.x, ear.y,
 			ear.x * 0.12, 0.0 if ears != Ears.POINTED else 1.0, ear_colour,

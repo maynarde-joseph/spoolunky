@@ -366,7 +366,10 @@ them on a stand-in. So far:
   bones each, an arm and a hand: skin stretched between its fingers, ears
   bigger than its head, a flat pig's nose and a pair of fangs. Its hands beat a
   moment behind its arms; on the ground its wings pleat up along its sides;
-  caught, it flaps in bursts; wrapped, it pulls them round itself like a cloak.
+  caught, it flaps in bursts; wrapped, it pulls them round itself like a cloak;
+* the **cat**, a ginger tabby on the same body as the rat: pointed ears, big
+  green eyes, a white bib and socks, and a striped tail held up in a hook. Caught,
+  its ears go flat.
 
 ## Leaving a web and coming back
 
