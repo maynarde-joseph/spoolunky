@@ -5,25 +5,18 @@
 [resource]
 script = ExtResource("1_body")
 colour = Color(0.4, 0.45, 0.52, 1)
-belly_colour = Color(0.95, 0.95, 0.93, 1)
-belly_line = -0.15
 fin_colour = Color(0.4, 0.45, 0.52, 1)
 fin_rim = Color(0.32, 0.36, 0.42, 1)
-gill_colour = Color(0.28, 0.31, 0.36, 1)
-gloss = 0.35
 body = Vector3(0.3, 0.38, 1.1)
 deepest = -0.25
 nose_point = 0.55
 wrist = 0.18
 bend_at = 0.35
 eye = 0.1
-eye_white = 0.35
-lips = 0.0
-mouth = Vector2(0.15, -0.12)
+mouth_height = -0.12
 mouth_back = 0.3
-teeth = 0.08
+jaw_drop = 0.08
 grin = 10.0
-gills = 4
 tail_fin = Vector2(1.0, 0.75)
 fork = 0.8
 lobe = 1.8

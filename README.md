@@ -375,10 +375,10 @@ them on a stand-in. So far:
 * the **parrot**, the bat's body in feathers: a scarlet macaw, red, with yellow
   coverts over blue flight feathers and a pale hooked beak. On the ground it
   stands up straight on its perch and folds its wings down its sides;
-* the **fish**, the first `FishBody` — anything that swims with its tail: a
-  goldfish, with goggling eyes and pouting lips that gulp. It swims in a wave
-  that runs down it from nose to tail; out of water it lies on its side and
-  gasps, and flops when it tries to go anywhere; wrapped, it is bent double.
+* the **fish**, the first `FishBody` — anything that swims with its tail,
+  drawn the minimal way: a goldfish, one smooth orange teardrop with flat fins.
+  It swims in a wave that runs down it from nose to tail; out of water it lies
+  on its side and flops when it tries to go anywhere; wrapped, it is bent double.
   Swimming is flying, as far as a creature is concerned: it keeps itself up in
   water the way a fly does in air, so a swimmer's species will say `flying`;
 * the **shark**, on the fish's body: grey over white, a pointed snout, gill

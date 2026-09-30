@@ -4,12 +4,9 @@
 
 [resource]
 script = ExtResource("1_body")
-colour = Color(0.97, 0.5, 0.1, 1)
-belly_colour = Color(0.99, 0.82, 0.55, 1)
-belly_line = -0.4
-fin_colour = Color(0.99, 0.62, 0.2, 1)
-fin_rim = Color(0.95, 0.45, 0.1, 1)
-lip_colour = Color(1, 0.65, 0.45, 1)
+colour = Color(0.95, 0.5, 0.12, 1)
+fin_colour = Color(0.97, 0.58, 0.18, 1)
+fin_rim = Color(0.9, 0.44, 0.1, 1)
 tail_fin = Vector2(1.1, 0.8)
 fork = 0.4
 dorsal = Vector2(0.42, 0.7)
