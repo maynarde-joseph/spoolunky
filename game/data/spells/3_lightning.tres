@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="SpiderSpell" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_spell.gd" id="1_spell"]
+
+[resource]
+script = ExtResource("1_spell")
+id = "lightning"
+display_name = "Summon Lightning"
+description = "Lightning, called down where you point. It stuns what it strikes, runs through your silk to what your webs hold, and water carries it further."
+form = 3
+order = 3
+unlock_stage = 3
+keys = PackedStringArray("wing_buds")
+cooldown = 7.0
+size = Vector2(1.2, 2.4)
+duration = Vector2(2.5, 4)
+colour = Color(0.98, 0.92, 0.55, 1)

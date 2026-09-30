@@ -70,6 +70,9 @@ func _pose() -> CreatureMotion.Pose:
 		return CreatureMotion.Pose.FLYING
 	if _prey.wrapped or _prey.is_bundled():
 		return CreatureMotion.Pose.CURLED
+	# Out of it: limp, the way something that has fought itself out hangs.
+	if _prey.is_stunned():
+		return CreatureMotion.Pose.SPENT
 	if _prey.is_fighting():
 		return CreatureMotion.Pose.STRUGGLING
 	if _prey.is_stuck():

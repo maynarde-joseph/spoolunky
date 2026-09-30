@@ -320,6 +320,26 @@ func acid_water() -> bool:
 	return false
 
 
+## What every owned trait does to how long a stun lasts. See
+## [member SpiderTrait.stun_scale].
+func stun_scale() -> float:
+	var scale := 1.0
+	for gift in tree:
+		if has(gift.id):
+			scale *= gift.stun_scale
+	return scale
+
+
+## How many more times the spider's lightning jumps on. See
+## [member SpiderTrait.arc_bonus].
+func arc_bonus() -> int:
+	var total := 0
+	for gift in tree:
+		if has(gift.id):
+			total += gift.arc_bonus
+	return total
+
+
 ## Whether a kill still needs a web behind it.
 func has_fangs() -> bool:
 	for gift in tree:

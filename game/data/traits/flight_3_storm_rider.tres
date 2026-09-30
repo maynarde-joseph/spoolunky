@@ -15,3 +15,4 @@ chance = 0.05
 speed_scale = 1.15
 jump_scale = 1.35
 glide = 0.28
+arc_bonus = 2

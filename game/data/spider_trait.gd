@@ -104,6 +104,13 @@ const BRANCH_NAMES := ["Bulk", "Flight", "Venom"]
 ## dosed with venom, without a glob having to go in.
 @export var acid_water := false
 
+## Multiplies how long anything stays stunned.
+@export var stun_scale := 1.0
+
+## How many more times a strike of lightning jumps on to the nearest thing it did
+## not strike, wet or not.
+@export var arc_bonus := 0
+
 
 func branch_name() -> String:
 	return BRANCH_NAMES[clampi(branch, 0, BRANCH_NAMES.size() - 1)]
@@ -131,6 +138,9 @@ func effect_line() -> String:
 	_note(parts, "spell wait", cast_scale)
 	if acid_water:
 		parts.append("acid spiral")
+	_note(parts, "stun", stun_scale)
+	if arc_bonus != 0:
+		parts.append("%+d lightning arcs" % arc_bonus)
 	return "  ".join(PackedStringArray(parts))
 
 

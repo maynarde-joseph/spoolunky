@@ -336,6 +336,8 @@ func _cast_form(spell: SpiderSpell, wound: float) -> Dictionary:
 			return _spit(spell, wound)
 		SpiderSpell.Form.SPIRAL:
 			return _whirl(spell, wound)
+		SpiderSpell.Form.LIGHTNING:
+			return _strike(spell, wound)
 	push_warning("%s has a form nothing casts yet" % spell.display_name)
 	return {"cast": false}
 
@@ -368,6 +370,40 @@ func _spit(spell: SpiderSpell, wound: float) -> Dictionary:
 	glob.add_to_group("spell_effects")
 	glob.launch_from(_host(), from)
 	return {"cast": true, "at": from + heading * cast_reach()}
+
+
+## Lightning comes down on what the cross is on — a creature, a web, the floor.
+## Aimed at open air, it comes down through it to whatever is underneath.
+func _ground(target: Dictionary) -> Dictionary:
+	if target.get("hit", false):
+		return target
+	var point: Vector3 = target.get("point", Vector3.ZERO)
+	var query := PhysicsRayQueryParameters3D.create(point, point + Vector3.DOWN * cast_reach(),
+		GameLayers.WORLD | GameLayers.WEB_WALK, exclusions())
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return target
+	return {"point": hit.get("position", point), "normal": hit.get("normal", Vector3.UP),
+		"prey": null, "hit": true}
+
+
+## Lightning, called down where you point. See [LightningStrike].
+func _strike(spell: SpiderSpell, wound: float) -> Dictionary:
+	var target := area_target(spell, wound)
+	var at: Vector3 = target.get("point", _spider.global_position)
+	var stun := spell.duration_at(wound) * (_traits.stun_scale() if _traits != null else 1.0)
+	var jumps := _traits.arc_bonus() if _traits != null else 0
+	var strike := LightningStrike.call_down(_host(), at, spell.size_at(wound) * body_height(),
+		stun, jumps, body_height() * 0.6, spell.colour)
+	if strike == null:
+		return {"cast": false}
+	if not strike.shocked.is_empty():
+		var through := ""
+		if not strike.charged.is_empty():
+			through = " — through %d web%s" % [strike.charged.size(),
+				"" if strike.charged.size() == 1 else "s"]
+		notice.emit("Lightning — %d stunned%s" % [strike.shocked.size(), through])
+	return {"cast": true, "at": at}
 
 
 ## A whirl of water on the floor under where you point. See [WaterSpiral].
@@ -420,14 +456,15 @@ func aim_target(mask := GameLayers.WORLD | GameLayers.WEB_WALK) -> Dictionary:
 	var span := cast_reach()
 	var quarry := _builder.shot_target() if _builder != null else null
 	if quarry != null:
-		return {"point": quarry.global_position, "normal": Vector3.UP, "prey": quarry}
+		return {"point": quarry.global_position, "normal": Vector3.UP, "prey": quarry,
+			"hit": true}
 	var query := PhysicsRayQueryParameters3D.create(from, from + forward * span, mask,
 		exclusions())
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty():
 		return {"point": hit.get("position", from), "normal": hit.get("normal", Vector3.UP),
-			"prey": hit.get("collider") as Prey}
-	return {"point": from + forward * span, "normal": Vector3.UP, "prey": null}
+			"prey": hit.get("collider") as Prey, "hit": true}
+	return {"point": from + forward * span, "normal": Vector3.UP, "prey": null, "hit": false}
 
 
 ## How far a spell goes: as far as silk does. One reach for everything the spider
@@ -512,6 +549,8 @@ func _update_marker() -> void:
 ## of the wall rather than in it; over a drop, it turns in the air where you
 ## pointed.
 func area_target(spell: SpiderSpell, wound := -1.0) -> Dictionary:
+	if spell != null and spell.form == SpiderSpell.Form.LIGHTNING:
+		return _ground(aim_target())
 	if spell == null or spell.form != SpiderSpell.Form.SPIRAL:
 		return aim_target()
 	var target := aim_target(GameLayers.WORLD)

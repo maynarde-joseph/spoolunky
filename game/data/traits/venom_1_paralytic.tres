@@ -12,3 +12,4 @@ depth = 0
 carried_by = PackedStringArray("mosquito", "ant", "wasp", "bee")
 chance = 0.12
 bite_bonus = 1
+stun_scale = 1.5

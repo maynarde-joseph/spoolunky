@@ -61,6 +61,14 @@ const VENOM_BIND := 0.08
 ## with Hunting Fangs.
 const FANG_VENOM := 2.2
 
+## How much of its fight one shock takes out of something a web is holding, as a
+## share of all it had. See [method shock].
+const SHOCK_FIGHT := 0.35
+
+## What water does to a shock: that much longer stunned, and that much more of
+## its fight gone.
+const WET_SHOCK := 2.0
+
 ## Slowest a creature gets from silk alone, as a share of its own speed. Wrapped
 ## all the way it is a bundle and not going anywhere regardless; short of that it
 ## always has something left.
@@ -215,6 +223,10 @@ var venom_strength := 1.0
 ## lift. See [method soak].
 var wet := 0.0
 
+## Seconds it is out of it: going nowhere, biting nothing, fighting nothing. See
+## [method stun].
+var stunned := 0.0
+
 ## What a current is carrying it at this frame, and whether one is. See
 ## [method sweep].
 var _current := Vector3.ZERO
@@ -330,10 +342,12 @@ func _physics_process(delta: float) -> void:
 		_show_binding()
 	if wet > 0.0:
 		wet = maxf(0.0, wet - delta)
+	if stunned > 0.0:
+		stunned = maxf(0.0, stunned - delta)
 
-	# Carried by something stronger than it: it goes where it is taken, not where
-	# it was going.
-	if is_loose() and _current_fresh:
+	# Carried by something stronger than it, or out of it altogether: either way
+	# it is not steering.
+	if is_loose() and (_current_fresh or is_stunned()):
 		_drift(delta)
 		return
 
@@ -508,6 +522,35 @@ func is_wet() -> bool:
 	return wet > 0.0
 
 
+## Struck: stunned for [param seconds] — [constant WET_SHOCK] times as long if it
+## is wet — and, if a web has hold of it and it is still fighting, a share of its
+## fight gone with it, so a strike is how a web wins a fight it was losing.
+## Returns whether it took, which it does unless the creature is past caring.
+func shock(seconds: float) -> bool:
+	if eaten or seconds <= 0.0 or _state == State.BUNDLED or _state == State.WRAPPED:
+		return false
+	var hard := WET_SHOCK if is_wet() else 1.0
+	stun(seconds * hard)
+	if is_fighting():
+		_fight_left = maxf(0.0, _fight_left - struggle_stamina * SHOCK_FIGHT * hard)
+	return true
+
+
+## Out of it for [param seconds]: it steers nowhere and bites nothing, a flier
+## falls, and in a web it stops fighting though its fight still runs down. A
+## hunter stunned gives up the chase. Does not stack; the longer of the two.
+func stun(seconds: float) -> void:
+	if eaten or seconds <= 0.0:
+		return
+	stunned = maxf(stunned, seconds)
+	if _state == State.HUNTING:
+		break_off()
+
+
+func is_stunned() -> bool:
+	return stunned > 0.0
+
+
 ## On its own feet or wings: not caught, not wrapped, not a bundle.
 func is_loose() -> bool:
 	return not eaten and (_state == State.WANDER or _state == State.HUNTING
@@ -525,13 +568,20 @@ func sweep(velocity: Vector3) -> void:
 	_current_fresh = true
 
 
-## Being carried. Whatever has a line on it still pulls, the same as when it is
-## steering itself.
+## Not steering: carried by a current, or stunned. Carried, it goes where it is
+## taken; stunned, it drops — a flier as well, its wings having stopped. Whatever
+## has a line on it still pulls, the same as when it is steering itself.
 func _drift(delta: float) -> void:
 	var pull := _tow_pull
 	_tow_pull = Vector3.ZERO
-	velocity = velocity.lerp(_current, clampf(8.0 * delta, 0.0, 1.0)) + pull
-	_current_fresh = false
+	if _current_fresh:
+		velocity = velocity.lerp(_current, clampf(8.0 * delta, 0.0, 1.0))
+		_current_fresh = false
+	else:
+		velocity.x = move_toward(velocity.x, 0.0, delta * 6.0)
+		velocity.z = move_toward(velocity.z, 0.0, delta * 6.0)
+		velocity.y -= _gravity * delta
+	velocity += pull
 	move_and_slide()
 	var ceiling := _water_ceiling()
 	if global_position.y > ceiling:
@@ -709,7 +759,7 @@ func _process_stuck(delta: float) -> void:
 		_stuck_point = _web.to_global(_hold_offset)
 	var pull: float = 12.0 if _snap_timer > 0.0 else 5.0
 	var jitter := Vector3.ZERO
-	if _state == State.STUCK and _snap_timer <= 0.0:
+	if _state == State.STUCK and _snap_timer <= 0.0 and not is_stunned():
 		var wobble: float = _stuck_wobble()
 		jitter = Vector3(sin(_life * 23.0), sin(_life * 17.0 + 1.3), cos(_life * 19.0)) * wobble
 	global_position = global_position.lerp(_stuck_point + jitter, clampf(pull * delta, 0.0, 1.0))
@@ -738,6 +788,10 @@ func _process_stuck(delta: float) -> void:
 		return
 
 	_fight_left -= delta
+	# Stunned in the silk: the clock on its fight runs down, but it is not
+	# fighting — no pull on the silk, and no harm done to the web.
+	if is_stunned():
+		return
 	# Silk already on it is silk it is fighting through, so a bound creature both
 	# tears more slowly and does less damage on the way.
 	var power := thrash_power()

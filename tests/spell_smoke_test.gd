@@ -35,6 +35,10 @@ func _sections() -> Array[Callable]:
 		_test_water_spiral,
 		_test_a_whirl_fills_a_web,
 		_test_venom_in_the_water,
+		_test_summon_lightning,
+		_test_lightning_runs_through_silk,
+		_test_lightning_and_water,
+		_test_storm_and_paralysis,
 	]
 
 
@@ -490,3 +494,257 @@ func _square(centre: Vector3, half: float) -> Array[Vector3]:
 		centre + Vector3(half, half, 0),
 		centre + Vector3(-half, half, 0),
 	]
+
+
+# --- lightning ------------------------------------------------------------
+
+## Called down where the cross is: what it strikes is stunned, a hunter gives up
+## the chase, a flier falls — and the spider is never struck by its own.
+func _test_summon_lightning() -> void:
+	var lightning := spells.by_id("lightning")
+	if not check(lightning != null and lightning.form == SpiderSpell.Form.LIGHTNING,
+			"there is lightning in the book"):
+		return
+	check(not spells.is_open(lightning), "shut to a spiderling")
+	check(traits.take(traits.by_id("wing_buds")), "until wings grow")
+	check(spells.is_open(lightning), "which open it long before a %s would"
+		% spider.growth.stages[lightning.unlock_stage].display_name)
+	traits.owned.clear()
+	traits.changed.emit()
+	grow_to_tier(lightning.unlock_stage)
+	check(spells.select("lightning"), "a %s can call it down"
+		% spider.growth.stages[lightning.unlock_stage].display_name)
+
+	var slab := add_slab(Vector3(120, 0.0, 120), Vector3(30, 0.5, 30))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 4.0))
+	await physics_frame
+	var centre := slab.global_position + Vector3(0, 0.25, 0)
+	clear_prey_near(centre, 12.0, null)
+	var wasp := spawn("wasp", centre + Vector3(0.0, 0.8, 0.0))
+	if not check(wasp != null, "a wasp"):
+		return
+	await physics_frame
+	wasp._quarry = spider
+	wasp._state = Prey.State.HUNTING
+	wasp._chase_left = Prey.CHASE_STAMINA
+	check(wasp.is_hunting(), "coming for the spider")
+	var whole := spider.health
+	aim_at(wasp.global_position)
+	check(spells.cast_now(lightning), "struck")
+	var strike := _last_strike()
+	if not check(strike != null and strike.shocked.has(wasp), "and the wasp with it"):
+		return
+	check(is_equal_approx(wasp.stunned, lightning.duration.x),
+		"stunned for a tap's %.1fs" % wasp.stunned)
+	check(not wasp.is_hunting(), "it gives up the chase")
+	check(is_equal_approx(spider.health, whole),
+		"and the spider is not struck by its own lightning")
+	check(spells.cooling(lightning), "which waits its own wait (%.1fs)"
+		% spells.cooldown_left(lightning))
+	var high := wasp.global_position.y
+	await run_frames(20)
+	check(wasp.global_position.y < high,
+		"a stunned wasp falls (%.2f -> %.2f m)" % [high, wasp.global_position.y])
+	var woke: bool = await wait_until(func() -> bool: return not wasp.is_stunned(), 400)
+	check(woke, "and comes round in the end")
+
+
+## A strike on one web runs through the silk touching it and down every wire,
+## and reaches everything they hold — here, a wasp well out of the strike's own
+## reach, fighting a web it would otherwise have beaten.
+func _test_lightning_runs_through_silk() -> void:
+	var lightning := spells.by_id("lightning")
+	if lightning == null:
+		return
+	grow_to_tier(lightning.unlock_stage)
+	var slab := add_slab(Vector3(-120, 0.0, 120), Vector3(40, 0.5, 40))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 6.0))
+	await physics_frame
+	var centre := slab.global_position + Vector3(0, 0.25, 0)
+	clear_prey_near(centre, 20.0, null)
+	var height := spider.stage().body_height
+	var radius := lightning.size_at(0.0) * height
+	var half := radius * 0.6
+	var lift := Vector3.UP * (half + height * 0.3)
+	var first := _spin(centre + lift + Vector3(-half, 0, 0), half)
+	var second := _spin(centre + lift + Vector3(half, 0, 0), half)
+	var wired := _spin(centre + lift + Vector3(half * 9.0, 0, 0), half)
+	if not check(first != null and second != null and wired != null,
+			"two webs side by side, and a third across the room"):
+		return
+	check(second.link_to(wired), "wired to the second")
+
+	var wasp := spawn("wasp", (second as WebNet).to_global((second as WebNet).centre_local))
+	var fly := spawn("fly", (wired as WebNet).to_global((wired as WebNet).centre_local))
+	var loose := spawn("fly", centre + Vector3(0, half * 2.0, -radius * 3.0))
+	if not check(wasp != null and fly != null and loose != null, "a wasp, a fly and a stray"):
+		return
+	wasp.struggle_stamina = 30.0
+	loose.move_speed = 0.0
+	await physics_frame
+	await physics_frame
+	if not check(wasp.is_fighting() and fly.is_stuck(), "the wasp and the fly caught"):
+		return
+	var corner := centre + lift + Vector3(-half * 2.0, -half, 0)
+	check(corner.distance_to(wasp.global_position) > radius + wasp.hit_radius(),
+		"the far corner of the first web is out of the strike's reach of the wasp")
+	var fight := wasp.fight_left()
+	var strike := LightningStrike.call_down(level, corner, radius, lightning.duration.x, 0,
+		height * 0.6)
+	check(strike.charged.has(first) and strike.charged.has(second),
+		"it runs from the web it struck into the one touching it")
+	check(strike.charged.has(wired), "and down the wire to the one across the room")
+	check(strike.shocked.has(wasp) and wasp.is_stunned(),
+		"stunning the wasp the second web holds")
+	check(wasp.fight_left() < fight - Prey.SHOCK_FIGHT * 0.9,
+		"and taking the fight out of it (%d%% -> %d%%)"
+		% [roundi(fight * 100.0), roundi(wasp.fight_left() * 100.0)])
+	check(strike.shocked.has(fly), "and the fly the wired one holds")
+	check(not strike.shocked.has(loose), "but not a fly nowhere near silk")
+	await run_frames(30)
+	check(wasp.is_stuck() and wasp.is_stunned(),
+		"stunned in the silk, it is not fighting its way out")
+
+
+## Water carries a strike: everything a whirl holds, twice as hard, and on from
+## one wet thing to the next.
+func _test_lightning_and_water() -> void:
+	var lightning := spells.by_id("lightning")
+	var spiral := spells.by_id("spiral")
+	if lightning == null or spiral == null:
+		return
+	grow_to_tier(maxi(lightning.unlock_stage, spiral.unlock_stage))
+	var slab := add_slab(Vector3(120, 0.0, -120), Vector3(40, 0.5, 40))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 4.5))
+	await physics_frame
+	var centre := slab.global_position + Vector3(0, 0.25, 0)
+	clear_prey_near(centre, 20.0, null)
+	var height := spider.stage().body_height
+	var strike_radius := lightning.size_at(0.0) * height
+	var beetles: Array[Prey] = []
+	for i in 2:
+		var beetle := spawn("beetle", centre + Vector3(0.4 - 0.8 * float(i), 0.2, 0.3) * height)
+		if beetle != null:
+			beetle.aggression = 0.0
+			beetles.append(beetle)
+	await physics_frame
+	spells.select("spiral")
+	aim_at(centre)
+	check(spells.cast_now(spiral), "a whirl")
+	var whirl := _first_whirl()
+	await run_frames(40)
+	if not check(whirl != null and beetles.size() == 2 and whirl.held().has(beetles[0])
+			and whirl.held().has(beetles[1]), "holding two beetles, wet"):
+		return
+	var rim := whirl.global_position + Vector3(whirl.radius * 0.95, whirl.radius * 0.2, 0.0)
+	var out_of_reach := true
+	for beetle in beetles:
+		out_of_reach = out_of_reach and \
+			beetle.global_position.distance_to(rim) > strike_radius + beetle.hit_radius()
+	check(out_of_reach, "the rim of the whirl is out of the strike's own reach of both")
+	var strike := LightningStrike.call_down(level, rim, strike_radius, lightning.duration.x, 0,
+		height * 0.6)
+	check(strike.shocked.has(beetles[0]) and strike.shocked.has(beetles[1]),
+		"a strike on the whirl reaches everything it holds")
+	check(is_equal_approx(beetles[0].stunned, lightning.duration.x * Prey.WET_SHOCK),
+		"and wet, twice as hard (%.1fs stunned)" % beetles[0].stunned)
+
+	# On from one wet thing to the next, and no further than the water goes.
+	var flies: Array[Prey] = []
+	for i in 4:
+		var fly := spawn("fly", centre + Vector3(-strike_radius * 6.0 - float(i) * strike_radius
+			* 1.3, height, -strike_radius * 4.0))
+		if fly != null:
+			fly.move_speed = 0.0
+			flies.append(fly)
+	await physics_frame
+	if not check(flies.size() == 4, "four flies in a row"):
+		return
+	for i in 3:
+		flies[i].soak(6.0)
+	var chain := LightningStrike.call_down(level, flies[0].global_position, strike_radius,
+		lightning.duration.x, 0, height * 0.6)
+	check(chain.shocked.has(flies[1]) and chain.shocked.has(flies[2]),
+		"water passes it from one wet fly to the next")
+	check(not chain.shocked.has(flies[3]), "and stops at the dry one")
+
+
+## Two traits that work on lightning: Paralytic Bite stuns for half as long again,
+## and Storm Rider makes a strike jump on to what is near, wet or not.
+func _test_storm_and_paralysis() -> void:
+	var lightning := spells.by_id("lightning")
+	if lightning == null:
+		return
+	grow_to_tier(lightning.unlock_stage)
+	spells.select("lightning")
+	var slab := add_slab(Vector3(-120, 0.0, -120), Vector3(40, 0.5, 40))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 4.5))
+	await physics_frame
+	var centre := slab.global_position + Vector3(0, 0.25, 0)
+	clear_prey_near(centre, 20.0, null)
+	var paralytic := traits.by_id("paralytic")
+	check(paralytic.effect_line().contains("+50% stun"),
+		"a paralytic bite's card says it stuns longer (%s)" % paralytic.effect_line())
+	traits.take(paralytic)
+	var target := spawn("beetle", centre + Vector3(0, 0.2, 0))
+	var near := spawn("beetle", centre + Vector3(0, 0.2, 0))
+	if not check(target != null and near != null, "two beetles"):
+		return
+	var radius := lightning.size_at(0.0) * spider.stage().body_height
+	near.global_position = centre + Vector3(radius * 1.3, 0.2, 0.0)
+	for beetle in [target, near]:
+		beetle.aggression = 0.0
+		beetle.move_speed = 0.0
+	await physics_frame
+	aim_at(target.global_position)
+	check(spells.cast_now(lightning), "struck")
+	check(is_equal_approx(target.stunned, lightning.duration.x * 1.5),
+		"and stunned half as long again (%.2fs)" % target.stunned)
+	check(not near.is_stunned(), "a dry beetle out of reach is left alone")
+
+	var storm := traits.by_id("storm_rider")
+	check(storm.effect_line().contains("+2 lightning arcs"),
+		"a storm rider's card says it arcs (%s)" % storm.effect_line())
+	for step in ["wing_buds", "hollow_frame", "storm_rider"]:
+		traits.take(traits.by_id(step))
+	check(traits.arc_bonus() == 2, "two arcs")
+	await wait_until(func() -> bool: return not target.is_stunned(), 600)
+	spells.forget_waits()
+	radius = lightning.size_at(0.0) * spider.stage().body_height
+	var far := spawn("beetle", centre + Vector3(0, 0.2, 0))
+	if not check(far != null, "a third beetle"):
+		return
+	near.global_position = centre + Vector3(radius * 1.3, 0.2, 0.0)
+	far.global_position = centre + Vector3(radius * 2.6, 0.2, 0.0)
+	far.aggression = 0.0
+	far.move_speed = 0.0
+	await physics_frame
+	aim_at(target.global_position)
+	check(spells.cast_now(lightning), "struck again, with a storm rider's wings")
+	var strike := _last_strike()
+	check(strike != null and strike.shocked.has(near) and strike.shocked.has(far),
+		"and it jumps on to both beetles near it, dry as they are")
+
+
+func _last_strike() -> LightningStrike:
+	var found: LightningStrike = null
+	for node in spider.get_tree().get_nodes_in_group(LightningStrike.GROUP):
+		var strike := node as LightningStrike
+		if strike != null and not strike.is_queued_for_deletion():
+			found = strike
+	return found
+
+
+## A sheet web standing up, [param half] either side of [param middle].
+func _spin(middle: Vector3, half: float) -> WebStructure:
+	select_pattern("sheet_web")
+	builder.start()
+	for point in _square(middle, half):
+		builder.add_anchor(point)
+	builder.finish()
+	builder.stop()
+	return newest_web("sheet_web")
