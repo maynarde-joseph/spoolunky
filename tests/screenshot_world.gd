@@ -31,6 +31,13 @@ const VIEWS := {
 	"park_aviary": [Vector3(-96.0, 12.0, -74.0), Vector3(-100.0, 14.0, -96.0)],
 	"park_beds": [Vector3(30.0, 10.0, 20.0), Vector3(12.0, 2.0, 56.0)],
 	"park_from_above": [Vector3(-10.0, 300.0, 1.0), Vector3(-10.0, 0.0, 0.0)],
+	"lake": [Vector3(118.0, 40.0, 40.0), Vector3(290.0, -2.0, -20.0)],
+	"lake_gate": [Vector3(80.0, 10.0, 6.0), Vector3(140.0, 4.0, 0.0)],
+	"lake_jetty": [Vector3(150.0, 8.0, 12.0), Vector3(205.0, 0.0, -10.0)],
+	"lake_boat": [Vector3(210.0, 12.0, 36.0), Vector3(240.0, 0.0, 0.0)],
+	"lake_island": [Vector3(236.0, 14.0, 40.0), Vector3(290.0, 10.0, 0.0)],
+	"lake_under": [Vector3(200.0, -12.0, 40.0), Vector3(260.0, -12.0, 0.0)],
+	"world_from_above": [Vector3(140.0, 640.0, 1.0), Vector3(140.0, 0.0, 0.0)],
 }
 
 

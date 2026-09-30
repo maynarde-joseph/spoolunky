@@ -22,6 +22,7 @@ const PLACES := [
 	["The Shed", 0.25, 0.7, ""],
 	["The Sewers", 0.7, 2.0, "sewers"],
 	["The Park", 2.0, 3.4, "park"],
+	["The Lake", 3.4, 9.0, "lake"],
 ]
 
 ## The places that are indoors, and have to bring their own light.
@@ -54,6 +55,8 @@ func run_checks() -> void:
 	await _test_the_shafts_are_clear(world as Node3D)
 	_test_the_other_key(world, spider)
 	await _test_the_water(spider)
+	await _test_the_swimmers()
+	await _test_the_boats(world as Node3D, spider)
 
 	# Opening the gym drops the world: two full levels in the tree at once is
 	# more than a headless run needs to hold.
@@ -381,6 +384,108 @@ func _test_the_water(spider: SpiderPlayer) -> void:
 	spider.global_position = was
 	spider.velocity = Vector3.ZERO
 	await run_frames(2)
+
+
+## Whatever swims in the lake keeps all of itself under the top of it.
+func _test_the_swimmers() -> void:
+	var lake := _zone_named("The Lake")
+	if not check(lake != null, "there is a lake to swim in"):
+		return
+	await run_frames(60)
+	var swimmers := 0
+	var highest := -INF
+	for node in root.get_tree().get_nodes_in_group("prey"):
+		var prey := node as Prey
+		if prey == null or not prey.swims or not lake.bounds.has_point(prey.global_position):
+			continue
+		swimmers += 1
+		highest = maxf(highest, prey.global_position.y + prey.hit_radius())
+	check(swimmers >= 4, "there are things in the lake (%d)" % swimmers)
+	check(highest <= SpiderWorld.LAKE_TOP + 0.05,
+		"and none of them breaks the surface (the highest comes to %.2f, the water %.2f)"
+		% [highest, SpiderWorld.LAKE_TOP])
+
+
+## The boats go round the island, a spider standing in one goes round with it,
+## silk spun in one goes with it, and silk tied from one to the jetty snaps.
+func _test_the_boats(world: Node3D, spider: SpiderPlayer) -> void:
+	var ring: BoatRing = null
+	for node in all_under(world):
+		if node is BoatRing:
+			ring = node
+	if not check(ring != null, "there are boats on the lake"):
+		return
+	var boats := ring.boats()
+	check(boats.size() == 6, "six of them (%d)" % boats.size())
+	if boats.is_empty():
+		return
+
+	# Round, at the speed they are set to, and on the water.
+	var middle := ring.global_position
+	var before: Array[float] = []
+	for boat in boats:
+		before.append(_bearing(boat.global_position - middle))
+	var seconds := 2.0
+	await run_frames(roundi(seconds * 60.0))
+	var turned := 0.0
+	var off_ring := 0.0
+	var off_water := 0.0
+	for i in boats.size():
+		var from_middle := boats[i].global_position - middle
+		turned += absf(angle_difference(before[i], _bearing(from_middle)))
+		off_ring = maxf(off_ring, absf(Vector2(from_middle.x, from_middle.z).length() - ring.radius))
+		off_water = maxf(off_water, absf(boats[i].global_position.y - middle.y))
+	var expected := ring.speed / ring.radius * seconds
+	check(turned / float(boats.size()) > expected * 0.8,
+		"they go round the island (%.2f of a turn in %.0fs, %.2f expected)"
+		% [turned / float(boats.size()) / TAU, seconds, expected / TAU])
+	check(off_ring < 0.5 and off_water < ring.bob + 0.1,
+		"on their ring and on the water (%.2f off the ring, %.2f up or down)" % [off_ring, off_water])
+
+	# A spider put down in a boat is carried round in it.
+	var boat := boats[0]
+	spider.global_position = boat.global_transform * Vector3(0.0, 2.0, 2.0)
+	spider.velocity = Vector3.ZERO
+	await run_frames(40)
+	var aboard := boat.global_transform.affine_inverse() * spider.global_position
+	var was := spider.global_position
+	await run_frames(120)
+	var still := boat.global_transform.affine_inverse() * spider.global_position
+	check(was.distance_to(spider.global_position) > 5.0,
+		"a spider standing in a boat goes round with it (%.1fm in two seconds)"
+		% was.distance_to(spider.global_position))
+	check(still.distance_to(aboard) < 2.0 and absf(still.x) < 6.5,
+		"and is still in it (%.1fm from where it stood, in the boat's own frame)"
+		% still.distance_to(aboard))
+
+	# Silk spun in a boat goes with it; silk from a boat to the jetty snaps.
+	var line := load("res://game/data/patterns/frame_line.tres") as WebPattern
+	var webs := world.get_node_or_null("Webs") as Node3D
+	if not check(line != null and webs != null, "there is silk to spin and somewhere to put it"):
+		return
+	var ours := boats[1]
+	var inside := WebStrand.spin(line, ours.global_transform * Vector3(-5.0, 4.1, -2.0),
+		ours.global_transform * Vector3(5.0, 4.1, 7.0), 2.0)
+	inside.place_in(webs)
+	var jetty_end := Vector3(SpiderWorld.LAKE_MIDDLE.x - SpiderWorld.JETTY_END - 1.0, 1.2, 0.0)
+	var across := WebStrand.spin(line, ours.global_transform * Vector3(0.0, 5.8, 10.0), jetty_end, 2.0)
+	across.place_in(webs)
+	var tied := ours.global_transform.affine_inverse() * inside.anchors[0]
+	await run_frames(90)
+	check(is_instance_valid(inside) and not inside.is_queued_for_deletion(),
+		"a line spun across a boat holds")
+	if is_instance_valid(inside):
+		var now := ours.global_transform.affine_inverse() * inside.anchors[0]
+		check(now.distance_to(tied) < 0.3,
+			"and goes round with it (%.2fm off where it was tied, in the boat's frame)"
+			% now.distance_to(tied))
+		inside.demolish()
+	check(not is_instance_valid(across) or across.is_queued_for_deletion(),
+		"and a line from a boat to the jetty snaps as the boat pulls away")
+
+
+func _bearing(offset: Vector3) -> float:
+	return atan2(offset.z, offset.x)
 
 
 # --- helpers -------------------------------------------------------------

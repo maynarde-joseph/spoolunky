@@ -139,6 +139,37 @@ const PETS_GATE := Vector2(-80.0, -60.0)
 const HEDGE := 124.0
 const HEDGE_WEST := -205.0
 
+# --- the lake -------------------------------------------------------------
+
+## The lake: past the railings at the east end of the park, the park's second
+## half.
+const LAKE_LO := Vector3(110.0, -24.0, -180.0)
+const LAKE_HI := Vector3(484.0, 120.0, 180.0)
+
+## Its middle, how far out the water reaches, where the stone bank round it tops
+## out, and how far the paving round that goes.
+const LAKE_MIDDLE := Vector3(290.0, 0.0, 0.0)
+const WATER_EDGE := 140.0
+const BANK := 144.0
+const PROMENADE := 169.0
+
+## The top of the water, and the bottom of the lake.
+const LAKE_TOP := -1.5
+const LAKE_BED := -22.0
+
+## The island in the middle: how high its grass is and how far across, and the
+## ring the boats go round it on.
+const ISLAND_TOP := 5.0
+const ISLAND := 22.0
+const BOAT_RING := 88.0
+
+## How far out from the middle the jetty stops: just short of where the boats go
+## by, so a spider at the end of it can step aboard.
+const JETTY_END := 97.0
+
+## Half the gap in the railings that the path comes through.
+const GATEWAY := 12.0
+
 
 func _ready() -> void:
 	build()
@@ -150,6 +181,7 @@ func build() -> void:
 	_shed()
 	_sewers()
 	_park()
+	_lake()
 	_place_the_spider()
 
 
@@ -198,6 +230,12 @@ func _ground() -> void:
 func _holes_in_the_ground() -> Array[Rect2]:
 	var holes: Array[Rect2] = [Rect2(DRAIN_LO, DRAIN_HI - DRAIN_LO),
 		Rect2(STORM_LO, STORM_HI - STORM_LO)]
+	# The lake, as three rectangles crossed over its middle: between them they clear
+	# its bowl, and every corner of them is under the paving that goes round it.
+	for turn in [31.8, 45.0, 58.2]:
+		var half := Vector2(cos(deg_to_rad(turn)), sin(deg_to_rad(turn))) * PROMENADE
+		holes.append(Rect2(LAKE_MIDDLE.x - half.x, LAKE_MIDDLE.z - half.y, half.x * 2.0,
+			half.y * 2.0))
 	return holes
 
 
@@ -1017,6 +1055,181 @@ func _hedge(on: Node3D, from: Vector3, to: Vector3) -> void:
 func _letter(sign: Node, words: String) -> void:
 	if sign != null:
 		sign.add_child(Props.words_for(words))
+
+
+# --- the lake ------------------------------------------------------------
+
+## The lake: the park's second half, through a gap in the railings at the end of
+## the main path. A round lake with a stone bank and paving round it, an island in
+## the middle with a bandstand on it, a jetty out from the west bank, and rowing
+## boats going round the island.
+##
+## It is built for a Park Recluse growing into the Architect. The water is deep
+## and the boats are the way across it: they come by the end of the jetty, and
+## anything standing in one goes round with it, silk and all. In the water are
+## fish, an octopus, and a shark that will not leave it but will follow you round
+## underneath until you are the biggest thing in the park.
+func _lake() -> void:
+	var zone := Zone.make(self, "The Lake", LAKE_LO, LAKE_HI, Vector2(3.4, 9.0))
+	var basin := WorldKit.body(zone, "Basin")
+	_basin(basin)
+	WorldKit.round_water(zone, "Water", WATER_EDGE, LAKE_TOP - LAKE_BED,
+		WorldKit.at(Vector3(LAKE_MIDDLE.x, LAKE_BED, LAKE_MIDDLE.z)), "pond")
+	_jetty(zone)
+	_railings(zone)
+	_lakeside(zone)
+	_boats(zone)
+	var hedges := WorldKit.body(zone, "Hedge")
+	for z in [LAKE_LO.z, LAKE_HI.z]:
+		_hedge(hedges, Vector3(LAKE_LO.x, 0.0, z), Vector3(LAKE_HI.x, 0.0, z))
+	_hedge(hedges, Vector3(LAKE_HI.x, 0.0, LAKE_LO.z), Vector3(LAKE_HI.x, 0.0, LAKE_HI.z))
+
+	# Fish and the octopus round the island, and the shark in the deep between.
+	for i in 3:
+		var turn := TAU * (float(i) + 0.25) / 3.0
+		_stock(zone, "Fish", LAKE_MIDDLE + Vector3(cos(turn) * 72.0, -9.0, sin(turn) * 72.0),
+			Vector3(24.0, 6.0, 24.0), ["fish", "octopus"], 2, false)
+	_stock(zone, "Shark", LAKE_MIDDLE + Vector3(0.0, -12.0, 68.0), Vector3(20.0, 2.0, 20.0),
+		["shark"], 1, false)
+
+
+## The bowl of the lake and the island in it, turned about the middle: the silt
+## bottom, the weedy slope up to the stone bank, the coping, and the paving round
+## it; and the island's grass on top of a mound that goes down to the bottom.
+func _basin(basin: Node3D) -> void:
+	var silt := Palette.colour("moss").darkened(0.35)
+	var weed := Palette.colour("moss")
+	var stone := Palette.colour("stone")
+	var paving := Palette.colour("paving")
+	var grass := Palette.colour("grass")
+	var bowl := [
+		[Vector2(0.0, LAKE_BED), silt], [Vector2(108.0, LAKE_BED), silt],
+		[Vector2(WATER_EDGE - 1.0, LAKE_TOP - 1.5), weed], [Vector2(WATER_EDGE, LAKE_TOP - 1.0), stone],
+		[Vector2(WATER_EDGE, 0.3), stone], [Vector2(BANK, 0.3), stone],
+		[Vector2(BANK, 0.3), paving], [Vector2(PROMENADE, 0.3), paving],
+		[Vector2(PROMENADE, 0.3), stone], [Vector2(PROMENADE + 0.8, -0.6), stone],
+	]
+	var island := [
+		[Vector2(0.0, ISLAND_TOP), grass], [Vector2(ISLAND, ISLAND_TOP), grass],
+		[Vector2(ISLAND + 4.0, ISLAND_TOP - 1.2), grass],
+		[Vector2(ISLAND + 4.0, ISLAND_TOP - 1.2), stone], [Vector2(ISLAND + 9.0, LAKE_TOP), stone],
+		[Vector2(ISLAND + 9.0, LAKE_TOP), weed], [Vector2(ISLAND + 17.0, -10.0), weed],
+		[Vector2(ISLAND + 24.0, LAKE_BED + 0.1), silt],
+	]
+	for part in [["Bowl", bowl], ["Island", island]]:
+		var points := PackedVector2Array()
+		var colours := PackedColorArray()
+		for row in part[1]:
+			points.append(row[0])
+			colours.append(row[1])
+		WorldKit.lathe(basin, part[0], points, colours, 72, WorldKit.at(LAKE_MIDDLE))
+
+
+## The jetty out from the west bank: a deck of planks on posts, from the paving to
+## just short of where the boats go by, with a bollard at the end.
+func _jetty(zone: Node3D) -> void:
+	var jetty := WorldKit.body(zone, "Jetty")
+	var from := LAKE_MIDDLE.x - BANK - 4.0
+	var to := LAKE_MIDDLE.x - JETTY_END
+	var deck := 1.2
+	WorldKit.collider(jetty, "Deck", Vector3(to - from, 0.6, 10.0),
+		WorldKit.at(Vector3((from + to) * 0.5, deck - 0.3, 0.0)))
+	var z := -5.0
+	var n := 0
+	while z < 5.0 - 0.01:
+		WorldKit.block(jetty, "Plank", Vector3(from, deck - 0.6, z), Vector3(to, deck, z + 1.25),
+			"wood" if n % 2 == 0 else "wood_warm", false)
+		z += 1.25
+		n += 1
+	var x := from + 6.0
+	while x < to:
+		for side in [-1.0, 1.0]:
+			WorldKit.rod(jetty, "Post", Vector3(x, LAKE_BED + 4.0, side * 4.4), Vector3(x, deck + 1.0,
+				side * 4.4), 0.6, "wood_dark")
+		x += 9.0
+	WorldKit.cylinder(jetty, "Bollard", 0.9, 2.4, WorldKit.at(Vector3(to - 1.5, deck + 1.2, 3.2)),
+		"iron", true, 0.7)
+
+
+## The railings between the park and the lake, with the gap the path comes through
+## and a sign over it; and the last of the path, across to the paving.
+func _railings(zone: Node3D) -> void:
+	var railings := WorldKit.group(zone, "Railings")
+	var z := LAKE_LO.z + 12.0
+	while z < LAKE_HI.z:
+		if absf(z) >= GATEWAY + 11.9:
+			Props.place(railings, "railing", WorldKit.at(Vector3(LAKE_LO.x, 0.0, z), 90.0))
+		z += 24.0
+	var gate := WorldKit.body(zone, "Gateway")
+	for side in [-1.0, 1.0]:
+		WorldKit.box(gate, "Pillar", Vector3(2.4, 20.0, 2.4), WorldKit.at(Vector3(LAKE_LO.x, 10.0,
+			side * (GATEWAY + 1.2))), "stone")
+		WorldKit.ball(gate, "Ball", Vector3.ONE * 1.4, WorldKit.at(Vector3(LAKE_LO.x, 21.2,
+			side * (GATEWAY + 1.2))), "stone")
+	var sign := Props.place(railings, "sign", WorldKit.at(Vector3(LAKE_LO.x - 8.0, 0.0, 0.0), 90.0))
+	_letter(sign, "Boating Lake")
+	var paths := WorldKit.body(zone, "Path")
+	WorldKit.block(paths, "ToLake", Vector3(LAKE_LO.x, 0.0, -PATH_HALF),
+		Vector3(LAKE_MIDDLE.x - PROMENADE + 1.0, 0.15, PATH_HALF), "path")
+
+
+## Round the water: benches on the paving looking out at it, lamp posts, a
+## lifebuoy or two, bulrushes along the bank and lily pads on the water, and trees
+## on the grass in the corners.
+func _lakeside(zone: Node3D) -> void:
+	var side := WorldKit.group(zone, "Lakeside")
+	for degrees in [30.0, 75.0, 120.0, 150.0, 215.0, 250.0, 290.0, 330.0]:
+		var out := _round(degrees)
+		Props.place(side, "bench", Transform3D(Basis(Vector3.UP, atan2(out.x, out.z)),
+			LAKE_MIDDLE + out * 153.0 + Vector3.UP * 0.3))
+	for degrees in [10.0, 55.0, 100.0, 135.0, 225.0, 270.0, 315.0, 350.0]:
+		Props.place(side, "lamp_post", WorldKit.at(LAKE_MIDDLE + _round(degrees) * 163.0
+			+ Vector3.UP * 0.3))
+	for degrees in [40.0, 165.0, 300.0]:
+		var out := _round(degrees)
+		Props.place(side, "lifebuoy", Transform3D(Basis(Vector3.UP, atan2(out.x, out.z)),
+			LAKE_MIDDLE + out * (BANK + 1.5) + Vector3.UP * 0.3))
+	var bed_at := func(out: float) -> float:
+		return lerpf(LAKE_BED, LAKE_TOP - 1.5, clampf((out - 108.0) / (WATER_EDGE - 1.0 - 108.0),
+			0.0, 1.0))
+	for degrees in [20.0, 64.0, 110.0, 140.0, 200.0, 238.0, 280.0, 318.0]:
+		var out := 136.5
+		Props.place(side, "reeds", WorldKit.at(LAKE_MIDDLE + _round(degrees) * out
+			+ Vector3.UP * bed_at.call(out), degrees))
+	var pads := [[12.0, 120.0], [18.0, 124.0], [26.0, 118.0], [96.0, 126.0], [104.0, 121.0],
+		[196.0, 118.0], [204.0, 125.0], [300.0, 122.0], [306.0, 116.0], [40.0, 40.0], [48.0, 36.0],
+		[160.0, 38.0], [230.0, 37.0], [236.0, 42.0]]
+	for pad in pads:
+		Props.place(side, "lily_pad", WorldKit.at(LAKE_MIDDLE + _round(pad[0]) * pad[1]
+			+ Vector3.UP * LAKE_TOP, pad[0] * 7.0))
+	for at in [Vector3(136.0, 0.0, -160.0), Vector3(136.0, 0.0, 160.0), Vector3(452.0, 0.0, -160.0),
+			Vector3(452.0, 0.0, 160.0)]:
+		Props.place(side, "tree_oak", WorldKit.at(at, at.x))
+	for at in [Vector3(470.0, 0.0, -96.0), Vector3(470.0, 0.0, 100.0), Vector3(150.0, 0.0, 112.0)]:
+		Props.place(side, "tree_pine", WorldKit.at(at, at.z))
+	for at in [Vector3(152.0, 0.0, -150.0), Vector3(430.0, 0.0, 150.0), Vector3(468.0, 0.0, -30.0),
+			Vector3(468.0, 0.0, 34.0)]:
+		Props.place(side, "bush", WorldKit.at(at, at.z))
+	Props.place(side, "bandstand", WorldKit.at(LAKE_MIDDLE + Vector3.UP * ISLAND_TOP))
+
+
+## The boats, spaced round the island and going round it. They are the ring's
+## children, and it moves them; see [BoatRing].
+func _boats(zone: Node3D) -> void:
+	var ring := BoatRing.new()
+	ring.name = "Boats"
+	ring.radius = BOAT_RING
+	ring.speed = 5.0
+	ring.position = LAKE_MIDDLE + Vector3.UP * (LAKE_TOP - 1.2)
+	var colours := ["boat_red", "boat_blue", "boat_green", "boat_yellow", "boat_red", "boat_blue"]
+	for i in colours.size():
+		Props.place(ring, colours[i], Transform3D.IDENTITY, "Boat%d" % (i + 1))
+	zone.add_child(ring)
+
+
+## Level, out from the middle of the lake at [param degrees] round from east.
+func _round(degrees: float) -> Vector3:
+	return Vector3(cos(deg_to_rad(degrees)), 0.0, sin(deg_to_rad(degrees)))
 
 
 ## A room that makes its own light from everywhere, [param lo] to [param hi]: dim

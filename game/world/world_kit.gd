@@ -556,6 +556,9 @@ static func _place(on: Node3D, part_name: String, mesh: Mesh, shape: Shape3D,
 
 static func _built(on: Node3D, part_name: String, tool: SurfaceTool,
 		faces: PackedVector3Array, where: Transform3D, solid: bool) -> MeshInstance3D:
+	# Neighbouring quads of a smooth surface share their corners exactly, so indexed
+	# they share them in the mesh too: a quarter of the points to store.
+	tool.index()
 	var view := MeshInstance3D.new()
 	view.name = part_name
 	view.mesh = tool.commit()

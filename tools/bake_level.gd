@@ -36,6 +36,13 @@ const RUNTIME_GROUPS := ["prey", "silk_webs"]
 ## level's to keep.
 const PROPS_DIR := "res://game/world/props/"
 
+## Where the shapes a builder makes a point at a time are kept — the sewer's
+## arches, the bowl of the lake, and what they collide as. They are the bulk of a
+## level: written into the scene they are most of the file, and as numbers in
+## text, which is the most room they could take. In files of their own they are
+## compressed binary, and the scene reads as the nodes it is.
+const MESHES_DIR := "res://game/world/meshes"
+
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -95,6 +102,9 @@ func _bake(name: String, path: String, force: bool) -> bool:
 	maker.set_script(null)
 	_drop_runtime_nodes(root)
 	_take_ownership(root, root)
+	var apart := _keep_apart(root, name)
+	if apart > 0:
+		print("  %d built shapes kept in %s" % [apart, MESHES_DIR.path_join(name)])
 
 	var out := PackedScene.new()
 	var err := out.pack(root)
@@ -140,6 +150,52 @@ func _rebuild(root: Node, name: String) -> bool:
 		holder.call("build")
 	await process_frame
 	return true
+
+
+## Saves every mesh and every triangle collider the builder made a point at a time
+## to a file of its own, named for where it is in the level, so the scene refers
+## to it rather than holding it. Starts from an empty folder, so a part that has
+## been renamed or taken out does not leave its old file behind.
+func _keep_apart(root: Node, level: String) -> int:
+	var folder := MESHES_DIR.path_join(level)
+	var absolute := ProjectSettings.globalize_path(folder)
+	if DirAccess.dir_exists_absolute(absolute):
+		for file in DirAccess.get_files_at(folder):
+			DirAccess.remove_absolute(absolute.path_join(file))
+	var kept := 0
+	for node in _every(root):
+		# Inside an instance is that scene's business, not this level's.
+		if node.owner != root:
+			continue
+		var view := node as MeshInstance3D
+		if view != null and view.mesh is ArrayMesh and view.mesh.resource_path.is_empty():
+			if _keep(view.mesh, folder, _file_name(root, node) + ".mesh.res"):
+				kept += 1
+		var solid := node as CollisionShape3D
+		if solid != null and solid.shape is ConcavePolygonShape3D \
+				and solid.shape.resource_path.is_empty():
+			if _keep(solid.shape, folder, _file_name(root, node) + ".shape.res"):
+				kept += 1
+	return kept
+
+
+func _keep(resource: Resource, folder: String, file: String) -> bool:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder))
+	var path := folder.path_join(file)
+	var err := ResourceSaver.save(resource, path, ResourceSaver.FLAG_COMPRESS)
+	if err != OK:
+		printerr("could not save %s: %d" % [path, err])
+		return false
+	resource.take_over_path(path)
+	return true
+
+
+## Where a node is in the level, as a file name.
+func _file_name(root: Node, node: Node) -> String:
+	var where := str(root.get_path_to(node))
+	for bad in ["/", ":", "@", "\"", " "]:
+		where = where.replace(bad, "_")
+	return where.trim_prefix("Greybox_")
 
 
 ## Anything the game makes for itself while it runs. A training dummy builds its
