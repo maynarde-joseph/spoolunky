@@ -1,8 +1,8 @@
 # Spoolunky — Design Document
 
-> You are a spider. You start the size of a coin in the corner of somebody's
-> bedroom. You end the size of a car, hanging a web between two skyscrapers.
-> The only way up is to eat.
+> You are a spider. You start the size of a coin on the floor of a garden shed.
+> You end the biggest thing in the park, hanging a web between the boats on
+> the lake. The only way up is to eat.
 
 ---
 
@@ -282,18 +282,22 @@ once. Eight tiers, each roughly doubling body length.
 
 | # | Name | Body | Eats | Silk | New capability |
 |---|------|------|------|------|----------------|
-| 1 | Spiderling | 8 mm | gnats, aphids | tiny | single strands, tripline |
-| 2 | House Spider | 2 cm | flies, moths | small | sheet web, wall climbing |
-| 3 | Huntsman | 6 cm | roaches, beetles | medium | orb web, silk bridge, pressure snare |
-| 4 | Gutter Spider | 18 cm | mice, sparrows | large | funnel lure, silk winch (drag prey) |
-| 5 | Sewer Widow | 50 cm | rats, cats, pigeons | big | venom sacs, web tunnels, trapdoors |
-| 6 | Park Recluse | 1.5 m | dogs, deer, people | huge | anchored canopy webs, ambush burrows |
-| 7 | City Weaver | 4 m | cars, crowds | vast | structural webs across streets |
-| 8 | The Architect | 12 m | whatever it wants | — | permanent territory webs |
+| 1 | Spiderling | 8 mm | midges, flies, ants | tiny | single strands, tripline |
+| 2 | House Spider | 2 cm | moths, bees, butterflies | small | sheet web, wall climbing |
+| 3 | Huntsman | 6 cm | beetles, wasps, roaches | medium | orb web, silk bridge, pressure snare |
+| 4 | Gutter Spider | 18 cm | bats | large | funnel lure, silk winch (drag prey) |
+| 5 | Sewer Widow | 50 cm | rats, parrots | big | venom sacs, web tunnels, trapdoors |
+| 6 | Park Recluse | 1.5 m | cats, fish | huge | anchored canopy webs, ambush burrows |
+| 7 | City Weaver | 4 m | dogs, the octopus | vast | structural webs across streets |
+| 8 | The Architect | 12 m | the shark | — | permanent territory webs |
+
+What each eats is what the game has: the creature whose size class the tier's
+bite power reaches. The shed is built for the first three, the sewers for the
+third to the fifth, the park for the fifth and sixth, and the lake for the rest.
 
 Growth is **visible and physical**: the camera rises, your stride lengthens,
 your webs get coarser and stronger, the level geometry shrinks around you. The
-same bedroom you started in becomes a dollhouse.
+same shed you started in becomes a dollhouse.
 
 ### Growth is the key, and never the lock
 
@@ -358,12 +362,11 @@ announced down the same channel as growing a tier, so the body resizes through
 the code that already did that.
 
 **Gates take either key.** A threshold names a size *and* may name a trait, and
-either opens it — the vent flap gives to a House Spider or to a Hollow Frame
-that folds between the slats; the dust cap gives to weight or to a Digestive
-Flood; the storm grate gives to a Gutter Spider or to a Storm Rider riding the
-draught through the slots. The gate never says which key you are missing. It
-dips and settles back, the same as always, and the answer is what you go and
-try.
+either opens it — the drain lid in the shed floor gives to a Huntsman or to a
+Hollow Frame that folds through its slots; the storm grate gives to a Sewer
+Widow or to a Storm Rider riding the draught up through its slots. The gate
+never says which key you are missing. It dips and settles back, the same as
+always, and the answer is what you go and try.
 
 **The screen.** Opened on **E**, which frees the mouse — so the same act that
 lets you click the tree is what stops you firing silk into it. Locked traits
@@ -379,17 +382,26 @@ described as a change to the animal, it does not belong on the tree.
 
 ## 4. The world
 
-Five zones, each a handful of hand-built rooms plus connective crawlspace.
-A zone is fully explorable and you choose your own route through it; zones
-come in order, and the order is your own body.
+Three places, one after another in one continuous space: a garden shed, the
+sewers under a park, and the park itself with its lake. A place is fully
+explorable and you choose your own route through it; places come in order, and
+the order is your own body.
+
+The first cut was five zones — an attic, the walls and crawlspace, the gutter
+and sewer, the park and the city — greyboxed in white. It was scrapped for these
+three, built to look like what they are: plank and paint tins, grey stone and
+green water, grass and a lake with boats on it. Everything is to one scale, the
+scale of the props — a metre is about fourteen of the world's units — so the
+shed is a shed and a rowing boat is a boat. The places are the size they would
+be; what they are built for is how big the spider is by the time it gets there.
 
 ### The shape: a sequence of sandboxes, not a Metroidvania
 
 Worth naming, because "Metroidvania" is the nearest genre word and it is the
 wrong one. That genre's core pleasure is *returning* — you gain the ability,
 you go back to the room you could not reach. Physical size escalation is a
-**one-way ratchet**: once you are park-sized you will never fit up that
-downpipe again, and no amount of design will make you.
+**one-way ratchet**: once you are park-sized you will never fit down that
+drain again, and no amount of design will make you.
 
 So this is a **sequence of sandboxes**, each ended by outgrowing it. Katamari's
 structure rather than Hollow Knight's. Two properties of the genre are worth
@@ -397,20 +409,21 @@ keeping and the rest is let go:
 
 * **Legible gates.** You can always see the next place, and you always know
   what you are short of.
-* **No timer.** Inside a zone there is total freedom and nothing is owed. No
+* **No timer.** Inside a place there is total freedom and nothing is owed. No
   daily quota, no global clock — those would turn a game about making a place
   yours into a game about hitting a number.
 
 What is given up is backtracking. What replaces it is **scale**: standing in
-the park and looking back down the drain you came out of. That is the better
-trade for this game, and it is the stronger pitch.
+the park and looking back down the grate you came up through, or across the
+lawns at the shed. That is the better trade for this game, and it is the
+stronger pitch.
 
-**The cost, stated plainly so nobody is surprised by it later:** each zone is
-played *once*. There is no revisiting to stretch content over. So zones should
-be **short** — the size jump is the reward, not the acreage. Build all five
-fast and thin, then thicken whichever turns out to be fun.
+**The cost, stated plainly so nobody is surprised by it later:** each place is
+played *once*. There is no revisiting to stretch content over. So places should
+be **short** — the size jump is the reward, not the acreage. Build them fast and
+thin, then thicken whichever turns out to be fun.
 
-### How a zone ends: the body is the key
+### How a place ends: the body is the key
 
 A threshold is a **physical thing that responds to your body**, not a locked
 door with a message. The model is the drain lid between the shed and the
@@ -445,70 +458,90 @@ checks for things that *react* to you, like the lid; let geometry handle
 everything that simply is or is not wide enough. The cheapest gate in the game
 is a hole that was always that size.
 
+There are two gates, not three. A fence is only a wall, and a spider climbs
+walls: a gate between the park and the lake could only be a gate you walk
+round. So the park and the lake are one place in two halves, joined by a gap
+in the railings, and what keeps a small spider off the water is what is in it.
+
 It also solves push versus pull in one move. Nothing ever *expels* you: you can
-live in the attic as long as you like, and it stays valuable because it is
+live in the shed as long as you like, and it stays valuable because it is
 where your network is. You leave because you can, and because the sewer has
-things in it worth twice what the attic holds.
+things in it worth twice what the shed holds.
 
 **You carry your belongings.** Moving on does not mean hauling your larder
 through a pipe — the bag comes with you. What stays behind is the silk: the
 network you built is the thing you cannot take, which is what makes each move
 cost something without making it a chore.
 
-### Each zone taxes silk differently
+### Each place taxes silk differently
 
-A zone is not a new mechanic, it is a **new pressure on the one mechanic**. The
-question each zone asks is *how does this place erase silk?* — and the answer
+A place is not a new mechanic, it is a **new pressure on the one mechanic**. The
+question each place asks is *how does this place erase silk?* — and the answer
 is usually one multiplier on something that already exists.
 
-| Zone | How it fights you | What it taxes |
+| Place | How it fights you | What it taxes |
 |------|-------------------|---------------|
-| Attic / Room | nothing — it is dry, still and cluttered | *learn here* |
-| Walls & Crawlspace | dark, vertical, a wasp nest | anchors, and a predator |
-| Gutter & Sewer | floods on a cycle you can read | spans — build above the water |
-| Park | wind, rain, open space with no anchors | `durability`, and frames of your own |
-| City | swept, cleaned, trafficked | persistence — nothing unattended survives |
+| The Shed | nothing — it is dry, still and cluttered | *learn here* |
+| The Sewers | rats that fight back, and water no web can cross | spans — build above the water |
+| The Park | open ground, nothing overhead, cats bigger than you | anchors — they are far apart, and a web between two trees is a long one |
+| The Lake | deep water, and the ground under your silk moves | where you tie it — a web in a boat goes round with it, and one from a boat to the bank snaps |
 
-The pressure a global clock would have provided belongs **inside one zone**,
-not over the whole game. The city gets cleaned on a schedule; that is the
-city's clock, not your life's. It is a place you raid rather than a life you
-live, and the contrast is what makes the attic feel like home.
+The pressure a global clock would have provided belongs **inside one place**,
+not over the whole game. A place can have a clock of its own — a sewer that
+floods, a keeper who clears out the aviary — and that is the place's clock,
+not your life's.
 
-### 4.1 The Room (tier 1–2) — *tutorial*
-A child's bedroom, seen from skirting-board height. Dust, a radiator, a
-lightbulb with a moth orbiting it, a spilled juice box drawing ants.
-Teaches: anchors, strands, first sheet web, feeding.
-**Exit:** the wall vent — a flap on a weak spring, which stays shut until
-there is enough of you to lean on it.
+### 4.1 The Shed (tier 1–3) — *tutorial*
+A garden shed at the west edge of the park, seen from floorboard height: plank
+walls, a window to the south with the sun coming in across the boards, a
+workbench under a pegboard of tools, two sets of shelves loaded with paint tins,
+pots, jars and seed trays, a mower, and a bulb on a flex with the moths round
+it. At a spiderling's size a paint tin is ten times your height, and the tie
+beams under the roof are the first crossing from wall to wall.
+Lives here: the insects. Teaches: anchors, strands, first sheet web, feeding.
+**Exit:** the drain in the floor — an iron lid with slots in it over a shaft of
+stone, which gives to a Huntsman, or to a Hollow Frame lean enough to fold
+through the slots.
 
-### 4.2 The Walls & Crawlspace (tier 2–3)
-Inside the house's skeleton: joists, pipe runs, insulation, a wasp nest as a
-mid-zone threat. Vertical, dark, made for orb webs across pipe gaps.
-Teaches: 3D web building, verticality, avoiding a predator (the wasps).
-**Exit:** the downpipe. A cap of matted dust and old web seals it; you go
-through when you are heavy enough to fall through.
+### 4.2 The Sewers (tier 3–5)
+Grey stone and green water: one long vaulted tunnel under the park, a channel
+down the middle with a walkway either side behind a kerb, running between three
+chambers — the one under the shed that the drain comes down into, a pillared
+hall with a pipe coming in from the north, and the one under the park where the
+storm drain goes up. Lamp-lit, and dark between the lamps.
+Rats bigger than a Huntsman come for you; roaches run; bats hang up in the hall;
+midges hang over the water. The water is somewhere no web can go, and a spider
+in it swims.
+**Exit:** the storm grate at the top of the far shaft, onto the park's main path
+— a grate sprung for a Sewer Widow, which a Storm Rider can ride the draught
+up through.
 
-### 4.3 The Gutter & Sewer (tier 3–4)
-Wet, flowing, hostile. Running water destroys webs, so you build high and dry.
-Rats travel in packs — your first prey that fights back and your first real
-use of the pressure snare.
-**Exit:** the storm grate. A hinged pressure lid, sprung for a rat — stand on
-it light and nothing happens, stand on it heavy and daylight.
+### 4.3 The Park (tier 5–6)
+The first open space. The main path runs from the shed door to the lake, and
+the grate you come up through is in the middle of it, in a ring of paving with
+benches round it. Lawns either side, with oaks, birches and pines, bushes and
+beds of flowers, and in the corner an animal area: a picket fence, an aviary for
+the parrots, and a dog run.
+Cats roam the lawns and are bigger than you; the dogs keep to their run; bees
+and butterflies are over the beds. At this size a bench is a frame and a tree is
+a building.
+**Exit:** none. The lake is past the railings at the end of the path.
 
-### 4.4 The Park (tier 4–6)
-The first open space. Trees, a pond, bins, a playground, dog walkers at dawn
-and dusk. Wind now matters: webs sway and long spans need more anchors.
-Day/night cycle begins — birds by day, bats and moths by night.
-**Exit:** none needed. By now you are large enough that the park's edge stops
-being a boundary and the street is simply the next thing you walk into.
+### 4.4 The Lake (tier 6–8) — *endgame*
+The park's second half: a round boating lake with a stone bank and a ring of
+paving, an island in the middle with a bandstand, a jetty out from the west bank,
+and six rowing boats going round the island. Fish and an octopus live round the
+island and a shark in the deep, and none of them comes out of the water — but
+the shark follows you round underneath until you are the biggest thing in the
+park.
+The boats are the way across and the ground that moves: they come by the end of
+the jetty close enough to step aboard, and anything standing in one goes round
+with it. Silk goes with a boat if every end of it is on that boat, and snaps if
+it is tied between a boat and anything else, because nothing tied to both
+could do anything else.
 
-### 4.5 The City (tier 6–8) — *endgame*
-Alleys, fire escapes, scaffolding, the underground station, and eventually
-rooftops. People notice you. Pest control, then police, then something worse.
-Territory webs: permanent installations that passively harvest prey while you
-are elsewhere.
-
----
+**Not yet:** running water that takes silk back, wind, rain, and a day and a
+night; people.
 
 ### The interface scales, and is laid out once
 
@@ -529,7 +562,7 @@ nobody adjusts.
 
 ---
 
-### 4.6 The testbed — a gym, not a place
+### 4.5 The testbed — a gym, not a place
 
 `game/world/testbed.tscn` is the workshop, and it is what the project opens.
 Nine stations on one flat floor, fifty-two metres by forty, all in sight of the
@@ -1564,7 +1597,7 @@ feet go down fresh when it comes back into view.
 | **Hunters** | wasp nests, birds, pest control, people | hunt *you*; your web is your cover, not just your larder |
 
 Everything you can eat can also eat you at the wrong size. The tension curve
-is: each new zone opens with you as the smallest thing in it.
+is: each new place opens with you as the smallest thing in it.
 
 **How that is actually decided:** one comparison. A creature whose `size_class`
 is inside the spider's `bite_power` is food; one outside it, with `aggression`
@@ -1572,6 +1605,17 @@ above zero, hunts instead. So there is no separate bestiary of predators — the
 wasp that drives a spiderling off a corpse is a Huntsman's dinner, and growing
 *flips the relationship* rather than swapping the cast. Wasps hunt hard and fast;
 beetles hunt slowly and on the ground; midges never hunt anything.
+
+**Where they live.** The insects turn up anywhere. Everything else has a
+`habitat` — the sewers, the park, the lake — and is only put down where a spawner
+names it, so a room built for something else never fills with dogs. Each place
+is stocked with what lives in it: roaches, rats and bats in the sewers, cats,
+dogs and parrots in the park, fish, an octopus and a shark in the lake. They are
+built to the tier they are food for — a rat is as big as a Sewer Widow — and a
+big one bites from the edge of its body, not from a wasp's margin scaled up to
+a shark's. Something that swims keeps all of itself under the top of the water
+it is in: steering at a spider on the bank or on a boat, it follows along
+underneath.
 
 ### Bodies
 
@@ -1595,10 +1639,11 @@ says what it is doing. It does not need detail.
   the placeholder ball. So a new creature is still files, never a scene.
 * **A body can come before its species.** A body says what a creature looks like
   and how it moves; everything else — how big, how strong, where it lives — is the
-  species. Bodies get drawn ahead of the places they will live in, and until one
-  has a species the checks and the pictures put it on a stand-in
-  (`tests/support/stand_in.gd`) that makes up just enough to walk it, fly it and
-  catch it. Nothing in the game ever makes one, so nothing a spider can meet.
+  species. The creatures of the sewers, the park and the lake were drawn before
+  there was anywhere for them to live, and until they had species the checks and
+  the pictures put them on a stand-in (`tests/support/stand_in.gd`) that makes up
+  just enough to walk one, fly it and catch it. Every body has its species now;
+  the stand-in is there for the next one drawn ahead of its place.
 * **One mesh for every creature of a species.** The bones are each creature's
   own, but the mesh and the skin are built once and shared. A room holding a dozen
   flies builds one fly.
@@ -1615,8 +1660,8 @@ says what it is doing. It does not need detail.
   in bursts when caught and wraps them round itself at the end; a fish swims in
   a wave from nose to tail, and out of water lies on its side and flops; an octopus ripples its arms sitting, pulses them like a jet
   swimming, and coils them up at the end. Swimming is flying: a swimmer keeps
-  itself up in water the way a fly does in air, and where the water is will be a
-  place, not a pose.
+  itself up in water the way a fly does in air, and where the water is is a
+  place, not a pose — its species says it swims, and it stays in the water.
 * **The same look for everything, not just insects.** A rat, a parrot or a shark
   is drawn by the rules a fly is: smooth parts, limbs of one width bent at round
   joints — a beast's legs, a bat's finger bones, an octopus's arms tapering to a
@@ -1813,9 +1858,13 @@ Left: the legs in first person, reaching for the surface at the edges of the
 frame. First person hides the body for now. The camera defaults to third person
 and never rolls; that is settled, see section 7.
 
-**Milestone 3 — The Room**
-A purpose-built tier-1/2 room at spider scale, real prey lanes, the vent exit,
-the first "you are too big for this" moment.
+**Milestone 3 — The world** *(built)*
+Done: the shed, the sewers under the park, and the park with its lake, to one
+scale and in one space, furnished from a kit of props and stocked with what
+lives in each; the drain lid and the storm grate; water you swim in; boats that
+go round the lake and carry what is tied to them.
+Left: real prey lanes, running water that takes silk back, wind and weather,
+day and night, and the first "you are too big for this" moment made to land.
 
 **Milestone 4 — Trap chains** *(started)*
 Done: trigger links — wire any web to any other, snares strike at range when
@@ -1829,8 +1878,9 @@ Left: re-fitting a placed design's anchors to local geometry, renaming designs,
 tension silk, repair, web sacks, saving built webs with the world, and somewhere
 to *find* devices rather than starting with them.
 
-**Milestone 5 — Zone two and the loop at scale**
-Crawlspace zone, wasps as a predator, verticality, streaming between zones.
+**Milestone 5 — The loop at scale**
+Predators with habits — rats that go about in packs, a shark that circles the
+boats — streaming between places, and a reason to go back to the shed.
 
 ---
 
@@ -1873,11 +1923,11 @@ Crawlspace zone, wasps as a predator, verticality, streaming between zones.
   understood, it is the wrong gate. Prefer a shape the collider decides over a
   rule that compares; prefer a rule that compares `body_height` over inventing
   a second number to compare instead.
-* **Nothing expels the player.** Zones are left because somewhere else is
+* **Nothing expels the player.** Places are left because somewhere else is
   better, never because this one stopped working. The first place must stay
   worth having, because it is where the network is.
-* **No clock over the whole game.** Time pressure belongs to *one place* — the
-  city gets cleaned; your life does not have a deadline. A global quota would
-  make this a game about a number.
-* **Zones are played once, so keep them short.** There is no backtracking to
+* **No clock over the whole game.** Time pressure belongs to *one place* — a
+  sewer floods; your life does not have a deadline. A global quota would make
+  this a game about a number.
+* **Places are played once, so keep them short.** There is no backtracking to
   stretch content over. The size jump is the reward; acreage is not.

@@ -1,10 +1,11 @@
 # Spoolunky
 
-A first-person spider game in Godot 4.6. You start the size of a coin in the
-corner of a room, spin webs to catch whatever walks into them, and eat your way
-up until the room can't hold you.
+A first-person spider game in Godot 4.6. You start the size of a coin on the floor
+of a garden shed, spin webs to catch whatever walks into them, and eat your way
+down the drain, through the sewers and out into the park, until you are the
+biggest thing on the lake.
 
-The full pitch — the loop, the size tiers, the zones, the trap catalogue — is in
+The full pitch — the loop, the size tiers, the world, the trap catalogue — is in
 [`docs/DESIGN.md`](docs/DESIGN.md).
 
 ## Where things are
@@ -20,6 +21,9 @@ game/
   prey/      things to catch, and something to spawn them
   rig/       bodies: bones, meshes skinned to them, and the motion that poses them
   ui/        HUD
+  world/     the world and the gym, the kit and the paints they are built from,
+             the props they are furnished with, and the gates between places
+tools/       the bakes that turn builders into scenes, and the tab check
 tests/       four headless suites and screenshot tools
   support/   what the suites share: the verdict, and the arena a web check runs in
 addons/character-controller/   the movement template the spider is built on
@@ -499,6 +503,33 @@ up in the build wheel — the library scans that folder. The fields that matter
 most are `shape` (strand or net), `trigger` (passive, alert, snare or lure),
 `unlock_stage`, the three silk costs, and `hold_strength` / `durability`.
 
+## The world
+
+`game/world/world.tscn` is the game's world: three places, one after another in
+one space, all to one scale — a metre is about fourteen of its units, so the shed
+is a shed and a rowing boat is a boat, and it is the spider that changes size.
+
+* **The Shed**, where a new spider starts: plank walls, a window with the sun
+  coming in, a workbench under a pegboard of tools, shelves of paint tins and
+  pots, the mower, a bulb with moths round it. The insects live here. The way on
+  is the iron **drain lid** in the floor, which gives to a Huntsman — or to a
+  Hollow Frame, which folds through its slots.
+* **The Sewers**, down the drain: a vaulted tunnel of grey stone under the park
+  with a channel of green water down it, walkways either side, and three
+  chambers — a pillared hall halfway with a pipe coming in, and the chamber
+  under the park where rungs go up to the **storm grate**, which gives to a Sewer
+  Widow or a Storm Rider. Rats, roaches and bats. The water is water: a spider
+  in it swims.
+* **The Park**, up through the grate onto the main path: lawns of trees, bushes
+  and flower beds, benches, and an animal area with an aviary for the parrots
+  and a dog run. Cats roam it and are bigger than you.
+* **The Lake**, the park's second half, through the railings at the end of the
+  path: an island with a bandstand, a jetty, and six rowing boats going round
+  the island. A spider standing in a boat goes round with it; silk with every end
+  on one boat goes with it, and silk tied from a boat to anything else snaps.
+  Fish and an octopus live round the island and a shark in the deep, and none of
+  them comes out of the water.
+
 ## Levels are scenes, not scripts
 
 `world.tscn` and `testbed.tscn` hold their geometry as real nodes, so anything in
@@ -516,10 +547,31 @@ godot --headless --script res://tools/bake_level.gd -- testbed world --force
 Without `--force` it looks at a baked level and leaves it alone, so running it by
 accident costs nothing.
 
+The world is built out of `WorldKit` solids — each one a mesh and a collider of
+the same shape, so everything you can see you can stand on and stick silk to —
+painted from the `Palette`, a few flat matte paints kept one to a file in
+`game/world/materials/`. Change a colour there and everything painted with it
+follows. The shapes the builder makes a point at a time — the sewer's arches,
+the lake's bowl — are kept by the bake in `game/world/meshes/`, one compressed
+file each, rather than written into the scene as numbers.
+
+The things in it — sixty of them, from a hammer to a rowing boat — are **props**:
+each built in `game/world/props.gd` and baked into its own scene in
+`game/world/props/`, so the world holds instances of them and the editor has them
+to drag in. Like the levels, a prop that has a scene is left alone unless you
+say otherwise:
+
+```sh
+godot --headless --path . --script res://tools/bake_props.gd -- --force bench
+```
+
 One thing to know if you add to a level: **only `@export` properties survive being
 saved into a scene.** A value set in code on a plain `var` is there while the
 builder runs and gone the moment it is baked — which is how the zones ended up
-measuring nothing and the gates stopped opening the first time round.
+measuring nothing and the gates stopped opening the first time round. And a
+change made *inside* an instanced scene is not saved either; what the builder
+hangs on a prop after putting it down — the words on a sign — is the one
+exception the bake keeps.
 
 ## The gym
 
@@ -553,9 +605,13 @@ back, in a plain box room:
 godot --headless --script res://tests/climb_smoke_test.gd
 ```
 
-A third loads the gym and the tower and checks the level itself — that the gates
-open at the sizes the tier table names, that every station is signed, that the
-spider lands on the floor rather than through it:
+A third loads the world and the gym and checks the levels themselves — that the
+places are all there, in order and joined up, each stocked with what lives in
+it; that the gates give at the sizes the tier table names and the shafts behind
+them are clear; that the water is water and nothing in the lake comes out of it;
+that the boats go round and carry what stands and is spun in them; that every
+prop is something to stand on; and in the gym, that every station is signed and
+the spider lands on the floor rather than through it:
 
 ```sh
 godot --headless --script res://tests/world_smoke_test.gd
@@ -572,7 +628,7 @@ godot --headless --script res://tests/creature_smoke_test.gd
 ```
 
 Each prints a line per check and exits non-zero if any fail. Together they take
-about three and a half minutes, most of it the web suite and the creatures.
+about four minutes, most of it the web suite and the creatures.
 
 The web suite puts its sections back to a bare spiderling in an empty room
 between each one, so nothing depends on what ran before it. To check that is
@@ -622,4 +678,21 @@ or poses after `--` to render only those, for instance `-- fly caught`:
 ```sh
 xvfb-run -a godot --rendering-driver opengl3 --resolution 800x600 \
     --script res://tests/screenshot_creatures.gd
+```
+
+And every prop, one at a time and on one sheet, `props.png` — built from the
+script, so a change shows before it is baked:
+
+```sh
+xvfb-run -a godot --rendering-driver opengl3 --resolution 800x600 \
+    --path . --script res://tests/screenshot_props.gd
+```
+
+And the world from a set of named places — in the shed, down the sewer, at the
+grate, the pets' corner, the jetty, under the lake, from above. Name them after
+`--` to render only those, for instance `-- shed lake_boat`:
+
+```sh
+xvfb-run -a godot --rendering-driver opengl3 --resolution 1280x720 \
+    --path . --script res://tests/screenshot_world.gd
 ```

@@ -95,7 +95,7 @@ most mistakes, the suites are the only thing that catches the rest:
     gdparse <file>.gd
     godot --headless --path . --script res://tests/web_smoke_test.gd    # ~75s
     godot --headless --path . --script res://tests/climb_smoke_test.gd  # ~40s
-    godot --headless --path . --script res://tests/world_smoke_test.gd  # ~9s
+    godot --headless --path . --script res://tests/world_smoke_test.gd  # ~17s
     godot --headless --path . --script res://tests/creature_smoke_test.gd  # ~85s
 
 Each suite prints a line per check and exits non-zero if any fail.
