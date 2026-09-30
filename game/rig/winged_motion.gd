@@ -124,7 +124,7 @@ func _pose_wings(skeleton: Skeleton3D) -> void:
 		var flapping := maxf(_air, burst)
 		var closed := 1.0 - maxf(flapping, 0.55 * _slack)
 		var lift := flapping * (beat * swing + centre) - _slack * 0.6
-		var roll := closed * deg_to_rad(100.0 - 45.0 * _curl)
+		var roll := closed * deg_to_rad(115.0 - 55.0 * _curl)
 		_turn(skeleton, wing["arm"], Quaternion(Vector3.BACK, side * roll)
 			* Quaternion(Vector3.UP, -side * closed * shut) * Quaternion(Vector3.BACK, side * lift))
 		# Shut, it narrows across — the arm's X, which the hand's width lies along too
@@ -149,7 +149,7 @@ func _pose_legs(skeleton: Skeleton3D, tilt: float) -> void:
 		var phase := (_stride + (0.0 if side < 0.0 else 0.5)) * TAU
 		var kick := sin(clock * 12.0 + side * 2.0)
 		var step := stepping * sin(phase) * 0.45
-		var swing := step - tilt - _air * 1.1 + _thrash * kick * 0.6 + _slack * 0.15 + _curl * 1.1
+		var swing := step - tilt - _air * 1.1 + _thrash * kick * 0.6 + _slack * 0.15 + _curl * 1.5
 		_turn(skeleton, leg["leg"], Quaternion(Vector3.RIGHT, swing))
 		var toes := -step + maxf(cos(phase), 0.0) * stepping * 0.4 - _air * 0.9 - _curl * 1.2 \
 			+ _thrash * kick * 0.4

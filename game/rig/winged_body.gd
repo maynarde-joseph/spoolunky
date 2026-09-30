@@ -202,7 +202,8 @@ func _layout() -> Dictionary:
 ## A wing at rest, spread for flight: its shoulder, its wrist, and which way the
 ## arm and the hand run — out, and swept back a little, the hand more than the arm.
 func wing_rest(side: float) -> Dictionary:
-	var at: Vector3 = _layout()["body"] + Vector3(side * body.x * 0.7, body.y * 0.45,
+	# On the surface of the body, so a wing folded down its side hangs outside it.
+	var at: Vector3 = _layout()["body"] + Vector3(side * body.x * 0.88, body.y * 0.42,
 		-body.z * 0.3)
 	var out := Vector3(side, 0.05, wing_sweep).normalized()
 	return {
@@ -434,11 +435,11 @@ func _build_beak(fur: SurfaceTool, shine: SurfaceTool, skeleton: Skeleton3D,
 	var bend := root + out * reach
 	RigKit.ellipsoid(shine, skeleton, face, bend, Vector3(girth * 0.58, girth * 0.62, girth * 0.62),
 		RigKit.plain(beak_colour), 12, 8)
-	var hook := Vector3(0.0, -1.0, 0.35).normalized()
+	var hook := Vector3(0.0, -1.0, 0.45).normalized()
 	RigKit.lathe(shine, skeleton, face, Transform3D(RigKit.along(hook, Vector3.RIGHT), bend), [
 		[0.0, girth * 0.58, girth * 0.62, beak_colour],
-		[beak.x * 0.3, girth * 0.34, girth * 0.36, beak_colour],
-		[beak.x * 0.46, 0.0, 0.0, beak_colour]], 12)
+		[beak.x * 0.34, girth * 0.36, girth * 0.4, beak_colour],
+		[beak.x * 0.56, 0.0, 0.0, beak_colour]], 12)
 	var chin := skeleton.find_bone("Jaw")
 	var mouth := _mouth()
 	var length: float = mouth["length"]
@@ -505,8 +506,8 @@ func _coat() -> Callable:
 ## it has a face.
 func _face_paint(eyes: Array[Vector3]) -> Callable:
 	return func(_n: Vector3, p: Vector3) -> Color:
+		var bare := 0.0
 		if face > 0.0:
 			for centre in eyes:
-				if p.distance_to(centre) < face:
-					return face_colour
-		return colour
+				bare = maxf(bare, smoothstep(face, face * 0.75, p.distance_to(centre)))
+		return colour.lerp(face_colour, bare)

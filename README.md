@@ -371,7 +371,10 @@ them on a stand-in. So far:
   green eyes, a white bib and socks, and a striped tail held up in a hook. Caught,
   its ears go flat;
 * the **dog**, a third: floppy brown ears, a patch over one eye, a saddle on its
-  back and a big black nose. It pants with its tongue out and wags as it trots.
+  back and a big black nose. It pants with its tongue out and wags as it trots;
+* the **parrot**, the bat's body in feathers: a scarlet macaw, red, with yellow
+  coverts over blue flight feathers, a bare white face and a hooked beak. On the
+  ground it stands up straight on its perch and folds its wings down its sides.
 
 ## Leaving a web and coming back
 

@@ -422,8 +422,7 @@ func _coat() -> Callable:
 func _face_paint(middle: Vector3) -> Callable:
 	var patch_at := middle + Vector3(-head.x * 0.5, head.y * 0.3, -head.z * 0.6)
 	return func(n: Vector3, p: Vector3) -> Color:
-		if patch > 0.0 and p.distance_to(patch_at) < patch:
-			return patch_colour
-		if n.y < -0.5:
-			return belly_colour
-		return colour
+		var base := belly_colour if n.y < -0.5 else colour
+		if patch > 0.0:
+			return base.lerp(patch_colour, smoothstep(patch, patch * 0.75, p.distance_to(patch_at)))
+		return base
