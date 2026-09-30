@@ -128,5 +128,9 @@ func _shift(skeleton: Skeleton3D, bone: int, offset: Vector3) -> void:
 
 ## Where the point [param along] out along [param bone] is drawn now, in the world.
 func _tip(skeleton: Skeleton3D, bone: int, along: float) -> Vector3:
-	return skeleton.global_transform * (skeleton.get_bone_global_pose(bone)
-		* Vector3(0.0, along, 0.0))
+	return _at(skeleton, bone, Vector3(0.0, along, 0.0))
+
+
+## Where [param point], in [param bone]'s own space, is drawn now, in the world.
+func _at(skeleton: Skeleton3D, bone: int, point: Vector3) -> Vector3:
+	return skeleton.global_transform * (skeleton.get_bone_global_pose(bone) * point)

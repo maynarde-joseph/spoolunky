@@ -349,21 +349,22 @@ static func membrane(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, length:
 
 
 ## Something flat of any outline on [param bone] — a bat's wing between its
-## fingers, a fan of feathers — lying in the bone's X-Y plane, [param lift] along
-## its Z. [param outline] goes round its edge and every point of it has to be in
-## sight of [param middle], which it is filled from. Both faces are built, as for
+## fingers, a fan of feathers, a fin — lying in the X-Y plane of [param frame],
+## which carries it into the bone's space, [param lift] along its Z.
+## [param outline] goes round its edge and every point of it has to be in sight
+## of [param middle], which it is filled from. Both faces are built, as for
 ## [method membrane], and a band [param rim_width] of the way in from the edge is
 ## [param rim].
 static func panel(tool: SurfaceTool, skeleton: Skeleton3D, bone: int,
 		outline: PackedVector2Array, middle: Vector2, colour: Color, rim: Color,
-		rim_width := 0.1, lift := 0.0) -> void:
+		rim_width := 0.1, lift := 0.0, frame := Transform3D.IDENTITY) -> void:
 	if bone < 0 or outline.size() < 3:
 		return
 	var rest := skeleton.get_bone_global_rest(bone)
-	var centre := Vector3(middle.x, middle.y, lift)
+	var centre := frame * Vector3(middle.x, middle.y, lift)
 	for i in outline.size():
-		var a := Vector3(outline[i].x, outline[i].y, lift)
-		var b := Vector3(outline[(i + 1) % outline.size()].x,
+		var a := frame * Vector3(outline[i].x, outline[i].y, lift)
+		var b := frame * Vector3(outline[(i + 1) % outline.size()].x,
 			outline[(i + 1) % outline.size()].y, lift)
 		var a_in := centre.lerp(a, 1.0 - rim_width)
 		var b_in := centre.lerp(b, 1.0 - rim_width)

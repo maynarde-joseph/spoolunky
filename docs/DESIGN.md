@@ -1586,7 +1586,8 @@ says what it is doing. It does not need detail.
 
 * **A body is a resource.** Each kind of animal is a script (`InsectBody` for
   insects, `BeastBody` for anything furry on four legs, `WingedBody` for anything
-  on two wings with an arm and a hand in each) and each species is a
+  on two wings with an arm and a hand in each, `FishBody` for anything that swims
+  with its tail) and each species is a
   `.tres` of it, in `game/data/bodies/`, holding every size, colour and part as a
   number — the stripes on a wasp, the length of a mosquito's proboscis, whether a
   rat's ears are round or a cat's pointed. A `PreySpecies` points at one; without one it is still
@@ -1610,7 +1611,10 @@ says what it is doing. It does not need detail.
   a leap, scrabbles at the air and shakes its head when caught, and curls up
   small with its tail round it; a winged thing beats its wings with the hands a
   moment behind the arms, folds them down its sides to walk on two legs, flaps
-  in bursts when caught and wraps them round itself at the end.
+  in bursts when caught and wraps them round itself at the end; a fish swims in
+  a wave from nose to tail, and out of water lies on its side, gasping and
+  flopping. Swimming is flying: a swimmer keeps itself up in water the way a fly
+  does in air, and where the water is will be a place, not a pose.
 * **Goofy, a little.** The creatures that are not insects are built to be liked
   before they are eaten: big heads, big eyes with a glint in them — white round
   the middle for a stare, or a glossy bead — and a few things you could draw from

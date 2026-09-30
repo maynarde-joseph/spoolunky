@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FishBody" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/rig/fish_body.gd" id="1_body"]
+
+[resource]
+script = ExtResource("1_body")
+colour = Color(0.97, 0.5, 0.1, 1)
+belly_colour = Color(0.99, 0.82, 0.55, 1)
+belly_line = -0.4
+fin_colour = Color(0.99, 0.62, 0.2, 1)
+fin_rim = Color(0.95, 0.45, 0.1, 1)
+lip_colour = Color(1, 0.65, 0.45, 1)
+tail_fin = Vector2(1.1, 0.8)
+fork = 0.4
+dorsal = Vector2(0.42, 0.7)
+dorsal_sweep = 25.0
+dorsal_at = -0.2
+pectoral = Vector2(0.4, 0.22)

@@ -90,8 +90,10 @@ func _shoot(kind: PreySpecies, pose: String) -> Image:
 		"walking":
 			view.held = CreatureMotion.Pose.WALKING
 		"resting":
+			# Perched on its feet — or, for something that swims, hanging in the water.
 			prey.velocity = Vector3.ZERO
-			view.held = CreatureMotion.Pose.WALKING
+			view.held = CreatureMotion.Pose.FLYING if StandIn.swims(kind) \
+				else CreatureMotion.Pose.WALKING
 		"caught":
 			prey.velocity = Vector3.ZERO
 			view.held = CreatureMotion.Pose.STRUGGLING

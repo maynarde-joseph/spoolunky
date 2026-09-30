@@ -374,7 +374,13 @@ them on a stand-in. So far:
   back and a big black nose. It pants with its tongue out and wags as it trots;
 * the **parrot**, the bat's body in feathers: a scarlet macaw, red, with yellow
   coverts over blue flight feathers, a bare white face and a hooked beak. On the
-  ground it stands up straight on its perch and folds its wings down its sides.
+  ground it stands up straight on its perch and folds its wings down its sides;
+* the **fish**, the first `FishBody` — anything that swims with its tail: a
+  goldfish, with goggling eyes and pouting lips that gulp. It swims in a wave
+  that runs down it from nose to tail; out of water it lies on its side and
+  gasps, and flops when it tries to go anywhere; wrapped, it is bent double.
+  Swimming is flying, as far as a creature is concerned: it keeps itself up in
+  water the way a fly does in air, so a swimmer's species will say `flying`.
 
 ## Leaving a web and coming back
 
