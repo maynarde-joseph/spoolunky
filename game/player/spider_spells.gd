@@ -363,7 +363,7 @@ func _spit(spell: SpiderSpell, wound: float) -> Dictionary:
 	glob.name = "VenomGlob"
 	glob.catch_radius = spell.size_at(wound) * body_height()
 	glob.colour = spell.colour
-	glob.glow = 1.6
+	glob.glow = 0.8
 	glob.glows_own = true
 	glob.limit_to(cast_reach())
 	glob.landed.connect(_on_glob_landed.bind(spell, spell.duration_at(wound), venom_strength()))
@@ -517,7 +517,9 @@ func _update_held() -> void:
 	_held.scale = Vector3.ONE * maxf(wide, 0.005)
 	_held_material.albedo_color = spell.colour
 	_held_material.emission = spell.colour
-	_held_material.emission_energy_multiplier = lerpf(0.6, 2.4, charge)
+	# Lit from inside, but not so bright that its colour washes out to white:
+	# the colour is how you tell a glob of venom from a ball of silk.
+	_held_material.emission_energy_multiplier = lerpf(0.25, 0.9, charge)
 
 
 ## A ring where an area spell will land, as wide as it will be, while it winds
