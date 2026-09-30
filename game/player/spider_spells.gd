@@ -334,6 +334,8 @@ func _cast_form(spell: SpiderSpell, wound: float) -> Dictionary:
 	match spell.form:
 		SpiderSpell.Form.VENOM:
 			return _spit(spell, wound)
+		SpiderSpell.Form.SPIRAL:
+			return _whirl(spell, wound)
 	push_warning("%s has a form nothing casts yet" % spell.display_name)
 	return {"cast": false}
 
@@ -368,6 +370,18 @@ func _spit(spell: SpiderSpell, wound: float) -> Dictionary:
 	return {"cast": true, "at": from + heading * cast_reach()}
 
 
+## A whirl of water on the floor under where you point. See [WaterSpiral].
+func _whirl(spell: SpiderSpell, wound: float) -> Dictionary:
+	var target := area_target(spell, wound)
+	var at: Vector3 = target.get("point", _spider.global_position)
+	var eats := _traits != null and _traits.acid_water()
+	var whirl := WaterSpiral.summon(_host(), at, spell.size_at(wound) * body_height(),
+		spell.duration_at(wound), eats, venom_strength(), spell.colour)
+	if whirl == null:
+		return {"cast": false}
+	return {"cast": true, "at": at}
+
+
 ## How hard a dose works: fanged, with fangs.
 func venom_strength() -> float:
 	return Prey.FANG_VENOM if _traits != null and _traits.has_fangs() else 1.0
@@ -376,6 +390,13 @@ func venom_strength() -> float:
 func _on_glob_landed(at: Vector3, _normal: Vector3, struck: Node3D, _heading: Vector3,
 		spell: SpiderSpell, dose: float, strength: float) -> void:
 	SpellFlash.burst(_host(), at, spell.colour, body_height() * 0.5)
+	# Into water, it goes into all of it: everything a whirl holds is dosed for as
+	# long as it turns.
+	for node in get_tree().get_nodes_in_group(WaterSpiral.GROUP):
+		var whirl := node as WaterSpiral
+		if whirl != null and whirl.spinning() and whirl.holds(at):
+			whirl.poison(strength)
+			notice.emit("Venom in the water — everything it holds is dosed")
 	var prey := struck as Prey
 	if prey == null or not is_instance_valid(prey):
 		return
@@ -390,15 +411,18 @@ func _on_glob_landed(at: Vector3, _normal: Vector3, struck: Node3D, _heading: Ve
 ## Where the cross puts a spell: on the creature it is over if it is over one —
 ## the same pick the web makes — else where it meets the world, else as far as
 ## silk reaches. A dictionary of the point, the surface's normal and the creature.
-func aim_target() -> Dictionary:
+##
+## [param mask] is what the cross can stop on. Silk by default, because a web is
+## something to aim at; a whirl looks straight through it to the floor.
+func aim_target(mask := GameLayers.WORLD | GameLayers.WEB_WALK) -> Dictionary:
 	var from := _view.aim_origin()
 	var forward := _view.aim_forward()
 	var span := cast_reach()
 	var quarry := _builder.shot_target() if _builder != null else null
 	if quarry != null:
 		return {"point": quarry.global_position, "normal": Vector3.UP, "prey": quarry}
-	var query := PhysicsRayQueryParameters3D.create(from, from + forward * span,
-		GameLayers.WORLD | GameLayers.WEB_WALK, exclusions())
+	var query := PhysicsRayQueryParameters3D.create(from, from + forward * span, mask,
+		exclusions())
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty():
 		return {"point": hit.get("position", from), "normal": hit.get("normal", Vector3.UP),
@@ -480,10 +504,31 @@ func _update_marker() -> void:
 	_marker_material.albedo_color = Color(spell.colour.r, spell.colour.g, spell.colour.b, 0.75)
 
 
-## Where an area spell lands, and which way is up there. Each area form answers
-## this for itself; the plain answer is the cross's.
-func area_target(_spell: SpiderSpell) -> Dictionary:
-	return aim_target()
+## Where an area spell lands, and which way is up there, wound up to
+## [param wound] — or to however far the wind-up has got, if not given.
+##
+## A whirl turns on the floor under where you point, as long as that floor is near
+## enough for it to reach back up to the point; aimed at a wall, it turns in front
+## of the wall rather than in it; over a drop, it turns in the air where you
+## pointed.
+func area_target(spell: SpiderSpell, wound := -1.0) -> Dictionary:
+	if spell == null or spell.form != SpiderSpell.Form.SPIRAL:
+		return aim_target()
+	var target := aim_target(GameLayers.WORLD)
+	var radius := spell.size_at(charge if wound < 0.0 else wound) * body_height()
+	var point: Vector3 = target.get("point", Vector3.ZERO)
+	var normal: Vector3 = target.get("normal", Vector3.UP)
+	if target.get("prey") == null and normal.y < 0.5:
+		point += normal * radius
+	var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * body_height() * 0.1,
+		point + Vector3.DOWN * radius * WaterSpiral.REACH_UP, GameLayers.WORLD, exclusions())
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		normal = Vector3.UP
+	else:
+		point = hit.get("position", point)
+		normal = hit.get("normal", Vector3.UP)
+	return {"point": point, "normal": normal, "prey": target.get("prey")}
 
 
 func is_area(spell: SpiderSpell) -> bool:

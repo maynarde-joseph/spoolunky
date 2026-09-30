@@ -210,6 +210,16 @@ var _hold_offset := Vector3.ZERO
 ## drip that binds the creature from the inside while it runs.
 var venom := 0.0
 var venom_strength := 1.0
+
+## Seconds it stays wet. Something wet carries a charge, and wet wings do not
+## lift. See [method soak].
+var wet := 0.0
+
+## What a current is carrying it at this frame, and whether one is. See
+## [method sweep].
+var _current := Vector3.ZERO
+var _current_fresh := false
+
 var _struggle := 0.0
 var _fight_left := 0.0
 var _snap_timer := 0.0
@@ -318,6 +328,14 @@ func _physics_process(delta: float) -> void:
 	if bound > 0.0 and not is_stuck() and _state != State.BUNDLED:
 		bound = maxf(0.0, bound - BIND_SHRUG * delta)
 		_show_binding()
+	if wet > 0.0:
+		wet = maxf(0.0, wet - delta)
+
+	# Carried by something stronger than it: it goes where it is taken, not where
+	# it was going.
+	if is_loose() and _current_fresh:
+		_drift(delta)
+		return
 
 	match _state:
 		State.BUNDLED:
@@ -475,6 +493,50 @@ func poison(seconds: float, strength := 1.0) -> bool:
 ## Whether venom is still working through it.
 func is_poisoned() -> bool:
 	return venom > 0.0
+
+
+## Soaked, for [param seconds] once it is out of whatever soaked it. Something wet
+## carries a charge to whatever else is wet near it, and wet wings do not lift: a
+## flier comes down and cannot climb until it has dried.
+func soak(seconds: float) -> void:
+	if eaten or seconds <= 0.0:
+		return
+	wet = maxf(wet, seconds)
+
+
+func is_wet() -> bool:
+	return wet > 0.0
+
+
+## On its own feet or wings: not caught, not wrapped, not a bundle.
+func is_loose() -> bool:
+	return not eaten and (_state == State.WANDER or _state == State.HUNTING
+		or _state == State.FLEEING)
+
+
+## Carried this frame at [param velocity] by something stronger than it — a whirl
+## of water. It does not steer while it is carried; it goes where it is taken.
+## Asked for again every frame by whatever is doing the carrying, and over the
+## moment that stops.
+func sweep(velocity: Vector3) -> void:
+	if not is_loose():
+		return
+	_current = velocity
+	_current_fresh = true
+
+
+## Being carried. Whatever has a line on it still pulls, the same as when it is
+## steering itself.
+func _drift(delta: float) -> void:
+	var pull := _tow_pull
+	_tow_pull = Vector3.ZERO
+	velocity = velocity.lerp(_current, clampf(8.0 * delta, 0.0, 1.0)) + pull
+	_current_fresh = false
+	move_and_slide()
+	var ceiling := _water_ceiling()
+	if global_position.y > ceiling:
+		global_position.y = ceiling
+		velocity.y = minf(velocity.y, 0.0)
 
 
 ## Puts silk on it. Returns true if that was the hit that wrapped it.
@@ -833,6 +895,10 @@ func _steer(delta: float, speed: float) -> void:
 	# A swimmer's business is under the surface, whatever it is steering at: a lure on
 	# the bank, a spider on a boat. It follows along underneath instead.
 	_target.y = minf(_target.y, ceiling)
+	# Wet wings do not lift. Whatever it was making for, a wet flier makes for it
+	# lower down, and so comes down to the ground until it has dried.
+	if flying and not swims and is_wet():
+		_target.y = minf(_target.y, global_position.y - maxf(hit_radius(), 0.02))
 	var to_target := _target - global_position
 	var going := to_target.length() >= 0.001
 	if not going and pull.length_squared() < 0.000001:

@@ -100,6 +100,10 @@ const BRANCH_NAMES := ["Bulk", "Flight", "Venom"]
 ## is quicker.
 @export var cast_scale := 1.0
 
+## The spider's water eats what it holds: everything a Water Spiral has hold of is
+## dosed with venom, without a glob having to go in.
+@export var acid_water := false
+
 
 func branch_name() -> String:
 	return BRANCH_NAMES[clampi(branch, 0, BRANCH_NAMES.size() - 1)]
@@ -125,6 +129,8 @@ func effect_line() -> String:
 		parts.append("kill without a web")
 		parts.append("fanged venom")
 	_note(parts, "spell wait", cast_scale)
+	if acid_water:
+		parts.append("acid spiral")
 	return "  ".join(PackedStringArray(parts))
 
 

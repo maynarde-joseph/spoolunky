@@ -13,3 +13,4 @@ requires = PackedStringArray("paralytic")
 carried_by = PackedStringArray("fly", "moth", "cockroach", "rat", "fish", "octopus")
 chance = 0.08
 drain_scale = 1.5
+acid_water = true

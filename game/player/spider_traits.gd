@@ -311,6 +311,15 @@ func cast_scale() -> float:
 	return scale
 
 
+## Whether the spider's water eats what it holds. See
+## [member SpiderTrait.acid_water].
+func acid_water() -> bool:
+	for gift in tree:
+		if has(gift.id) and gift.acid_water:
+			return true
+	return false
+
+
 ## Whether a kill still needs a web behind it.
 func has_fangs() -> bool:
 	for gift in tree:
