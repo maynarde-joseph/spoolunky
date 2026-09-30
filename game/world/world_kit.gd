@@ -293,6 +293,47 @@ static func plate(on: Node3D, part_name: String, outline: PackedVector3Array,
 	return view
 
 
+## A level slab from [param lo] to [param hi] with [param holes] cut clean through
+## it, each a rectangle in (x, z): built as the fewest boxes that cover what is left,
+## row by row. The ground with the drains and the lake let into it. With no
+## [param paint] it is only something to collide with; not [param solid], only
+## something to see.
+static func slab(on: Node3D, part_name: String, lo: Vector3, hi: Vector3,
+		holes: Array[Rect2], paint := "", solid := true) -> void:
+	var xs: Array[float] = [lo.x, hi.x]
+	var zs: Array[float] = [lo.z, hi.z]
+	for hole in holes:
+		for x in [hole.position.x, hole.end.x]:
+			if x > lo.x and x < hi.x and not xs.has(x):
+				xs.append(x)
+		for z in [hole.position.y, hole.end.y]:
+			if z > lo.z and z < hi.z and not zs.has(z):
+				zs.append(z)
+	xs.sort()
+	zs.sort()
+	for j in zs.size() - 1:
+		var start := -1
+		for i in xs.size():
+			var filled := false
+			if i < xs.size() - 1:
+				filled = true
+				var middle := Vector2((xs[i] + xs[i + 1]) * 0.5, (zs[j] + zs[j + 1]) * 0.5)
+				for hole in holes:
+					if hole.has_point(middle):
+						filled = false
+						break
+			if filled and start < 0:
+				start = i
+			elif not filled and start >= 0:
+				var from := Vector3(xs[start], lo.y, zs[j])
+				var to := Vector3(xs[i], hi.y, zs[j + 1])
+				if not paint.is_empty():
+					block(on, part_name, from, to, paint, solid)
+				elif solid:
+					collider(on, part_name, to - from, Transform3D(Basis.IDENTITY, (from + to) * 0.5))
+				start = -1
+
+
 ## Something to collide with and nothing to see: the one flat slab under a floor of
 ## planks, so that walking across it is walking across one thing rather than
 ## catching on every seam.

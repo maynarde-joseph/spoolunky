@@ -45,7 +45,7 @@ const PAINTS := {
 	"concrete": {"colour": Color(0.7, 0.69, 0.66)},
 	"paving": {"colour": Color(0.68, 0.67, 0.64)},
 	# The ground, and what grows in it.
-	"grass": {"colour": Color(0.38, 0.58, 0.26)},
+	"grass": {"colour": Color(0.33, 0.5, 0.23)},
 	"path": {"colour": Color(0.76, 0.68, 0.52)},
 	"soil": {"colour": Color(0.36, 0.26, 0.18)},
 	"bark": {"colour": Color(0.4, 0.3, 0.22)},

@@ -164,7 +164,7 @@ static func _shelves() -> Node3D:
 ## vice on the front corner.
 static func _workbench() -> Node3D:
 	var it := WorldKit.body(null, "Workbench")
-	var length := 26.0
+	var length := 24.0
 	var depth := 8.6
 	WorldKit.block(it, "Top", Vector3(-length * 0.5, 11.2, -depth * 0.5),
 		Vector3(length * 0.5, 12.5, depth * 0.5), "wood_warm")

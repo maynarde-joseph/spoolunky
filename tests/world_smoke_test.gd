@@ -1,17 +1,32 @@
 extends TestSuite
 
-## Headless check on the greyboxed world.
+## Headless check on the world, and on the gym.
 ##
 ##     godot --headless --script res://tests/world_smoke_test.gd
 ##
-## A prototype's job is to be the right shape, so that is what is checked: the
-## zones exist and do not sit inside each other, every interior has a light,
-## the way down is open at every step, and each room is a plausible size for
-## the body it was built for. None of this looks at how it plays — that is what
+## A level's job is to be the right shape, so that is what is checked: the places
+## are all there, in order, none inside another and each a plausible size for the
+## body it was built for; every one indoors has a light; the gates between them
+## are shut until there is enough of the spider and give when there is; each
+## place is stocked with what lives there; and every prop it is furnished with
+## is something to stand on. None of this looks at how it plays — that is what
 ## opening it is for.
 
 const WORLD_PATH := "res://game/world/world.tscn"
 const TESTBED_PATH := "res://game/world/testbed.tscn"
+
+## The places, in the order the spider goes through them: what each is called, the
+## stretch of the tier table it is built for, and what lives there — empty for a
+## place stocked only with the insects that turn up anywhere.
+const PLACES := [
+	["The Shed", 0.25, 0.7, ""],
+]
+
+## The gates, smallest first: what each is called, the size it gives to, and the
+## trait that opens it as well.
+const GATES := [
+	["DrainLid", 0.7, "hollow_frame"],
+]
 
 
 func run_checks() -> void:
@@ -23,9 +38,11 @@ func run_checks() -> void:
 	if not check(spider != null, "the world has a spider in it"):
 		return
 
-	_test_zones()
+	_test_places()
 	_test_lights(world)
-	_test_thresholds()
+	_test_gates()
+	_test_the_stock(world)
+	_test_props()
 	await _test_the_spider_lands(spider)
 	_test_the_way_down(spider)
 	_test_the_other_key(world, spider)
@@ -94,25 +111,37 @@ func _test_the_testbed() -> void:
 		"the whole gym is %.0f by %.0f, which is the point of it" % [across.x, across.z])
 
 
-## Five places, none of them inside another. Overlapping bounds would make
-## "which zone am I in" a coin toss, and everything a zone is for hangs off it.
-func _test_zones() -> void:
-	var zones: Array[Zone] = []
-	for node in root.get_tree().get_nodes_in_group("zones"):
-		var zone := node as Zone
-		if zone != null:
-			zones.append(zone)
-	if not check(zones.size() == 5, "five zones (%d)" % zones.size()):
-		return
-
+## The places, in order, none of them inside another. Overlapping bounds would make
+## "which place am I in" a coin toss, and everything a place is for hangs off it.
+func _test_places() -> void:
+	var zones := _zones()
 	var names: Array[String] = []
 	for zone in zones:
 		names.append(zone.display_name)
 	note(", ".join(names))
+	if not check(zones.size() == PLACES.size(),
+			"the places are all here, and nothing else (%d of %d)" % [zones.size(), PLACES.size()]):
+		return
 
-	for zone in zones:
+	for i in PLACES.size():
+		var place: Array = PLACES[i]
+		var zone := _zone_named(place[0])
+		if not check(zone != null, "%s is there" % place[0]):
+			continue
 		check(zone.bounds.get_volume() > 0.0,
 			"%s has somewhere to be (%.0f m3)" % [zone.display_name, zone.bounds.get_volume()])
+		check(is_equal_approx(zone.built_for.x, place[1]) and is_equal_approx(zone.built_for.y,
+			place[2]), "and is built for %.2f to %.2f" % [zone.built_for.x, zone.built_for.y])
+		# Scale is the whole point, so it gets asserted rather than eyeballed: a room
+		# should be a room, not a county.
+		var across := zone.body_lengths_across()
+		check(across > 20.0 and across < 400.0,
+			"%s is %d body lengths across" % [zone.display_name, roundi(across)])
+		# One place picks up where the last left off, so there is always somewhere
+		# built for the size you are.
+		if i > 0:
+			check(is_equal_approx(PLACES[i - 1][2], place[1]),
+				"and it starts where %s leaves off" % PLACES[i - 1][0])
 
 	var overlaps := 0
 	for i in zones.size():
@@ -122,61 +151,134 @@ func _test_zones() -> void:
 				note("%s overlaps %s" % [zones[i].display_name, zones[j].display_name])
 	check(overlaps == 0, "and none of them are inside each other (%d)" % overlaps)
 
-	# Scale is the whole point of the prototype, so it gets asserted rather
-	# than eyeballed: a room should be a room, not a county.
-	for zone in zones:
-		var across := zone.body_lengths_across()
-		check(across > 20.0 and across < 400.0,
-			"%s is %d body lengths across" % [zone.display_name, roundi(across)])
 
-
-## Pure white needs a light or it is a silhouette. Every interior gets one.
+## Indoors is lit by its own lamps, and outdoors by the one sun. Every light casts,
+## because a shape reads by its shadow.
 func _test_lights(world: Node) -> void:
-	var lights := _lights_under(world)
-	check(lights >= 5, "the world is lit (%d sources)" % lights)
+	var lights := 0
 	var shadowed := 0
+	var suns := 0
 	for node in all_under(world):
 		var light := node as Light3D
-		if light != null and light.shadow_enabled:
+		if light == null:
+			continue
+		lights += 1
+		if light.shadow_enabled:
 			shadowed += 1
-	check(shadowed == lights, "and every one of them casts (%d of %d)" % [shadowed, lights])
+		if light is DirectionalLight3D:
+			suns += 1
+	check(shadowed == lights, "every light casts (%d of %d)" % [shadowed, lights])
+	check(suns == 1, "with one sun for the outdoors (%d)" % suns)
+	for name in ["The Shed"]:
+		var zone := _zone_named(name)
+		if zone == null:
+			continue
+		var inside := 0
+		for node in all_under(world):
+			var lamp := node as OmniLight3D
+			if lamp != null and zone.bounds.grow(1.0).has_point(lamp.global_position):
+				inside += 1
+		check(inside > 0, "%s has a lamp of its own (%d)" % [name, inside])
 
-	var sun := 0
-	for node in all_under(world):
-		if node is DirectionalLight3D:
-			sun += 1
-	check(sun == 1, "with one sun for the outdoors (%d)" % sun)
 
-
-## Three ways down, each shut until there is more of the spider. The sizes are
-## the tier table: a House Spider, then a Huntsman, then a Gutter Spider.
-func _test_thresholds() -> void:
+## The gates, each shut until there is more of the spider, each with a second key,
+## and each wanting more than the last. The sizes are the tier table's.
+func _test_gates() -> void:
 	var gates := _thresholds()
-	if not check(gates.size() == 3, "three ways on (%d)" % gates.size()):
+	if not check(gates.size() == GATES.size(),
+			"the gates are all here (%d of %d)" % [gates.size(), GATES.size()]):
 		return
-	var opens: Array[float] = []
-	for gate in gates:
-		opens.append(gate.opens_at)
-		check(not gate.open, "%s starts shut" % gate.name)
-		check(gate.opens_for != "",
-			"and has a second key on it — %s opens %s" % [gate.opens_for, gate.name])
-	opens.sort()
-	check(opens[0] < opens[1] and opens[1] < opens[2],
-		"and they want you bigger each time (%.1f, %.1f, %.1f)"
-		% [opens[0], opens[1], opens[2]])
+	gates.sort_custom(func(a: Threshold, b: Threshold) -> bool: return a.opens_at < b.opens_at)
+	for i in GATES.size():
+		var gate := gates[i]
+		var want: Array = GATES[i]
+		check(String(gate.name) == want[0] and is_equal_approx(gate.opens_at, want[1]),
+			"%s gives at %.1f (%s at %.1f)" % [want[0], want[1], gate.name, gate.opens_at])
+		check(not gate.open, "and starts shut")
+		check(gate.opens_for == want[2],
+			"and %s opens it too (%s)" % [want[2], gate.opens_for])
 
 
-## The spider is put in the attic, and the attic has to hold it up.
+## Each place is stocked with what lives there and the insects that turn up
+## anywhere — and everything that lives there is stocked somewhere in it.
+func _test_the_stock(world: Node) -> void:
+	for place in PLACES:
+		var zone := _zone_named(place[0])
+		if zone == null:
+			continue
+		var habitat: String = place[3]
+		var stocked := {}
+		var strays: Array[String] = []
+		var spawners := 0
+		for node in all_under(zone):
+			var spawner := node as PreySpawner
+			if spawner == null:
+				continue
+			spawners += 1
+			for kind in spawner.stock:
+				stocked[kind.id] = true
+				if kind.habitat != "" and kind.habitat != habitat:
+					strays.append(kind.id)
+		check(spawners > 0, "%s has creatures in it (%d spawners, %s)"
+			% [place[0], spawners, ", ".join(stocked.keys())])
+		check(strays.is_empty(), "and none of them live somewhere else (%s)"
+			% (", ".join(strays) if not strays.is_empty() else "none"))
+		if habitat.is_empty():
+			continue
+		var missing: Array[String] = []
+		for kind in PreyLibrary.living_in(habitat):
+			if not stocked.has(kind.id):
+				missing.append(kind.id)
+		check(missing.is_empty(), "and everything that lives in the %s is there (%s missing)"
+			% [habitat, ", ".join(missing) if not missing.is_empty() else "none"])
+	var all_spawners := 0
+	for node in all_under(world):
+		if node is PreySpawner:
+			all_spawners += 1
+	check(all_spawners > 0, "the world is stocked (%d spawners)" % all_spawners)
+
+
+## Every prop has its scene, and every one is something to stand on: a body on the
+## world layer with a shape to it.
+func _test_props() -> void:
+	var baked := 0
+	var solid := 0
+	var bad: Array[String] = []
+	for id in Props.ALL:
+		var scene := load(Props.path_of(id)) as PackedScene
+		if scene == null:
+			bad.append(id)
+			continue
+		baked += 1
+		var made := scene.instantiate()
+		var body := made as CollisionObject3D
+		var shapes := 0
+		for node in all_under(made):
+			if node is CollisionShape3D:
+				shapes += 1
+		if body != null and body.collision_layer & GameLayers.WORLD != 0 and shapes > 0:
+			solid += 1
+		else:
+			bad.append(id)
+		made.free()
+	check(baked == Props.ALL.size(), "every prop has a scene (%d of %d)" % [baked, Props.ALL.size()])
+	check(solid == Props.ALL.size(), "and every one is something to stand on (%s)"
+		% (", ".join(bad) if not bad.is_empty() else "all of them"))
+
+
+## The spider is put in the shed, and the shed has to hold it up.
 func _test_the_spider_lands(spider: SpiderPlayer) -> void:
 	var start := spider.global_position
+	check(start.distance_to(SpiderWorld.SPAWN) < 0.5,
+		"the spider is put where a new one starts (%.1fm off)" % start.distance_to(SpiderWorld.SPAWN))
 	await run_frames(240)
 	var here := Zone.at(root.get_tree(), spider.global_position)
-	check(here != null and here.display_name == "The Attic",
-		"the spider starts in the attic and stays there (%s)"
+	check(here != null and here.display_name == "The Shed",
+		"it starts in the shed and stays there (%s)"
 		% (here.display_name if here != null else "nowhere"))
-	check(spider.global_position.y > SpiderWorld.ATTIC_LO.y - 2.0,
-		"standing on its floor rather than through it (%.1f, floor at %.1f)"
-		% [spider.global_position.y, SpiderWorld.ATTIC_LO.y])
+	check(spider.global_position.y > SpiderWorld.SHED_LO.y - 0.5,
+		"standing on its floor rather than through it (%.2f, floor at %.1f)"
+		% [spider.global_position.y, SpiderWorld.SHED_LO.y])
 	check(spider.global_position.distance_to(start) < 30.0,
 		"and near where it was put (%.1fm)" % spider.global_position.distance_to(start))
 
@@ -220,6 +322,22 @@ func _test_the_other_key(world: Node, spider: SpiderPlayer) -> void:
 
 # --- helpers -------------------------------------------------------------
 
+func _zones() -> Array[Zone]:
+	var zones: Array[Zone] = []
+	for node in root.get_tree().get_nodes_in_group("zones"):
+		var zone := node as Zone
+		if zone != null:
+			zones.append(zone)
+	return zones
+
+
+func _zone_named(zone_name: String) -> Zone:
+	for zone in _zones():
+		if zone.display_name == zone_name:
+			return zone
+	return null
+
+
 func _thresholds() -> Array[Threshold]:
 	var found: Array[Threshold] = []
 	for node in all_under(current_scene):
@@ -227,14 +345,6 @@ func _thresholds() -> Array[Threshold]:
 		if gate != null:
 			found.append(gate)
 	return found
-
-
-func _lights_under(node: Node) -> int:
-	var total := 0
-	for child in all_under(node):
-		if child is Light3D:
-			total += 1
-	return total
 
 
 ## The dummies station: three creatures on posts with their numbers over their
