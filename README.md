@@ -373,8 +373,8 @@ them on a stand-in. So far:
 * the **dog**, a third: cream, with floppy brown ears and a black nose. It pants
   and wags as it trots;
 * the **parrot**, the bat's body in feathers: a scarlet macaw, red, with yellow
-  coverts over blue flight feathers, a bare white face and a hooked beak. On the
-  ground it stands up straight on its perch and folds its wings down its sides;
+  coverts over blue flight feathers and a pale hooked beak. On the ground it
+  stands up straight on its perch and folds its wings down its sides;
 * the **fish**, the first `FishBody` — anything that swims with its tail: a
   goldfish, with goggling eyes and pouting lips that gulp. It swims in a wave
   that runs down it from nose to tail; out of water it lies on its side and
