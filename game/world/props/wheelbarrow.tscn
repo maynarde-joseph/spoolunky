@@ -1,0 +1,105 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/rubber.tres" id="1_bjnbu"]
+[ext_resource type="Material" path="res://game/world/materials/red.tres" id="2_1n7ib"]
+[ext_resource type="Material" path="res://game/world/materials/iron.tres" id="3_0utpq"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tk36h"]
+top_radius = 2.0
+bottom_radius = 2.0
+height = 0.9
+radial_segments = 20
+rings = 1
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_5upqj"]
+height = 0.9
+radius = 2.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_1wwsf"]
+top_radius = 4.6
+bottom_radius = 3.2
+height = 3.2
+radial_segments = 20
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_pnxcy"]
+points = PackedVector3Array(3.2, -1.6, 0, 2.7712812, -1.6, 1.6, 1.6, -1.6, 2.7712812, 1.9594348e-16, -1.6, 3.2, -1.6, -1.6, 2.7712812, -2.7712812, -1.6, 1.6, -3.2, -1.6, 3.9188697e-16, -2.7712812, -1.6, -1.6, -1.6, -1.6, -2.7712812, -5.878305e-16, -1.6, -3.2, 1.6, -1.6, -2.7712812, 2.7712812, -1.6, -1.6, 4.6, 1.6, 0, 3.983717, 1.6, 2.3, 2.3, 1.6, 3.983717, 2.8166876e-16, 1.6, 4.6, -2.3, 1.6, 3.983717, -3.983717, 1.6, 2.3, -4.6, 1.6, 5.633375e-16, -3.983717, 1.6, -2.3, -2.3, 1.6, -3.983717, -8.450063e-16, 1.6, -4.6, 2.3, 1.6, -3.983717, 3.983717, 1.6, -2.3)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_u875w"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 13.649907
+radial_segments = 12
+rings = 1
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_fl0rs"]
+height = 13.649907
+radius = 0.3
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_uy8f5"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 3.847077
+radial_segments = 12
+rings = 1
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_1j536"]
+height = 3.847077
+radius = 0.3
+
+[node name="Wheelbarrow" type="StaticBody3D" unique_id=1244908345]
+collision_mask = 0
+
+[node name="Wheel" type="MeshInstance3D" parent="." unique_id=1179168311]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 2, -6.5)
+material_override = ExtResource("1_bjnbu")
+mesh = SubResource("CylinderMesh_tk36h")
+
+[node name="WheelShape" type="CollisionShape3D" parent="." unique_id=1791952755]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 2, -6.5)
+shape = SubResource("CylinderShape3D_5upqj")
+
+[node name="Tray" type="MeshInstance3D" parent="." unique_id=505938128]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.4, -1)
+material_override = ExtResource("2_1n7ib")
+mesh = SubResource("CylinderMesh_1wwsf")
+
+[node name="TrayShape" type="CollisionShape3D" parent="." unique_id=1795042087]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.4, -1)
+shape = SubResource("ConvexPolygonShape3D_pnxcy")
+
+[node name="Handle" type="MeshInstance3D" parent="." unique_id=1389694605]
+transform = Transform3D(0.99722695, -0.07326057, -0.013084911, 0, 0.17582537, -0.98442143, 0.07441992, 0.98169166, 0.1753378, -1.5, 3.8, 0.29999995)
+material_override = ExtResource("3_0utpq")
+mesh = SubResource("CylinderMesh_u875w")
+
+[node name="HandleShape" type="CollisionShape3D" parent="." unique_id=1120422685]
+transform = Transform3D(0.99722695, -0.07326057, -0.013084911, 0, 0.17582537, -0.98442143, 0.07441992, 0.98169166, 0.1753378, -1.5, 3.8, 0.29999995)
+shape = SubResource("CylinderShape3D_fl0rs")
+
+[node name="Leg" type="MeshInstance3D" parent="." unique_id=1020553587]
+transform = Transform3D(1, 0, 0, 0, -0.9877629, -0.15596262, 0, 0.1559626, -0.987763, -2, 1.9, 2.1)
+material_override = ExtResource("3_0utpq")
+mesh = SubResource("CylinderMesh_uy8f5")
+
+[node name="LegShape" type="CollisionShape3D" parent="." unique_id=252208420]
+transform = Transform3D(1, 0, 0, 0, -0.9877629, -0.15596262, 0, 0.1559626, -0.987763, -2, 1.9, 2.1)
+shape = SubResource("CylinderShape3D_1j536")
+
+[node name="Handle2" type="MeshInstance3D" parent="." unique_id=1302977862]
+transform = Transform3D(0.99722695, 0.07326057, 0.013084911, 0, 0.17582537, -0.98442143, -0.07441992, 0.98169166, 0.1753378, 1.5, 3.8, 0.29999995)
+material_override = ExtResource("3_0utpq")
+mesh = SubResource("CylinderMesh_u875w")
+
+[node name="HandleShape2" type="CollisionShape3D" parent="." unique_id=1320655850]
+transform = Transform3D(0.99722695, 0.07326057, 0.013084911, 0, 0.17582537, -0.98442143, -0.07441992, 0.98169166, 0.1753378, 1.5, 3.8, 0.29999995)
+shape = SubResource("CylinderShape3D_fl0rs")
+
+[node name="Leg2" type="MeshInstance3D" parent="." unique_id=2057287835]
+transform = Transform3D(1, 0, 0, 0, -0.9877629, -0.15596262, 0, 0.1559626, -0.987763, 2, 1.9, 2.1)
+material_override = ExtResource("3_0utpq")
+mesh = SubResource("CylinderMesh_uy8f5")
+
+[node name="LegShape2" type="CollisionShape3D" parent="." unique_id=844522119]
+transform = Transform3D(1, 0, 0, 0, -0.9877629, -0.15596262, 0, 0.1559626, -0.987763, 2, 1.9, 2.1)
+shape = SubResource("CylinderShape3D_1j536")

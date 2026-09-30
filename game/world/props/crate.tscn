@@ -1,0 +1,112 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/wood_dark.tres" id="1_ce3x8"]
+[ext_resource type="Material" path="res://game/world/materials/wood.tres" id="2_acb33"]
+[ext_resource type="Material" path="res://game/world/materials/wood_warm.tres" id="3_4cf52"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_dlso4"]
+size = Vector3(6, 4, 4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_cng21"]
+size = Vector3(5.6, 3.7, 3.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ji4ig"]
+size = Vector3(0.5, 4, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ndgno"]
+size = Vector3(6, 0.8, 0.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_gaybg"]
+size = Vector3(0.2, 0.8, 4)
+
+[node name="Crate" type="StaticBody3D" unique_id=853848511]
+collision_mask = 0
+
+[node name="Solid" type="CollisionShape3D" parent="." unique_id=1904131576]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+shape = SubResource("BoxShape3D_dlso4")
+
+[node name="Inside" type="MeshInstance3D" parent="." unique_id=778320615]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9499999, 0)
+material_override = ExtResource("1_ce3x8")
+mesh = SubResource("BoxMesh_cng21")
+
+[node name="Post" type="MeshInstance3D" parent="." unique_id=1300501491]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.75, 2, -1.75)
+material_override = ExtResource("2_acb33")
+mesh = SubResource("BoxMesh_ji4ig")
+
+[node name="Post2" type="MeshInstance3D" parent="." unique_id=231907788]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 2, -1.75)
+material_override = ExtResource("2_acb33")
+mesh = SubResource("BoxMesh_ji4ig")
+
+[node name="Post3" type="MeshInstance3D" parent="." unique_id=844059823]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.75, 2, 1.75)
+material_override = ExtResource("2_acb33")
+mesh = SubResource("BoxMesh_ji4ig")
+
+[node name="Post4" type="MeshInstance3D" parent="." unique_id=1356270419]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 2, 1.75)
+material_override = ExtResource("2_acb33")
+mesh = SubResource("BoxMesh_ji4ig")
+
+[node name="Slat" type="MeshInstance3D" parent="." unique_id=1532065564]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, -1.9)
+material_override = ExtResource("3_4cf52")
+mesh = SubResource("BoxMesh_ndgno")
+
+[node name="Slat2" type="MeshInstance3D" parent="." unique_id=1482630116]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 1.9)
+material_override = ExtResource("3_4cf52")
+mesh = SubResource("BoxMesh_ndgno")
+
+[node name="Slat3" type="MeshInstance3D" parent="." unique_id=1305857521]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9, 0.6, 0)
+material_override = ExtResource("3_4cf52")
+mesh = SubResource("BoxMesh_gaybg")
+
+[node name="Slat4" type="MeshInstance3D" parent="." unique_id=574470886]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9, 0.6, 0)
+material_override = ExtResource("3_4cf52")
+mesh = SubResource("BoxMesh_gaybg")
+
+[node name="Slat5" type="MeshInstance3D" parent="." unique_id=1692618459]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.95, -1.9)
+material_override = ExtResource("3_4cf52")
+mesh = SubResource("BoxMesh_ndgno")
+
+[node name="Slat6" type="MeshInstance3D" parent="." unique_id=1823978030]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.95, 1.9)
+material_override = ExtResource("3_4cf52")
+mesh = SubResource("BoxMesh_ndgno")
+
+[node name="Slat7" type="MeshInstance3D" parent="." unique_id=645874832]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9, 1.95, 0)
+material_override = ExtResource("3_4cf52")
+mesh = SubResource("BoxMesh_gaybg")
+
+[node name="Slat8" type="MeshInstance3D" parent="." unique_id=1445348581]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9, 1.95, 0)
+material_override = ExtResource("3_4cf52")
+mesh = SubResource("BoxMesh_gaybg")
+
+[node name="Slat9" type="MeshInstance3D" parent="." unique_id=258954204]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.3, -1.9)
+material_override = ExtResource("3_4cf52")
+mesh = SubResource("BoxMesh_ndgno")
+
+[node name="Slat10" type="MeshInstance3D" parent="." unique_id=601817847]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.3, 1.9)
+material_override = ExtResource("3_4cf52")
+mesh = SubResource("BoxMesh_ndgno")
+
+[node name="Slat11" type="MeshInstance3D" parent="." unique_id=597858521]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9, 3.3, 0)
+material_override = ExtResource("3_4cf52")
+mesh = SubResource("BoxMesh_gaybg")
+
+[node name="Slat12" type="MeshInstance3D" parent="." unique_id=647132407]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9, 3.3, 0)
+material_override = ExtResource("3_4cf52")
+mesh = SubResource("BoxMesh_gaybg")

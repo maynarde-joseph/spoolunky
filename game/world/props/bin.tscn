@@ -1,0 +1,63 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/green.tres" id="1_lmb32"]
+[ext_resource type="Material" path="res://game/world/materials/iron.tres" id="2_xrgdv"]
+[ext_resource type="Material" path="res://game/world/materials/black.tres" id="3_u1vhx"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_c7gjr"]
+top_radius = 2.8
+bottom_radius = 2.8
+height = 12.0
+radial_segments = 20
+rings = 1
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_g8w84"]
+height = 12.0
+radius = 2.8
+
+[sub_resource type="TorusMesh" id="TorusMesh_txrdw"]
+inner_radius = 2.55
+outer_radius = 3.05
+rings = 28
+ring_segments = 10
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_a1hp6"]
+top_radius = 2.86
+bottom_radius = 2.86
+height = 1.2
+radial_segments = 20
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_nu13y"]
+top_radius = 2.5
+bottom_radius = 2.5
+height = 0.2
+radial_segments = 20
+rings = 1
+
+[node name="Bin" type="StaticBody3D" unique_id=494394562]
+collision_mask = 0
+
+[node name="Drum" type="MeshInstance3D" parent="." unique_id=1699941388]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 0)
+material_override = ExtResource("1_lmb32")
+mesh = SubResource("CylinderMesh_c7gjr")
+
+[node name="DrumShape" type="CollisionShape3D" parent="." unique_id=667123600]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 0)
+shape = SubResource("CylinderShape3D_g8w84")
+
+[node name="Rim" type="MeshInstance3D" parent="." unique_id=1892651882]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12, 0)
+material_override = ExtResource("2_xrgdv")
+mesh = SubResource("TorusMesh_txrdw")
+
+[node name="Band" type="MeshInstance3D" parent="." unique_id=1239818720]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9, 0)
+material_override = ExtResource("2_xrgdv")
+mesh = SubResource("CylinderMesh_a1hp6")
+
+[node name="Litter" type="MeshInstance3D" parent="." unique_id=932436767]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11, 0)
+material_override = ExtResource("3_u1vhx")
+mesh = SubResource("CylinderMesh_nu13y")

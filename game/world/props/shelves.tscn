@@ -1,0 +1,98 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/wood.tres" id="1_q0c0e"]
+[ext_resource type="Material" path="res://game/world/materials/wood_dark.tres" id="2_8ja1u"]
+[ext_resource type="Material" path="res://game/world/materials/wood_light.tres" id="3_nnabu"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_21o81"]
+size = Vector3(0.6000004, 25.5, 5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_nm6ib"]
+size = Vector3(0.6000004, 25.5, 5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_o7lhs"]
+size = Vector3(16.4, 25.5, 0.29999995)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_cf0wg"]
+size = Vector3(16.4, 25.5, 0.29999995)
+
+[sub_resource type="BoxMesh" id="BoxMesh_2serl"]
+size = Vector3(16.4, 0.5, 4.7)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_64m76"]
+size = Vector3(16.4, 0.5, 4.7)
+
+[node name="Shelves" type="StaticBody3D" unique_id=10189008]
+collision_mask = 0
+
+[node name="Side" type="MeshInstance3D" parent="." unique_id=615520493]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 12.75, 0)
+material_override = ExtResource("1_q0c0e")
+mesh = SubResource("BoxMesh_21o81")
+
+[node name="SideShape" type="CollisionShape3D" parent="." unique_id=769579961]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 12.75, 0)
+shape = SubResource("BoxShape3D_nm6ib")
+
+[node name="Side2" type="MeshInstance3D" parent="." unique_id=1201146818]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 12.75, 0)
+material_override = ExtResource("1_q0c0e")
+mesh = SubResource("BoxMesh_21o81")
+
+[node name="SideShape2" type="CollisionShape3D" parent="." unique_id=770880214]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 12.75, 0)
+shape = SubResource("BoxShape3D_nm6ib")
+
+[node name="Back" type="MeshInstance3D" parent="." unique_id=1415388018]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12.75, 2.35)
+material_override = ExtResource("2_8ja1u")
+mesh = SubResource("BoxMesh_o7lhs")
+
+[node name="BackShape" type="CollisionShape3D" parent="." unique_id=650402120]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12.75, 2.35)
+shape = SubResource("BoxShape3D_cf0wg")
+
+[node name="Board" type="MeshInstance3D" parent="." unique_id=1397534761]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35000002, -0.14999998)
+material_override = ExtResource("3_nnabu")
+mesh = SubResource("BoxMesh_2serl")
+
+[node name="BoardShape" type="CollisionShape3D" parent="." unique_id=1908492102]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35000002, -0.14999998)
+shape = SubResource("BoxShape3D_64m76")
+
+[node name="Board2" type="MeshInstance3D" parent="." unique_id=461566603]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.45, -0.14999998)
+material_override = ExtResource("3_nnabu")
+mesh = SubResource("BoxMesh_2serl")
+
+[node name="BoardShape2" type="CollisionShape3D" parent="." unique_id=1016943547]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.45, -0.14999998)
+shape = SubResource("BoxShape3D_64m76")
+
+[node name="Board3" type="MeshInstance3D" parent="." unique_id=940413844]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12.55, -0.14999998)
+material_override = ExtResource("3_nnabu")
+mesh = SubResource("BoxMesh_2serl")
+
+[node name="BoardShape3" type="CollisionShape3D" parent="." unique_id=827877284]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12.55, -0.14999998)
+shape = SubResource("BoxShape3D_64m76")
+
+[node name="Board4" type="MeshInstance3D" parent="." unique_id=1437551131]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 18.65, -0.14999998)
+material_override = ExtResource("3_nnabu")
+mesh = SubResource("BoxMesh_2serl")
+
+[node name="BoardShape4" type="CollisionShape3D" parent="." unique_id=64077580]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 18.65, -0.14999998)
+shape = SubResource("BoxShape3D_64m76")
+
+[node name="Board5" type="MeshInstance3D" parent="." unique_id=696665615]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 24.75, -0.14999998)
+material_override = ExtResource("3_nnabu")
+mesh = SubResource("BoxMesh_2serl")
+
+[node name="BoardShape5" type="CollisionShape3D" parent="." unique_id=851491113]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 24.75, -0.14999998)
+shape = SubResource("BoxShape3D_64m76")

@@ -1,0 +1,167 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/wood_warm.tres" id="1_hs4ow"]
+[ext_resource type="Material" path="res://game/world/materials/wood_dark.tres" id="2_ksfw1"]
+[ext_resource type="Material" path="res://game/world/materials/wood.tres" id="3_n6t21"]
+[ext_resource type="Material" path="res://game/world/materials/blue.tres" id="4_72xjt"]
+[ext_resource type="Material" path="res://game/world/materials/steel.tres" id="5_a5r64"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_5b4o3"]
+size = Vector3(26, 1.3000002, 8.6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mvgld"]
+size = Vector3(26, 1.3000002, 8.6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_qc6ov"]
+size = Vector3(1.2, 11.2, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_qqtai"]
+size = Vector3(1.2, 11.2, 1.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_pkvhe"]
+size = Vector3(25.2, 0.5999999, 7.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_etl2n"]
+size = Vector3(25.2, 0.5999999, 7.8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_idhpd"]
+size = Vector3(22.8, 1.3999996, 0.5999999)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_aji1q"]
+size = Vector3(22.8, 1.3999996, 0.5999999)
+
+[sub_resource type="BoxMesh" id="BoxMesh_64pnh"]
+size = Vector3(2.7999992, 1.8000002, 2.2000003)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mln4c"]
+size = Vector3(2.7999992, 1.8000002, 2.2000003)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ihnpt"]
+size = Vector3(2.7999992, 1.8000002, 0.8000002)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_j7mp6"]
+size = Vector3(2.7999992, 1.8000002, 0.8000002)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_t81qg"]
+top_radius = 0.2
+bottom_radius = 0.2
+height = 3.3999999
+radial_segments = 12
+rings = 1
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_ti3a4"]
+height = 3.3999999
+radius = 0.2
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_7egpw"]
+top_radius = 0.14
+bottom_radius = 0.14
+height = 3.0
+radial_segments = 12
+rings = 1
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_mkewm"]
+height = 3.0
+radius = 0.14
+
+[node name="Workbench" type="StaticBody3D" unique_id=590549503]
+collision_mask = 0
+
+[node name="Top" type="MeshInstance3D" parent="." unique_id=1449815200]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11.85, 0)
+material_override = ExtResource("1_hs4ow")
+mesh = SubResource("BoxMesh_5b4o3")
+
+[node name="TopShape" type="CollisionShape3D" parent="." unique_id=945506669]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11.85, 0)
+shape = SubResource("BoxShape3D_mvgld")
+
+[node name="Leg" type="MeshInstance3D" parent="." unique_id=266747272]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 5.6, -3.3)
+material_override = ExtResource("2_ksfw1")
+mesh = SubResource("BoxMesh_qc6ov")
+
+[node name="LegShape" type="CollisionShape3D" parent="." unique_id=1635711272]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 5.6, -3.3)
+shape = SubResource("BoxShape3D_qqtai")
+
+[node name="Leg2" type="MeshInstance3D" parent="." unique_id=1551015904]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 5.6, 3.3)
+material_override = ExtResource("2_ksfw1")
+mesh = SubResource("BoxMesh_qc6ov")
+
+[node name="LegShape2" type="CollisionShape3D" parent="." unique_id=77818428]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 5.6, 3.3)
+shape = SubResource("BoxShape3D_qqtai")
+
+[node name="Leg3" type="MeshInstance3D" parent="." unique_id=1159575727]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 5.6, -3.3)
+material_override = ExtResource("2_ksfw1")
+mesh = SubResource("BoxMesh_qc6ov")
+
+[node name="LegShape3" type="CollisionShape3D" parent="." unique_id=1716758540]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 5.6, -3.3)
+shape = SubResource("BoxShape3D_qqtai")
+
+[node name="Leg4" type="MeshInstance3D" parent="." unique_id=733476935]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 5.6, 3.3)
+material_override = ExtResource("2_ksfw1")
+mesh = SubResource("BoxMesh_qc6ov")
+
+[node name="LegShape4" type="CollisionShape3D" parent="." unique_id=2002261461]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 5.6, 3.3)
+shape = SubResource("BoxShape3D_qqtai")
+
+[node name="Shelf" type="MeshInstance3D" parent="." unique_id=662963553]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, 0)
+material_override = ExtResource("3_n6t21")
+mesh = SubResource("BoxMesh_pkvhe")
+
+[node name="ShelfShape" type="CollisionShape3D" parent="." unique_id=490849754]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, 0)
+shape = SubResource("BoxShape3D_etl2n")
+
+[node name="Rail" type="MeshInstance3D" parent="." unique_id=1776994060]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.7, 3.3)
+material_override = ExtResource("2_ksfw1")
+mesh = SubResource("BoxMesh_idhpd")
+
+[node name="RailShape" type="CollisionShape3D" parent="." unique_id=1283948793]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.7, 3.3)
+shape = SubResource("BoxShape3D_aji1q")
+
+[node name="Vice" type="MeshInstance3D" parent="." unique_id=1101425205]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 13.4, -3.0000002)
+material_override = ExtResource("4_72xjt")
+mesh = SubResource("BoxMesh_64pnh")
+
+[node name="ViceShape" type="CollisionShape3D" parent="." unique_id=267842041]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 13.4, -3.0000002)
+shape = SubResource("BoxShape3D_mln4c")
+
+[node name="Jaw" type="MeshInstance3D" parent="." unique_id=58880210]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 13.4, -4.9)
+material_override = ExtResource("4_72xjt")
+mesh = SubResource("BoxMesh_ihnpt")
+
+[node name="JawShape" type="CollisionShape3D" parent="." unique_id=1458152741]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 13.4, -4.9)
+shape = SubResource("BoxShape3D_j7mp6")
+
+[node name="Screw" type="MeshInstance3D" parent="." unique_id=1893558798]
+transform = Transform3D(-1, 0, 0, 0, 0, -1, 0, -1, 0, 10, 13.3, -5.2000003)
+material_override = ExtResource("5_a5r64")
+mesh = SubResource("CylinderMesh_t81qg")
+
+[node name="ScrewShape" type="CollisionShape3D" parent="." unique_id=774467807]
+transform = Transform3D(-1, 0, 0, 0, 0, -1, 0, -1, 0, 10, 13.3, -5.2000003)
+shape = SubResource("CylinderShape3D_ti3a4")
+
+[node name="Tommy" type="MeshInstance3D" parent="." unique_id=1241241592]
+transform = Transform3D(0, 1, 0, 0, 0, -1, -1, 0, 0, 10, 13.3, -6.8)
+material_override = ExtResource("5_a5r64")
+mesh = SubResource("CylinderMesh_7egpw")
+
+[node name="TommyShape" type="CollisionShape3D" parent="." unique_id=1422184238]
+transform = Transform3D(0, 1, 0, 0, 0, -1, -1, 0, 0, 10, 13.3, -6.8)
+shape = SubResource("CylinderShape3D_mkewm")

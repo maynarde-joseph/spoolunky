@@ -1,0 +1,109 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/wood_light.tres" id="1_menvv"]
+[ext_resource type="Material" path="res://game/world/materials/iron.tres" id="2_3pukr"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tryd8"]
+top_radius = 0.28
+bottom_radius = 0.28
+height = 20.8
+radial_segments = 12
+rings = 1
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_wypsg"]
+height = 20.8
+radius = 0.28
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ks0d0"]
+top_radius = 0.28
+bottom_radius = 0.28
+height = 5.6
+radial_segments = 12
+rings = 1
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_gej2g"]
+height = 5.6
+radius = 0.28
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_criqp"]
+top_radius = 0.07
+bottom_radius = 0.07
+height = 1.0124228
+radial_segments = 12
+rings = 1
+
+[node name="Rake" type="StaticBody3D" unique_id=390862659]
+collision_mask = 0
+
+[node name="Handle" type="MeshInstance3D" parent="." unique_id=239461914]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 11.6, 0)
+material_override = ExtResource("1_menvv")
+mesh = SubResource("CylinderMesh_tryd8")
+
+[node name="HandleShape" type="CollisionShape3D" parent="." unique_id=66950111]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 11.6, 0)
+shape = SubResource("CylinderShape3D_wypsg")
+
+[node name="Head" type="MeshInstance3D" parent="." unique_id=369174483]
+transform = Transform3D(0, 1, 0, 0, 0, -1, -1, 0, 0, 0, 1, 0)
+material_override = ExtResource("2_3pukr")
+mesh = SubResource("CylinderMesh_ks0d0")
+
+[node name="HeadShape" type="CollisionShape3D" parent="." unique_id=2105701633]
+transform = Transform3D(0, 1, 0, 0, 0, -1, -1, 0, 0, 0, 1, 0)
+shape = SubResource("CylinderShape3D_gej2g")
+
+[node name="Tine" type="MeshInstance3D" parent="." unique_id=173618108]
+transform = Transform3D(-1, 0, 0, 0, -0.93834317, -0.34570536, 0, -0.34570536, 0.93834317, -2.5, 0.525, -0.175)
+material_override = ExtResource("2_3pukr")
+mesh = SubResource("CylinderMesh_criqp")
+
+[node name="Tine2" type="MeshInstance3D" parent="." unique_id=760149837]
+transform = Transform3D(-1, 0, 0, 0, -0.93834317, -0.34570536, 0, -0.34570536, 0.93834317, -2, 0.525, -0.175)
+material_override = ExtResource("2_3pukr")
+mesh = SubResource("CylinderMesh_criqp")
+
+[node name="Tine3" type="MeshInstance3D" parent="." unique_id=1302776606]
+transform = Transform3D(-1, 0, 0, 0, -0.93834317, -0.34570536, 0, -0.34570536, 0.93834317, -1.5, 0.525, -0.175)
+material_override = ExtResource("2_3pukr")
+mesh = SubResource("CylinderMesh_criqp")
+
+[node name="Tine4" type="MeshInstance3D" parent="." unique_id=1887691110]
+transform = Transform3D(-1, 0, 0, 0, -0.93834317, -0.34570536, 0, -0.34570536, 0.93834317, -1, 0.525, -0.175)
+material_override = ExtResource("2_3pukr")
+mesh = SubResource("CylinderMesh_criqp")
+
+[node name="Tine5" type="MeshInstance3D" parent="." unique_id=775401235]
+transform = Transform3D(-1, 0, 0, 0, -0.93834317, -0.34570536, 0, -0.34570536, 0.93834317, -0.5, 0.525, -0.175)
+material_override = ExtResource("2_3pukr")
+mesh = SubResource("CylinderMesh_criqp")
+
+[node name="Tine6" type="MeshInstance3D" parent="." unique_id=758936495]
+transform = Transform3D(-1, 0, 0, 0, -0.93834317, -0.34570536, 0, -0.34570536, 0.93834317, 0, 0.525, -0.175)
+material_override = ExtResource("2_3pukr")
+mesh = SubResource("CylinderMesh_criqp")
+
+[node name="Tine7" type="MeshInstance3D" parent="." unique_id=1905282781]
+transform = Transform3D(-1, 0, 0, 0, -0.93834317, -0.34570536, 0, -0.34570536, 0.93834317, 0.5, 0.525, -0.175)
+material_override = ExtResource("2_3pukr")
+mesh = SubResource("CylinderMesh_criqp")
+
+[node name="Tine8" type="MeshInstance3D" parent="." unique_id=592993403]
+transform = Transform3D(-1, 0, 0, 0, -0.93834317, -0.34570536, 0, -0.34570536, 0.93834317, 1, 0.525, -0.175)
+material_override = ExtResource("2_3pukr")
+mesh = SubResource("CylinderMesh_criqp")
+
+[node name="Tine9" type="MeshInstance3D" parent="." unique_id=1284843287]
+transform = Transform3D(-1, 0, 0, 0, -0.93834317, -0.34570536, 0, -0.34570536, 0.93834317, 1.5, 0.525, -0.175)
+material_override = ExtResource("2_3pukr")
+mesh = SubResource("CylinderMesh_criqp")
+
+[node name="Tine10" type="MeshInstance3D" parent="." unique_id=151855188]
+transform = Transform3D(-1, 0, 0, 0, -0.93834317, -0.34570536, 0, -0.34570536, 0.93834317, 2, 0.525, -0.175)
+material_override = ExtResource("2_3pukr")
+mesh = SubResource("CylinderMesh_criqp")
+
+[node name="Tine11" type="MeshInstance3D" parent="." unique_id=1689399788]
+transform = Transform3D(-1, 0, 0, 0, -0.93834317, -0.34570536, 0, -0.34570536, 0.93834317, 2.5, 0.525, -0.175)
+material_override = ExtResource("2_3pukr")
+mesh = SubResource("CylinderMesh_criqp")

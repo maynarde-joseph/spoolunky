@@ -1,0 +1,54 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/wood_dark.tres" id="1_aakjy"]
+[ext_resource type="Material" path="res://game/world/materials/green.tres" id="2_ts4bu"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_fkr3f"]
+size = Vector3(0.8, 14, 0.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_heuvi"]
+size = Vector3(0.8, 14, 0.8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_3q3ke"]
+size = Vector3(14.8, 5, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ny5mq"]
+size = Vector3(14.8, 5, 0.5)
+
+[node name="Sign" type="StaticBody3D" unique_id=595852321]
+collision_mask = 0
+
+[node name="Post" type="MeshInstance3D" parent="." unique_id=797558720]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 7, 0)
+material_override = ExtResource("1_aakjy")
+mesh = SubResource("BoxMesh_fkr3f")
+
+[node name="PostShape" type="CollisionShape3D" parent="." unique_id=1909612787]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 7, 0)
+shape = SubResource("BoxShape3D_heuvi")
+
+[node name="Post2" type="MeshInstance3D" parent="." unique_id=722331370]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 7, 0)
+material_override = ExtResource("1_aakjy")
+mesh = SubResource("BoxMesh_fkr3f")
+
+[node name="PostShape2" type="CollisionShape3D" parent="." unique_id=273075916]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 7, 0)
+shape = SubResource("BoxShape3D_heuvi")
+
+[node name="Board" type="MeshInstance3D" parent="." unique_id=1299317747]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11.5, -0.25)
+material_override = ExtResource("2_ts4bu")
+mesh = SubResource("BoxMesh_3q3ke")
+
+[node name="BoardShape" type="CollisionShape3D" parent="." unique_id=414051763]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11.5, -0.25)
+shape = SubResource("BoxShape3D_ny5mq")
+
+[node name="Words" type="Label3D" parent="." unique_id=1203587802]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 11.5, -0.56)
+pixel_size = 0.02
+modulate = Color(0.96, 0.94, 0.86, 1)
+text = "Sign"
+font_size = 96
+outline_size = 0

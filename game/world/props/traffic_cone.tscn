@@ -1,0 +1,54 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/black.tres" id="1_huab6"]
+[ext_resource type="Material" path="res://game/world/materials/red.tres" id="2_qkrhd"]
+[ext_resource type="Material" path="res://game/world/materials/white.tres" id="3_ortyk"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_tyqp4"]
+size = Vector3(3.2, 0.3, 3.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mf2wl"]
+size = Vector3(3.2, 0.3, 3.2)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_y2yi3"]
+top_radius = 0.2
+bottom_radius = 1.25
+height = 4.6
+radial_segments = 20
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_ti21t"]
+points = PackedVector3Array(1.25, -2.3, 0, 1.0825318, -2.3, 0.625, 0.625, -2.3, 1.0825318, 7.6540425e-17, -2.3, 1.25, -0.625, -2.3, 1.0825318, -1.0825318, -2.3, 0.625, -1.25, -2.3, 1.5308085e-16, -1.0825318, -2.3, -0.625, -0.625, -2.3, -1.0825318, -2.2962126e-16, -2.3, -1.25, 0.625, -2.3, -1.0825318, 1.0825318, -2.3, -0.625, 0.2, 2.3, 0, 0.17320508, 2.3, 0.1, 0.1, 2.3, 0.17320508, 1.2246468e-17, 2.3, 0.2, -0.1, 2.3, 0.17320508, -0.17320508, 2.3, 0.1, -0.2, 2.3, 2.4492935e-17, -0.17320508, 2.3, -0.1, -0.1, 2.3, -0.17320508, -3.6739406e-17, 2.3, -0.2, 0.1, 2.3, -0.17320508, 0.17320508, 2.3, -0.1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_5jshc"]
+top_radius = 0.7
+bottom_radius = 0.86
+height = 0.9
+radial_segments = 20
+rings = 1
+
+[node name="TrafficCone" type="StaticBody3D" unique_id=1567122064]
+collision_mask = 0
+
+[node name="Foot" type="MeshInstance3D" parent="." unique_id=115397696]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+material_override = ExtResource("1_huab6")
+mesh = SubResource("BoxMesh_tyqp4")
+
+[node name="FootShape" type="CollisionShape3D" parent="." unique_id=1824946650]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+shape = SubResource("BoxShape3D_mf2wl")
+
+[node name="Cone" type="MeshInstance3D" parent="." unique_id=2025859871]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, 0)
+material_override = ExtResource("2_qkrhd")
+mesh = SubResource("CylinderMesh_y2yi3")
+
+[node name="ConeShape" type="CollisionShape3D" parent="." unique_id=1552307040]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, 0)
+shape = SubResource("ConvexPolygonShape3D_ti21t")
+
+[node name="Band" type="MeshInstance3D" parent="." unique_id=1983188549]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.9, 0)
+material_override = ExtResource("3_ortyk")
+mesh = SubResource("CylinderMesh_5jshc")

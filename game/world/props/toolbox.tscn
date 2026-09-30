@@ -1,0 +1,89 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/red.tres" id="1_3oicx"]
+[ext_resource type="Material" path="res://game/world/materials/iron.tres" id="2_fj15q"]
+[ext_resource type="Material" path="res://game/world/materials/black.tres" id="3_tbc36"]
+[ext_resource type="Material" path="res://game/world/materials/steel.tres" id="4_4fxri"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_yep7m"]
+size = Vector3(6.2, 2.3, 2.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_k0ekw"]
+size = Vector3(6.2, 2.3, 2.8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_le3mo"]
+size = Vector3(6.3, 0.29999995, 2.9)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ji7cg"]
+size = Vector3(6.3, 0.29999995, 2.9)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ehn6k"]
+top_radius = 0.12
+bottom_radius = 0.12
+height = 0.8000002
+radial_segments = 12
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pvjv3"]
+top_radius = 0.2
+bottom_radius = 0.2
+height = 3.8
+radial_segments = 12
+rings = 1
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_px3cn"]
+height = 3.8
+radius = 0.2
+
+[sub_resource type="BoxMesh" id="BoxMesh_gvdm2"]
+size = Vector3(0.5, 0.6, 0.1)
+
+[node name="Toolbox" type="StaticBody3D" unique_id=1272009214]
+collision_mask = 0
+
+[node name="Box" type="MeshInstance3D" parent="." unique_id=1964323405]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 0)
+material_override = ExtResource("1_3oicx")
+mesh = SubResource("BoxMesh_yep7m")
+
+[node name="BoxShape" type="CollisionShape3D" parent="." unique_id=1401811753]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 0)
+shape = SubResource("BoxShape3D_k0ekw")
+
+[node name="Lid" type="MeshInstance3D" parent="." unique_id=1382316016]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4499998, 0)
+material_override = ExtResource("1_3oicx")
+mesh = SubResource("BoxMesh_le3mo")
+
+[node name="LidShape" type="CollisionShape3D" parent="." unique_id=978705706]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4499998, 0)
+shape = SubResource("BoxShape3D_ji7cg")
+
+[node name="Post" type="MeshInstance3D" parent="." unique_id=532502351]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -1.8, 3, 0)
+material_override = ExtResource("2_fj15q")
+mesh = SubResource("CylinderMesh_ehn6k")
+
+[node name="Post2" type="MeshInstance3D" parent="." unique_id=1557768365]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 1.8, 3, 0)
+material_override = ExtResource("2_fj15q")
+mesh = SubResource("CylinderMesh_ehn6k")
+
+[node name="Handle" type="MeshInstance3D" parent="." unique_id=909585095]
+transform = Transform3D(0, 1, 0, 0, 0, -1, -1, 0, 0, 0, 3.4, 0)
+material_override = ExtResource("3_tbc36")
+mesh = SubResource("CylinderMesh_pvjv3")
+
+[node name="HandleShape" type="CollisionShape3D" parent="." unique_id=2047092994]
+transform = Transform3D(0, 1, 0, 0, 0, -1, -1, 0, 0, 0, 3.4, 0)
+shape = SubResource("CylinderShape3D_px3cn")
+
+[node name="Catch" type="MeshInstance3D" parent="." unique_id=2080513959]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.3, 2.2, -1.45)
+material_override = ExtResource("4_4fxri")
+mesh = SubResource("BoxMesh_gvdm2")
+
+[node name="Catch2" type="MeshInstance3D" parent="." unique_id=1837797272]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.3, 2.2, -1.45)
+material_override = ExtResource("4_4fxri")
+mesh = SubResource("BoxMesh_gvdm2")

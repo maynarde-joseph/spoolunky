@@ -1,0 +1,58 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/straw.tres" id="1_u1mqk"]
+[ext_resource type="Material" path="res://game/world/materials/wood.tres" id="2_jtxj0"]
+[ext_resource type="Material" path="res://game/world/materials/wood_light.tres" id="3_c161l"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_tvh81"]
+size = Vector3(4.8, 1.6, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_c7ljx"]
+size = Vector3(4.8, 1.6, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_howj2"]
+size = Vector3(5.2, 0.9, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_35trv"]
+size = Vector3(5.2, 0.9, 1.2)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_wxnov"]
+top_radius = 0.28
+bottom_radius = 0.28
+height = 16.061132
+radial_segments = 12
+rings = 1
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_wsmf3"]
+height = 16.061132
+radius = 0.28
+
+[node name="Broom" type="StaticBody3D" unique_id=2077539384]
+collision_mask = 0
+
+[node name="Bristles" type="MeshInstance3D" parent="." unique_id=1405214271]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+material_override = ExtResource("1_u1mqk")
+mesh = SubResource("BoxMesh_tvh81")
+
+[node name="BristlesShape" type="CollisionShape3D" parent="." unique_id=710804099]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+shape = SubResource("BoxShape3D_c7ljx")
+
+[node name="Head" type="MeshInstance3D" parent="." unique_id=186128591]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.05, 0)
+material_override = ExtResource("2_jtxj0")
+mesh = SubResource("BoxMesh_howj2")
+
+[node name="HeadShape" type="CollisionShape3D" parent="." unique_id=1390304431]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.05, 0)
+shape = SubResource("BoxShape3D_35trv")
+
+[node name="Handle" type="MeshInstance3D" parent="." unique_id=129127001]
+transform = Transform3D(-1, 0, 0, 0, 0.99619377, 0.08716695, 0, 0.08716695, -0.99619377, 0, 10.5, 0.7)
+material_override = ExtResource("3_c161l")
+mesh = SubResource("CylinderMesh_wxnov")
+
+[node name="HandleShape" type="CollisionShape3D" parent="." unique_id=326257551]
+transform = Transform3D(-1, 0, 0, 0, 0.99619377, 0.08716695, 0, 0.08716695, -0.99619377, 0, 10.5, 0.7)
+shape = SubResource("CylinderShape3D_wsmf3")

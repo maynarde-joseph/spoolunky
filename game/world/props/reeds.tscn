@@ -1,0 +1,215 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/leaf_dark.tres" id="1_trcim"]
+[ext_resource type="Material" path="res://game/world/materials/bark.tres" id="2_88vnl"]
+[ext_resource type="Material" path="res://game/world/materials/leaf.tres" id="3_ij5qd"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ux56i"]
+top_radius = 0.12
+bottom_radius = 0.22
+height = 10.031949
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_7ie0d"]
+points = PackedVector3Array(0.22, -5.0159745, 0, 0.19052559, -5.0159745, 0.11, 0.11, -5.0159745, 0.19052559, 1.3471114e-17, -5.0159745, 0.22, -0.11, -5.0159745, 0.19052559, -0.19052559, -5.0159745, 0.11, -0.22, -5.0159745, 2.6942229e-17, -0.19052559, -5.0159745, -0.11, -0.11, -5.0159745, -0.19052559, -4.0413345e-17, -5.0159745, -0.22, 0.11, -5.0159745, -0.19052559, 0.19052559, -5.0159745, -0.11, 0.12, 5.0159745, 0, 0.103923045, 5.0159745, 0.06, 0.06, 5.0159745, 0.103923045, 7.347881e-18, 5.0159745, 0.12, -0.06, 5.0159745, 0.103923045, -0.103923045, 5.0159745, 0.06, -0.12, 5.0159745, 1.4695762e-17, -0.103923045, 5.0159745, -0.06, -0.06, 5.0159745, -0.103923045, -2.2043642e-17, 5.0159745, -0.12, 0.06, 5.0159745, -0.103923045, 0.103923045, 5.0159745, -0.06)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1tev3"]
+radius = 0.45
+height = 2.4
+radial_segments = 16
+rings = 6
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_xnr5g"]
+top_radius = 0.12
+bottom_radius = 0.22
+height = 12.605412
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_0s8fq"]
+points = PackedVector3Array(0.22, -6.302706, 0, 0.19052559, -6.302706, 0.11, 0.11, -6.302706, 0.19052559, 1.3471114e-17, -6.302706, 0.22, -0.11, -6.302706, 0.19052559, -0.19052559, -6.302706, 0.11, -0.22, -6.302706, 2.6942229e-17, -0.19052559, -6.302706, -0.11, -0.11, -6.302706, -0.19052559, -4.0413345e-17, -6.302706, -0.22, 0.11, -6.302706, -0.19052559, 0.19052559, -6.302706, -0.11, 0.12, 6.302706, 0, 0.103923045, 6.302706, 0.06, 0.06, 6.302706, 0.103923045, 7.347881e-18, 6.302706, 0.12, -0.06, 6.302706, 0.103923045, -0.103923045, 6.302706, 0.06, -0.12, 6.302706, 1.4695762e-17, -0.103923045, 6.302706, -0.06, -0.06, 6.302706, -0.103923045, -2.2043642e-17, 6.302706, -0.12, 0.06, 6.302706, -0.103923045, 0.103923045, 6.302706, -0.06)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ob74n"]
+top_radius = 0.12
+bottom_radius = 0.22
+height = 15.181093
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_8m3sn"]
+points = PackedVector3Array(0.22, -7.5905466, 0, 0.19052559, -7.5905466, 0.11, 0.11, -7.5905466, 0.19052559, 1.3471114e-17, -7.5905466, 0.22, -0.11, -7.5905466, 0.19052559, -0.19052559, -7.5905466, 0.11, -0.22, -7.5905466, 2.6942229e-17, -0.19052559, -7.5905466, -0.11, -0.11, -7.5905466, -0.19052559, -4.0413345e-17, -7.5905466, -0.22, 0.11, -7.5905466, -0.19052559, 0.19052559, -7.5905466, -0.11, 0.12, 7.5905466, 0, 0.103923045, 7.5905466, 0.06, 0.06, 7.5905466, 0.103923045, 7.347881e-18, 7.5905466, 0.12, -0.06, 7.5905466, 0.103923045, -0.103923045, 7.5905466, 0.06, -0.12, 7.5905466, 1.4695762e-17, -0.103923045, 7.5905466, -0.06, -0.06, 7.5905466, -0.103923045, -2.2043642e-17, 7.5905466, -0.12, 0.06, 7.5905466, -0.103923045, 0.103923045, 7.5905466, -0.06)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_rfwh5"]
+top_radius = 0.12
+bottom_radius = 0.22
+height = 11.767225
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_tfaxy"]
+points = PackedVector3Array(0.22, -5.8836126, 0, 0.19052559, -5.8836126, 0.11, 0.11, -5.8836126, 0.19052559, 1.3471114e-17, -5.8836126, 0.22, -0.11, -5.8836126, 0.19052559, -0.19052559, -5.8836126, 0.11, -0.22, -5.8836126, 2.6942229e-17, -0.19052559, -5.8836126, -0.11, -0.11, -5.8836126, -0.19052559, -4.0413345e-17, -5.8836126, -0.22, 0.11, -5.8836126, -0.19052559, 0.19052559, -5.8836126, -0.11, 0.12, 5.8836126, 0, 0.103923045, 5.8836126, 0.06, 0.06, 5.8836126, 0.103923045, 7.347881e-18, 5.8836126, 0.12, -0.06, 5.8836126, 0.103923045, -0.103923045, 5.8836126, 0.06, -0.12, 5.8836126, 1.4695762e-17, -0.103923045, 5.8836126, -0.06, -0.06, 5.8836126, -0.103923045, -2.2043642e-17, 5.8836126, -0.12, 0.06, 5.8836126, -0.103923045, 0.103923045, 5.8836126, -0.06)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_3y6xw"]
+top_radius = 0.12
+bottom_radius = 0.22
+height = 14.342329
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_e8d61"]
+points = PackedVector3Array(0.22, -7.1711645, 0, 0.19052559, -7.1711645, 0.11, 0.11, -7.1711645, 0.19052559, 1.3471114e-17, -7.1711645, 0.22, -0.11, -7.1711645, 0.19052559, -0.19052559, -7.1711645, 0.11, -0.22, -7.1711645, 2.6942229e-17, -0.19052559, -7.1711645, -0.11, -0.11, -7.1711645, -0.19052559, -4.0413345e-17, -7.1711645, -0.22, 0.11, -7.1711645, -0.19052559, 0.19052559, -7.1711645, -0.11, 0.12, 7.1711645, 0, 0.103923045, 7.1711645, 0.06, 0.06, 7.1711645, 0.103923045, 7.347881e-18, 7.1711645, 0.12, -0.06, 7.1711645, 0.103923045, -0.103923045, 7.1711645, 0.06, -0.12, 7.1711645, 1.4695762e-17, -0.103923045, 7.1711645, -0.06, -0.06, 7.1711645, -0.103923045, -2.2043642e-17, 7.1711645, -0.12, 0.06, 7.1711645, -0.103923045, 0.103923045, 7.1711645, -0.06)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ylbql"]
+top_radius = 0.12
+bottom_radius = 0.22
+height = 10.929317
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_p1xy2"]
+points = PackedVector3Array(0.22, -5.4646587, 0, 0.19052559, -5.4646587, 0.11, 0.11, -5.4646587, 0.19052559, 1.3471114e-17, -5.4646587, 0.22, -0.11, -5.4646587, 0.19052559, -0.19052559, -5.4646587, 0.11, -0.22, -5.4646587, 2.6942229e-17, -0.19052559, -5.4646587, -0.11, -0.11, -5.4646587, -0.19052559, -4.0413345e-17, -5.4646587, -0.22, 0.11, -5.4646587, -0.19052559, 0.19052559, -5.4646587, -0.11, 0.12, 5.4646587, 0, 0.103923045, 5.4646587, 0.06, 0.06, 5.4646587, 0.103923045, 7.347881e-18, 5.4646587, 0.12, -0.06, 5.4646587, 0.103923045, -0.103923045, 5.4646587, 0.06, -0.12, 5.4646587, 1.4695762e-17, -0.103923045, 5.4646587, -0.06, -0.06, 5.4646587, -0.103923045, -2.2043642e-17, 5.4646587, -0.12, 0.06, 5.4646587, -0.103923045, 0.103923045, 5.4646587, -0.06)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_e8tbv"]
+top_radius = 0.12
+bottom_radius = 0.22
+height = 13.503717
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_u3utn"]
+points = PackedVector3Array(0.22, -6.7518587, 0, 0.19052559, -6.7518587, 0.11, 0.11, -6.7518587, 0.19052559, 1.3471114e-17, -6.7518587, 0.22, -0.11, -6.7518587, 0.19052559, -0.19052559, -6.7518587, 0.11, -0.22, -6.7518587, 2.6942229e-17, -0.19052559, -6.7518587, -0.11, -0.11, -6.7518587, -0.19052559, -4.0413345e-17, -6.7518587, -0.22, 0.11, -6.7518587, -0.19052559, 0.19052559, -6.7518587, -0.11, 0.12, 6.7518587, 0, 0.103923045, 6.7518587, 0.06, 0.06, 6.7518587, 0.103923045, 7.347881e-18, 6.7518587, 0.12, -0.06, 6.7518587, 0.103923045, -0.103923045, 6.7518587, 0.06, -0.12, 6.7518587, 1.4695762e-17, -0.103923045, 6.7518587, -0.06, -0.06, 6.7518587, -0.103923045, -2.2043642e-17, 6.7518587, -0.12, 0.06, 6.7518587, -0.103923045, 0.103923045, 6.7518587, -0.06)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_qrmxe"]
+top_radius = 0.12
+bottom_radius = 0.22
+height = 10.09176
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_wbweg"]
+points = PackedVector3Array(0.22, -5.04588, 0, 0.19052559, -5.04588, 0.11, 0.11, -5.04588, 0.19052559, 1.3471114e-17, -5.04588, 0.22, -0.11, -5.04588, 0.19052559, -0.19052559, -5.04588, 0.11, -0.22, -5.04588, 2.6942229e-17, -0.19052559, -5.04588, -0.11, -0.11, -5.04588, -0.19052559, -4.0413345e-17, -5.04588, -0.22, 0.11, -5.04588, -0.19052559, 0.19052559, -5.04588, -0.11, 0.12, 5.04588, 0, 0.103923045, 5.04588, 0.06, 0.06, 5.04588, 0.103923045, 7.347881e-18, 5.04588, 0.12, -0.06, 5.04588, 0.103923045, -0.103923045, 5.04588, 0.06, -0.12, 5.04588, 1.4695762e-17, -0.103923045, 5.04588, -0.06, -0.06, 5.04588, -0.103923045, -2.2043642e-17, 5.04588, -0.12, 0.06, 5.04588, -0.103923045, 0.103923045, 5.04588, -0.06)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_udlt3"]
+top_radius = 0.12
+bottom_radius = 0.22
+height = 12.665292
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_wdal2"]
+points = PackedVector3Array(0.22, -6.332646, 0, 0.19052559, -6.332646, 0.11, 0.11, -6.332646, 0.19052559, 1.3471114e-17, -6.332646, 0.22, -0.11, -6.332646, 0.19052559, -0.19052559, -6.332646, 0.11, -0.22, -6.332646, 2.6942229e-17, -0.19052559, -6.332646, -0.11, -0.11, -6.332646, -0.19052559, -4.0413345e-17, -6.332646, -0.22, 0.11, -6.332646, -0.19052559, 0.19052559, -6.332646, -0.11, 0.12, 6.332646, 0, 0.103923045, 6.332646, 0.06, 0.06, 6.332646, 0.103923045, 7.347881e-18, 6.332646, 0.12, -0.06, 6.332646, 0.103923045, -0.103923045, 6.332646, 0.06, -0.12, 6.332646, 1.4695762e-17, -0.103923045, 6.332646, -0.06, -0.06, 6.332646, -0.103923045, -2.2043642e-17, 6.332646, -0.12, 0.06, 6.332646, -0.103923045, 0.103923045, 6.332646, -0.06)
+
+[node name="Reeds" type="StaticBody3D" unique_id=370687554]
+collision_mask = 0
+
+[node name="Stem" type="MeshInstance3D" parent="." unique_id=1728219000]
+transform = Transform3D(-0.9968153, 0.079745226, 0, 0.07974523, 0.99681526, 0, 0, 0, -1, 1, 5, 0)
+material_override = ExtResource("1_trcim")
+mesh = SubResource("CylinderMesh_ux56i")
+
+[node name="StemShape" type="CollisionShape3D" parent="." unique_id=48187123]
+transform = Transform3D(-0.9968153, 0.079745226, 0, 0.07974523, 0.99681526, 0, 0, 0, -1, 1, 5, 0)
+shape = SubResource("ConvexPolygonShape3D_7ie0d")
+
+[node name="Head" type="MeshInstance3D" parent="." unique_id=1075775505]
+transform = Transform3D(-0.9968153, 0.079745226, 0, 0.07974523, 0.99681526, 0, 0, 0, -1, 1.2880001, 8.6, 0)
+material_override = ExtResource("2_88vnl")
+mesh = SubResource("CapsuleMesh_1tev3")
+
+[node name="Stem2" type="MeshInstance3D" parent="." unique_id=538429507]
+transform = Transform3D(-0.9993005, -0.03734911, -0.0019189507, -0.037398376, 0.99798405, 0.05127518, 0, 0.051311072, -0.99868274, -1.5218639, 6.29, 2.0907717)
+material_override = ExtResource("3_ij5qd")
+mesh = SubResource("CylinderMesh_xnr5g")
+
+[node name="StemShape2" type="CollisionShape3D" parent="." unique_id=359156220]
+transform = Transform3D(-0.9993005, -0.03734911, -0.0019189507, -0.037398376, 0.99798405, 0.05127518, 0, 0.051311072, -0.99868274, -1.5218639, 6.29, 2.0907717)
+shape = SubResource("ConvexPolygonShape3D_0s8fq")
+
+[node name="Head2" type="MeshInstance3D" parent="." unique_id=1951514490]
+transform = Transform3D(-0.9993005, -0.03734911, -0.0019189507, -0.037398376, 0.99798405, 0.05127518, 0, 0.051311072, -0.99868274, -1.6913522, 10.8188, 2.3236187)
+material_override = ExtResource("2_88vnl")
+mesh = SubResource("CapsuleMesh_1tev3")
+
+[node name="Stem3" type="MeshInstance3D" parent="." unique_id=980860641]
+transform = Transform3D(-0.9998685, -0.016195558, 0.00081317674, -0.01621596, 0.99861056, -0.050140098, 0, -0.05014669, -0.99874187, -0.48312724, 7.58, -1.4959185)
+material_override = ExtResource("1_trcim")
+mesh = SubResource("CylinderMesh_ob74n")
+
+[node name="StemShape3" type="CollisionShape3D" parent="." unique_id=895565934]
+transform = Transform3D(-0.9998685, -0.016195558, 0.00081317674, -0.01621596, 0.99861056, -0.050140098, 0, -0.05014669, -0.99874187, -0.48312724, 7.58, -1.4959185)
+shape = SubResource("ConvexPolygonShape3D_8m3sn")
+
+[node name="Stem4" type="MeshInstance3D" parent="." unique_id=1801391000]
+transform = Transform3D(-0.99791014, 0.06460197, 0.0013685947, 0.064616464, 0.9976863, 0.021136014, 0, 0.021180276, -0.9997757, 3.0008345, 5.87, 0.9838476)
+material_override = ExtResource("3_ij5qd")
+mesh = SubResource("CylinderMesh_rfwh5")
+
+[node name="StemShape4" type="CollisionShape3D" parent="." unique_id=2058884603]
+transform = Transform3D(-0.99791014, 0.06460197, 0.0013685947, 0.064616464, 0.9976863, 0.021136014, 0, 0.021180276, -0.9997757, 3.0008345, 5.87, 0.9838476)
+shape = SubResource("ConvexPolygonShape3D_tfaxy")
+
+[node name="Head3" type="MeshInstance3D" parent="." unique_id=315320567]
+transform = Transform3D(-0.99791014, 0.06460197, 0.0013685947, 0.064616464, 0.9976863, 0.021136014, 0, 0.021180276, -0.9997757, 3.2745016, 10.0964, 1.0735714)
+material_override = ExtResource("2_88vnl")
+mesh = SubResource("CapsuleMesh_1tev3")
+
+[node name="Stem5" type="MeshInstance3D" parent="." unique_id=890805029]
+transform = Transform3D(-0.998975, -0.045241922, -0.0014768522, -0.04526602, 0.9984431, 0.032592624, 0, 0.032626066, -0.9994676, -1.7389835, 7.16, 1.2540624)
+material_override = ExtResource("1_trcim")
+mesh = SubResource("CylinderMesh_3y6xw")
+
+[node name="StemShape5" type="CollisionShape3D" parent="." unique_id=806071233]
+transform = Transform3D(-0.998975, -0.045241922, -0.0014768522, -0.04526602, 0.9984431, 0.032592624, 0, 0.032626066, -0.9994676, -1.7389835, 7.16, 1.2540624)
+shape = SubResource("ConvexPolygonShape3D_e8d61")
+
+[node name="Head4" type="MeshInstance3D" parent="." unique_id=1163602831]
+transform = Transform3D(-0.998975, -0.045241922, -0.0014768522, -0.04526602, 0.9984431, 0.032592624, 0, 0.032626066, -0.9994676, -1.9725783, 12.3152, 1.4225186)
+material_override = ExtResource("2_88vnl")
+mesh = SubResource("CapsuleMesh_1tev3")
+
+[node name="Stem6" type="MeshInstance3D" parent="." unique_id=916228395]
+transform = Transform3D(-0.99999994, 0.00032395052, -2.3775949e-05, 0.00032482183, 0.9973175, -0.07319689, 0, -0.073196895, -0.99731755, 0.005001039, 5.45, -1.1299889)
+material_override = ExtResource("3_ij5qd")
+mesh = SubResource("CylinderMesh_ylbql")
+
+[node name="StemShape6" type="CollisionShape3D" parent="." unique_id=234198111]
+transform = Transform3D(-0.99999994, 0.00032395052, -2.3775949e-05, 0.00032482183, 0.9973175, -0.07319689, 0, -0.073196895, -0.99731755, 0.005001039, 5.45, -1.1299889)
+shape = SubResource("ConvexPolygonShape3D_p1xy2")
+
+[node name="Stem7" type="MeshInstance3D" parent="." unique_id=1010741788]
+transform = Transform3D(-0.9988582, 0.047742933, 0.0016756706, 0.047772326, 0.99824363, 0.035036128, 0, 0.03507618, -0.99938464, 2.1887808, 6.74, 1.6080717)
+material_override = ExtResource("1_trcim")
+mesh = SubResource("CylinderMesh_e8tbv")
+
+[node name="StemShape7" type="CollisionShape3D" parent="." unique_id=1260877398]
+transform = Transform3D(-0.9988582, 0.047742933, 0.0016756706, 0.047772326, 0.99824363, 0.035036128, 0, 0.03507618, -0.99938464, 2.1887808, 6.74, 1.6080717)
+shape = SubResource("ConvexPolygonShape3D_u3utn")
+
+[node name="Head5" type="MeshInstance3D" parent="." unique_id=619075368]
+transform = Transform3D(-0.9988582, 0.047742933, 0.0016756706, 0.047772326, 0.99824363, 0.035036128, 0, 0.03507618, -0.99938464, 2.4208755, 11.5928, 1.7785889)
+material_override = ExtResource("2_88vnl")
+mesh = SubResource("CapsuleMesh_1tev3")
+
+[node name="Stem8" type="MeshInstance3D" parent="." unique_id=84341155]
+transform = Transform3D(-0.9971409, -0.07554305, -0.0018157471, -0.075564876, 0.99685293, 0.023960281, 0, 0.024028981, -0.9997113, -1.6219258, 5.03, 0.51590747)
+material_override = ExtResource("3_ij5qd")
+mesh = SubResource("CylinderMesh_qrmxe")
+
+[node name="StemShape8" type="CollisionShape3D" parent="." unique_id=1489566291]
+transform = Transform3D(-0.9971409, -0.07554305, -0.0018157471, -0.075564876, 0.99685293, 0.023960281, 0, 0.024028981, -0.9997113, -1.6219258, 5.03, 0.51590747)
+shape = SubResource("ConvexPolygonShape3D_wbweg")
+
+[node name="Head6" type="MeshInstance3D" parent="." unique_id=590799789]
+transform = Transform3D(-0.9971409, -0.07554305, -0.0018157471, -0.075564876, 0.99685293, 0.023960281, 0, 0.024028981, -0.9997113, -1.8963764, 8.651601, 0.60320556)
+material_override = ExtResource("2_88vnl")
+mesh = SubResource("CapsuleMesh_1tev3")
+
+[node name="Stem9" type="MeshInstance3D" parent="." unique_id=1970454152]
+transform = Transform3D(-0.9998004, 0.01994388, -0.0011974599, 0.019979797, 0.99800307, -0.05992157, 0, -0.05993353, -0.9982024, 1.0381656, 6.32, -3.1198008)
+material_override = ExtResource("1_trcim")
+mesh = SubResource("CylinderMesh_udlt3")
+
+[node name="StemShape9" type="CollisionShape3D" parent="." unique_id=2066820389]
+transform = Transform3D(-0.9998004, 0.01994388, -0.0011974599, 0.019979797, 0.99800307, -0.05992157, 0, -0.05993353, -0.9982024, 1.0381656, 6.32, -3.1198008)
+shape = SubResource("ConvexPolygonShape3D_wdal2")
