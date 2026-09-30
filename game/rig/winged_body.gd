@@ -276,7 +276,7 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 			Vector3.ONE * eye, RigKit.plain(eye_colour), 10, 6)
 		if ears != Vector2.ZERO:
 			RigKit.ear(coat, skeleton, skeleton.find_bone("Ear.%s" % SIDES[s]), ears.x, ears.y,
-				ears.x * 0.16, 0.7, ear_colour, ear_colour, -side * 25.0)
+				ears.x * 0.16, 0.7, ear_colour, -side * 25.0)
 	if beak != Vector2.ZERO:
 		_build_beak(coat, skeleton, face_at)
 	if snout != Vector3.ZERO:

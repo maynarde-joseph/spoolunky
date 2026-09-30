@@ -290,7 +290,7 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 			Vector3.ONE * eye, RigKit.plain(eye_colour), 10, 6)
 		# Upright ears face forward and a little out, the way they cup sound.
 		RigKit.ear(coat, skeleton, skeleton.find_bone("Ear.%s" % SIDES[s]), ear.x, ear.y,
-			ear.x * 0.2, 1.0 if ears == Ears.POINTED else 0.0, ear_colour, ear_colour,
+			ear.x * 0.2, 1.0 if ears == Ears.POINTED else 0.0, ear_colour,
 			0.0 if ears == Ears.FLOPPY else -side * 35.0)
 
 	# Every part of a leg one width, a round end at every joint, so each reads as

@@ -1613,15 +1613,20 @@ says what it is doing. It does not need detail.
   small with its tail round it; a winged thing beats its wings with the hands a
   moment behind the arms, folds them down its sides to walk on two legs, flaps
   in bursts when caught and wraps them round itself at the end; a fish swims in
-  a wave from nose to tail, and out of water lies on its side, gasping and
-  flopping; an octopus ripples its arms sitting, pulses them like a jet
+  a wave from nose to tail, and out of water lies on its side and flops; an octopus ripples its arms sitting, pulses them like a jet
   swimming, and coils them up at the end. Swimming is flying: a swimmer keeps
   itself up in water the way a fly does in air, and where the water is will be a
   place, not a pose.
-* **Goofy, a little.** The creatures that are not insects are built to be liked
-  before they are eaten: big heads, big eyes with a glint in them — white round
-  the middle for a stare, or a glossy bead — and a few things you could draw from
-  memory, like a rat's buck teeth and whiskers.
+* **The same look for everything, not just insects.** A rat, a parrot or a shark
+  is drawn by the rules a fly is: smooth parts, limbs of one width bent at round
+  joints — a beast's legs, a bat's finger bones, an octopus's arms tapering to a
+  point — wings and fins flat with a rim round them, a few flat colours, and two
+  small eyes that shine a little. A goofier look was tried and dropped: staring
+  eyes with whites and a glint, buck teeth, whiskers, tongues, lips, fangs and
+  patches made them cartoons rather than creatures. A mouth is a jaw bone that
+  moves, drawn only where the head's shape needs it — the underside of a beast's
+  snout, the lower half of a parrot's beak — and, like the spider's jaws in its
+  minimal look, a fish's is the bone and nothing more.
 * **It faces where it is going.** The prey never turned: its collider is a ball,
   so it had no reason to. The body turns to its heading instead, and pitches nose
   up when it climbs.
