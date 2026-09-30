@@ -93,7 +93,8 @@ func _pose_fins(skeleton: Skeleton3D) -> void:
 		_turn(skeleton, paddle["bone"], Quaternion(Vector3.UP, sweep)
 			* Quaternion(Vector3.BACK, side * flap))
 	var gape := (0.08 + 0.08 * sin(clock * 2.5)) * _air + (0.22 + 0.18 * sin(clock * 4.0)) * _walk \
-		+ (0.3 + 0.3 * sin(clock * 9.0)) * _thrash + 0.2 * _slack
+		+ (0.3 + 0.3 * sin(clock * 9.0)) * _thrash + 0.2 * _slack \
+		+ deg_to_rad(_body.grin) * (1.0 - _curl)
 	_turn(skeleton, _jaw, Quaternion(Vector3.RIGHT, -gape))
 
 

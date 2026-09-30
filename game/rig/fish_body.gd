@@ -68,8 +68,15 @@ const TUCK := 0.3
 @export var lips := 0.1
 ## How wide the mouth is, and how far under the middle of the nose it sits.
 @export var mouth := Vector2(0.14, 0.0)
-## Teeth this long all along the mouth: a shark's grin. Zero for none.
+## How far back from the tip of the nose the mouth is: none for a goldfish's,
+## pouting at the front; a shark's is underneath.
+@export var mouth_back := 0.0
+## Teeth this long all along the mouth: a shark's grin. Zero for none. A mouth
+## with teeth is under the snout with a jaw below it; one without pouts at the
+## front.
 @export var teeth := 0.0
+## How far open the mouth hangs when nothing is happening, in degrees: a grin.
+@export var grin := 0.0
 ## This many gill slits down each side. None for gills that do not show.
 @export_range(0, 6) var gills := 0
 
@@ -113,9 +120,9 @@ func build_bones(skeleton: Skeleton3D) -> void:
 	skeleton.clear_bones()
 	var root := RigKit.add_bone(skeleton, "Root", -1, Transform3D.IDENTITY)
 	var trunk := RigKit.add_bone(skeleton, "Body", root, Transform3D.IDENTITY)
-	var hinge := _hinge()
+	var jaw := jaw_rest()
 	RigKit.add_bone(skeleton, "Jaw", trunk,
-		Transform3D(RigKit.along(Vector3.FORWARD, Vector3.RIGHT), hinge))
+		Transform3D(RigKit.along(jaw["direction"], Vector3.RIGHT), jaw["at"]))
 	for s in 2:
 		var paddle := pectoral_rest(-1.0 if s == 0 else 1.0)
 		RigKit.add_bone(skeleton, "Pectoral.%s" % SIDES[s], trunk,
@@ -154,9 +161,23 @@ func pectoral_rest(side: float) -> Dictionary:
 	}
 
 
-## Where the jaw hinges, behind the mouth.
-func _hinge() -> Vector3:
-	return Vector3(0.0, _mouth_y() - body.y * 0.08, -body.z * 0.7)
+## The jaw at rest: where it hinges, behind the mouth, which way it runs to the
+## front of the mouth, and how long it is. One with teeth runs along under the
+## snout, low enough at the front for the teeth above to show.
+func jaw_rest() -> Dictionary:
+	var front := _front()
+	if teeth <= 0.0:
+		return {"at": Vector3(0.0, _mouth_y() - body.y * 0.08, front + body.z * 0.3),
+			"direction": Vector3.FORWARD, "length": body.z * 0.3}
+	var back := front + body.z * 0.36
+	var hinge := Vector3(0.0, -body.y * girth(back / body.z) * 0.9, back)
+	var tip := Vector3(0.0, -body.y * girth(front / body.z) * 0.9 - teeth, front)
+	return {"at": hinge, "direction": (tip - hinge).normalized(), "length": hinge.distance_to(tip)}
+
+
+## How far forward the front of the mouth is.
+func _front() -> float:
+	return -body.z + mouth_back
 
 
 ## How far above the middle of the body the mouth is.
@@ -222,11 +243,17 @@ func _profile(from: float, to: float, before: float, after: float) -> Array:
 	var rows: Array = []
 	var paint := _skin_paint()
 	var count := 18
+	# A row on the true profile a hair either side of the cut, between it and the
+	# round end: the lathe finds a row's slope from its neighbours, and without
+	# this the end curving away would bend the light at the join into a seam.
+	var hair := 0.004
 	if before > 0.0:
-		for i in 5:
+		for i in 4:
 			var angle := PI * 0.5 * float(4 - i) / 4.0
 			var g := girth(from) * cos(angle)
 			rows.append([(from - before * sin(angle)) * body.z, body.x * g, body.y * g, paint])
+		rows.append([(from - hair) * body.z, body.x * girth(from - hair),
+			body.y * girth(from - hair), paint])
 	for i in count + 1:
 		var t := float(i) / float(count)
 		# Closer together toward the nose, where the curve is.
@@ -234,6 +261,8 @@ func _profile(from: float, to: float, before: float, after: float) -> Array:
 		var g := girth(u)
 		rows.append([u * body.z, body.x * g, body.y * g, paint])
 	if after > 0.0:
+		rows.append([(to + hair) * body.z, body.x * girth(to + hair), body.y * girth(to + hair),
+			paint])
 		for i in range(1, 5):
 			var angle := PI * 0.5 * float(i) / 4.0
 			var g := girth(to) * cos(angle)
@@ -257,14 +286,30 @@ func _build_face(skin: SurfaceTool, shine: SurfaceTool, skeleton: Skeleton3D,
 		var at := Vector3(side * body.x * girth(u) * 0.78, body.y * girth(u) * 0.3, u * body.z)
 		RigKit.eye(shine, skeleton, trunk, at, Vector3(side, 0.15, -0.4).normalized(), eye,
 			eye_colour, eye_white, eye_ring)
-	var front := -body.z
-	var hinge := _hinge()
-	var reach := hinge.z - front
+	if teeth > 0.0:
+		_build_grin(skin, skeleton, trunk, chin)
+	else:
+		_build_lips(skin, shine, skeleton, trunk, chin)
+	for k in gills:
+		var along := -0.46 + float(k) * 0.06
+		var depth := body.y * girth(along)
+		for side in [-1.0, 1.0]:
+			var at := Vector3(side * body.x * girth(along) * 0.97, -depth * 0.3, along * body.z)
+			RigKit.lathe(skin, skeleton, trunk, Transform3D(RigKit.along(Vector3(side * 0.12, 1.0,
+				0.08).normalized(), Vector3.BACK), at),
+				RigKit.capsule(depth * 0.55, 0.018, gill_colour, 1), 5)
+
+
+## A mouth that pouts at the front of the nose: lips above and on the jaw below,
+## and dark inside for when it opens.
+func _build_lips(skin: SurfaceTool, shine: SurfaceTool, skeleton: Skeleton3D, trunk: int,
+		chin: int) -> void:
+	var front := _front()
+	var reach: float = jaw_rest()["length"]
 	var mouth_y := _mouth_y()
-	# Dark inside, for when it opens.
-	RigKit.ellipsoid(skin, skeleton, trunk, Vector3(0.0, mouth_y - body.y * 0.06, front * 0.86),
-		Vector3(mouth.x * 0.85, body.y * 0.1, reach * 0.4), RigKit.plain(Color(0.25, 0.06, 0.08)),
-		10, 6)
+	RigKit.ellipsoid(skin, skeleton, trunk, Vector3(0.0, mouth_y - body.y * 0.06,
+		front + body.z * 0.14), Vector3(mouth.x * 0.85, body.y * 0.1, reach * 0.4),
+		RigKit.plain(Color(0.25, 0.06, 0.08)), 10, 6)
 	# The lower jaw: a short wedge under the nose, running forward from the hinge.
 	RigKit.lathe(skin, skeleton, chin, Transform3D.IDENTITY, [
 		[0.0, mouth.x * 1.1, body.y * 0.1, _skin_paint()],
@@ -276,28 +321,37 @@ func _build_face(skin: SurfaceTool, shine: SurfaceTool, skeleton: Skeleton3D,
 			+ lips * 0.35), Vector3(mouth.x, lips * 0.6, lips * 0.75), RigKit.plain(lip_colour), 14, 8)
 		RigKit.ellipsoid(shine, skeleton, chin, Vector3(0.0, reach * 0.95, lips * 0.05),
 			Vector3(mouth.x * 0.9, lips * 0.7, lips * 0.5), RigKit.plain(lip_colour), 14, 8)
-	if teeth > 0.0:
-		var white := Color(0.98, 0.97, 0.93)
-		var count := 9
-		for i in count:
-			var angle := lerpf(-1.25, 1.25, float(i) / float(count - 1))
-			var at := Vector3(sin(angle) * mouth.x, mouth_y - body.y * 0.02,
-				front * 0.9 + (1.0 - cos(angle)) * mouth.x * 0.9)
-			RigKit.lathe(skin, skeleton, trunk, Transform3D(RigKit.along(Vector3.DOWN,
-				Vector3.RIGHT), at), [[0.0, teeth * 0.4, teeth * 0.3, white],
-					[teeth, 0.0, 0.0, white]], 6)
-			RigKit.lathe(skin, skeleton, chin, Transform3D(RigKit.along(Vector3.BACK,
-				Vector3.RIGHT), Vector3(sin(angle) * mouth.x * 0.85, reach * 0.7 - (1.0 - cos(angle))
-					* mouth.x * 0.8, body.y * 0.06)), [[0.0, teeth * 0.35, teeth * 0.25, white],
-					[teeth * 0.8, 0.0, 0.0, white]], 6)
-	for k in gills:
-		var along := -0.46 + float(k) * 0.06
-		var depth := body.y * girth(along)
-		for side in [-1.0, 1.0]:
-			var at := Vector3(side * body.x * girth(along) * 0.97, -depth * 0.3, along * body.z)
-			RigKit.lathe(skin, skeleton, trunk, Transform3D(RigKit.along(Vector3(side * 0.12, 1.0,
-				0.08).normalized(), Vector3.BACK), at),
-				RigKit.capsule(depth * 0.55, 0.018, gill_colour, 1), 5)
+
+
+## A grin under the snout: a row of teeth hanging from the snout's underside in
+## a curve, a jaw below it with a row of its own, and dark in between. The dark
+## rides on the jaw and reaches up inside the head, so however far the jaw drops
+## there is mouth behind the teeth rather than daylight.
+func _build_grin(skin: SurfaceTool, skeleton: Skeleton3D, trunk: int, chin: int) -> void:
+	var white := Color(0.98, 0.97, 0.93)
+	var front := _front()
+	var jaw := jaw_rest()
+	var length: float = jaw["length"]
+	var wide := body.x * girth(front / body.z)
+	# In the jaw's own space, +Y runs forward along it and +Z is up.
+	RigKit.lathe(skin, skeleton, chin, Transform3D(Basis.IDENTITY, Vector3(0.0, 0.0, -0.05)), [
+		[-0.04, wide * 0.7, 0.05, _skin_paint()], [length * 0.5, wide * 0.8, 0.07, _skin_paint()],
+		[length * 0.95, wide * 0.6, 0.06, _skin_paint()], [length * 1.05, 0.0, 0.0, _skin_paint()]], 14)
+	RigKit.ellipsoid(skin, skeleton, chin, Vector3(0.0, length * 0.55, 0.06),
+		Vector3(wide * 0.7, length * 0.5, 0.16), RigKit.plain(Color(0.22, 0.05, 0.07)), 12, 8)
+	var count := 9
+	for i in count:
+		var angle := lerpf(-1.25, 1.25, float(i) / float(count - 1))
+		var z := front + (1.0 - cos(angle)) * wide * 0.7
+		var round := body.x * girth(z / body.z)
+		var x := sin(angle) * wide * 0.8
+		var y := -body.y * girth(z / body.z) * sqrt(maxf(1.0 - pow(x / round, 2.0), 0.0)) * 0.97
+		RigKit.lathe(skin, skeleton, trunk, Transform3D(RigKit.along(Vector3.DOWN, Vector3.RIGHT),
+			Vector3(x, y + 0.01, z)), [[0.0, teeth * 0.45, teeth * 0.3, white],
+				[teeth, 0.0, 0.0, white]], 6)
+		RigKit.lathe(skin, skeleton, chin, Transform3D(RigKit.along(Vector3.BACK, Vector3.RIGHT),
+			Vector3(sin(angle) * wide * 0.62, length - (1.0 - cos(angle)) * wide * 0.55, 0.0)),
+			[[0.0, teeth * 0.4, teeth * 0.28, white], [teeth * 0.8, 0.0, 0.0, white]], 6)
 
 
 ## The edge of the tail fin, in its own plane — back along +X and up +Y from the

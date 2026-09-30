@@ -380,7 +380,11 @@ them on a stand-in. So far:
   that runs down it from nose to tail; out of water it lies on its side and
   gasps, and flops when it tries to go anywhere; wrapped, it is bent double.
   Swimming is flying, as far as a creature is concerned: it keeps itself up in
-  water the way a fly does in air, so a swimmer's species will say `flying`.
+  water the way a fly does in air, so a swimmer's species will say `flying`;
+* the **shark**, on the fish's body: grey over white, a pointed snout, gill
+  slits, a tall fin on its back, a tail with a long top lobe, and a grin — a
+  row of teeth under the snout and another on its jaw, the mouth hanging a
+  little open, snapping when it is caught.
 
 ## Leaving a web and coming back
 
