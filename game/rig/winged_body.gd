@@ -233,7 +233,7 @@ func tail_rest() -> Dictionary:
 	var droop := deg_to_rad(tail_droop)
 	var direction := Vector3(0.0, -sin(droop), cos(droop))
 	var root: Vector3 = _layout()["tail"]
-	return {"joints": [root, direction * tail * 0.5], "direction": direction}
+	return {"joints": [root, root + direction * tail * 0.5], "direction": direction}
 
 
 ## The jaw's hinge, under the face, in the head's space, and which way it runs: a
