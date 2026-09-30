@@ -10,7 +10,7 @@ extends Node
 ## The tier it announces is the ladder's tier with the spider's traits folded
 ## in — see [method SpiderTraits.shape]. Everything in the game asks this node
 ## how big the spider is, so that is the one place traits have to reach for all
-## of them to pick them up, and buying one is announced exactly the same way
+## of them to pick them up, and taking one is announced exactly the same way
 ## growing a tier is.
 
 signal stage_changed(stage: GrowthStage, index: int)
@@ -34,7 +34,7 @@ func _ready() -> void:
 		stages = WebLibrary.default_stages()
 
 
-## Hands the traits node over. A trait changes the body, so buying one has to
+## Hands the traits node over. A trait changes the body, so taking one has to
 ## go out as a stage change — that is the path the spider already has for
 ## resizing itself, and there is no reason for a second one.
 func shaped_by(new_traits: SpiderTraits) -> void:

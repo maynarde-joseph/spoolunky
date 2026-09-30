@@ -16,7 +16,7 @@ extends Node3D
 
 ## Where the species live. Deliberately not [constant PreyLibrary.SPECIES_DIR]:
 ## everything in that folder is in the game — it spawns, it fills the larder and
-## it pays for traits — and a practice target is none of those things.
+## eating it can change you — and a practice target is none of those things.
 const SPECIES_DIR := "res://game/data/training"
 
 ## Seconds between finishing one and the next standing up.

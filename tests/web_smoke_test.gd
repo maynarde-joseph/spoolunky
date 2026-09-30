@@ -3882,7 +3882,7 @@ class PretendSpider extends Node3D:
 		return tier
 
 
-## The evolutionary tree: the larder as a currency, and a trait as a body.
+## Evolution: traits come from what you eat, by chance, and a trait is a body.
 func _test_the_tree() -> void:
 	var traits := spider.traits
 	if not check(traits != null, "the spider has an evolutionary tree"):
@@ -3901,63 +3901,156 @@ func _test_the_tree() -> void:
 	check(wings.effect_line() != "" and bulk.effect_line().contains("size"),
 		"each one says what it does, off its own numbers (%s)" % bulk.effect_line())
 
-	# The suite has been eating and building for a while. Start the ledger — and
-	# the spool — somewhere known, or this is a test about what the earlier ones
-	# happened to leave behind.
-	traits.larder.clear()
+	# Every trait comes from something in the game, and everything in the game
+	# carries something — a creature that could never change you is half a reason
+	# to hunt it.
+	var strays := PackedStringArray()
+	for gift in traits.tree:
+		for species_id in gift.carried_by:
+			if PreyLibrary.find(species_id) == null:
+				strays.append("%s from %s" % [gift.id, species_id])
+	check(strays.is_empty(), "every trait comes from a creature that exists %s" % strays)
+	var barren := PackedStringArray()
+	for kind in PreyLibrary.load_species():
+		var carries := false
+		for gift in traits.tree:
+			carries = carries or gift.carried_by.has(kind.id)
+		if not carries:
+			barren.append(kind.id)
+	check(barren.is_empty(), "and every creature carries at least one %s" % barren)
 
+	var fly := PreyLibrary.find("fly")
+	var moth := PreyLibrary.find("moth")
+	var ant := PreyLibrary.find("ant")
+	var bat := PreyLibrary.find("bat")
+	var fish := PreyLibrary.find("fish")
+	if not check(fly != null and moth != null and ant != null and bat != null and fish != null,
+			"a fly, a moth, an ant, a bat and a fish to reckon with"):
+		return
+
+	# The odds, rule by rule.
 	check(traits.unlocked(wings), "a root is open from the start")
 	check(not traits.unlocked(lean), "and what stands on it is not")
-	check(not traits.affordable(wings), "an empty larder affords nothing")
-	check(traits.shortfall(wings).get("fly", 0) == int(wings.cost["fly"]),
-		"and it says what you are short: %d flies" % int(wings.cost["fly"]))
-	check(not traits.buy(wings), "so it cannot be taken")
-	check(not traits.has("wing_buds"), "and nothing happened")
+	check(is_equal_approx(traits.odds(wings, fly, 0), wings.chance),
+		"a fly passes wings on to a spiderling at the trait's own chance (%d%%)"
+		% roundi(wings.chance * 100.0))
+	check(traits.odds(wings, ant, 0) == 0.0, "an ant does not carry them at all")
+	check(traits.odds(lean, moth, 0) == 0.0,
+		"and a moth cannot give a lean frame before the wings it stands on")
+	var higher := traits.odds(wings, fly, 4)
+	check(is_equal_approx(higher, wings.chance * traits.evolution_scale(4)) and higher > wings.chance,
+		"further up the ladder the same fly is likelier to (%d%% at the fifth rung)"
+		% roundi(higher * 100.0))
+	check(is_equal_approx(traits.odds(wings, moth, 0, 1), wings.chance * traits.stretch),
+		"one size past your bite doubles the odds (a moth, %d%%)"
+		% roundi(traits.odds(wings, moth, 0, 1) * 100.0))
+	check(traits.odds(wings, bat, 0, traits.sure_past) == 1.0,
+		"and something %d sizes past it is a sure thing (a bat)" % traits.sure_past)
+	traits.misses["wing_buds"] = 3
+	check(is_equal_approx(traits.odds(wings, fly, 0), wings.chance * (1.0 + 3.0 * traits.pity)),
+		"every miss makes the next meal likelier (%d%% after three)"
+		% roundi(traits.odds(wings, fly, 0) * 100.0))
+	traits.misses.clear()
 
-	# Eating fills the larder — through the real path, not by hand.
-	#
-	# Wrapped first, and deliberately. By the time this runs the suite has left
-	# fifty-odd webs standing, so a live fly dropped beside the spider is as likely
-	# to be hanging in one of them as loose on the floor, and then the press wraps
-	# it instead of drinking it. A bundle is the state the loop actually delivers a
-	# catch in anyway: you wrap it, you haul it home, you drink it.
-	var lunch := spawn("fly", spider.global_position + Vector3(0.3, 0.0, 0.0))
-	await physics_frame
-	if check(lunch != null, "there is a fly to eat"):
-		# Wrapped, then put on the line, which is the loop as designed: a bundle
-		# obeys gravity, so left alone it drops away from you and out of reach
-		# part-way through the meal — the first run of this check came back with
-		# three of the fly's eight biomass drunk and the rest on the floor. Silk is
-		# a straw; a catch on your line can be drunk at any length.
-		lunch.bundle()
+	# The dice, on a spare set of traits with no body hanging off it, so thousands
+	# of meals resize nothing.
+	var spare := SpiderTraits.new()
+	spare.tree = traits.tree
+	spare.dice.seed = 20260930
+	var hits := 0
+	for i in 2000:
+		spare.owned.clear()
+		spare.misses.clear()
+		if spare.digest(fly, 0) != null:
+			hits += 1
+	var rate := float(hits) / 2000.0
+	check(absf(rate - wings.chance) < 0.025,
+		"the dice keep to the odds: %.1f%% of first flies passed wings on, against %d%%"
+		% [rate * 100.0, roundi(wings.chance * 100.0)])
+
+	# Bad luck runs out. However the dice fall, a fly passes wings on by the meal the
+	# misses make it certain — and every meal that did not counted toward it.
+	spare.owned.clear()
+	spare.misses.clear()
+	var certain_by := ceili((1.0 / wings.chance - 1.0) / spare.pity) + 1
+	var meals := 0
+	var counted := true
+	while not spare.has("wing_buds") and meals < certain_by:
+		var before := spare.missed("wing_buds")
+		if spare.digest(fly, 0) == null:
+			counted = counted and spare.missed("wing_buds") == before + 1
+		meals += 1
+	check(spare.has("wing_buds"),
+		"bad luck runs out: wings came within %d meals of a fly (took %d)" % [certain_by, meals])
+	check(counted, "every meal that missed was counted")
+	check(spare.missed("wing_buds") == 0, "and the count is forgotten once it comes")
+
+	# A fish carries only what a spiderling cannot take yet. An ordinary meal of one
+	# does nothing — but one far enough past your bite is a sure thing, and pays in
+	# something else you could take.
+	spare.owned.clear()
+	spare.misses.clear()
+	check(spare.carried(fish).is_empty(), "a fish carries nothing a spiderling can take")
+	check(spare.digest(fish, 0) == null, "so a fish your own size changes nothing")
+	var paid := spare.digest(fish, 0, fish.size_class - 1)
+	check(paid != null and paid.depth == 0,
+		"but one five sizes past your bite still pays (%s)"
+		% (paid.display_name if paid != null else "nothing"))
+
+	# A practice target off a post in the gym is drunk like anything else, but it
+	# is not in the world, and nothing about it counts toward what you are.
+	var post := load("res://game/data/training/dummy_post.tres") as PreySpecies
+	if check(post != null, "a practice target to eat"):
+		spare.owned.clear()
+		check(spare.digest(post, 0, 5) == null,
+			"which changes nothing, however far past your bite it is")
+		spare.record(post)
+		check(spare.eaten(post.id) == 0, "and is not counted in the larder")
+	spare.free()
+
+	check(traits.owned.is_empty(), "none of that touched the spider")
+
+	# The rule all of that rests on, through the real path: take down something you
+	# had no business taking on, drink it to the end, and it changes you. This is
+	# the one section that lets the spider evolve.
+	traits.evolving = true
+	var heard: Array = []
+	var listen := func(gift: SpiderTrait, source: String) -> void:
+		heard.append([gift.id, source])
+	traits.gained.connect(listen)
+	var wasp := spawn("wasp", spider.global_position + Vector3(0.3, 0.2, 0.0))
+	if check(wasp != null, "a wasp to take on"):
+		wasp.move_speed = 0.0
+		wasp.aggression = 0.0
+		var past := wasp.size_class - spider.stage().bite_power
+		check(past >= traits.sure_past,
+			"two sizes past a spiderling's bite (%d)" % past)
+		# Bundled, as a web that out-held it would leave it, and put on the line so
+		# it can be drunk where it lies.
+		wasp.bundle()
 		await physics_frame
-		spider.tether.hook(lunch)
-		# The larder counts creatures, not mouthfuls, so it is paid on the last
-		# swallow — which means the fly has to actually be finished.
-		var got: float = await eat(lunch, 900)
-		var left := "gone" if not is_instance_valid(lunch) \
-			else "%.1f of %.1f left" % [lunch.biomass, lunch.full_biomass]
-		check(traits.eaten("fly") == 1,
-			"draining one puts it in the larder (%d, +%.1f biomass, bite %d, %s)"
-			% [traits.eaten("fly"), got, spider.stage().bite_power, left])
+		spider.tether.hook(wasp)
+		var got: float = await eat(wasp, 900)
+		check(not is_instance_valid(wasp) or wasp.eaten,
+			"drunk to the end (+%.1f biomass)" % got)
+		check(traits.eaten("wasp") == 1, "the larder counts it")
+		check(heard.size() == 1, "and it changed the spider — one trait (%s)" % str(heard))
+		if heard.size() == 1:
+			check(heard[0][1] == "Wasp" and traits.has(str(heard[0][0])),
+				"and says it came from the wasp (%s)" % str(heard[0]))
 		if spider.tether.is_towing():
 			spider.tether.cut()
+	traits.gained.disconnect(listen)
+	traits.evolving = false
 
-	var wanted := int(wings.cost["fly"])
-	_feed_larder("fly", wanted - traits.eaten("fly"))
-	check(traits.eaten("fly") == wanted, "eat enough and the trait is paid for")
-	check(traits.affordable(wings), "wings can be afforded")
-	check(not traits.affordable(bulk),
-		"but not a heavy frame as well — it wants %d" % int(bulk.cost["fly"]))
-
-	check(traits.buy(wings), "so the wings are taken")
-	check(traits.has("wing_buds"), "and the spider has them")
-	check(traits.eaten("fly") == 0,
-		"which spent the flies (%d left)" % traits.eaten("fly"))
-	check(not traits.buy(wings), "the same trait cannot be taken twice")
-	check(not traits.affordable(bulk),
-		"and the same fly cannot buy both branches")
-	check(traits.unlocked(lean), "what stood on the wings is open now")
+	# A trait is a body, not a stat line: taking one resizes the spider the same way
+	# growing a tier does, through the same signal.
+	traits.owned.clear()
+	traits.changed.emit()
+	await physics_frame
+	check(traits.take(wings), "wings can be taken")
+	check(not traits.take(wings), "but not twice")
+	check(traits.unlocked(lean), "and what stood on them is open now")
 
 	# Wings are a lighter fall, with no key to hold.
 	check(traits.glide() > 0.0, "wings cancel some of a fall (%.2f)" % traits.glide())
@@ -3968,14 +4061,10 @@ func _test_the_tree() -> void:
 		% [gliding, plummeting])
 	check(gliding > 0.0, "and it is still a fall — wings flatten it, not stop it")
 
-	# A trait is a body, not a stat line: buying one resizes the spider the
-	# same way growing a tier does, through the same signal.
 	var tier := spider.growth.stage_index
 	var tall := spider.stage().body_height
 	var capsule := spider.collision.shape as CapsuleShape3D
-	_feed_larder("midge", int(lean.cost["midge"]))
-	_feed_larder("moth", int(lean.cost["moth"]))
-	check(traits.buy(lean), "a hollow frame can be taken once the wings are there")
+	check(traits.take(lean), "a hollow frame can be taken once the wings are there")
 	await physics_frame
 	check(spider.stage().body_height < tall,
 		"which makes the spider smaller (%.3f -> %.3f)" % [tall, spider.stage().body_height])
@@ -3990,9 +4079,8 @@ func _test_the_tree() -> void:
 		"and is quicker than its tier for it")
 
 	# Bulk is the other end of the same ruler.
-	_feed_larder("fly", int(bulk.cost["fly"]))
 	var small := spider.stage().body_height
-	check(traits.buy(bulk), "a heavy frame can be taken alongside it")
+	check(traits.take(bulk), "a heavy frame can be taken alongside it")
 	await physics_frame
 	check(spider.stage().body_height > small,
 		"and puts the size back on (%.3f -> %.3f)" % [small, spider.stage().body_height])
@@ -4040,9 +4128,7 @@ func _test_fangs() -> void:
 	var line: Array[String] = ["paralytic", "digestive", "hunting_fangs"]
 	for step in line:
 		var gift := traits.by_id(step)
-		for species_id in gift.cost:
-			_feed_larder(str(species_id), int(gift.cost[species_id]))
-		check(traits.buy(gift), "the venom line goes up in order — %s" % gift.display_name)
+		check(traits.take(gift), "the venom line goes up in order — %s" % gift.display_name)
 	await physics_frame
 	check(traits.has_fangs(), "and ends in fangs")
 
@@ -4067,7 +4153,7 @@ func _test_fangs() -> void:
 		% quarry.display_name)
 
 
-## The screen the tree is spent on.
+## The evolution screen: a map of what eating could make you, not a shop.
 func _test_the_tree_on_screen() -> void:
 	var hud := level.get_node_or_null("HUD") as SpiderHUD
 	if not check(hud != null, "the level has a HUD to hang the tree off"):
@@ -4079,31 +4165,31 @@ func _test_the_tree_on_screen() -> void:
 	check(screen._cards.size() == traits.tree.size(),
 		"with a card for every trait (%d)" % screen._cards.size())
 
-	var taken := screen._cards.get("wing_buds") as Panel
-	var shut := screen._cards.get("girder_legs") as Panel
-	if check(taken != null and shut != null, "owned and locked ones both on it"):
-		var cost := taken.get_node_or_null(NodePath("Lines/Cost")) as Label
-		check(cost != null and cost.text.contains("yours"),
-			"an owned trait says so instead of a price (%s)"
-			% (cost.text if cost != null else "—"))
-		var locked := shut.get_node_or_null(NodePath("Lines/Cost")) as Label
-		check(locked != null and locked.text.begins_with("needs"),
-			"and a locked one names what it stands on (%s)"
-			% (locked.text if locked != null else "—"))
+	var owned := screen.from_text("wing_buds")
+	check(owned.contains("yours"), "an owned trait says so (%s)" % owned)
+	var locked := screen.from_text("girder_legs")
+	check(locked.begins_with("needs"), "a locked one names what it stands on (%s)" % locked)
+
+	# An open one says what carries it and the odds from each, as the spider is now.
+	var gift := traits.by_id("broad_back")
+	var open_text := screen.from_text("broad_back")
+	if check(gift != null and traits.unlocked(gift) and not traits.has(gift.id),
+			"a broad back is open by now"):
+		check(open_text.contains("Beetle") and open_text.contains("%"),
+			"an open one lists what carries it, with the odds (%s)" % open_text)
+		var bite := spider.stage().bite_power
+		var sure := false
+		for kind in traits.carriers(gift):
+			sure = sure or kind.size_class - bite >= traits.sure_past
+		if sure:
+			check(open_text.contains("sure"),
+				"down to the ones a meal of is a sure thing (%s)" % open_text)
 
 	screen.show_tree()
 	check(screen.open and screen.visible, "[E] opens it")
 	check(screen._larder.text != "", "with the larder across the top (%s)" % screen._larder.text)
 	screen.close()
 	check(not screen.open and not screen.visible, "and [E] again puts it away")
-
-
-## Puts creatures straight into the larder, for a test that is about spending
-## them rather than about catching them.
-func _feed_larder(species_id: String, how_many: int) -> void:
-	var kind := PreyLibrary.find(species_id)
-	for i in maxi(how_many, 0):
-		traits.record(kind)
 
 
 ## Speed one tenth of a second of falling adds, at a given glide. Measured well

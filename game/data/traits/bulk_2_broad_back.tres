@@ -10,10 +10,8 @@ description = "Thread that comes off you thicker, and enough behind a bite to ho
 branch = 0
 depth = 1
 requires = PackedStringArray("heavy_frame")
-cost = {
-"beetle": 4,
-"moth": 3
-}
+carried_by = PackedStringArray("beetle", "cockroach", "rat", "cat", "dog")
+chance = 0.08
 body_scale = 1.22
 quality_scale = 1.2
 bite_bonus = 1

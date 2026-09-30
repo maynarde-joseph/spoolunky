@@ -1,7 +1,14 @@
 class_name TraitTree
 extends Control
 
-## The evolution screen. Three branches, three deep, and one creature-cost each.
+## The evolution screen. Three branches, three deep: what you are, and what eating
+## might make you.
+##
+## Nothing is bought here any more — traits come from meals, by chance — so the
+## screen is a map rather than a shop. Every trait you do not have yet says what
+## carries it and what your odds are from a meal of each, as you are now: those
+## move as you climb the ladder, as your luck runs out, and with how big the
+## creature is next to you, and this is the one place all three can be read off.
 ##
 ## Built in code for the same reason the bar is: it is nine of the same card,
 ## and a grid authored by hand is a grid where one column drifts and nobody
@@ -10,29 +17,33 @@ extends Control
 ## the screen grows a card for it with nothing here to edit.
 ##
 ## Locked traits are shown, not hidden. You should always be able to see what
-## you are working toward and what it will cost, which is the one thing worth
-## keeping from the genre this game is not.
+## you are working toward, which is the one thing worth keeping from the genre
+## this game is not.
 
 const CARD := Vector2(320.0, 132.0)
 const COLUMN_GAP := 22.0
 const CARD_GAP := 14.0
 
-## Owned, affordable, reachable but not yet paid for, and still locked.
+## Owned, open — something you can eat could pass it on — and still locked.
 const TAKEN := Color(0.62, 0.92, 0.66, 1.0)
-const READY := Color(1.0, 0.98, 0.82, 1.0)
-const WANTING := Color(0.82, 0.85, 0.92, 1.0)
+const OPEN := Color(1.0, 0.98, 0.82, 1.0)
 const SHUT := Color(0.52, 0.54, 0.60, 1.0)
 
 var open := false
 
 var _traits: SpiderTraits
+var _growth: SpiderGrowth
 var _larder: Label
 var _cards := {}
 var _restore_mouse := Input.MOUSE_MODE_CAPTURED
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Anchors *and* offsets. By the time this runs the screen is already in the
+	# tree, and setting anchors alone keeps the rect it has — which was none — so
+	# for as long as it read like that the page sat in the top corner with nothing
+	# dimmed behind it.
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 
@@ -45,11 +56,16 @@ func _ready() -> void:
 
 
 ## Binds to a spider's traits and builds a card per trait. Safe to call once.
-func setup(traits: SpiderTraits) -> void:
+## [param growth] is where the odds are read from; without it they are a
+## spiderling's.
+func setup(traits: SpiderTraits, growth: SpiderGrowth = null) -> void:
 	if _traits != null or traits == null:
 		return
 	_traits = traits
+	_growth = growth
 	_traits.changed.connect(_refresh)
+	if _growth != null:
+		_growth.stage_changed.connect(_on_stage_changed)
 	_build()
 	_refresh()
 
@@ -67,9 +83,9 @@ func show_tree() -> void:
 	open = true
 	visible = true
 	_refresh()
-	# A screen you click on needs a pointer. The spider ignores input while the
-	# mouse is free, so freeing it is also what stops you spinning a web into
-	# the menu you are reading.
+	# Nothing on it is clicked any more, but the mouse is still freed: the spider
+	# ignores input while it is, and that is what stops you spinning a web into
+	# the page you are reading.
 	_restore_mouse = Input.get_mouse_mode()
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -80,6 +96,12 @@ func close() -> void:
 	open = false
 	visible = false
 	Input.set_mouse_mode(_restore_mouse)
+
+
+## What the card for [param trait_id] says about where the trait comes from.
+func from_text(trait_id: String) -> String:
+	var line := _line_of(trait_id, "From")
+	return line.text if line != null else ""
 
 
 # --- building -----------------------------------------------------------
@@ -104,8 +126,9 @@ func _build() -> void:
 	_larder = _heading("", 24, Color(1.0, 0.88, 0.7, 1.0))
 	page.add_child(_larder)
 
-	page.add_child(_heading("what you have eaten is what you spend    ·    [E] back",
-		19, Color(0.72, 0.75, 0.82, 1.0)))
+	page.add_child(_heading(
+		"what you eat can change you — likelier the further up you are, and the bigger it is"
+		+ "    ·    [E] back", 19, Color(0.72, 0.75, 0.82, 1.0)))
 
 	var columns := HBoxContainer.new()
 	columns.name = "Branches"
@@ -134,20 +157,17 @@ func _column(which: int) -> VBoxContainer:
 	return column
 
 
-func _card(gift: SpiderTrait) -> Panel:
-	var card := Panel.new()
+## A card that grows to what is written on it. The list of what carries a trait
+## runs to two or three lines, and a card of fixed height let it spill into the
+## one below.
+func _card(gift: SpiderTrait) -> PanelContainer:
+	var card := PanelContainer.new()
 	card.name = gift.id
 	card.custom_minimum_size = CARD
-	card.mouse_filter = Control.MOUSE_FILTER_STOP
-	card.gui_input.connect(_on_card_input.bind(gift))
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var lines := VBoxContainer.new()
 	lines.name = "Lines"
-	lines.set_anchors_preset(Control.PRESET_FULL_RECT)
-	lines.offset_left = 12.0
-	lines.offset_right = -12.0
-	lines.offset_top = 9.0
-	lines.offset_bottom = -9.0
 	lines.add_theme_constant_override("separation", 2)
 	lines.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(lines)
@@ -155,7 +175,7 @@ func _card(gift: SpiderTrait) -> Panel:
 	lines.add_child(_line("Name", gift.display_name, 23))
 	lines.add_child(_line("What", gift.description, 15))
 	lines.add_child(_line("Effect", gift.effect_line(), 17))
-	lines.add_child(_line("Cost", "", 17))
+	lines.add_child(_line("From", "", 17))
 	return card
 
 
@@ -165,6 +185,7 @@ func _line(line_name: String, text: String, size: int) -> Label:
 	label.text = text
 	label.add_theme_font_size_override("font_size", size)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size = Vector2(CARD.x - 24.0, 0.0)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
@@ -179,7 +200,18 @@ func _heading(text: String, size: int, colour: Color) -> Label:
 	return label
 
 
+func _line_of(trait_id: String, line_name: String) -> Label:
+	var card: Control = _cards.get(trait_id)
+	if card == null:
+		return null
+	return card.get_node_or_null(NodePath("Lines/" + line_name)) as Label
+
+
 # --- state --------------------------------------------------------------
+
+func _on_stage_changed(_stage: GrowthStage, _index: int) -> void:
+	_refresh()
+
 
 func _refresh() -> void:
 	if _traits == null:
@@ -187,31 +219,21 @@ func _refresh() -> void:
 	if _larder != null:
 		_larder.text = _traits.larder_line()
 	for gift in _traits.tree:
-		var card: Panel = _cards.get(gift.id)
+		var card: PanelContainer = _cards.get(gift.id)
 		if card == null:
 			continue
 		_dress(card, gift)
 
 
-func _dress(card: Panel, gift: SpiderTrait) -> void:
+func _dress(card: PanelContainer, gift: SpiderTrait) -> void:
 	var taken := _traits.has(gift.id)
 	var reachable := _traits.unlocked(gift)
-	var paid := _traits.affordable(gift)
-
-	var tint := SHUT
-	if taken:
-		tint = TAKEN
-	elif not reachable:
-		tint = SHUT
-	elif paid:
-		tint = READY
-	else:
-		tint = WANTING
+	var tint := TAKEN if taken else (OPEN if reachable else SHUT)
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.07, 0.09, 0.12, 0.94)
-	style.border_color = Color(tint.r, tint.g, tint.b, 0.9 if taken or paid else 0.3)
-	var edge := 3 if (taken or (reachable and paid)) else 1
+	style.border_color = Color(tint.r, tint.g, tint.b, 0.9 if taken else 0.35)
+	var edge := 3 if taken else 1
 	style.border_width_left = edge
 	style.border_width_right = edge
 	style.border_width_top = edge
@@ -220,23 +242,51 @@ func _dress(card: Panel, gift: SpiderTrait) -> void:
 	style.corner_radius_top_right = 4
 	style.corner_radius_bottom_left = 4
 	style.corner_radius_bottom_right = 4
+	style.content_margin_left = 12.0
+	style.content_margin_right = 12.0
+	style.content_margin_top = 9.0
+	style.content_margin_bottom = 9.0
 	card.add_theme_stylebox_override("panel", style)
 	card.modulate = Color(1, 1, 1, 1) if reachable or taken else Color(1, 1, 1, 0.55)
 
-	var name_line := card.get_node_or_null(NodePath("Lines/Name")) as Label
+	var name_line := _line_of(gift.id, "Name")
 	if name_line != null:
 		name_line.add_theme_color_override("font_color", tint)
 
-	var cost_line := card.get_node_or_null(NodePath("Lines/Cost")) as Label
-	if cost_line == null:
+	var from_line := _line_of(gift.id, "From")
+	if from_line == null:
 		return
 	if taken:
-		cost_line.text = "— yours —"
+		from_line.text = "— yours —"
 	elif not reachable:
-		cost_line.text = "needs %s" % _requirement_names(gift)
+		from_line.text = "needs %s" % _requirement_names(gift)
 	else:
-		cost_line.text = _traits.cost_line(gift)
-	cost_line.add_theme_color_override("font_color", tint)
+		from_line.text = _odds_line(gift)
+	from_line.add_theme_color_override("font_color", tint)
+
+
+## What carries it and the odds from a meal of each, for the spider as it is now.
+## Carriers with the same odds are grouped, least likely first, so the end of the
+## line is where to go hunting.
+func _odds_line(gift: SpiderTrait) -> String:
+	var rung := _growth.stage_index if _growth != null else 0
+	var bite := _growth.current_stage().bite_power if _growth != null else 1
+	var names_at := {}
+	for kind in _traits.carriers(gift):
+		var percent := roundi(_traits.odds(gift, kind, rung, kind.size_class - bite) * 100.0)
+		if not names_at.has(percent):
+			names_at[percent] = PackedStringArray()
+		var names: PackedStringArray = names_at[percent]
+		names.append(kind.display_name)
+		names_at[percent] = names
+	var levels: Array = names_at.keys()
+	levels.sort()
+	var parts := PackedStringArray()
+	for percent in levels:
+		var names: PackedStringArray = names_at[percent]
+		var odds_text := "sure" if percent >= 100 else ("%d%%" % maxi(percent, 1))
+		parts.append("%s %s" % [", ".join(names), odds_text])
+	return "  ·  ".join(parts) if parts.size() > 0 else "carried by nothing yet"
 
 
 func _requirement_names(gift: SpiderTrait) -> String:
@@ -245,13 +295,3 @@ func _requirement_names(gift: SpiderTrait) -> String:
 		var earlier := _traits.by_id(str(needed))
 		parts.append(earlier.display_name if earlier != null else str(needed))
 	return ", ".join(parts)
-
-
-func _on_card_input(event: InputEvent, gift: SpiderTrait) -> void:
-	if not open:
-		return
-	var click := event as InputEventMouseButton
-	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
-		return
-	accept_event()
-	_traits.buy(gift)

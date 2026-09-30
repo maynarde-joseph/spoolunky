@@ -39,6 +39,11 @@ var _tether: SilkTether
 var _taken := 0.0
 var _species := ""
 
+## How many sizes past the spider's bite the meal was when it began. Noted then
+## rather than at the end, because a big enough meal grows you part-way through,
+## and what it was worth is what it was when you took it on.
+var _past := 0
+
 
 func setup(spider: SpiderPlayer, growth: SpiderGrowth, traits: SpiderTraits,
 		view: SpiderCamera, tether: SilkTether) -> void:
@@ -139,6 +144,7 @@ func begin(prey: Prey) -> bool:
 	meal = prey
 	_taken = 0.0
 	_species = prey.species
+	_past = prey.size_class - _spider.stage().bite_power
 	# Said on the way in, because a tap now takes a mouthful rather than the
 	# whole creature, and without this a tap would look like nothing happened.
 	notice.emit("Feeding on the %s — hold to drink" % prey.species)
@@ -174,11 +180,15 @@ func drink(delta: float) -> void:
 	# quietly: a notice a frame would bury everything else the HUD has to say.
 	if _growth.feed(food, _species) > 0:
 		_taken = 0.0
-	# The larder counts creatures, not mouthfuls, so it is paid on the last one.
+	# The larder counts creatures, not mouthfuls, so it is paid on the last one —
+	# and so is the chance that what you ate changes you. That is rolled once the
+	# meal is over, so that news of it is the last thing said.
 	if meal.eaten:
-		if _traits != null:
-			_traits.record(meal.kind)
+		var kind := meal.kind
 		stop()
+		if _traits != null:
+			_traits.record(kind)
+			_traits.digest(kind, _growth.stage_index, _past)
 
 
 ## How much faster a bigger mouth drinks: the square root of its bite, so the

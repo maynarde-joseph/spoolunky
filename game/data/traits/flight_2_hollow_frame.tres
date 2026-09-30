@@ -10,10 +10,8 @@ description = "You grow lean instead of large — slighter than others your age,
 branch = 1
 depth = 1
 requires = PackedStringArray("wing_buds")
-cost = {
-"midge": 8,
-"moth": 3
-}
+carried_by = PackedStringArray("midge", "moth", "butterfly", "bat", "parrot", "cat")
+chance = 0.08
 body_scale = 0.72
 speed_scale = 1.25
 reach_scale = 1.2

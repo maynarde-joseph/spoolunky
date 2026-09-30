@@ -4,10 +4,11 @@ extends Resource
 
 ## One evolutionary step the spider can take.
 ##
-## The tree is what turns eating into a decision. Biomass still grows you along
-## the ladder in [GrowthStage]; creatures also pile up in the larder, and the
-## larder is spent here. So there is never a reason to stop eating — that was
-## the one thing worth protecting — but what you become is yours to pick.
+## Traits come from what you eat. Each one is carried by a few kinds of creature,
+## and every meal of one you finish is a chance it passes to you — see
+## [method SpiderTraits.digest] for how the odds are made. Biomass still grows you
+## along the ladder in [GrowthStage]; this is the other thing a meal can do, so
+## what you become is decided by what you hunt.
 ##
 ## A trait is almost entirely a set of multipliers over the current size tier,
 ## which is why so little code had to change to support them: everything in the
@@ -47,10 +48,13 @@ const BRANCH_NAMES := ["Bulk", "Flight", "Venom"]
 ## Trait ids that must already be owned. Empty for a root.
 @export var requires: PackedStringArray = PackedStringArray()
 
-## What it costs: species id to how many of that creature you must have eaten.
-## Buying spends them, so the larder is a currency and two traits at the same
-## depth are a real choice rather than a matter of waiting.
-@export var cost := {"fly": 5}
+## The creatures that carry it, by species id. Eat one and it may pass to you.
+@export var carried_by := PackedStringArray(["fly"])
+
+## The chance one meal of a carrier passes it on, for a spider on the first rung
+## of the ladder. Every rung up raises it, and so does every meal it could have
+## come from and did not — see [method SpiderTraits.odds].
+@export_range(0.0, 1.0, 0.01) var chance := 0.1
 
 
 @export_group("Body")

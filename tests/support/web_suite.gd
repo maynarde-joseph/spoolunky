@@ -219,6 +219,11 @@ func rewind_growth() -> void:
 	if traits != null:
 		traits.owned.clear()
 		traits.larder.clear()
+		traits.misses.clear()
+		# A meal can change the spider now, and nearly every section eats something
+		# in passing. Evolving is off unless a section is about it, so a lucky fly
+		# cannot resize the spider in the middle of a check about something else.
+		traits.evolving = false
 		traits.changed.emit()
 
 

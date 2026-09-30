@@ -10,10 +10,8 @@ description = "Legs like scaffolding. The silk that comes off them is rope."
 branch = 0
 depth = 2
 requires = PackedStringArray("broad_back")
-cost = {
-"wasp": 3,
-"beetle": 6
-}
+carried_by = PackedStringArray("beetle", "rat", "dog", "octopus", "shark")
+chance = 0.05
 body_scale = 1.25
 quality_scale = 1.2
 bite_bonus = 1

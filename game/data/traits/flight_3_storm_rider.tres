@@ -10,10 +10,8 @@ description = "Wings that catch a draught. Vents and grates stop being walls and
 branch = 1
 depth = 2
 requires = PackedStringArray("hollow_frame")
-cost = {
-"moth": 4,
-"wasp": 2
-}
+carried_by = PackedStringArray("wasp", "bee", "bat", "parrot")
+chance = 0.05
 speed_scale = 1.15
 jump_scale = 1.35
 glide = 0.28

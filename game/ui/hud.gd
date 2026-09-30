@@ -26,7 +26,7 @@ Right Mouse  (hold)    wind up a bigger ball: a bigger web, easier to hit
                        heading, so keep the cross on it and let go
 1-9 / wheel            pick a pocket on the bar
 X                      pick up the item you are looking at
-E                      the tree — spend what you have eaten
+E                      evolution — what eating has made you, and might
 F                      wrap prey, then drain it
 X                      pull down the web you're looking at
 O                      the spider's look: detailed, low poly or minimal
@@ -140,7 +140,7 @@ func _bind() -> void:
 	_spider.notice.connect(show_message)
 	_spider.skill_tree_toggled.connect(_on_tree_asked_for)
 	if _spider.traits != null:
-		_tree.setup(_spider.traits)
+		_tree.setup(_spider.traits, _spider.growth)
 		_spider.traits.gained.connect(_on_trait_gained)
 	_spider.growth.biomass_changed.connect(_on_biomass_changed)
 	_spider.grew.connect(_on_grew)
@@ -269,8 +269,12 @@ func _on_tree_asked_for() -> void:
 		_tree.toggle()
 
 
-func _on_trait_gained(gift: SpiderTrait) -> void:
-	show_message("%s — %s" % [gift.display_name, gift.effect_line()])
+func _on_trait_gained(gift: SpiderTrait, source: String) -> void:
+	if source.is_empty():
+		show_message("%s — %s" % [gift.display_name, gift.effect_line()])
+		return
+	show_message("The %s changed you: %s — %s"
+		% [source, gift.display_name, gift.effect_line()])
 
 
 # --- the bar ------------------------------------------------------------

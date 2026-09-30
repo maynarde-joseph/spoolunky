@@ -10,7 +10,6 @@ description = "You dissolve a creature rather than drain it, and get far more ou
 branch = 2
 depth = 1
 requires = PackedStringArray("paralytic")
-cost = {
-"moth": 5
-}
+carried_by = PackedStringArray("fly", "moth", "cockroach", "rat", "fish", "octopus")
+chance = 0.08
 drain_scale = 1.5
