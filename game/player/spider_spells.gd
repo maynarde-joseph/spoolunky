@@ -330,9 +330,59 @@ func cast_now(spell: SpiderSpell, wound := 0.0) -> bool:
 
 
 ## What each form does. Returns whether it went, and where.
-func _cast_form(spell: SpiderSpell, _wound: float) -> Dictionary:
+func _cast_form(spell: SpiderSpell, wound: float) -> Dictionary:
+	match spell.form:
+		SpiderSpell.Form.VENOM:
+			return _spit(spell, wound)
 	push_warning("%s has a form nothing casts yet" % spell.display_name)
 	return {"cast": false}
+
+
+# --- venom --------------------------------------------------------------
+
+## A glob of venom, thrown the way silk is: at the creature under the cross, led
+## if it is moving, and straight on if nothing is — the same bolt, drawn green.
+## What it hits is dosed (see [method Prey.poison]) and softens from the inside
+## for as long as the dose lasts, while you do something else.
+##
+## A dose does not stack; a second one tops the first back up. Fangs make it a
+## fanged dose, which works a good deal harder.
+func _spit(spell: SpiderSpell, wound: float) -> Dictionary:
+	var from := _view.aim_origin()
+	var heading := _view.aim_forward()
+	var quarry := _builder.shot_target() if _builder != null else null
+	if quarry != null:
+		var lead := _builder.shot_lead(quarry) - from
+		if lead.length_squared() > 0.000001:
+			heading = lead.normalized()
+	var glob := SilkShot.fire(from, heading, body_height(), exclusions())
+	glob.name = "VenomGlob"
+	glob.catch_radius = spell.size_at(wound) * body_height()
+	glob.colour = spell.colour
+	glob.glow = 1.6
+	glob.glows_own = true
+	glob.limit_to(cast_reach())
+	glob.landed.connect(_on_glob_landed.bind(spell, spell.duration_at(wound), venom_strength()))
+	glob.add_to_group("spell_effects")
+	glob.launch_from(_host(), from)
+	return {"cast": true, "at": from + heading * cast_reach()}
+
+
+## How hard a dose works: fanged, with fangs.
+func venom_strength() -> float:
+	return Prey.FANG_VENOM if _traits != null and _traits.has_fangs() else 1.0
+
+
+func _on_glob_landed(at: Vector3, _normal: Vector3, struck: Node3D, _heading: Vector3,
+		spell: SpiderSpell, dose: float, strength: float) -> void:
+	SpellFlash.burst(_host(), at, spell.colour, body_height() * 0.5)
+	var prey := struck as Prey
+	if prey == null or not is_instance_valid(prey):
+		return
+	if prey.poison(dose, strength):
+		notice.emit("Venom in the %s — it softens for %ds" % [prey.species, roundi(dose)])
+	else:
+		notice.emit("The %s is past venom" % prey.species)
 
 
 # --- where a spell goes --------------------------------------------------

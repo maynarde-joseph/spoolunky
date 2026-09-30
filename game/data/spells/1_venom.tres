@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="SpiderSpell" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_spell.gd" id="1_spell"]
+
+[resource]
+script = ExtResource("1_spell")
+id = "venom"
+display_name = "Venom Spit"
+description = "A glob of venom, thrown like silk. What it hits softens from the inside while you do something else."
+form = 1
+order = 1
+unlock_stage = 1
+keys = PackedStringArray("paralytic")
+cooldown = 4.0
+size = Vector2(0.1, 0.24)
+duration = Vector2(6, 10)
+colour = Color(0.46, 0.86, 0.3, 1)

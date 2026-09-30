@@ -89,7 +89,8 @@ const BRANCH_NAMES := ["Bulk", "Flight", "Venom"]
 @export_range(0.0, 0.9, 0.01) var glide := 0.0
 
 ## Fangs that work without a web. Anything inside your bite power can be
-## drained where it stands, instead of having to be held first.
+## drained where it stands, instead of having to be held first — and every dose
+## of venom you spit is a fanged one.
 @export var fangs := false
 
 
@@ -122,6 +123,7 @@ func effect_line() -> String:
 		parts.append("glide")
 	if fangs:
 		parts.append("kill without a web")
+		parts.append("fanged venom")
 	_note(parts, "spell wait", cast_scale)
 	return "  ".join(PackedStringArray(parts))
 

@@ -56,6 +56,14 @@ const SPEED := 26.0
 ## from the level for ever.
 @export var lifetime := 2.0
 
+## What the bead is drawn in, and how brightly it glows. Silk's own by default;
+## a glob of venom is thrown by the same code and only looks different.
+@export var colour := Color(0.10, 0.11, 0.14, 1.0)
+@export var glow := 0.9
+
+## Whether it glows in its own colour rather than silk's pale one.
+@export var glows_own := false
+
 var _velocity := Vector3.ZERO
 var _travelled := 0.0
 var _age := 0.0
@@ -245,8 +253,10 @@ func _build_visual() -> void:
 	var material := WebGeometry.silk_material()
 	# A bead you can follow, and a brighter one than the thread it becomes: in
 	# flight it is the only thing on screen that has to be tracked.
-	material.albedo_color = Color(0.10, 0.11, 0.14, 1.0)
-	material.emission_energy_multiplier = 0.9
+	material.albedo_color = colour
+	material.emission_energy_multiplier = glow
+	if glows_own:
+		material.emission = colour
 	var view := MeshInstance3D.new()
 	view.name = "Ball"
 	view.mesh = mesh
