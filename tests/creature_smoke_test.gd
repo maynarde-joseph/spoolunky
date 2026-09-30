@@ -194,9 +194,11 @@ func _check_wrapped(prey: Prey, view: CreatureView, motion: CreatureMotion) -> v
 		% [what, curled, spread])
 
 
-## Every end it draws: feet, and what it flies or swims with.
+## Every end it draws: feet, and what it flies or swims with. A copy: a packed
+## array is handed over by reference, and appending to the motion's own list of
+## feet would give it wings until it next drew them.
 func _ends(motion: CreatureMotion) -> PackedVector3Array:
-	var ends := motion.feet()
+	var ends := motion.feet().duplicate()
 	ends.append_array(motion.strokes())
 	return ends
 
