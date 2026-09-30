@@ -21,6 +21,11 @@ size 5. The world never changes; you do — and the world is full of things
 built for a body that is not yours, which start responding to you once your
 body is enough.
 
+And you become what you eat. Any meal can change you — wings from the things
+that fly, venom from the things that sting — and the bigger it was next to you,
+the likelier. Take down something you had no business taking on, and it always
+does (§3.1).
+
 ---
 
 ## 2. The core loop
@@ -291,9 +296,11 @@ once. Eight tiers, each roughly doubling body length.
 | 7 | City Weaver | 4 m | dogs, the octopus | vast | structural webs across streets |
 | 8 | The Architect | 12 m | the shark | — | permanent territory webs |
 
-What each eats is what the game has: the creature whose size class the tier's
-bite power reaches. The shed is built for the first three, the sewers for the
-third to the fifth, the park for the fifth and sixth, and the lake for the rest.
+What each eats is what it is built for: the creature whose size class the
+tier's bite power reaches. Anything bigger is still food if you can hold it,
+and the best meal in the game — it is how you evolve fastest (§3.1). The shed
+is built for the first three, the sewers for the third to the fifth, the park
+for the fifth and sixth, and the lake for the rest.
 
 Growth is **visible and physical**: the camera rises, your stride lengthens,
 your webs get coarser and stronger, the level geometry shrinks around you. The
@@ -316,23 +323,50 @@ So every gate reads the same direction: you could not do this before, you can
 now. A door you are too big for is never the design; a door that needs more of
 you than you have yet, always is.
 
-### 3.1 The tree — what you spend the eating on
+### 3.1 Evolution — what eating turns you into
 
 The rejection above has one real cost, and it took a while to see it: if the
 only thing eating does is move you up a fixed ladder, there is **no decision in
 the game at all**. You eat, you get bigger, the next door opens. That is a
 progress bar with a spider on it.
 
-So eating pays twice. A drained creature gives **biomass**, which still carries
-you up the ladder exactly as before — and it also goes into the **larder**, a
-tally of what you have eaten, by species. The larder is a currency, and it is
-spent on the tree.
+So a meal does two things. A drained creature gives **biomass**, which still
+carries you up the ladder exactly as before — and it may **change you**. Every
+creature carries a few traits, and every one you drink to the end is a chance
+that one of them passes to you. What you become is decided by what you hunt:
+wings come from things that fly, a heavy frame from things with armour, venom
+from things that sting.
 
-That keeps the one thing the rejection was protecting. Eating is never the
-wrong move, because every creature is both growth *and* currency; there is no
-build that wants you to stop. What changes is that **what you become** is a
-choice, and a beetle spent on Broad Back is a beetle not spent on Hunting
-Fangs.
+**How the odds are made.** One function, `SpiderTraits.odds`, and four things
+go into it:
+
+| | |
+|---|---|
+| **The trait** | Its own chance a meal, for a spiderling: 12% for the first of a branch, 8% for the second, 5% for the third |
+| **The ladder** | Every rung past the first adds a quarter of that. A Sewer Widow, on the fifth, has twice a spiderling's odds; The Architect nearly three times |
+| **Bad luck** | Every meal that could have passed a trait on and did not adds half its chance to the next roll, until it is certain. A one-in-eight trait always comes by the sixteenth meal. Luck can slow you down; it cannot lock you out |
+| **The size of it** | One size past your bite doubles the odds. Two or more past it is a **sure thing** — and if the creature carries nothing you could take, it pays in something else you could |
+
+At most one trait a meal. Traits still stand on each other — no lean frame
+before the wings it grows from — so a meal only rolls for what the creature
+carries that you could take *now*, and the rest waits.
+
+**Why chance, and why the big ones always pay.** The tree used to be a shop.
+The larder was a currency, and a beetle spent on Broad Back was a beetle not
+spent on Hunting Fangs. That made eating a decision, but a bookkeeping one,
+made on a menu. Chance moves the decision into the world: what you choose is
+*what to hunt*, which is the game. And the sure thing gives growth its second
+meaning. Growing is how you come to take on creatures you had no business
+taking on before — but a spider that manages it early, softening a wasp shot by
+shot until a spiderling's web can hold it, has done the thing the game is
+about, and that must never come up empty.
+
+**Anything you can hold, you can eat.** The other half of the same change. Size
+used to refuse a meal outright — *too big for you, grow first*. Now it decides
+only how you get hold of one: a creature past your bite has to be beaten by the
+silk before it can be wrapped — held in a web until it has fought itself out,
+bundled by silk that out-holds it, or killed by venom — and no fangs take it
+loose. While it is still fighting, it is not yours yet.
 
 Three branches, three deep:
 
@@ -342,37 +376,60 @@ Three branches, three deep:
 | II | Broad Back — bigger still, harder bite | Hollow Frame — **smaller**, faster, longer reach | Digestive Flood — far more out of a kill |
 | III | Girder Legs — rope for silk | Storm Rider — ride a draught | Hunting Fangs — kill with no web behind it |
 
-**Size is one branch, not the trunk.** Bulk *is* the old ladder, made into a
-decision instead of a consequence. Flight is the other end of the same ruler:
-Hollow Frame makes you 28% shorter than your tier, so you are not a smaller
-spider, you are a **lean** one — a Huntsman that fits where Huntsmen do not.
+And what carries each:
+
+| Trait | Carried by |
+|---|---|
+| Heavy Frame | ant, beetle, cockroach, rat, dog |
+| Broad Back | beetle, cockroach, rat, cat, dog |
+| Girder Legs | beetle, rat, dog, octopus, shark |
+| Wing Buds | midge, mosquito, fly, moth, butterfly, bee, bat, parrot |
+| Hollow Frame | midge, moth, butterfly, bat, parrot, cat |
+| Storm Rider | wasp, bee, bat, parrot |
+| Paralytic Bite | mosquito, ant, wasp, bee |
+| Digestive Flood | fly, moth, cockroach, rat, fish, octopus |
+| Hunting Fangs | wasp, beetle, cat, octopus, shark |
+
+Every creature carries at least one, and the smallest things in the shed carry
+all three roots, so a spiderling can start down any branch.
+
+**Size is one branch, not the trunk.** Bulk *is* the old ladder, made into
+something you grow into instead of a consequence. Flight is the other end of
+the same ruler: Hollow Frame makes you 28% shorter than your tier, so you are
+not a smaller spider, you are a **lean** one — a Huntsman that fits where
+Huntsmen do not.
 
 This is how "being small is sometimes good" gets in without reopening the
 argument above. You never *avoid* eating to stay small; you eat exactly as much
-and spend it differently. The escalation fantasy survives intact for anyone who
-wants it, because Bulk is right there and it is the straight road.
+and hunt different things. The escalation fantasy survives intact for anyone
+who wants it, because Bulk is right there and it is the straight road.
 
 **A trait is a body, not a stat line.** Mechanically the whole tree is one
 function: the size tier the game reads is the ladder's tier with every owned
 trait multiplied into it. That is why almost nothing else in the code had to
 learn traits exist — the climb component, the web builder, the thresholds and
 the HUD were all already asking how tall the spider is and how far its silk
-goes, and they now get an answer with the traits folded in. Buying one is
+goes, and they now get an answer with the traits folded in. Taking one is
 announced down the same channel as growing a tier, so the body resizes through
 the code that already did that.
 
 **Gates take either key.** A threshold names a size *and* may name a trait, and
 either opens it — the drain lid in the shed floor gives to a Huntsman or to a
 Hollow Frame that folds through its slots; the storm grate gives to a Sewer
-Widow or to a Storm Rider riding the draught up through its slots. The gate
-never says which key you are missing. It dips and settles back, the same as
-always, and the answer is what you go and try.
+Widow or to a Storm Rider riding the draught up through its slots. With traits
+coming by chance, the size is the key you can always count on and the trait is
+the shortcut luck may hand you early. The gate never says which key you are
+missing. It dips and settles back, the same as always, and the answer is what
+you go and try.
 
-**The screen.** Opened on **E**, which frees the mouse — so the same act that
-lets you click the tree is what stops you firing silk into it. Locked traits
-are shown rather than hidden, with what they stand on and what they cost,
-because "you can always see the next thing and what you are short of" is the
-one property of the genre this game is not that was worth keeping.
+**The screen.** Opened on **E**. Nothing on it is bought any more, so it is a
+map rather than a shop: every trait you do not have says what carries it and
+your odds from a meal of each, as you are now, grouped and least likely first
+so the end of the line is where to go hunting — `Ant 12% · Beetle, Cockroach
+24% · Rat, Dog sure`. Locked traits are shown rather than hidden, with what they
+stand on, because "you can always see the next thing" is the one property of
+the genre this game is not that was worth keeping. Opening it frees the mouse,
+which is what stops you firing silk into the page you are reading.
 
 **What is deliberately not in it:** no respec, no points, no levels, and no
 trait that is a flat number with no body behind it. If a trait cannot be
@@ -1147,10 +1204,13 @@ somewhere else, come back later to deal with the prey" only works if something
 tells you *when* — otherwise coming back is guesswork, and guesswork is
 waiting, which is the thing this game is not allowed to be.
 
-The spur is the one that changes a rule. Up to now, prey above your bite power
-was a wall you could only pass by growing. A spur turns that wall into a
-**problem with a cost**: you can take the thing that is too big for you, but it
-costs you the spur, and you had to have already got it into a trap.
+The spur was the one that changed a rule. When it was written, prey above your
+bite power was a wall you could only pass by growing, and a spur turned that
+wall into a **problem with a cost**: you could take the thing that was too big
+for you, but it cost you the spur, and you had to have already got it into a
+trap. The wall has since come down for everything — anything you can hold, you
+can eat (§3.1) — and the spur is now simply the fastest way to win the fight
+the silk would otherwise have to.
 
 Place mode is its own mode (**N**), thinner than build mode on purpose: there
 is no shape to draw and no silk to price, so it is pick, look, click. The
@@ -1600,11 +1660,13 @@ Everything you can eat can also eat you at the wrong size. The tension curve
 is: each new place opens with you as the smallest thing in it.
 
 **How that is actually decided:** one comparison. A creature whose `size_class`
-is inside the spider's `bite_power` is food; one outside it, with `aggression`
-above zero, hunts instead. So there is no separate bestiary of predators — the
-wasp that drives a spiderling off a corpse is a Huntsman's dinner, and growing
-*flips the relationship* rather than swapping the cast. Wasps hunt hard and fast;
-beetles hunt slowly and on the ground; midges never hunt anything.
+is inside the spider's `bite_power` is easy food; one outside it, with
+`aggression` above zero, hunts instead — and is still food if the silk can beat
+it (§3.1), which is the meal that always changes you. So there is no separate
+bestiary of predators — the wasp that drives a spiderling off a corpse is a
+Huntsman's dinner, and growing *flips the relationship* rather than swapping
+the cast. Wasps hunt hard and fast; beetles hunt slowly and on the ground;
+midges never hunt anything.
 
 **Where they live.** The insects turn up anywhere. Everything else has a
 `habitat` — the sewers, the park, the lake — and is only put down where a spawner
@@ -1704,7 +1766,7 @@ hold in their head on the first screen.
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
 | **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |
 | **1–9 / wheel** | Pick a pocket on the bar |
-| **E** | The tree — spend what you have eaten |
+| **E** | Evolution — what you are, and your odds on what eating could make you |
 | **F** | Wrap the prey you are looking at, then drain it |
 | **X** | Pull down the web or line you are looking at |
 | **L** | Camera: third person or first person |
@@ -1882,6 +1944,15 @@ to *find* devices rather than starting with them.
 Predators with habits — rats that go about in packs, a shark that circles the
 boats — streaming between places, and a reason to go back to the shed.
 
+**Milestone 6 — Evolution and magic** *(started)*
+Done: traits come from what you eat, by chance — likelier up the ladder, never
+locked out by bad luck, and certain from anything two sizes past your bite —
+and anything you can hold, you can eat (§3.1).
+Left: spells, of which the thrown web is the first — lightning, a water spiral
+and more, unlocked by evolution and traits and working off each other; then a
+fantasy world of hunting grounds in the Monster Hunter mould, a camp and
+numbered areas with big creatures that roam between them.
+
 ---
 
 ## 11. Design guardrails
@@ -1912,7 +1983,7 @@ boats — streaming between places, and a reason to go back to the shed.
 * **Growth only ever opens.** No gate wants the player smaller, and nothing
   ever rewards not eating. A game whose progression is eating must never give
   a reason to stop. The tree (§3.1) is how a small body became possible without
-  breaking this: you spend the eating differently, you never do less of it.
+  breaking this: you hunt differently, you never eat less.
 * **A trait is a change to the animal.** If it cannot be described as something
   the spider grew, it does not belong on the tree. No flat percentages with
   nothing behind them, no respec, no points — and nothing that is only a number

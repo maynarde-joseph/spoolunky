@@ -3,7 +3,9 @@
 A first-person spider game in Godot 4.6. You start the size of a coin on the floor
 of a garden shed, spin webs to catch whatever walks into them, and eat your way
 down the drain, through the sewers and out into the park, until you are the
-biggest thing on the lake.
+biggest thing on the lake. What you eat changes what you are: every meal is a
+chance to take something from it — wings, armour, venom — and the bigger it was
+next to you, the better the odds.
 
 The full pitch — the loop, the size tiers, the world, the trap catalogue — is in
 [`docs/DESIGN.md`](docs/DESIGN.md).
@@ -586,7 +588,7 @@ fresh one up.
 They are ordinary creatures, so silk, venom, webs, hauling and eating all work on
 them exactly as they work on anything else — and their species live in
 `game/data/training/` rather than `game/data/prey/`, so they never spawn in the
-world, fill the larder or pay for traits.
+world, fill the larder or pass on traits.
 
 ## Running the tests
 
