@@ -157,15 +157,18 @@ func build_bones(skeleton: Skeleton3D) -> void:
 	var at := _layout()
 	var root := RigKit.add_bone(skeleton, "Root", -1, Transform3D.IDENTITY)
 	var trunk := RigKit.add_bone(skeleton, "Body", root, Transform3D(Basis.IDENTITY, at["body"]))
-	var face := RigKit.add_bone(skeleton, "Head", trunk, Transform3D(Basis.IDENTITY, at["neck"]))
+	var neck: Vector3 = at["neck"]
+	var face := RigKit.add_bone(skeleton, "Head", trunk, Transform3D(Basis.IDENTITY, neck))
+	# What hangs off the head is laid out from the head, and the head bone sits
+	# unturned at the neck: where it is in the skeleton is the neck plus that.
 	var mouth := _mouth()
 	RigKit.add_bone(skeleton, "Jaw", face,
-		Transform3D(RigKit.along(mouth["direction"], Vector3.RIGHT), mouth["hinge"]))
+		Transform3D(RigKit.along(mouth["direction"], Vector3.RIGHT), neck + mouth["hinge"]))
 	for s in 2:
 		var side := -1.0 if s == 0 else 1.0
 		var flap := _ear(side)
 		RigKit.add_bone(skeleton, "Ear.%s" % SIDES[s], face,
-			Transform3D(RigKit.along(flap["direction"], flap["hint"]), flap["at"]))
+			Transform3D(RigKit.along(flap["direction"], flap["hint"]), neck + flap["at"]))
 
 	for end in 2:
 		for s in 2:
@@ -246,7 +249,8 @@ func tail_rest() -> Dictionary:
 	return {"joints": joints, "directions": directions, "piece": piece}
 
 
-## The jaw's hinge, under the back of the snout, and which way it runs.
+## The jaw's hinge, under the back of the snout, in the head's space, and which
+## way it runs.
 func _mouth() -> Dictionary:
 	var at := _layout()
 	var muzzle: Vector3 = at["snout"] - at["neck"]
@@ -255,8 +259,9 @@ func _mouth() -> Dictionary:
 		"length": snout.z * jaw}
 
 
-## An ear: where it leaves the head, and which way it points. A dog's hang down
-## its sides, their broad faces outward; the others stand up and face forward.
+## An ear: where it leaves the head, in the head's space, and which way it points.
+## A dog's hang down its sides, their broad faces outward; the others stand up and
+## face forward.
 func _ear(side: float) -> Dictionary:
 	var at := _layout()
 	var face: Vector3 = at["head"] - at["neck"]
