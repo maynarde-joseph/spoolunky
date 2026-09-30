@@ -24,7 +24,9 @@ body is enough.
 And you become what you eat. Any meal can change you — wings from the things
 that fly, venom from the things that sting — and the bigger it was next to you,
 the likelier. Take down something you had no business taking on, and it always
-does (§3.1).
+does (§3.1). What you become is what you can cast: the thrown web is the first
+spell, and venom, water and lightning follow, each working off the others and
+off the silk (§3.2).
 
 ---
 
@@ -435,6 +437,73 @@ which is what stops you firing silk into the page you are reading.
 trait that is a flat number with no body behind it. If a trait cannot be
 described as a change to the animal, it does not belong on the tree.
 
+### 3.2 Spells — what you can cast
+
+The thrown web was the first spell before there was a word for it: point,
+press, and something leaves the spider and does its work where it lands. The
+rest are the same verb with other things behind it, so they share the web's
+keys, its reach, its wind-up and its kind of limit.
+
+**Right mouse casts whatever is in hand, and Q takes the next one in hand.** A
+tap casts at once; holding winds it up — a bigger web, a bigger glob, a wider
+whirl, a longer stun — over the same second the web always took. While it winds
+up it glows over the spider's back in its own colour, and a spell that lands on
+an area puts a ring where it will land, as wide as it will be.
+
+| Spell | Opens at | Or with | What it does | Wait |
+|---|---|---|---|---|
+| **Silk** | the start | — | the thrown web: it sticks where it lands and wraps what it lands on | 3.5 s |
+| **Venom Spit** | House Spider | Paralytic Bite | a glob thrown like silk; what it hits is dosed, and softens from the inside for 6–10 s | 4 s |
+| **Water Spiral** | Huntsman | Digestive Flood | a whirl on the floor where you point, for 5–8 s: it carries anything loose round and in, soaks it and holds it turning. Wet wings do not lift | 9 s |
+| **Summon Lightning** | Gutter Spider | Wing Buds | strikes where you point, and stuns what it reaches for 2.5–4 s: going nowhere, biting nothing, fighting nothing. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight | 7 s |
+
+**Opening is the gates' rule.** A spell opens at a rung of the ladder, which is
+the key you can always count on, or sooner with a trait it names, which is the
+shortcut luck can hand you. What eating turns you into is what you can cast. The
+strip down the right-hand side of the HUD shows every spell, what is waiting and
+for how long, and what opens the ones you do not have yet — shown, not hidden,
+the same as locked traits.
+
+**They work off each other.** This is the part that makes four spells more than
+four buttons:
+
+* **Lightning runs through silk.** A strike that reaches a web runs through it,
+  into every web whose silk touches it and down every wire from it, and stuns
+  everything they hold. Silk was already the road network (§6); it is the wiring
+  too. Strike the web you are standing next to and the wasp fighting a web across
+  the room stops fighting.
+* **Water carries lightning.** A strike on a whirl reaches everything the whirl
+  holds, and anything wet takes it twice as hard — twice as long stunned, twice
+  the fight gone — and passes it on to anything wet near it.
+* **Venom goes into water.** A glob that lands in a whirl doses everything the
+  whirl holds, for as long as it turns.
+* **A whirl fills a web.** It carries what it holds round and in, and anything it
+  carries through a web is caught by the web the ordinary way.
+
+**And off what you have become.** A trait is a change to the animal (§3.1), and
+some of those changes reach the spells:
+
+| Trait | What it does to spells |
+|---|---|
+| Hollow Frame | every wait a fifth shorter, silk's included |
+| Paralytic Bite | every stun lasts half as long again |
+| Digestive Flood | acid water: a whirl doses what it holds with no venom spat in |
+| Storm Rider | a strike jumps on twice more, to whatever is nearest, wet or dry |
+| Hunting Fangs | every dose is fanged, over twice as strong |
+
+Bulk needs no line of its own: every spell is sized in body heights, so a bigger
+spider casts bigger.
+
+**Why a wait, and one each.** For the reason webs have one (§5): a budget makes
+the player afraid to spend, and the fear is worst just after a miss. Each spell
+waits on its own, so casting one never costs you another — lightning spent is
+not a web you cannot throw.
+
+**What is deliberately not in it:** no mana, no spell points and no damage
+numbers. A spell changes what a creature can do — move, fly, fight a web — which
+is what the rest of the game already reads, so a spell is only ever a new way of
+winning the fight the silk was already having.
+
 ---
 
 ## 4. The world
@@ -666,7 +735,8 @@ that is the one thing it must not do.
 
 ### Webs: a wait, not a bill
 
-Shooting a web starts a short cooldown, and that is its whole cost. A wait
+Shooting a web starts a short cooldown, and that is its whole cost. Every spell
+is limited the same way, each with a wait of its own (§3.2). A wait
 costs you nothing you were saving, it comes back on its own, and a miss is over
 in a few seconds rather than in however long it takes to refill.
 
@@ -1042,7 +1112,7 @@ and drags a line behind you**, always, with no mode around it. Getting about
 *is* building, so the silk is a record of where you went rather than something
 you stopped to construct. The only deliberate step left is the one that is
 actually a decision: look at a gap your lines enclose and press **Q** to fill
-it.
+it. *(Since parked; Q takes the next spell in hand now, §3.2.)*
 
 **Range is not a size tier.** Reach was capped at the tier's `anchor_range` —
 3.2 m as a spiderling — which meant getting anywhere was a chain of little
@@ -1679,6 +1749,15 @@ a shark's. Something that swims keeps all of itself under the top of the water
 it is in: steering at a spider on the bank or on a boat, it follows along
 underneath.
 
+**What spells do to them.** Three things a creature can be besides caught, each
+read by the rest of the game rather than counted against a number (§3.2).
+*Dosed*: venom works silk into it from the inside while the dose lasts.
+*Wet*: it carries a charge to anything wet near it, and a wet flier cannot climb
+until it dries. *Stunned*: it steers nowhere and bites nothing, a flier falls,
+a hunter gives up the chase, and in a web it stops pulling on the silk while its
+fight runs down — it hangs limp, the pose of something that has fought itself
+out. And while a whirl has hold of it, the whirl decides where it goes.
+
 ### Bodies
 
 **Decided: every creature is drawn the minimal way, on a skeleton, with a few
@@ -1763,8 +1842,10 @@ hold in their head on the first screen.
 | **Shift** | **Sprint**, out of a pool of a few seconds that fills back up while you walk. It costs more per size class of whatever is on your line, which is what makes hauling something home at a run a decision rather than the obvious move (§2) |
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
 | **Left Mouse** | **Go there, trailing a line.** A surface pulls you over; a line puts you on it; something you already caught comes to you instead. A creature still on its feet is none of those, so the aim reads straight through it to whatever is behind (§2). As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5) |
+| **Right Mouse** | **Cast what is in hand** — the web, to start with (§3.2). With the web in hand: |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
 | **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |
+| **Q** | The next spell you have — growing, and what you eat, opens more (§3.2) |
 | **1–9 / wheel** | Pick a pocket on the bar |
 | **E** | Evolution — what you are, and your odds on what eating could make you |
 | **F** | Wrap the prey you are looking at, then drain it |
@@ -1947,11 +2028,14 @@ boats — streaming between places, and a reason to go back to the shed.
 **Milestone 6 — Evolution and magic** *(started)*
 Done: traits come from what you eat, by chance — likelier up the ladder, never
 locked out by bad luck, and certain from anything two sizes past your bite —
-and anything you can hold, you can eat (§3.1).
-Left: spells, of which the thrown web is the first — lightning, a water spiral
-and more, unlocked by evolution and traits and working off each other; then a
-fantasy world of hunting grounds in the Monster Hunter mould, a camp and
-numbered areas with big creatures that roam between them.
+and anything you can hold, you can eat (§3.1). Spells: the thrown web is the
+first, then Venom Spit, Water Spiral and Summon Lightning, opened by growing or
+by traits, working off each other and off the silk, and changed by what you
+have become (§3.2).
+Left: more spells and more traits to feed them — a water line to go with the
+spiral, for a start — then a fantasy world of hunting grounds in the Monster
+Hunter mould, a camp and numbered areas with big creatures that roam between
+them.
 
 ---
 

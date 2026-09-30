@@ -5,7 +5,9 @@ of a garden shed, spin webs to catch whatever walks into them, and eat your way
 down the drain, through the sewers and out into the park, until you are the
 biggest thing on the lake. What you eat changes what you are: every meal is a
 chance to take something from it — wings, armour, venom — and the bigger it was
-next to you, the better the odds.
+next to you, the better the odds. And what you are decides what you can cast:
+the thrown web is the first spell, and venom, a whirl of water and lightning
+open as you grow, each working off the others and off your silk.
 
 The full pitch — the loop, the size tiers, the world, the trap catalogue — is in
 [`docs/DESIGN.md`](docs/DESIGN.md).
@@ -14,19 +16,21 @@ The full pitch — the loop, the size tiers, the world, the trap catalogue — i
 
 ```
 game/
-  data/      web patterns, devices, size tiers, creatures and their bodies (plain
-             resources — edit the numbers)
+  data/      web patterns, devices, size tiers, traits, spells, creatures and
+             their bodies (plain resources — edit the numbers)
   web/       procedural silk geometry and the webs themselves
   player/    the spider, one node per job: growth, climbing, the camera, the
-             builder, the tether, the bag, the traits, eating and stamina, and
-             the body you see — a skeleton and the gait that walks it
+             builder, the tether, the bag, the traits, the spells, eating and
+             stamina, and the body you see — a skeleton and the gait that walks it
+  spells/    what spells leave in the world: a whirl of water, a strike of
+             lightning, the bloom where one lands
   prey/      things to catch, and something to spawn them
   rig/       bodies: bones, meshes skinned to them, and the motion that poses them
   ui/        HUD
   world/     the world and the gym, the kit and the paints they are built from,
              the props they are furnished with, and the gates between places
 tools/       the bakes that turn builders into scenes, and the tab check
-tests/       four headless suites and screenshot tools
+tests/       five headless suites and screenshot tools
   support/   what the suites share: the verdict, and the arena a web check runs in
 addons/character-controller/   the movement template the spider is built on
 ```
@@ -39,23 +43,25 @@ something down.
 
 ## Controls
 
+Some of the rows below are for features that are parked rather than deleted and
+bound to nothing in the current build; the table in `docs/DESIGN.md` (§9) is the
+one kept to what the keys do today.
+
 | Input | Action |
 |-------|--------|
 | WASD / Space | move and jump — **jump is also how you let go of silk** |
 | **Shift** | **sprint** — it runs out, and it runs out faster the heavier the thing on your line |
 | *walk into a wall* | climb it — walls and ceilings are floors to a spider |
 | *stand on silk* | it holds you — a thread runs one way, and **jump** is how you come off |
-| **F** or **middle mouse** | ride a silk line like a zipline — again to let go |
 | **Ctrl** | drop onto a dragline (from a wall or ceiling) |
 | **Ctrl** / **Space** | lower / raise yourself on the line |
 | **Right Mouse** | let go of the line |
 | **Left Mouse** | **go there, trailing silk** — moving and building are the same act |
 | **Left Mouse** *on something you've caught* | put a line on it and drag it instead — same click, read the only way that makes sense |
-| **Q** *(hold)* | spin a web where you're aiming — hold longer for a bigger one |
-| **M** | webs: **placed** where you point / **thrown** as a bolt that opens where it lands |
-| **Wheel** or **Z** / **C** | change which web you spin |
-| **Right Mouse** | let go of a line |
-| **E** | wrap caught prey, then drain it (also re-arms a sprung snare) |
+| **Right Mouse** | **cast what is in hand** — the web, to start with: tap, or hold to wind it up |
+| **Q** | the next spell you have — growing, and what you eat, opens more |
+| **E** | evolution — what you are, and your odds on what eating could make you |
+| **F** | wrap caught prey, then drain it (also re-arms a sprung snare) |
 | **Y** | **put a line on a bundle and drag it along** — again to drop what you're carrying |
 | **X** | pull down the web you're looking at, for half the silk back — or pick a device back up |
 | **G** | wire two things together — web or device, press on each end |
@@ -629,6 +635,15 @@ thrashing when it is caught, curled up and still once it is wrapped:
 godot --headless --script res://tests/creature_smoke_test.gd
 ```
 
+A fifth casts every spell in the sandbox: the web as the first of them, what
+opens the rest, the strip that shows them, and what each does — to what it lands
+on, and to the other spells and the silk it meets. Lightning run down a wire to a
+wasp across the room, a whirl filling a web, venom poured into water:
+
+```sh
+godot --headless --script res://tests/spell_smoke_test.gd
+```
+
 Each prints a line per check and exits non-zero if any fail. Together they take
 about four minutes, most of it the web suite and the creatures.
 
@@ -642,7 +657,7 @@ SPOOLUNKY_SHUFFLE=whatever godot --headless --script res://tests/web_smoke_test.
 ```
 
 They also run on every push: `.github/workflows/tests.yml` fetches the newest
-Linux build matching `GODOT_VERSION` and runs all four. Bump that one variable
+Linux build matching `GODOT_VERSION` and runs all five. Bump that one variable
 when the project moves to a new engine version — the workflow finds the build
 itself rather than holding a URL that rots.
 
