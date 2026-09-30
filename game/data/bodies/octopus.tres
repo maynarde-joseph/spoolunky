@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="OctopusBody" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/rig/octopus_body.gd" id="1_body"]
+
+[resource]
+script = ExtResource("1_body")
+colour = Color(0.95, 0.46, 0.42, 1)
+sucker_colour = Color(1, 0.82, 0.76, 1)
+spot_colour = Color(0.85, 0.32, 0.3, 1)

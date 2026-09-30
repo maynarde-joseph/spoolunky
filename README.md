@@ -384,7 +384,12 @@ them on a stand-in. So far:
 * the **shark**, on the fish's body: grey over white, a pointed snout, gill
   slits, a tall fin on its back, a tail with a long top lobe, and a grin — a
   row of teeth under the snout and another on its jaw, the mouth hanging a
-  little open, snapping when it is caught.
+  little open, snapping when it is caught;
+* the **octopus**, an `OctopusBody`, its own kind: a head with goggling eyes and
+  a little tube of a mouth, a spotted mantle above it, and eight arms of four
+  bones each with pale suckers underneath. Sitting, ripples run down its arms;
+  swimming, it tips mantle-first and pulses, its arms opening wide and snapping
+  shut; caught, every arm flails on its own; wrapped, each one coils up.
 
 ## Leaving a web and coming back
 
