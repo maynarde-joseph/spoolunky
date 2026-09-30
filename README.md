@@ -369,7 +369,9 @@ them on a stand-in. So far:
   caught, it flaps in bursts; wrapped, it pulls them round itself like a cloak;
 * the **cat**, a ginger tabby on the same body as the rat: pointed ears, big
   green eyes, a white bib and socks, and a striped tail held up in a hook. Caught,
-  its ears go flat.
+  its ears go flat;
+* the **dog**, a third: floppy brown ears, a patch over one eye, a saddle on its
+  back and a big black nose. It pants with its tongue out and wags as it trots.
 
 ## Leaving a web and coming back
 
