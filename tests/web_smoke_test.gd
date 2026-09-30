@@ -49,6 +49,7 @@ func _sections() -> Array[Callable]:
 		_test_tethering,
 		_test_a_catch_comes_over_a_wall,
 		_test_a_meal_takes_time,
+		_test_anything_you_can_hold,
 		_test_something_hunts_you,
 		_test_a_hunt_runs_out,
 		_test_wrapped_things_fall,
@@ -1637,6 +1638,71 @@ func _test_a_web_can_lose_a_fight() -> void:
 	else:
 		check(true, "and took the whole web with it")
 	brute.queue_free()
+
+
+## Anything you can hold, you can eat. Size used to refuse a meal outright — too
+## big, grow first — and now it only decides how you get hold of one: something
+## past your bite has to be beaten by the silk before it is yours.
+func _test_anything_you_can_hold() -> void:
+	# Beside the spider, so what the web catches can be drunk where it hangs.
+	var centre := spider.global_position + Vector3(0.0, 1.2, 1.5)
+	select_pattern("sheet_web")
+	builder.start()
+	for point in _square(centre, 0.7):
+		builder.add_anchor(point)
+	builder.finish()
+	builder.stop()
+	await physics_frame
+	var net := newest_web("sheet_web") as WebNet
+	if not check(net != null and not net.is_full(), "a spiderling's sheet web"):
+		return
+	clear_prey_near(centre, 6.0, null)
+	var bite := spider.stage().bite_power
+
+	# Loose, it is out of reach of bare fangs, as it always was.
+	var loose := spawn("wasp", spider.global_position + Vector3(0.4, 0.3, 0.0))
+	if not check(loose != null, "a wasp on the loose"):
+		return
+	loose.move_speed = 0.0
+	loose.aggression = 0.0
+	check(loose.size_class > bite,
+		"which is past a spiderling's bite (%d against %d)" % [loose.size_class, bite])
+	spider.jaws.handle(loose)
+	check(spider.feeding == null and not loose.wrapped, "loose, it is not a meal")
+	# Bundled — by silk that could take it — it is, however big.
+	loose.bundle()
+	await physics_frame
+	Input.action_press("interact")
+	spider.jaws.handle(loose)
+	var started: bool = spider.feeding == loose
+	Input.action_release("interact")
+	spider.jaws.stop()
+	check(started, "bundled, the same wasp is dinner — nothing says grow first")
+	loose.queue_free()
+
+	# In a web it has to lose the fight first. One that tires before it can tear
+	# the silk is a fight the web wins.
+	var wasp := spawn("wasp", net.to_global(net.centre_local))
+	if not check(wasp != null, "a wasp for the web"):
+		return
+	wasp.aggression = 0.0
+	wasp.struggle_stamina = 0.4
+	await physics_frame
+	await physics_frame
+	if not check(wasp.is_stuck() and wasp.is_fighting(), "it flies in and fights"):
+		return
+	spider.jaws.handle(wasp)
+	check(not wasp.wrapped and spider.feeding == null,
+		"and while it fights it cannot be wrapped")
+
+	var tired: bool = await wait_until(func() -> bool: return wasp.is_secured(), 120)
+	if not check(tired, "the web holds it until it has fought itself out"):
+		return
+	spider.jaws.handle(wasp)
+	check(wasp.wrapped, "then a spiderling can wrap a wasp")
+	var got: float = await eat(wasp, 900)
+	check(got > 0.0 and (not is_instance_valid(wasp) or wasp.eaten),
+		"and drink the whole of it (+%.1f)" % got)
 
 
 ## Runs physics until [param test] passes, or gives up. Returns whether it

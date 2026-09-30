@@ -99,18 +99,24 @@ func interact() -> void:
 
 
 ## One press against one creature. Which of the three things it does depends on
-## how big the creature is and whether it is already caught.
+## whether it is already caught, and how big it is next to you.
+##
+## Anything you can hold, you can eat. Size used to be a wall here — anything
+## past your bite power was too big, caught or not, and the answer was always to
+## grow first. What size decides now is how you get hold of it: something past
+## your bite has to be beaten by the silk before it can be wrapped. A web that
+## held it until it fought itself out has done that; so has one that bundled it
+## outright, or venom. While it is still fighting, it is not yours yet.
 func handle(prey: Prey) -> void:
 	var current := _spider.stage()
-	if prey.size_class > current.bite_power and not prey.subdued:
-		notice.emit("The %s is too big for you — grow first" % prey.species)
-		return
-
 	if prey.wrapped:
 		begin(prey)
 		return
 
 	if prey.is_stuck():
+		if prey.size_class > current.bite_power and prey.is_fighting():
+			notice.emit("The %s is still fighting the silk — let it tire" % prey.species)
+			return
 		prey.wrap()
 		notice.emit("Wrapped the %s" % prey.species)
 		return
