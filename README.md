@@ -566,7 +566,7 @@ godot --headless --script res://tests/creature_smoke_test.gd
 ```
 
 Each prints a line per check and exits non-zero if any fail. Together they take
-about a minute.
+about three and a half minutes, most of it the web suite and the creatures.
 
 The web suite puts its sections back to a bare spiderling in an empty room
 between each one, so nothing depends on what ran before it. To check that is
