@@ -93,6 +93,13 @@ const BRANCH_NAMES := ["Bulk", "Flight", "Venom"]
 @export var fangs := false
 
 
+@export_group("Spells")
+
+## Multiplies the wait between casts — every spell's, silk's included. Under one
+## is quicker.
+@export var cast_scale := 1.0
+
+
 func branch_name() -> String:
 	return BRANCH_NAMES[clampi(branch, 0, BRANCH_NAMES.size() - 1)]
 
@@ -115,6 +122,7 @@ func effect_line() -> String:
 		parts.append("glide")
 	if fangs:
 		parts.append("kill without a web")
+	_note(parts, "spell wait", cast_scale)
 	return "  ".join(PackedStringArray(parts))
 
 

@@ -187,6 +187,11 @@ var _shot: SilkShot = null
 ## True while the shoot key is held down and a ball is being wound up.
 var aiming := false
 
+## True while a spell other than silk is being wound up. The builder frames the
+## aim for that the same way as for its own ball: it is the one owner of the
+## framing, because two things easing one number is two things fighting over it.
+var framing_held := false
+
 ## How far through the wind-up, 0 to 1. The size of the throw, and the size of
 ## the ball standing for it.
 var charge := 0.0
@@ -412,10 +417,20 @@ func shoot() -> bool:
 	shot.launch_from(_resolve_container(), _view.aim_origin())
 	_shot = shot
 	# Heavier silk takes longer to lay. Most patterns spin at 1.0, where this is
-	# simply the base wait.
-	_cooldown_span = shot_cooldown * maxf(pattern.spin_time, 0.1)
+	# simply the base wait — and a trait can shorten it, the same as it shortens
+	# every other spell's.
+	_cooldown_span = shot_cooldown * maxf(pattern.spin_time, 0.1) * _cast_scale()
 	_cooling = _cooldown_span
 	return true
+
+
+## What the spider's traits do to the wait between casts. See
+## [method SpiderTraits.cast_scale].
+func _cast_scale() -> float:
+	if _spider == null or not "traits" in _spider:
+		return 1.0
+	var traits := _spider.get("traits") as SpiderTraits
+	return traits.cast_scale() if traits != null else 1.0
 
 
 ## How far silk goes: one thread's span, times [member silk_span].
@@ -708,7 +723,7 @@ func _update_held() -> void:
 func _frame_the_aim(delta: float) -> void:
 	if _view == null:
 		return
-	var wanted := 1.0 if aiming else 0.0
+	var wanted := 1.0 if aiming or framing_held else 0.0
 	_view.aim_blend = move_toward(_view.aim_blend, wanted, delta * 4.0)
 
 

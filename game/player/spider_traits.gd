@@ -301,6 +301,16 @@ func glide() -> float:
 	return clampf(lift, 0.0, 0.9)
 
 
+## What every owned trait does to the wait between casts, silk's included. See
+## [member SpiderTrait.cast_scale].
+func cast_scale() -> float:
+	var scale := 1.0
+	for gift in tree:
+		if has(gift.id):
+			scale *= gift.cast_scale
+	return scale
+
+
 ## Whether a kill still needs a web behind it.
 func has_fangs() -> bool:
 	for gift in tree:

@@ -10,6 +10,10 @@ const HOTBAR_GAP := 8.0
 ## How far the bar sits off the bottom edge.
 const HOTBAR_MARGIN := 16.0
 
+## One spell on the strip down the right-hand side, and the gap between two.
+const SPELL_CHIP := Vector2(300.0, 60.0)
+const SPELL_GAP := 8.0
+
 const HELP_TEXT := """[ Spoolunky ]
 WASD / Space           move and jump
 Shift                  sprint — it runs out, and it runs out faster the
@@ -19,11 +23,12 @@ silk is sticky         stand on it and it holds you; jump to come off
 
 Left Mouse             grapple there, trailing a line — three at a time,
                        and a fourth takes the oldest down
-Right Mouse            tap: shoot a web — it sticks where it lands, and
-                       wraps whatever it lands on. Then a short wait
-Right Mouse  (hold)    wind up a bigger ball: a bigger web, easier to hit
-                       Brackets on a creature: the silk goes where it is
-                       heading, so keep the cross on it and let go
+Right Mouse            cast what is in hand — the web, to start with: it
+                       sticks where it lands and wraps what it lands on
+Right Mouse  (hold)    wind it up: a bigger web, a wider whirl, a longer
+                       stun. Brackets on a creature: the silk goes where
+                       it is heading, so keep the cross on it and let go
+Q                      the next spell you have — growing opens more
 1-9 / wheel            pick a pocket on the bar
 X                      pick up the item you are looking at
 E                      evolution — what eating has made you, and might
@@ -64,6 +69,9 @@ var _condition_label: Label
 var _condition_bar: ProgressBar
 var _wind_bar: ProgressBar
 var _crosshair: Crosshair
+var _spell_strip: VBoxContainer
+var _spell_chips := {}
+var _chip_styles := {}
 
 @onready var stage_label: Label = $Stats/StageLabel
 @onready var state_label: Label = $Stats/StateLabel
@@ -108,6 +116,7 @@ func _process(delta: float) -> void:
 	_refresh_limits()
 	_refresh_condition()
 	_refresh_hotbar()
+	_refresh_spells()
 	_refresh_build_panel()
 
 
@@ -144,6 +153,7 @@ func _bind() -> void:
 		_spider.traits.gained.connect(_on_trait_gained)
 	_spider.growth.biomass_changed.connect(_on_biomass_changed)
 	_spider.grew.connect(_on_grew)
+	_build_spell_strip()
 
 	_on_biomass_changed(_spider.growth.biomass, _spider.growth.progress())
 	_on_grew(_spider.stage(), _spider.growth.stage_index)
@@ -275,6 +285,156 @@ func _on_trait_gained(gift: SpiderTrait, source: String) -> void:
 		return
 	show_message("The %s changed you: %s — %s"
 		% [source, gift.display_name, gift.effect_line()])
+
+
+# --- spells -------------------------------------------------------------
+
+## What right mouse will do: the spell in hand, and for silk the web it throws.
+func _refresh_in_hand(builder: WebBuilder) -> void:
+	var spells := _spider.spells
+	var spell := spells.current() if spells != null else null
+	var more := "    [Q] next spell" if spells != null and spells.open_spells().size() > 1 else ""
+	if spell == null or spell.form == SpiderSpell.Form.SILK:
+		var chosen := builder.current_pattern()
+		pattern_label.text = "Silk — %s" % chosen.display_name if chosen != null else "Silk"
+		hint_label.text = "Right mouse throws a web — hold for a bigger one" + more
+		return
+	pattern_label.text = spell.display_name
+	hint_label.text = "Right mouse casts it — hold to wind it up" + more
+
+
+## A spell being wound up: how far, and what it will land on.
+func _refresh_spell_aim(spells: SpiderSpells) -> void:
+	var spell := spells.current()
+	if spell == null:
+		return
+	pattern_label.text = "%s     %s" % [spell.display_name, _charge_bar(spells.charge)]
+	hint_label.text = "Let go to cast it — the longer you hold, the bigger"
+	var target := spells.area_target(spell) if spells.is_area(spell) \
+		else spells.aim_target()
+	var prey := target.get("prey") as Prey
+	problem_label.text = "On the %s" % prey.species if prey != null else ""
+
+
+## Every spell in the book, down the right-hand side: what is in hand, what is
+## waiting and for how long, and what opens the ones you do not have yet. Shut
+## spells are shown rather than hidden, the same as locked traits, because what
+## you are working toward is worth being able to see.
+##
+## Built once the spider is found, because the book is the spider's.
+func _build_spell_strip() -> void:
+	var spells := _spider.spells
+	if spells == null or spells.book.is_empty() or _spell_strip != null:
+		return
+	_spell_strip = VBoxContainer.new()
+	_spell_strip.name = "SpellStrip"
+	_spell_strip.add_theme_constant_override("separation", int(SPELL_GAP))
+	_spell_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# An explicit rect, the same as the bar: the strip is a known number of chips
+	# of a known size, so its height is arithmetic.
+	var count := spells.book.size()
+	var tall := float(count) * SPELL_CHIP.y + float(count - 1) * SPELL_GAP
+	_spell_strip.anchor_left = 1.0
+	_spell_strip.anchor_right = 1.0
+	_spell_strip.anchor_top = 1.0
+	_spell_strip.anchor_bottom = 1.0
+	_spell_strip.offset_left = -(SPELL_CHIP.x + HOTBAR_MARGIN)
+	_spell_strip.offset_right = -HOTBAR_MARGIN
+	_spell_strip.offset_top = -(tall + HOTBAR_MARGIN)
+	_spell_strip.offset_bottom = -HOTBAR_MARGIN
+	add_child(_spell_strip)
+	# Under the evolution screen, which dims everything else while it is up.
+	if _tree != null:
+		move_child(_spell_strip, _tree.get_index())
+	for spell in spells.book:
+		var chip := PanelContainer.new()
+		chip.name = spell.id
+		chip.custom_minimum_size = SPELL_CHIP
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var row := HBoxContainer.new()
+		row.name = "Row"
+		row.add_theme_constant_override("separation", 10)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip.add_child(row)
+		var swatch := ColorRect.new()
+		swatch.name = "Swatch"
+		swatch.color = spell.colour
+		swatch.custom_minimum_size = Vector2(8.0, 0.0)
+		swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(swatch)
+		var lines := VBoxContainer.new()
+		lines.name = "Lines"
+		lines.add_theme_constant_override("separation", 0)
+		lines.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(lines)
+		var title := Label.new()
+		title.name = "Name"
+		title.text = spell.display_name
+		title.add_theme_font_size_override("font_size", BODY_SIZE)
+		lines.add_child(title)
+		var state := Label.new()
+		state.name = "State"
+		state.add_theme_font_size_override("font_size", SMALL_SIZE)
+		state.clip_text = true
+		state.custom_minimum_size = Vector2(SPELL_CHIP.x - 40.0, 0.0)
+		lines.add_child(state)
+		_spell_strip.add_child(chip)
+		_spell_chips[spell.id] = chip
+
+
+## Read off the spells every frame, the same way the silk limits are: a wait
+## running down has no moment worth signalling.
+func _refresh_spells() -> void:
+	var spells := _spider.spells
+	if spells == null or _spell_strip == null:
+		return
+	var holding := spells.current()
+	for spell in spells.book:
+		var chip: PanelContainer = _spell_chips.get(spell.id)
+		if chip == null:
+			continue
+		var open := spells.is_open(spell)
+		var in_hand := open and spell == holding
+		chip.add_theme_stylebox_override("panel", _chip_style(spell, in_hand))
+		chip.modulate = Color(1, 1, 1, 1) if open else Color(1, 1, 1, 0.45)
+		var state := chip.get_node_or_null(NodePath("Row/Lines/State")) as Label
+		if state != null:
+			state.text = _chip_state(spells, spell, open, in_hand)
+
+
+## What a chip says under the spell's name.
+func _chip_state(spells: SpiderSpells, spell: SpiderSpell, open: bool, in_hand: bool) -> String:
+	if not open:
+		return "opens: %s" % spells.opens_with(spell)
+	var wait := "%.1fs" % spells.cooldown_left(spell) if spells.cooling(spell) else "ready"
+	return "in hand · %s" % wait if in_hand else wait
+
+
+## The frame round a chip: the spell's own colour, heavy while it is in hand.
+## Made once per look and kept, rather than a new one every frame.
+func _chip_style(spell: SpiderSpell, in_hand: bool) -> StyleBoxFlat:
+	var key := "%s|%s" % [spell.id, in_hand]
+	if _chip_styles.has(key):
+		return _chip_styles[key]
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.07, 0.1, 0.82)
+	var edge := 3 if in_hand else 1
+	style.border_color = Color(spell.colour.r, spell.colour.g, spell.colour.b,
+		0.95 if in_hand else 0.3)
+	style.border_width_left = edge
+	style.border_width_right = edge
+	style.border_width_top = edge
+	style.border_width_bottom = edge
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	style.content_margin_left = 8.0
+	style.content_margin_right = 10.0
+	style.content_margin_top = 5.0
+	style.content_margin_bottom = 5.0
+	_chip_styles[key] = style
+	return style
 
 
 # --- the bar ------------------------------------------------------------
@@ -426,6 +586,9 @@ func _refresh_build_panel() -> void:
 		return
 
 	dial_label.text = ""
+	if _spider.spells != null and _spider.spells.charging:
+		_refresh_spell_aim(_spider.spells)
+		return
 	if builder.aiming:
 		_refresh_aim_panel(builder)
 		return
@@ -486,18 +649,9 @@ func _refresh_build_panel() -> void:
 		return
 
 	if not builder.building:
-		# There is no build mode any more, so this is the only place the player
-		# ever sees which web the wheel is on — and whether Q can spin it.
-		var chosen := builder.current_pattern()
-		if chosen == null:
-			pattern_label.text = ""
-			hint_label.text = ""
-		elif chosen.shape == WebPattern.Shape.NET:
-			pattern_label.text = "%s     [M] %s" % [chosen.display_name, builder.throw_name()]
-			hint_label.text = "[Q] hold to spin one — the longer you hold, the bigger"
-		else:
-			pattern_label.text = chosen.display_name
-			hint_label.text = "Left mouse drags this across a gap — [Q] needs a web pattern"
+		# There is no build mode any more, so this is where the player sees what
+		# right mouse will do: which spell is in hand, and for silk which web.
+		_refresh_in_hand(builder)
 		var line := builder.aimed_line()
 		if line != null:
 			problem_label.text = "Line in reach — left mouse to get on it"

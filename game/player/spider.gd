@@ -52,6 +52,7 @@ signal skill_tree_toggled()
 @export var input_tether := "web_tether"
 @export var input_shoot := "web_shoot"
 @export var input_skill_tree := "skill_tree"
+@export var input_next_spell := "spell_next"
 
 ## How much the view opens up at speed. Pure sugar, and most of what makes a
 ## zipline feel fast.
@@ -79,6 +80,8 @@ signal skill_tree_toggled()
 ## What a click on something still alive does. The move it makes is a switch on
 ## the node itself — see [member LiveLine.move].
 @onready var live_line: LiveLine = $LiveLine
+## What the spider can cast, and which of it is in hand.
+@onready var spells: SpiderSpells = $Spells
 
 var _spawn_transform: Transform3D
 var _stage: GrowthStage
@@ -116,6 +119,7 @@ func _ready() -> void:
 	jaws.setup(self, growth, traits, view, tether)
 	vitals.setup(self, climb, tether, jaws)
 	live_line.setup(self, growth, view, climb, web_builder)
+	spells.setup(self, growth, traits, view, web_builder)
 	if body != null:
 		body.setup(self)
 	growth.shaped_by(traits)
@@ -126,6 +130,7 @@ func _ready() -> void:
 	jaws.notice.connect(_on_notice)
 	vitals.notice.connect(_on_notice)
 	live_line.notice.connect(_on_notice)
+	spells.notice.connect(_on_notice)
 	# Passed through rather than listened for directly: what bit the spider is the
 	# spider's news to announce, and the HUD and the tests already watch it here.
 	vitals.hurt.connect(func(amount: float, left: float) -> void: hurt.emit(amount, left))
@@ -276,12 +281,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.toggle_throwing()
 	elif event.is_action_pressed(input_tether):
 		tether.toggle()
-	# Right mouse is the web. A tap fires straight away; holding it winds up a
-	# bigger ball, which is a bigger web and a bigger thing to hit with.
+	# Right mouse casts whatever is in hand, and the first thing in hand is the
+	# web. A tap casts straight away; holding winds it up — a bigger ball of silk,
+	# a wider whirl, a longer stun — until you let go.
 	elif event.is_action_pressed(input_shoot):
-		web_builder.begin_shot()
+		spells.begin_cast()
 	elif event.is_action_released(input_shoot):
-		web_builder.release_shot()
+		spells.release_cast()
+	elif event.is_action_pressed(input_next_spell):
+		spells.cycle(1)
 	elif event.is_action_pressed(input_skill_tree):
 		skill_tree_toggled.emit()
 	elif _hotbar_input(event):
@@ -401,6 +409,11 @@ func _watch_for_release() -> void:
 ## release would otherwise leave the spider staring down its own crosshair for
 ## ever — and the mouse being freed mid-aim is enough to lose one.
 func _take_aim(delta: float) -> void:
+	if spells.charging:
+		if accepts_input() and Input.is_action_pressed(input_shoot):
+			spells.track(delta)
+		else:
+			spells.release_cast()
 	if not web_builder.aiming:
 		return
 	if accepts_input() and Input.is_action_pressed(input_shoot):

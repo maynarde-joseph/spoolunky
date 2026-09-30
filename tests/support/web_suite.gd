@@ -110,6 +110,7 @@ func reset() -> void:
 	clear_prey()
 	clear_props()
 	rewind_growth()
+	rewind_spells()
 	place(HOME)
 	await physics_frame
 	await physics_frame
@@ -202,6 +203,21 @@ func drop_everything() -> void:
 	if spider.tether != null and spider.tether.cargo != null:
 		spider.tether.cut()
 	spider.climb.release()
+
+
+## Silk back in hand, nothing winding up, nothing waiting, and nothing a spell
+## left behind still at work in the room — a whirl still spinning drags the next
+## section's creatures about.
+func rewind_spells() -> void:
+	if spider == null or spider.spells == null:
+		return
+	var spells := spider.spells
+	spells.cancel_cast()
+	spells.forget_waits()
+	spells.selected = 0
+	for node in spider.get_tree().get_nodes_in_group("spell_effects"):
+		if is_instance_valid(node) and not node.is_queued_for_deletion():
+			node.free()
 
 
 ## Back to a spiderling with an empty larder and no traits bought.
