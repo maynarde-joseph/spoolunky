@@ -4,15 +4,15 @@
 
 [resource]
 script = ExtResource("1_body")
-colour = Color(0.4, 0.45, 0.52, 1)
-fin_colour = Color(0.4, 0.45, 0.52, 1)
-fin_rim = Color(0.32, 0.36, 0.42, 1)
+colour = Color(0.42, 0.47, 0.54, 1)
+fin_colour = Color(0.42, 0.47, 0.54, 1)
+fin_rim = Color(0.34, 0.38, 0.44, 1)
 body = Vector3(0.3, 0.38, 1.1)
 deepest = -0.25
 nose_point = 0.55
 wrist = 0.18
 bend_at = 0.35
-eye = 0.1
+eye = 0.05
 mouth_height = -0.12
 mouth_back = 0.3
 jaw_drop = 0.08

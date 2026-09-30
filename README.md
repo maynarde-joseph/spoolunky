@@ -381,10 +381,8 @@ them on a stand-in. So far:
   on its side and flops when it tries to go anywhere; wrapped, it is bent double.
   Swimming is flying, as far as a creature is concerned: it keeps itself up in
   water the way a fly does in air, so a swimmer's species will say `flying`;
-* the **shark**, on the fish's body: grey over white, a pointed snout, gill
-  slits, a tall fin on its back, a tail with a long top lobe, and a grin — a
-  row of teeth under the snout and another on its jaw, the mouth hanging a
-  little open, snapping when it is caught;
+* the **shark**, on the fish's body: one grey, with a pointed snout, a tall
+  fin on its back, long fins at its sides and a tail with a long top lobe;
 * the **octopus**, an `OctopusBody`, its own kind: a head with goggling eyes and
   a little tube of a mouth, a spotted mantle above it, and eight arms of four
   bones each with pale suckers underneath. Sitting, ripples run down its arms;
