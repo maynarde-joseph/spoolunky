@@ -2,12 +2,14 @@ class_name BeastBody
 extends CreatureBody
 
 ## Something furry on four legs: a body, a head with a snout, ears and a jaw that
-## opens, four legs on paws, and a tail. A rat, a cat and a dog are all this, and
-## what tells one from another is numbers in a .tres of it.
+## opens, four legs, and a tail. A rat, a cat and a dog are all this, and what
+## tells one from another is numbers in a .tres of it.
 ##
-## Drawn the way the insects are, minimal: smooth parts, a few flat colours, and a
-## face that is mostly eyes and nose. Every length is in body radii and every angle
-## in degrees; forward is -Z and up is +Y.
+## Drawn the minimal way, as the spider and the insects are: smooth parts, thin
+## legs of one width bent at round joints, a few flat colours, and two small eyes
+## that shine a little. Nothing that does not help the silhouette — no whiskers,
+## no teeth, no markings. Every length is in body radii and every angle in
+## degrees; forward is -Z and up is +Y.
 ##
 ## From the tip of its nose to the back of its rump it is centred on the
 ## creature's middle, which is the middle of its hitbox. The tail, like an
@@ -32,38 +34,13 @@ enum Ears {
 
 @export_group("Colours")
 
-## The coat.
+## The coat: the body, the head and the legs.
 @export var colour := Color(0.46, 0.43, 0.41)
-## Underneath: the belly and the chin.
-@export var belly_colour := Color(0.7, 0.66, 0.62)
-## The chest that colour too, down the front: a cat's or a dog's white bib.
-@export var bib := false
-## The snout, and the lower jaw.
-@export var muzzle_colour := Color(0.5, 0.47, 0.45)
-@export var nose_colour := Color(0.92, 0.56, 0.6)
-@export var paw_colour := Color(0.9, 0.62, 0.62)
-## The backs of the ears, and their insides.
 @export var ear_colour := Color(0.46, 0.43, 0.41)
-@export var ear_inside := Color(0.92, 0.62, 0.64)
-@export var tail_colour := Color(0.9, 0.65, 0.66)
-## The last [member tail_tip] of the tail's length is this colour. None for a tail
-## the one colour.
-@export var tail_tip_colour := Color(1.0, 1.0, 1.0)
-@export_range(0.0, 1.0) var tail_tip := 0.0
-## The middle of each eye, and what shows round it as far as [member eye_white]
-## says: white, or a cat's green.
+@export var tail_colour := Color(0.46, 0.43, 0.41)
+## The end of the snout. The coat's own colour for a nose not worth one of its own.
+@export var nose_colour := Color(0.46, 0.43, 0.41)
 @export var eye_colour := Color(0.04, 0.03, 0.03)
-@export var eye_ring := Color(0.95, 0.94, 0.9)
-## Bands over the back and round the tail, when [member stripes] asks for any.
-@export var stripe_colour := Color(0.3, 0.2, 0.1)
-@export var stripes := 0
-## A patch this big round the left eye, a dog's. Zero for none.
-@export var patch := 0.0
-@export var patch_colour := Color(0.42, 0.26, 0.13)
-## Whiskers, when [member whiskers] asks for any.
-@export var whisker_colour := Color(0.15, 0.14, 0.14)
-## How glossy the coat is, from dull to sleek.
-@export_range(0.0, 1.0) var gloss := 0.15
 
 
 @export_group("Body")
@@ -93,11 +70,8 @@ enum Ears {
 @export_group("Face")
 
 ## Each eye's radius.
-@export var eye := 0.1
-## How much of each eye is white round the dark middle: none is a bead, and more
-## is a stare.
-@export_range(0.0, 1.0) var eye_white := 0.0
-## How far round the head the eyes sit and look: 0 straight ahead, 1 out to the
+@export var eye := 0.06
+## How far round the head the eyes sit: 0 looking straight ahead, 1 out to the
 ## sides.
 @export_range(0.0, 1.0) var eye_spread := 0.45
 @export var ears := Ears.ROUND
@@ -105,25 +79,20 @@ enum Ears {
 @export var ear := Vector2(0.26, 0.24)
 ## How far out from upright the ears lean, in degrees.
 @export var ear_lean := 25.0
-## Whiskers this long, three a side. Zero for none.
-@export var whiskers := 0.0
-## Front teeth this long, showing under the nose: a rat's. Zero for none.
-@export var buck_teeth := 0.0
 ## How long the lower jaw is, against the snout.
 @export_range(0.3, 1.2) var jaw := 0.8
-## A tongue this long, out past the lower jaw. Zero for none.
-@export var tongue := 0.0
-## Mouth open and tongue out whenever it is not caught: a dog's.
+## Mouth open whenever it is not caught: a dog's.
 @export var pants := false
 
 
 @export_group("Legs")
 
-@export var leg_thickness := 0.1
+## How thick every part of a leg is, from the shoulder to the floor.
+@export var leg_thickness := 0.06
 ## How much of each leg is the upper part, down to the knee.
 @export_range(0.2, 0.8) var leg_split := 0.5
-## Each paw's radii: across, up and along.
-@export var paw := Vector3(0.09, 0.05, 0.12)
+## How far the ankle is off the floor: the last part of each leg.
+@export var foot := 0.1
 
 
 @export_group("Tail")
@@ -132,8 +101,6 @@ enum Ears {
 @export_range(2, 8) var tail_bones := 5
 ## How thick the tail is at its root, and at its tip.
 @export var tail_thickness := Vector2(0.07, 0.025)
-## How much thicker than that it is in the middle: a bushy tail's fluff.
-@export var tail_fluff := 0.0
 ## Which way it leaves the body, in degrees above straight back.
 @export var tail_lift := -15.0
 ## How much further up it bends at each bone, in degrees: a cat's hooked tail.
@@ -223,7 +190,7 @@ func _layout() -> Dictionary:
 func leg_rest(end: int, side: float) -> Dictionary:
 	var at: Vector3 = _layout()["body"] + Vector3(side * body.x * 0.5, -body.y * 0.25,
 		body.z * (-0.55 if end == 0 else 0.55))
-	var high := paw.y * 2.0
+	var high := foot
 	var drop := maxf(at.y + stance - high, 0.05)
 	var directions: Array[Vector3] = [Vector3.DOWN, Vector3.DOWN, Vector3.DOWN]
 	var lengths := Vector3(drop * leg_split, drop * (1.0 - leg_split), high)
@@ -283,10 +250,10 @@ func _ear(side: float) -> Dictionary:
 
 # --- the mesh -----------------------------------------------------------------
 
-## One mesh in two surfaces: the body in its flat colours, and the parts that shine
-## — eyes and nose.
+## One mesh in two surfaces: everything but the eyes in its few flat colours,
+## and the eyes.
 func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
-	var fur := RigKit.begin()
+	var coat := RigKit.begin()
 	var shine := RigKit.begin()
 	var at := _layout()
 	var forward := RigKit.along(Vector3.FORWARD, Vector3.RIGHT)
@@ -296,133 +263,54 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 	var head_at: Vector3 = at["head"] - neck
 	var muzzle: Vector3 = at["snout"] - neck
 
-	# The body, narrower at the shoulders, pale underneath.
-	RigKit.lathe(fur, skeleton, trunk, Transform3D(forward, Vector3.ZERO),
-		RigKit.ovoid(body, body_point, 16, func(_y: float) -> Callable: return _coat()), 20)
-	# The head, and a snout on the front of it.
-	RigKit.lathe(fur, skeleton, face, Transform3D(forward, head_at),
-		RigKit.ovoid(head, 0.0, 12, func(_y: float) -> Callable: return _face_paint(head_at)), 18)
-	RigKit.lathe(fur, skeleton, face, Transform3D(forward, muzzle),
+	RigKit.lathe(coat, skeleton, trunk, Transform3D(forward, Vector3.ZERO),
+		RigKit.ovoid(body, body_point, 16, RigKit.solid(colour)), 20)
+	RigKit.lathe(coat, skeleton, face, Transform3D(forward, head_at),
+		RigKit.ovoid(head, 0.0, 12, RigKit.solid(colour)), 18)
+	RigKit.lathe(coat, skeleton, face, Transform3D(forward, muzzle),
 		RigKit.ovoid(Vector3(snout.x, snout.y, snout.z * 0.5), snout_point, 10,
-			RigKit.solid(muzzle_colour)), 16)
-	var tip := muzzle + Vector3(0.0, snout.y * 0.1, -snout.z * 0.5)
-	RigKit.ellipsoid(shine, skeleton, face, tip, Vector3(nose * 1.2, nose, nose),
-		RigKit.plain(nose_colour), 12, 8)
-	_build_mouth(fur, skeleton, muzzle)
-	if whiskers > 0.0:
-		_build_whiskers(fur, skeleton, face, muzzle)
+			RigKit.solid(colour)), 16)
+	RigKit.ellipsoid(coat, skeleton, face, muzzle + Vector3(0.0, snout.y * 0.1, -snout.z * 0.5),
+		Vector3(nose * 1.1, nose * 0.9, nose * 0.8), RigKit.plain(nose_colour), 12, 8)
+	# The lower jaw: the underside of the snout, on a bone of its own so the mouth
+	# can open.
+	var length := snout.z * jaw
+	RigKit.lathe(coat, skeleton, skeleton.find_bone("Jaw"), Transform3D.IDENTITY,
+		RigKit.ovoid(Vector3(snout.x * 0.7, snout.y * 0.35, length * 0.5), snout_point * 0.6, 8,
+			RigKit.solid(colour)).map(
+			func(row: Array) -> Array: return [row[0] + length * 0.5, row[1], row[2], row[3]]), 12)
 
 	for s in 2:
 		var side := -1.0 if s == 0 else 1.0
-		var look := Vector3(side * eye_spread, 0.12, -1.0 + eye_spread * 0.4).normalized()
-		var eye_at := head_at + Vector3(side * head.x * lerpf(0.42, 0.62, eye_spread),
-			head.y * 0.3, -head.z * lerpf(0.66, 0.5, eye_spread))
-		RigKit.eye(shine, skeleton, face, eye_at, look, eye, eye_colour, eye_white, eye_ring)
-		var flap := _ear(side)
-		RigKit.ear(fur, skeleton, skeleton.find_bone("Ear.%s" % SIDES[s]), ear.x, ear.y,
-			ear.x * 0.12, 0.0 if ears != Ears.POINTED else 1.0, ear_colour,
-			ear_colour if ears == Ears.FLOPPY else ear_inside)
+		# Set into the head, a little proud of it, out toward the sides as far as
+		# [member eye_spread] says.
+		var toward := Vector3(side * lerpf(0.35, 0.8, eye_spread), 0.35,
+			-lerpf(0.87, 0.5, eye_spread)).normalized()
+		RigKit.ellipsoid(shine, skeleton, face, head_at + toward * head - toward * eye * 0.4,
+			Vector3.ONE * eye, RigKit.plain(eye_colour), 10, 6)
+		# Upright ears face forward and a little out, the way they cup sound.
+		RigKit.ear(coat, skeleton, skeleton.find_bone("Ear.%s" % SIDES[s]), ear.x, ear.y,
+			ear.x * 0.2, 1.0 if ears == Ears.POINTED else 0.0, ear_colour, ear_colour,
+			0.0 if ears == Ears.FLOPPY else -side * 35.0)
 
-	var rod := RigKit.Cut.new(10, 2, 3)
+	# Every part of a leg one width, a round end at every joint, so each reads as
+	# one bent rod rather than three pieces.
+	var rod := RigKit.Cut.new(8, 1, 3)
 	for end in 2:
 		for s in 2:
 			var limb := leg_rest(end, -1.0 if s == 0 else 1.0)
 			var lengths: Vector3 = limb["lengths"]
-			var thick := leg_thickness * (1.1 if end == 1 else 1.0)
-			RigKit.segment(fur, skeleton, skeleton.find_bone(leg_bone(end, s, 0)), lengths.x,
-				thick * 1.25, thick, RigKit.plain(colour), rod)
-			RigKit.segment(fur, skeleton, skeleton.find_bone(leg_bone(end, s, 1)), lengths.y,
-				thick, thick * 0.85, RigKit.plain(colour), rod)
-			# The paw, a flat oval with its sole on the floor and its toes forward.
-			RigKit.ellipsoid(fur, skeleton, skeleton.find_bone(leg_bone(end, s, 2)),
-				Vector3(0.0, paw.y, paw.z * 0.35), paw, RigKit.plain(paw_colour), 12, 8)
+			for part in 3:
+				RigKit.segment(coat, skeleton, skeleton.find_bone(leg_bone(end, s, part)),
+					lengths[part], leg_thickness, leg_thickness, RigKit.plain(colour), rod)
 
 	var rest := tail_rest()
 	var piece: float = rest["piece"]
 	for i in tail_bones:
-		var from := float(i) / float(tail_bones)
-		var to := float(i + 1) / float(tail_bones)
-		RigKit.segment(fur, skeleton, skeleton.find_bone(tail_bone(i)), piece,
-			_tail_girth(from), _tail_girth(to), _tail_paint(i, piece), RigKit.Cut.new(12, 3, 3))
+		var from := lerpf(tail_thickness.x, tail_thickness.y, float(i) / float(tail_bones))
+		var to := lerpf(tail_thickness.x, tail_thickness.y, float(i + 1) / float(tail_bones))
+		RigKit.segment(coat, skeleton, skeleton.find_bone(tail_bone(i)), piece, from, to,
+			RigKit.plain(tail_colour), rod)
 
-	return RigKit.commit([fur, shine], [RigKit.shell_material(1.0 - gloss, 0.0, 0.4),
-		RigKit.gloss_material()])
-
-
-## The mouth: a lower jaw under the snout that opens, and dark inside it, with
-## front teeth and a tongue when there are any.
-func _build_mouth(fur: SurfaceTool, skeleton: Skeleton3D, muzzle: Vector3) -> void:
-	var face := skeleton.find_bone("Head")
-	var chin := skeleton.find_bone("Jaw")
-	var mouth := _mouth()
-	var length: float = mouth["length"]
-	var hinge: Vector3 = mouth["hinge"]
-	var along := Transform3D(Basis.IDENTITY, Vector3.ZERO)
-	RigKit.lathe(fur, skeleton, chin, along, RigKit.ovoid(Vector3(snout.x * 0.78,
-		snout.y * 0.4, length * 0.5), snout_point * 0.6, 8, RigKit.solid(muzzle_colour)).map(
-			func(row: Array) -> Array: return [row[0] + length * 0.5, row[1], row[2], row[3]]), 12)
-	# Dark inside, filling the gap an open jaw leaves under the snout.
-	RigKit.ellipsoid(fur, skeleton, face, hinge + Vector3(0.0, snout.y * 0.2, -length * 0.45),
-		Vector3(snout.x * 0.7, snout.y * 0.3, length * 0.45), RigKit.plain(Color(0.3, 0.06, 0.08)),
-		10, 6)
-	if tongue > 0.0:
-		RigKit.ellipsoid(fur, skeleton, chin, Vector3(0.0, length * 0.55 + tongue * 0.5,
-			snout.y * 0.3), Vector3(snout.x * 0.5, tongue * 0.55, snout.y * 0.12),
-			RigKit.plain(Color(0.92, 0.42, 0.5)), 10, 6)
-	if buck_teeth > 0.0:
-		for side in [-1.0, 1.0]:
-			RigKit.ellipsoid(fur, skeleton, face, muzzle + Vector3(side * nose * 0.36,
-				-snout.y * 0.62, -snout.z * 0.4), Vector3(nose * 0.36, buck_teeth * 0.5,
-				nose * 0.24), RigKit.plain(Color(0.97, 0.94, 0.82)), 8, 6)
-
-
-## Three whiskers a side, fanned out from either side of the snout.
-func _build_whiskers(fur: SurfaceTool, skeleton: Skeleton3D, face: int,
-		muzzle: Vector3) -> void:
-	for side in [-1.0, 1.0]:
-		for k in [-1.0, 0.0, 1.0]:
-			var root := muzzle + Vector3(side * snout.x * 0.55, -snout.y * 0.1, -snout.z * 0.2)
-			var out := Vector3(side, 0.12 * k - 0.05, 0.3 * k - 0.1).normalized()
-			RigKit.lathe(fur, skeleton, face, Transform3D(RigKit.along(out, Vector3.UP), root),
-				RigKit.capsule(whiskers, 0.008, whisker_colour, 1), 5)
-
-
-## How thick the tail is [param along] of the way from its root to its tip.
-func _tail_girth(along: float) -> float:
-	return lerpf(tail_thickness.x, tail_thickness.y, along) + tail_fluff * sin(PI * along)
-
-
-## Colours tail bone [param index], [param piece] long: its own colour, the tip's
-## toward the end, and bands round it when the coat is striped.
-func _tail_paint(index: int, piece: float) -> Callable:
-	return func(_n: Vector3, p: Vector3) -> Color:
-		var along := (float(index) + clampf(p.y / piece, 0.0, 1.0)) / float(tail_bones)
-		if tail_tip > 0.0 and along > 1.0 - tail_tip:
-			return tail_tip_colour
-		if stripes > 0 and int(along * float(stripes) * 2.0) % 2 == 1:
-			return stripe_colour
-		return tail_colour
-
-
-## Paints the body: the coat above, pale beneath and on the chest, and bands over
-## the back when it is striped.
-func _coat() -> Callable:
-	return func(n: Vector3, p: Vector3) -> Color:
-		if n.y < -0.35 or (bib and n.z < -0.55 and p.y < body.y * 0.2):
-			return belly_colour
-		if stripes > 0 and n.y > -0.1:
-			var band := (p.z / body.z + 1.0) * 0.5 * float(stripes) * 2.0
-			if int(band) % 2 == 1 and absf(p.z) < body.z * 0.75:
-				return stripe_colour
-		return colour
-
-
-## Paints the head, centred at [param middle]: the coat, pale under the chin, and
-## a patch round the left eye when it has one.
-func _face_paint(middle: Vector3) -> Callable:
-	var patch_at := middle + Vector3(-head.x * 0.5, head.y * 0.3, -head.z * 0.6)
-	return func(n: Vector3, p: Vector3) -> Color:
-		var base := belly_colour if n.y < -0.5 else colour
-		if patch > 0.0:
-			return base.lerp(patch_colour, smoothstep(patch, patch * 0.75, p.distance_to(patch_at)))
-		return base
+	return RigKit.commit([coat, shine], [RigKit.shell_material(0.75, 0.0, 0.3),
+		RigKit.eye_material(eye_colour, eye_colour, 0.15)])

@@ -286,9 +286,11 @@ static func _cap(radius: float, spread: float, colour: Color, count := 4) -> Arr
 ## An ear on [param bone], out along its +Y: [param width] across at its widest,
 ## [param length] long and [param depth] thick. [param point] shapes it, from a
 ## rounded disc (0) to a triangle standing on its base (1). Its back is
-## [param outside] and its face, toward the bone's -Z, [param inside].
+## [param outside] and its face, toward the bone's -Z, [param inside]. [param turn]
+## turns it about its own length, in degrees.
 static func ear(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, width: float,
-		length: float, depth: float, point: float, outside: Color, inside: Color) -> void:
+		length: float, depth: float, point: float, outside: Color, inside: Color,
+		turn := 0.0) -> void:
 	if bone < 0:
 		return
 	var paint := func(n: Vector3, p: Vector3) -> Color:
@@ -300,7 +302,8 @@ static func ear(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, width: float
 		var t := float(i) / 12.0
 		var girth := _ear_girth(t, point)
 		rows.append([t * length, girth * width, depth * clampf(girth * 1.5, 0.25, 1.0), paint])
-	lathe(tool, skeleton, bone, Transform3D.IDENTITY, rows, 14)
+	lathe(tool, skeleton, bone, Transform3D(Basis(Vector3.UP, deg_to_rad(turn)), Vector3.ZERO),
+		rows, 14)
 
 
 ## How wide an ear is [param t] of the way out, against its widest.

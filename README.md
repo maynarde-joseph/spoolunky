@@ -359,9 +359,10 @@ them on a stand-in. So far:
 * the **cockroach**, flat and wide under the shield that hides its head, with
   its wings folded flat as its back and feelers longer than it is;
 * the **rat**, the first `BeastBody` — anything furry on four legs: a body, a head
-  with a snout, ears and a jaw that opens, four legs and a tail. Big round ears,
-  big eyes, buck teeth and whiskers. It trots two legs at a time, shakes its head
-  with its mouth open when it is caught, and curls up small once it is wrapped;
+  with a snout, ears and a jaw that opens, four legs and a tail, drawn the
+  minimal way: grey, with round pink ears and a long bare tail. It trots two legs
+  at a time, shakes its head with its mouth open when it is caught, and curls up
+  small once it is wrapped;
 * the **bat**, the first `WingedBody` — anything that flies on two wings of two
   bones each, an arm and a hand: skin stretched between its fingers, ears
   bigger than its head, a flat pig's nose and a pair of fangs. Its hands beat a

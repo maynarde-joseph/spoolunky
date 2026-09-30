@@ -47,7 +47,7 @@ func bind(skeleton: Skeleton3D, body: CreatureBody) -> void:
 				bones.append(_find(skeleton, BeastBody.leg_bone(end, s, part)))
 			_legs.append({
 				"bones": bones, "side": -1.0 if s == 0 else 1.0, "end": end,
-				"group": (end + s) % 2, "reach": _body.paw.y * 2.0,
+				"group": (end + s) % 2, "reach": _body.foot,
 			})
 	_tail.clear()
 	for i in _body.tail_bones:
