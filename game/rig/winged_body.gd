@@ -4,13 +4,15 @@ extends CreatureBody
 ## Something with fur or feathers that flies on two wings: a body, a head, two
 ## wings of two bones each — an arm out to the wrist and a hand beyond it — two
 ## legs, and a tail if it has one. A bat is this with skin stretched between its
-## fingers and ears it could hear through a wall with; a parrot is this with
-## feathers and a beak. What tells them apart is numbers in a .tres of it.
+## fingers and ears as tall as its head; a parrot is this with feathers and a
+## hooked beak. What tells them apart is numbers in a .tres of it.
 ##
-## Drawn like the rest, minimal and a little goofy. Every length is in body radii
-## and every angle in degrees; forward is -Z and up is +Y. From the front of its
-## face to the back of its body it is centred on the creature's middle, and the
-## wings reach out of that the way an insect's do.
+## Drawn the minimal way, as the spider and the insects are: smooth parts, thin
+## legs of one width, flat wings with a rim round them, a few flat colours, and
+## two small eyes that shine a little. Nothing that does not help the silhouette.
+## Every length is in body radii and every angle in degrees; forward is -Z and up
+## is +Y. From the front of its face to the back of its body it is centred on the
+## creature's middle, and the wings reach out of that the way an insect's do.
 
 const SIDES := ["L", "R"]
 ## A wing's two bones: shoulder to wrist, and wrist to tip.
@@ -22,30 +24,18 @@ const LEG_PARTS := ["Leg", "Foot"]
 
 ## Fur or feathers: the body and the head.
 @export var colour := Color(0.36, 0.27, 0.22)
-@export var belly_colour := Color(0.46, 0.36, 0.3)
-## Round the eyes, when [member face] asks for a patch there: a parrot's bare face.
-@export var face_colour := Color(0.95, 0.93, 0.9)
-## A wing's skin, or its flight feathers, and a band round the edge of either.
+## A wing's skin, or its flight feathers, and a band round the edge of either. The
+## finger bones in a wing of skin are the band's colour.
 @export var wing_colour := Color(0.24, 0.19, 0.2)
 @export var wing_rim := Color(0.18, 0.14, 0.15)
 ## The small feathers along a wing's front edge, when [member coverts] asks for any.
 @export var covert_colour := Color(0.95, 0.8, 0.1)
-## The finger bones in a wing of skin, and the forearm along its front.
-@export var bone_colour := Color(0.2, 0.15, 0.15)
-@export var nose_colour := Color(0.55, 0.36, 0.36)
-## The upper beak, and the lower jaw — of beak, or of fur.
+## The beak, both halves.
 @export var beak_colour := Color(0.92, 0.88, 0.8)
-@export var jaw_colour := Color(0.2, 0.2, 0.22)
 @export var ear_colour := Color(0.36, 0.27, 0.22)
-@export var ear_inside := Color(0.65, 0.45, 0.45)
 @export var leg_colour := Color(0.25, 0.2, 0.2)
 @export var tail_colour := Color(0.8, 0.1, 0.1)
-@export var tail_tip_colour := Color(0.15, 0.35, 0.8)
-## The middle of each eye, and what shows round it: white, or an iris.
 @export var eye_colour := Color(0.03, 0.02, 0.02)
-@export var eye_ring := Color(0.95, 0.94, 0.9)
-## How glossy the fur or feathers are.
-@export_range(0.0, 1.0) var gloss := 0.15
 
 
 @export_group("Body")
@@ -57,19 +47,12 @@ const LEG_PARTS := ["Leg", "Foot"]
 ## The head's radii, and how high it is carried above the middle of the body.
 @export var head := Vector3(0.36, 0.34, 0.32)
 @export var head_lift := 0.25
-## Each eye's radius, how much of it shows [member eye_ring] round the middle,
-## and how far round the head the eyes sit and look.
-@export var eye := 0.09
-@export_range(0.0, 1.0) var eye_white := 0.4
+## Each eye's radius, and how far round the head the eyes sit: 0 looking straight
+## ahead, 1 out to the sides.
+@export var eye := 0.05
 @export_range(0.0, 1.0) var eye_spread := 0.35
-## A patch this big round each eye, in [member face_colour]. Zero for none.
-@export var face := 0.0
 ## A short snout: radii across, up and along. Zero for none.
 @export var snout := Vector3(0.12, 0.1, 0.14)
-## The nose on the end of the snout: flat and wide, like a pig's.
-@export var nose := 0.07
-## Fangs this long, down from the top jaw. Zero for none.
-@export var fangs := 0.0
 ## A hooked beak this long and this deep at its root. Zero for none.
 @export var beak := Vector2.ZERO
 ## Ears this wide and this long. Zero for none.
@@ -87,7 +70,7 @@ const LEG_PARTS := ["Leg", "Foot"]
 ## The hand, wrist to tip: its length.
 @export var hand := 1.3
 ## A wing of skin has this many fingers; a feathered one this many long feathers
-## fanned at its end.
+## rounding off its end.
 @export_range(2, 7) var fingers := 4
 ## How far back the covert feathers along the front edge reach, against the
 ## wing's width. Zero for none.
@@ -110,9 +93,9 @@ const LEG_PARTS := ["Leg", "Foot"]
 
 ## How far below the middle of the body its feet are when it stands.
 @export var stance := 0.6
+## How thick every part of a leg is, from the hip to the floor.
 @export var leg_thickness := 0.05
-## Each toe's length. A parrot's point two forward and two back; anything else's
-## three forward, as claws.
+## How far forward the foot reaches from the ankle, along the floor.
 @export var toes := 0.1
 ## How far it tips its body back, nose up, to stand, in degrees: a parrot stands
 ## upright on its perch.
@@ -268,10 +251,10 @@ func _ear(side: float) -> Dictionary:
 
 # --- the mesh -----------------------------------------------------------------
 
-## One mesh in three surfaces: the body in its flat colours, the parts that shine,
-## and the wings, drawn from both sides.
+## One mesh in three surfaces: everything but the eyes and the wings in its few
+## flat colours, the eyes, and the wings, drawn from both sides.
 func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
-	var fur := RigKit.begin()
+	var coat := RigKit.begin()
 	var shine := RigKit.begin()
 	var blades := RigKit.begin()
 	var at := _layout()
@@ -280,32 +263,35 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 	var face := skeleton.find_bone("Head")
 	var face_at: Vector3 = at["head"] - at["neck"]
 
-	RigKit.lathe(fur, skeleton, trunk, Transform3D(forward, Vector3.ZERO),
-		RigKit.ovoid(body, body_point, 16, func(_y: float) -> Callable: return _coat()), 20)
-	var eyes: Array[Vector3] = []
-	for side in [-1.0, 1.0]:
-		eyes.append(face_at + Vector3(side * head.x * lerpf(0.42, 0.62, eye_spread),
-			head.y * 0.22, -head.z * lerpf(0.66, 0.5, eye_spread)))
-	RigKit.lathe(fur, skeleton, face, Transform3D(forward, face_at),
-		RigKit.ovoid(head, 0.0, 12, func(_y: float) -> Callable: return _face_paint(eyes)), 18)
+	RigKit.lathe(coat, skeleton, trunk, Transform3D(forward, Vector3.ZERO),
+		RigKit.ovoid(body, body_point, 16, RigKit.solid(colour)), 20)
+	RigKit.lathe(coat, skeleton, face, Transform3D(forward, face_at),
+		RigKit.ovoid(head, 0.0, 12, RigKit.solid(colour)), 18)
 	for s in 2:
 		var side := -1.0 if s == 0 else 1.0
-		var look := Vector3(side * eye_spread, 0.1, -1.0 + eye_spread * 0.4).normalized()
-		RigKit.eye(shine, skeleton, face, eyes[s], look, eye, eye_colour, eye_white, eye_ring)
+		# Set into the head, a little proud of it.
+		var toward := Vector3(side * lerpf(0.35, 0.8, eye_spread), 0.3,
+			-lerpf(0.87, 0.5, eye_spread)).normalized()
+		RigKit.ellipsoid(shine, skeleton, face, face_at + toward * head - toward * eye * 0.4,
+			Vector3.ONE * eye, RigKit.plain(eye_colour), 10, 6)
 		if ears != Vector2.ZERO:
-			RigKit.ear(fur, skeleton, skeleton.find_bone("Ear.%s" % SIDES[s]), ears.x, ears.y,
-				ears.x * 0.1, 0.7, ear_colour, ear_inside)
+			RigKit.ear(coat, skeleton, skeleton.find_bone("Ear.%s" % SIDES[s]), ears.x, ears.y,
+				ears.x * 0.16, 0.7, ear_colour, ear_colour, -side * 25.0)
 	if beak != Vector2.ZERO:
-		_build_beak(fur, shine, skeleton, face_at)
+		_build_beak(coat, skeleton, face_at)
 	if snout != Vector3.ZERO:
-		_build_snout(fur, shine, skeleton)
+		_build_snout(coat, skeleton)
 
+	# Legs of one width, a round end at the ankle, and the foot the same rod on
+	# along the floor.
+	var rod := RigKit.Cut.new(8, 1, 3)
 	for s in 2:
-		_build_wing(blades, fur, skeleton, s)
+		_build_wing(blades, coat, skeleton, s)
 		var limb := leg_rest(-1.0 if s == 0 else 1.0)
-		RigKit.segment(fur, skeleton, skeleton.find_bone(leg_bone(s, 0)), limb["length"],
-			leg_thickness, leg_thickness * 0.85, RigKit.plain(leg_colour), RigKit.Cut.new(8, 1, 3))
-		_build_toes(fur, skeleton, skeleton.find_bone(leg_bone(s, 1)))
+		RigKit.segment(coat, skeleton, skeleton.find_bone(leg_bone(s, 0)), limb["length"],
+			leg_thickness, leg_thickness, RigKit.plain(leg_colour), rod)
+		RigKit.segment(coat, skeleton, skeleton.find_bone(leg_bone(s, 1)), limb["reach"],
+			leg_thickness, leg_thickness, RigKit.plain(leg_colour), rod)
 
 	if tail > 0.0:
 		for i in 2:
@@ -318,20 +304,19 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 				if i == 1:
 					# Rounded off at the end.
 					across *= sqrt(maxf(1.0 - pow(t, 4.0), 0.0))
-				rows.append([t * tail * 0.5 * 1.04, across, tail_width * 0.12,
-					tail_colour if i == 0 else tail_tip_colour])
-			RigKit.lathe(fur, skeleton, skeleton.find_bone("Tail.%d" % (i + 1)),
+				rows.append([t * tail * 0.5 * 1.04, across, tail_width * 0.12, tail_colour])
+			RigKit.lathe(coat, skeleton, skeleton.find_bone("Tail.%d" % (i + 1)),
 				Transform3D.IDENTITY, rows, 10)
 
-	return RigKit.commit([fur, shine, blades], [RigKit.shell_material(1.0 - gloss, 0.0, 0.4),
-		RigKit.gloss_material(), RigKit.membrane_material(false, 0.85)])
+	return RigKit.commit([coat, shine, blades], [RigKit.shell_material(0.75, 0.0, 0.3),
+		RigKit.eye_material(eye_colour, eye_colour, 0.15), RigKit.membrane_material(false, 0.75)])
 
 
 ## A wing on side [param s]: for a wing of skin, the skin between the body and
-## the wrist on the arm and between the fingers on the hand, with the bones along
-## it; for feathers, the flight feathers on both and the coverts over their front
-## edge, on both faces.
-func _build_wing(blades: SurfaceTool, fur: SurfaceTool, skeleton: Skeleton3D, s: int) -> void:
+## the wrist on the arm and between the fingers on the hand, with a thin rod along
+## each bone; for feathers, the flight feathers on both and a band of coverts over
+## their front edge, on both faces.
+func _build_wing(blades: SurfaceTool, coat: SurfaceTool, skeleton: Skeleton3D, s: int) -> void:
 	var shoulder := skeleton.find_bone(wing_bone(s, 0))
 	var palm := skeleton.find_bone(wing_bone(s, 1))
 	var chord := arm.y
@@ -343,37 +328,35 @@ func _build_wing(blades: SurfaceTool, fur: SurfaceTool, skeleton: Skeleton3D, s:
 			Vector2(chord * 0.35, reach * 0.45), wing_colour, wing_rim, 0.06)
 		RigKit.panel(blades, skeleton, palm, _finger_outline(chord),
 			Vector2(hand * 0.12, hand * 0.22), wing_colour, wing_rim, 0.06)
-		RigKit.lathe(fur, skeleton, shoulder, Transform3D.IDENTITY,
-			RigKit.capsule(reach, 0.035, bone_colour, 2), 6)
+		var rod := RigKit.Cut.new(6, 1, 2)
+		RigKit.segment(coat, skeleton, shoulder, reach, 0.022, 0.022, RigKit.plain(wing_rim), rod)
 		for tip in _finger_tips():
 			var run: Vector2 = tip
-			RigKit.lathe(fur, skeleton, palm, Transform3D(RigKit.along(Vector3(run.x, run.y, 0.0),
-				Vector3.BACK), Vector3.ZERO), [
-					[0.0, 0.025, 0.025, bone_colour], [run.length() * 0.85, 0.016, 0.016, bone_colour],
-					[run.length(), 0.0, 0.0, bone_colour]], 5)
+			RigKit.lathe(coat, skeleton, palm, Transform3D(RigKit.along(Vector3(run.x, run.y, 0.0),
+				Vector3.BACK), Vector3.ZERO), RigKit.capsule(run.length(), 0.022, wing_rim, 2), 6)
 		return
-	var ends := PackedVector2Array([Vector2(-0.04, 0.0), Vector2(-0.04, reach),
+	# Feathers: a smooth edge, the trailing one a little rounded out.
+	var edge := PackedVector2Array([Vector2(-0.04, 0.0), Vector2(-0.04, reach),
 		Vector2(chord * 0.9, reach)])
 	for k in range(1, 5):
-		var y := reach * (1.0 - float(k) / 5.0)
-		ends.append(Vector2(chord * 0.86, y + reach * 0.1))
-		ends.append(Vector2(chord, y))
-	ends.append(Vector2(chord * 0.85, 0.0))
-	RigKit.panel(blades, skeleton, shoulder, ends, Vector2(chord * 0.4, reach * 0.5), wing_colour,
-		wing_rim, 0.14)
+		edge.append(Vector2(chord * (0.9 + 0.1 * sin(PI * float(k) / 5.0)),
+			reach * (1.0 - float(k) / 5.0)))
+	edge.append(Vector2(chord * 0.85, 0.0))
+	RigKit.panel(blades, skeleton, shoulder, edge, Vector2(chord * 0.4, reach * 0.5), wing_colour,
+		wing_rim, 0.1)
 	RigKit.panel(blades, skeleton, palm, _feather_outline(chord), Vector2(chord * 0.3, hand * 0.3),
-		wing_colour, wing_rim, 0.14)
+		wing_colour, wing_rim, 0.1)
 	if coverts > 0.0:
 		var side := -1.0 if s == 0 else 1.0
 		for lift in [0.015, -0.015]:
 			RigKit.panel(blades, skeleton, shoulder, PackedVector2Array([Vector2(-0.05, 0.0),
 				Vector2(-0.05, reach), Vector2(chord * coverts, reach * 0.96),
 				Vector2(chord * coverts * 1.05, 0.0)]), Vector2(chord * coverts * 0.5, reach * 0.5),
-				covert_colour, covert_colour.darkened(0.15), 0.1, side * lift)
+				covert_colour, covert_colour, 0.1, side * lift)
 			RigKit.panel(blades, skeleton, palm, PackedVector2Array([Vector2(-0.05, 0.0),
 				Vector2(-0.05, hand * 0.42), Vector2(chord * coverts * 0.85, hand * 0.28),
 				Vector2(chord * coverts, 0.0)]), Vector2(chord * coverts * 0.4, hand * 0.18),
-				covert_colour, covert_colour.darkened(0.15), 0.1, side * lift)
+				covert_colour, covert_colour, 0.1, side * lift)
 
 
 ## Where each finger of a wing of skin ends, from the wrist: the first out along
@@ -400,114 +383,57 @@ func _finger_outline(chord: float) -> PackedVector2Array:
 	return outline
 
 
-## The edge of a hand of feathers: along the front, round the fan of long ones at
-## its end, and back to the arm's feathers at the wrist.
+## The edge of a hand of feathers: along the front, round the end in one smooth
+## curve where the long feathers are, and back to the arm's feathers at the wrist.
 func _feather_outline(chord: float) -> PackedVector2Array:
 	var outline := PackedVector2Array([Vector2(-0.04, 0.0), Vector2(-0.04, hand * 0.55)])
-	for k in fingers:
-		var t := float(k) / float(maxi(fingers - 1, 1))
+	var count := fingers * 2
+	for k in count:
+		var t := float(k) / float(count - 1)
 		var angle := deg_to_rad(lerpf(4.0, 50.0, t))
-		var tip := Vector2(sin(angle), cos(angle)) * hand * lerpf(1.0, 0.72, t)
-		outline.append(tip)
-		if k + 1 < fingers:
-			var next := deg_to_rad(lerpf(4.0, 50.0, float(k + 1) / float(maxi(fingers - 1, 1))))
-			var middle := (angle + next) * 0.5
-			outline.append(Vector2(sin(middle), cos(middle)) * hand * lerpf(1.0, 0.72, t) * 0.9)
+		outline.append(Vector2(sin(angle), cos(angle)) * hand * lerpf(1.0, 0.72, t))
 	outline.append(Vector2(chord * 0.9, hand * 0.1))
 	outline.append(Vector2(chord * 0.85, 0.0))
 	return outline
 
 
-## A hooked beak: the top half from the face out and then down to a point, the
-## bottom half on the jaw so it opens.
-func _build_beak(fur: SurfaceTool, shine: SurfaceTool, skeleton: Skeleton3D,
-		face_at: Vector3) -> void:
+## A hooked beak, in one colour: the top half from the face out and then down to a
+## point, the bottom half on the jaw so it opens.
+func _build_beak(coat: SurfaceTool, skeleton: Skeleton3D, face_at: Vector3) -> void:
 	var face := skeleton.find_bone("Head")
 	var root := face_at + Vector3(0.0, -head.y * 0.05, -head.z * 0.78)
 	var out := Vector3(0.0, -0.2, -1.0).normalized()
 	var reach := beak.x * 0.5
 	var girth := beak.y * 0.5
-	RigKit.lathe(shine, skeleton, face, Transform3D(RigKit.along(out, Vector3.RIGHT), root), [
+	RigKit.lathe(coat, skeleton, face, Transform3D(RigKit.along(out, Vector3.RIGHT), root), [
 		[-girth * 0.3, girth * 0.95, girth * 0.95, beak_colour],
 		[0.0, girth, girth, beak_colour],
 		[reach * 0.6, girth * 0.8, girth * 0.82, beak_colour],
 		[reach, girth * 0.58, girth * 0.62, beak_colour]], 14)
 	var bend := root + out * reach
-	RigKit.ellipsoid(shine, skeleton, face, bend, Vector3(girth * 0.58, girth * 0.62, girth * 0.62),
+	RigKit.ellipsoid(coat, skeleton, face, bend, Vector3(girth * 0.58, girth * 0.62, girth * 0.62),
 		RigKit.plain(beak_colour), 12, 8)
 	var hook := Vector3(0.0, -1.0, 0.45).normalized()
-	RigKit.lathe(shine, skeleton, face, Transform3D(RigKit.along(hook, Vector3.RIGHT), bend), [
+	RigKit.lathe(coat, skeleton, face, Transform3D(RigKit.along(hook, Vector3.RIGHT), bend), [
 		[0.0, girth * 0.58, girth * 0.62, beak_colour],
 		[beak.x * 0.34, girth * 0.36, girth * 0.4, beak_colour],
 		[beak.x * 0.56, 0.0, 0.0, beak_colour]], 12)
-	var chin := skeleton.find_bone("Jaw")
-	var mouth := _mouth()
-	var length: float = mouth["length"]
-	RigKit.lathe(shine, skeleton, chin, Transform3D.IDENTITY, [
-		[-girth * 0.2, girth * 0.7, girth * 0.4, jaw_colour],
-		[length * 0.5, girth * 0.6, girth * 0.38, jaw_colour],
-		[length, 0.0, 0.0, jaw_colour]], 12)
-	# Dark in the throat, for when it opens.
-	RigKit.ellipsoid(fur, skeleton, face, root + Vector3(0.0, -girth * 0.6, 0.0),
-		Vector3(girth * 0.6, girth * 0.35, girth * 0.7), RigKit.plain(Color(0.25, 0.08, 0.1)), 10, 6)
+	var length: float = _mouth()["length"]
+	RigKit.lathe(coat, skeleton, skeleton.find_bone("Jaw"), Transform3D.IDENTITY, [
+		[-girth * 0.2, girth * 0.7, girth * 0.4, beak_colour],
+		[length * 0.5, girth * 0.6, girth * 0.38, beak_colour],
+		[length, 0.0, 0.0, beak_colour]], 12)
 
 
-## A short snout with a flat nose on the end, like a pig's, a jaw under it, and
-## fangs when it has any.
-func _build_snout(fur: SurfaceTool, shine: SurfaceTool, skeleton: Skeleton3D) -> void:
+## A short snout, and a lower jaw under it so the mouth can open, both in the
+## body's colour.
+func _build_snout(coat: SurfaceTool, skeleton: Skeleton3D) -> void:
 	var face := skeleton.find_bone("Head")
-	var muzzle := _muzzle()
-	RigKit.lathe(fur, skeleton, face, Transform3D(RigKit.along(Vector3.FORWARD, Vector3.RIGHT),
-		muzzle), RigKit.ovoid(Vector3(snout.x, snout.y, snout.z * 0.5), 0.2, 8,
+	RigKit.lathe(coat, skeleton, face, Transform3D(RigKit.along(Vector3.FORWARD, Vector3.RIGHT),
+		_muzzle()), RigKit.ovoid(Vector3(snout.x, snout.y, snout.z * 0.5), 0.2, 8,
 			RigKit.solid(colour)), 14)
-	var front := muzzle + Vector3(0.0, snout.y * 0.15, -snout.z * 0.5)
-	RigKit.ellipsoid(shine, skeleton, face, front, Vector3(nose * 1.25, nose * 0.95, nose * 0.45),
-		RigKit.plain(nose_colour), 14, 8)
-	for side in [-1.0, 1.0]:
-		RigKit.ellipsoid(shine, skeleton, face, front + Vector3(side * nose * 0.42, 0.0,
-			-nose * 0.36), Vector3(nose * 0.22, nose * 0.3, nose * 0.14),
-			RigKit.plain(Color(0.08, 0.04, 0.04)), 8, 5)
-	var chin := skeleton.find_bone("Jaw")
-	var mouth := _mouth()
-	var length: float = mouth["length"]
-	RigKit.lathe(fur, skeleton, chin, Transform3D.IDENTITY, RigKit.ovoid(Vector3(snout.x * 0.8,
-		snout.y * 0.45, length * 0.5), 0.3, 8, RigKit.solid(jaw_colour)).map(
+	var length: float = _mouth()["length"]
+	RigKit.lathe(coat, skeleton, skeleton.find_bone("Jaw"), Transform3D.IDENTITY,
+		RigKit.ovoid(Vector3(snout.x * 0.8, snout.y * 0.45, length * 0.5), 0.3, 8,
+			RigKit.solid(colour)).map(
 			func(row: Array) -> Array: return [row[0] + length * 0.5, row[1], row[2], row[3]]), 12)
-	var hinge: Vector3 = mouth["hinge"]
-	RigKit.ellipsoid(fur, skeleton, face, hinge + Vector3(0.0, snout.y * 0.25, -length * 0.45),
-		Vector3(snout.x * 0.7, snout.y * 0.3, length * 0.45), RigKit.plain(Color(0.3, 0.06, 0.08)),
-		10, 6)
-	if fangs > 0.0:
-		for side in [-1.0, 1.0]:
-			var root := muzzle + Vector3(side * snout.x * 0.42, -snout.y * 0.55, -snout.z * 0.28)
-			RigKit.lathe(fur, skeleton, face, Transform3D(RigKit.along(Vector3.DOWN,
-				Vector3.RIGHT), root), [[0.0, 0.026, 0.026, Color(0.98, 0.96, 0.9)],
-					[fangs * 0.6, 0.02, 0.02, Color(0.98, 0.96, 0.9)],
-					[fangs, 0.0, 0.0, Color(0.98, 0.96, 0.9)]], 6)
-
-
-## The toes on a foot: two forward and two back for something feathered, three
-## forward as claws for anything else.
-func _build_toes(fur: SurfaceTool, skeleton: Skeleton3D, foot: int) -> void:
-	var spread := [-0.35, 0.35, PI - 0.3, PI + 0.3] if feathered else [-0.4, 0.0, 0.4]
-	for angle in spread:
-		var run := Vector3(sin(angle) * 0.9, cos(angle), 0.0).normalized()
-		RigKit.lathe(fur, skeleton, foot, Transform3D(RigKit.along(run, Vector3.BACK), Vector3.ZERO),
-			RigKit.capsule(toes, leg_thickness * 0.55, leg_colour, 2), 6)
-
-
-## Paints the body: its own colour above, the belly's below.
-func _coat() -> Callable:
-	return func(n: Vector3, _p: Vector3) -> Color:
-		return belly_colour if n.y < -0.3 else colour
-
-
-## Paints the head: its own colour, with a patch round each of [param eyes] when
-## it has a face.
-func _face_paint(eyes: Array[Vector3]) -> Callable:
-	return func(_n: Vector3, p: Vector3) -> Color:
-		var bare := 0.0
-		if face > 0.0:
-			for centre in eyes:
-				bare = maxf(bare, smoothstep(face, face * 0.75, p.distance_to(centre)))
-		return colour.lerp(face_colour, bare)

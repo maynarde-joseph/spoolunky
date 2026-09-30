@@ -364,8 +364,8 @@ them on a stand-in. So far:
   at a time, shakes its head with its mouth open when it is caught, and curls up
   small once it is wrapped;
 * the **bat**, the first `WingedBody` — anything that flies on two wings of two
-  bones each, an arm and a hand: skin stretched between its fingers, ears
-  bigger than its head, a flat pig's nose and a pair of fangs. Its hands beat a
+  bones each, an arm and a hand, drawn the minimal way: dark brown, with tall
+  ears and wings of skin scalloped between thin finger bones. Its hands beat a
   moment behind its arms; on the ground its wings pleat up along its sides;
   caught, it flaps in bursts; wrapped, it pulls them round itself like a cloak;
 * the **cat**, on the same body as the rat: ginger all over, with pointed ears,

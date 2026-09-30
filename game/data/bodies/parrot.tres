@@ -5,26 +5,18 @@
 [resource]
 script = ExtResource("1_body")
 colour = Color(0.86, 0.12, 0.1, 1)
-belly_colour = Color(0.8, 0.1, 0.09, 1)
-face_colour = Color(0.96, 0.94, 0.9, 1)
 wing_colour = Color(0.12, 0.32, 0.82, 1)
 wing_rim = Color(0.08, 0.2, 0.6, 1)
 covert_colour = Color(0.98, 0.8, 0.1, 1)
 beak_colour = Color(0.93, 0.9, 0.82, 1)
-jaw_colour = Color(0.18, 0.18, 0.2, 1)
 leg_colour = Color(0.35, 0.33, 0.33, 1)
 tail_colour = Color(0.86, 0.12, 0.1, 1)
-tail_tip_colour = Color(0.12, 0.32, 0.82, 1)
 eye_colour = Color(0.05, 0.04, 0.04, 1)
-eye_ring = Color(0.98, 0.85, 0.35, 1)
-gloss = 0.3
 body = Vector3(0.4, 0.42, 0.68)
 head = Vector3(0.36, 0.36, 0.36)
 head_lift = 0.3
 eye = 0.1
-eye_white = 0.45
 eye_spread = 0.55
-face = 0.19
 snout = Vector3(0, 0, 0)
 beak = Vector2(0.42, 0.34)
 feathered = true
