@@ -13,15 +13,11 @@ extends CreatureMotion
 ## The legs walk in the two sets of three real insects use, L1 R2 L3 and then R1
 ## L2 R3, so there is always a tripod on the ground.
 
-## How quickly it goes from one way of holding itself to the next, per second.
-const EASE := 5.0
-
 ## The most steps a second the legs will take, however fast the body goes. Past
 ## this a walk reads as a shimmer, not as legs.
 const MOST_STEPS := 7.0
 
 var _body: InsectBody
-var _rest := {}
 var _thorax := -1
 var _head := -1
 var _abdomen := -1
@@ -30,16 +26,9 @@ var _wings: Array[Dictionary] = []
 var _feelers: Array[Dictionary] = []
 var _jaws: Array[Dictionary] = []
 var _stride := 0.0
-
-# How much of each way of holding itself is in the pose right now, 0 to 1.
-var _air := 0.0
-var _walk := 0.0
 ## How much of a stride the legs are taking: none standing still, so that an
 ## insect that stops puts all six feet down instead of freezing mid-step.
 var _pace := 0.0
-var _thrash := 0.0
-var _slack := 0.0
-var _curl := 0.0
 
 var _feet := PackedVector3Array()
 var _wing_tips := PackedVector3Array()
@@ -49,12 +38,10 @@ func bind(skeleton: Skeleton3D, body: CreatureBody) -> void:
 	_body = body as InsectBody
 	if _body == null:
 		return
-	_rest.clear()
-	for bone in skeleton.get_bone_count():
-		_rest[bone] = skeleton.get_bone_rest(bone)
-	_thorax = skeleton.find_bone("Thorax")
-	_head = skeleton.find_bone("Head")
-	_abdomen = skeleton.find_bone("Abdomen")
+	_keep_rest(skeleton)
+	_thorax = _find(skeleton, "Thorax")
+	_head = _find(skeleton, "Head")
+	_abdomen = _find(skeleton, "Abdomen")
 	_legs.clear()
 	for pair in 3:
 		for s in 2:
@@ -62,7 +49,7 @@ func bind(skeleton: Skeleton3D, body: CreatureBody) -> void:
 			var limb := _body.leg_rest(pair, side)
 			var bones := PackedInt32Array()
 			for part in 3:
-				bones.append(skeleton.find_bone(InsectBody.leg_bone(pair, s, part)))
+				bones.append(_find(skeleton, InsectBody.leg_bone(pair, s, part)))
 			_legs.append({
 				"bones": bones, "side": side, "pair": pair, "group": (pair + s) % 2,
 				"normal": limb["normal"], "reach": (limb["lengths"] as Vector3).z,
@@ -72,7 +59,7 @@ func bind(skeleton: Skeleton3D, body: CreatureBody) -> void:
 		for s in 2:
 			var size: Vector2 = _body.hind_wing if hind == 1 else _body.wing
 			_wings.append({
-				"bone": skeleton.find_bone(InsectBody.wing_bone(hind == 1, s)),
+				"bone": _find(skeleton, InsectBody.wing_bone(hind == 1, s)),
 				"side": -1.0 if s == 0 else 1.0, "hind": hind == 1, "length": size.x,
 			})
 	_feelers.clear()
@@ -80,22 +67,22 @@ func bind(skeleton: Skeleton3D, body: CreatureBody) -> void:
 	for s in 2:
 		var tag: String = InsectBody.SIDES[s]
 		_feelers.append({
-			"base": skeleton.find_bone("Antenna.%s.1" % tag),
-			"tip": skeleton.find_bone("Antenna.%s.2" % tag), "side": -1.0 if s == 0 else 1.0,
+			"base": _find(skeleton, "Antenna.%s.1" % tag),
+			"tip": _find(skeleton, "Antenna.%s.2" % tag), "side": -1.0 if s == 0 else 1.0,
 		})
-		var jaw := skeleton.find_bone("Mandible.%s" % tag)
+		var jaw := _find(skeleton, "Mandible.%s" % tag, true)
 		if jaw >= 0:
 			_jaws.append({"bone": jaw, "side": -1.0 if s == 0 else 1.0})
 
 
 ## Where the tip of every foot was drawn last frame, in the world, in leg order:
-## L1 R1 L2 R2 L3 R3. Kept here because the skeleton will not say afterwards.
+## L1 R1 L2 R2 L3 R3.
 func feet() -> PackedVector3Array:
 	return _feet
 
 
 ## Where the tip of every wing was drawn last frame, in the world, forewings first.
-func wing_tips() -> PackedVector3Array:
+func strokes() -> PackedVector3Array:
 	return _wing_tips
 
 
@@ -105,18 +92,10 @@ func _process_modification_with_delta(delta: float) -> void:
 		return
 	delta = clampf(delta, 0.0, 0.1)
 	clock += delta
-	var step := clampf(EASE * delta, 0.0, 1.0)
-	_air = move_toward(_air, 1.0 if pose == Pose.FLYING else 0.0, step)
-	_walk = move_toward(_walk, 1.0 if pose == Pose.WALKING else 0.0, step)
-	# Something caught thrashes as hard as it has fight left, and never quite
-	# stops until the fight is gone.
-	var fight := 0.35 + 0.65 * clampf(effort, 0.0, 1.0)
-	_thrash = move_toward(_thrash, fight if pose == Pose.STRUGGLING else 0.0, step)
-	_slack = move_toward(_slack, 1.0 if pose == Pose.SPENT else 0.0, step)
-	_curl = move_toward(_curl, 1.0 if pose == Pose.CURLED else 0.0, step)
+	_blend(delta)
 	var steps := minf(speed / maxf(_body.stride, 0.01), MOST_STEPS)
 	_stride = fposmod(_stride + steps * delta, 1.0)
-	_pace = move_toward(_pace, clampf(steps / 2.0, 0.0, 1.0), step)
+	_pace = move_toward(_pace, clampf(steps / 2.0, 0.0, 1.0), clampf(EASE * delta, 0.0, 1.0))
 
 	_pose_body(skeleton)
 	_pose_wings(skeleton)
@@ -127,9 +106,7 @@ func _process_modification_with_delta(delta: float) -> void:
 
 ## Hovering bobs; breathing and thrashing move the abdomen; the end curls it under.
 func _pose_body(skeleton: Skeleton3D) -> void:
-	var rest: Transform3D = _rest[_thorax]
-	skeleton.set_bone_pose_position(_thorax,
-		rest.origin + Vector3.UP * sin(clock * 2.3) * 0.04 * _air)
+	_shift(skeleton, _thorax, Vector3.UP * sin(clock * 2.3) * 0.04 * _air)
 	if _abdomen >= 0:
 		var pitch := sin(clock * 2.2) * 0.04 - 0.08 * _air + 0.35 * _curl \
 			+ _thrash * sin(clock * 11.0) * 0.25 + _walk * sin(_stride * TAU * 2.0) * 0.03
@@ -210,23 +187,12 @@ func _pose_head(skeleton: Skeleton3D) -> void:
 		_turn(skeleton, jaw["bone"], Quaternion(Vector3.UP, -float(jaw["side"]) * open))
 
 
-## Turns [param bone] by [param turn], given in its parent's space, from rest.
-func _turn(skeleton: Skeleton3D, bone: int, turn: Quaternion) -> void:
-	if bone < 0:
-		return
-	var rest: Transform3D = _rest[bone]
-	skeleton.set_bone_pose_rotation(bone, turn * rest.basis.get_rotation_quaternion())
-
-
 func _record(skeleton: Skeleton3D) -> void:
-	var world := skeleton.global_transform
 	_feet.resize(_legs.size())
 	for i in _legs.size():
 		var leg: Dictionary = _legs[i]
-		var tarsus: int = (leg["bones"] as PackedInt32Array)[2]
-		_feet[i] = world * (skeleton.get_bone_global_pose(tarsus) * Vector3(0.0, leg["reach"], 0.0))
+		_feet[i] = _tip(skeleton, (leg["bones"] as PackedInt32Array)[2], leg["reach"])
 	_wing_tips.resize(_wings.size())
 	for i in _wings.size():
 		var wing: Dictionary = _wings[i]
-		_wing_tips[i] = world * (skeleton.get_bone_global_pose(wing["bone"])
-			* Vector3(0.0, wing["length"], 0.0))
+		_wing_tips[i] = _tip(skeleton, wing["bone"], wing["length"])

@@ -1589,6 +1589,12 @@ says what it is doing. It does not need detail.
   every size, colour and part as a number — the stripes on a wasp, the length of
   a mosquito's proboscis. A `PreySpecies` points at one; without one it is still
   the placeholder ball. So a new creature is still files, never a scene.
+* **A body can come before its species.** A body says what a creature looks like
+  and how it moves; everything else — how big, how strong, where it lives — is the
+  species. Bodies get drawn ahead of the places they will live in, and until one
+  has a species the checks and the pictures put it on a stand-in
+  (`tests/support/stand_in.gd`) that makes up just enough to walk it, fly it and
+  catch it. Nothing in the game ever makes one, so nothing a spider can meet.
 * **One mesh for every creature of a species.** The bones are each creature's
   own, but the mesh and the skin are built once and shared. A room holding a dozen
   flies builds one fly.

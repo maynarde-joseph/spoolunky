@@ -516,9 +516,10 @@ spider lands on the floor rather than through it:
 godot --headless --script res://tests/world_smoke_test.gd
 ```
 
-A fourth lets every creature that has a body loose in an empty room and checks it
-holds itself the way it should — facing where it goes, wings beating, feet on the
-floor, legs thrashing when it is caught, curled up and still once it is wrapped:
+A fourth lets every body loose in an empty room — on the species that wears it, or
+on a stand-in if nothing does yet — and checks it holds itself the way it should:
+facing where it goes, beating what it flies or swims with, feet on the floor,
+thrashing when it is caught, curled up and still once it is wrapped:
 
 ```sh
 godot --headless --script res://tests/creature_smoke_test.gd
@@ -568,9 +569,9 @@ xvfb-run -a godot --rendering-driver opengl3 --resolution 800x600 \
     --script res://tests/screenshot_body.gd
 ```
 
-And every creature with a body, close up, in each pose it has — in flight or
-walking, at rest, caught, wrapped — plus `creatures.png`, a sheet of all of them.
-Name species or poses after `--` to render only those, for instance `-- fly caught`:
+And every body, close up, in each pose it has — flying, swimming or walking, at
+rest, caught, wrapped — plus `creatures.png`, a sheet of all of them. Name bodies
+or poses after `--` to render only those, for instance `-- fly caught`:
 
 ```sh
 xvfb-run -a godot --rendering-driver opengl3 --resolution 800x600 \

@@ -1,17 +1,19 @@
 extends SceneTree
 
-## Renders every creature that has a body, close up, in each way it holds itself —
-## in flight or walking, at rest, caught in a web, wrapped up — to PNG files, and
+## Renders every body there is, close up, in each way it holds itself — flying,
+## swimming or walking, at rest, caught in a web, wrapped up — to PNG files, and
 ## tiles them all into one sheet. For checking how a body reads without opening
-## the editor. Needs a display; on a headless machine run it through xvfb:
+## the editor. A body nothing wears yet is shown on a [StandIn]. Needs a display;
+## on a headless machine run it through xvfb:
 ##
 ##     xvfb-run -a godot --rendering-driver opengl3 --resolution 800x600 \\
 ##         --script res://tests/screenshot_creatures.gd
 ##
-## Name species (`fly`, `wasp` ...) or poses (`flying`, `walking`, `resting`,
-## `caught`, `wrapped`) after `--` to render only those. The shots land in the
-## user data folder as `creature_<species>_<pose>.png`, the sheet as
-## `creatures.png`; the paths are printed on the way out.
+## Name bodies (`fly`, `rat` ...) or poses (`flying`, `walking`, `resting`,
+## `caught`, `wrapped`) after `--` to render only those; `flying` takes in
+## swimming. The shots land in the user data folder as
+## `creature_<body>_<pose>.png`, the sheet as `creatures.png`; the paths are
+## printed on the way out.
 
 const POSES := ["flying", "walking", "resting", "caught", "wrapped"]
 const TILE := Vector2i(320, 240)
@@ -28,6 +30,8 @@ func _run() -> void:
 	var names: Array[String] = []
 	var poses: Array[String] = []
 	for arg in OS.get_cmdline_user_args():
+		if arg == "swimming":
+			arg = "flying"
 		if POSES.has(arg):
 			poses.append(arg)
 		else:
@@ -43,8 +47,8 @@ func _run() -> void:
 	await physics_frame
 
 	var rows: Array[Array] = []
-	for kind in PreyLibrary.load_species():
-		if kind.body == null or (not names.is_empty() and not names.has(kind.id)):
+	for kind in StandIn.every_body():
+		if not names.is_empty() and not names.has(kind.id):
 			continue
 		var shots: Array[Image] = []
 		for pose in poses:
@@ -61,7 +65,8 @@ func _run() -> void:
 
 
 ## One creature in one pose: put down in the middle of the room, facing across
-## the camera, held there, and photographed from above and in front.
+## the camera, held there, and photographed from above and in front — from
+## further off the more of it there is, so a tail or a wingspan stays in the shot.
 func _shoot(kind: PreySpecies, pose: String) -> Image:
 	var prey := Prey.of(kind)
 	_room.add_child(prey)
@@ -94,15 +99,22 @@ func _shoot(kind: PreySpecies, pose: String) -> Image:
 			prey.velocity = Vector3.ZERO
 			view.held = CreatureMotion.Pose.CURLED
 	await _frames(40)
-	# At the body, which a walker carries lower than its middle, down on its legs.
-	var target := view.global_position + Vector3.UP * radius * 0.2
-	_eye.global_position = target + Vector3(radius * 2.2, radius * 3.4, radius * 5.6)
+	# At the middle of what is drawn — which a walker carries lower than its own
+	# middle, down on its legs, and a tail takes back — from far enough off to fit
+	# it all in. An insect, the size of its wingspan across, is shot from about
+	# seven body radii.
+	var box := view.shell.mesh.get_aabb()
+	var target := view.global_transform * box.get_center() + Vector3.UP * radius * 0.2
+	var reach := maxf(box.size.x, maxf(box.size.y, box.size.z)) * 0.5
+	var away := Vector3(2.2, 3.4, 5.6).normalized() * radius * maxf(6.9, reach * 4.9)
+	_eye.global_position = target + away
 	_eye.look_at(target, Vector3.UP)
 	for i in 2:
 		await process_frame
 	await RenderingServer.frame_post_draw
 	var image := root.get_texture().get_image()
-	var path := "user://creature_%s_%s.png" % [kind.id, pose]
+	var doing := StandIn.going(kind) if pose == "flying" else pose
+	var path := "user://creature_%s_%s.png" % [kind.id, doing]
 	image.save_png(path)
 	print("saved ", ProjectSettings.globalize_path(path))
 	prey.free()
