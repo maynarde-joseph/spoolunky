@@ -356,8 +356,8 @@ the park and the pond, before those have anywhere to live. They wait in
 `game/data/bodies/` for a species, and until then the checks and the pictures show
 them on a stand-in. So far:
 
-* the **cockroach**, flat and glossy under its pale-rimmed shield, with feelers
-  longer than it is;
+* the **cockroach**, flat and wide under the shield that hides its head, with
+  its wings folded flat as its back and feelers longer than it is;
 * the **rat**, the first `BeastBody` — anything furry on four legs: a body, a head
   with a snout, ears and a jaw that opens, four legs and a tail. Big round ears,
   big eyes, buck teeth and whiskers. It trots two legs at a time, shakes its head

@@ -29,11 +29,8 @@ const LEG_PARTS := ["Femur", "Tibia", "Tarsus"]
 ## A wing's membrane, and the rim round its edge. Clear wings are mostly alpha.
 @export var wing_colour := Color(0.82, 0.86, 0.92, 0.28)
 @export var wing_rim := Color(0.3, 0.3, 0.34, 0.6)
-## The rim of the shield over the thorax, when [member shield] asks for one. Its
-## middle is [member colour].
-@export var shield_colour := Color(0.7, 0.55, 0.3)
-## How glossy the body is, from matte to wet-looking.
-@export_range(0.0, 1.0) var gloss := 0.25
+## The shield over the thorax, when [member shield] asks for one.
+@export var shield_colour := Color(0.36, 0.17, 0.07)
 
 
 @export_group("Body")
@@ -312,10 +309,9 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 	RigKit.lathe(body, skeleton, face, Transform3D(forward, at["head"] - at["neck"]),
 		RigKit.ovoid(head, 0.0, 10, RigKit.solid(colour)), 16)
 	if shield != Vector3.ZERO:
-		# A dome over the thorax, pushed forward far enough to hide most of the head,
-		# pale round its rim.
+		# A dome over the thorax, pushed forward far enough to hide most of the head.
 		var dome := Vector3(0.0, thorax.y * 0.9, -thorax.z * 0.35)
-		RigKit.ellipsoid(body, skeleton, middle, dome, shield, _rim_paint(dome), 20, 10)
+		RigKit.ellipsoid(body, skeleton, middle, dome, shield, RigKit.plain(shield_colour), 20, 10)
 	var waist_bone := skeleton.find_bone("Waist")
 	if waist_bone >= 0:
 		RigKit.lathe(body, skeleton, waist_bone, backward,
@@ -387,17 +383,9 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 				size.x, size.y, hind_wing_broadest if back == 1 else wing_broadest, wing_colour,
 				wing_rim)
 
-	return RigKit.commit([body, shine, blades], [RigKit.shell_material(1.0 - gloss, 0.0, 0.3),
+	return RigKit.commit([body, shine, blades], [RigKit.shell_material(0.75, 0.0, 0.3),
 		RigKit.eye_material(eye_colour, eye_colour, 0.15),
 		RigKit.membrane_material(wing_colour.a < 0.99 or wing_rim.a < 0.99)])
-
-
-## Paints the shield: [member shield_colour] round its rim, [member colour] in the
-## middle, for one centred at [param dome].
-func _rim_paint(dome: Vector3) -> Callable:
-	return func(_n: Vector3, p: Vector3) -> Color:
-		var off := Vector2((p.x - dome.x) / shield.x, (p.z - dome.z) / shield.z)
-		return colour.lerp(shield_colour, smoothstep(0.72, 0.86, off.length()))
 
 
 ## Where the bands on the abdomen start and stop, along it: from a third of the
