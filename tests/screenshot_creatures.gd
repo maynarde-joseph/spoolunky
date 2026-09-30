@@ -106,7 +106,7 @@ func _shoot(kind: PreySpecies, pose: String) -> Image:
 	var box := view.shell.mesh.get_aabb()
 	var target := view.global_transform * box.get_center() + Vector3.UP * radius * 0.2
 	var reach := maxf(box.size.x, maxf(box.size.y, box.size.z)) * 0.5
-	var away := Vector3(2.2, 3.4, 5.6).normalized() * radius * maxf(6.9, reach * 4.9)
+	var away := Vector3(2.2, 3.4, 5.6).normalized() * radius * maxf(6.9, reach * 3.4)
 	_eye.global_position = target + away
 	_eye.look_at(target, Vector3.UP)
 	for i in 2:

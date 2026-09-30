@@ -1585,9 +1585,10 @@ briefly, so what it needs is a silhouette you can name at a glance and a pose th
 says what it is doing. It does not need detail.
 
 * **A body is a resource.** Each kind of animal is a script (`InsectBody` for
-  insects) and each species is a `.tres` of it, in `game/data/bodies/`, holding
-  every size, colour and part as a number — the stripes on a wasp, the length of
-  a mosquito's proboscis. A `PreySpecies` points at one; without one it is still
+  insects, `BeastBody` for anything furry on four legs) and each species is a
+  `.tres` of it, in `game/data/bodies/`, holding every size, colour and part as a
+  number — the stripes on a wasp, the length of a mosquito's proboscis, whether a
+  rat's ears are round or a cat's pointed. A `PreySpecies` points at one; without one it is still
   the placeholder ball. So a new creature is still files, never a scene.
 * **A body can come before its species.** A body says what a creature looks like
   and how it moves; everything else — how big, how strong, where it lives — is the
@@ -1603,7 +1604,14 @@ says what it is doing. It does not need detail.
   *Struggling*: in a web and fighting, legs and wings thrashing as hard as it has
   fight left. *Spent*: fought out, hanging slack. *Curled*: wrapped, head down in
   the bundle, legs drawn in. The creature itself decides nothing — the view reads
-  the prey's own state, so behaviour and body cannot disagree.
+  the prey's own state, so behaviour and body cannot disagree. Each kind holds
+  the same five its own way: a beast trots two legs at a time, stretches out in
+  a leap, scrabbles at the air and shakes its head when caught, and curls up
+  small with its tail round it.
+* **Goofy, a little.** The creatures that are not insects are built to be liked
+  before they are eaten: big heads, big eyes with a glint in them — white round
+  the middle for a stare, or a glossy bead — and a few things you could draw from
+  memory, like a rat's buck teeth and whiskers.
 * **It faces where it is going.** The prey never turned: its collider is a ball,
   so it had no reason to. The body turns to its heading instead, and pitches nose
   up when it climbs.

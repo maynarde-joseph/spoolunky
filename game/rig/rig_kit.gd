@@ -163,6 +163,10 @@ static func segment(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, length: 
 ## Two rows at the same place give a hard edge between their colours, which is
 ## how a band round an abdomen starts where it starts rather than fading in over
 ## a row. A row with no radius is a pole.
+##
+## A row's colour can instead be a paint, the way [method ellipsoid] takes one:
+## called for each vertex with its normal and position in the bone's space, for a
+## coloured part that is not banded — a pale belly under a coat.
 static func lathe(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, frame: Transform3D,
 		rows: Array, sides := 12) -> void:
 	if bone < 0 or rows.size() < 2:
@@ -195,8 +199,10 @@ static func lathe(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, frame: Tra
 			var normal := Vector3(up * c, -(up * widen * c * c + across * rise * n * n), across * n)
 			if normal.length_squared() < 0.000000001:
 				normal = Vector3.DOWN if i == 0 else Vector3.UP
-			ring.append([frame * Vector3(across * c, y, up * n),
-				(frame.basis * normal).normalized(), row[3]])
+			var at := frame * Vector3(across * c, y, up * n)
+			var facing := (frame.basis * normal).normalized()
+			var colour: Color = row[3] if row[3] is Color else (row[3] as Callable).call(facing, at)
+			ring.append([at, facing, colour])
 		grid.append(ring)
 	sew(tool, skeleton.get_bone_global_rest(bone), bone, grid, plain(Color.WHITE), false)
 
@@ -243,6 +249,65 @@ static func capsule(length: float, radius: float, colour: Color, ends := 3) -> A
 		var angle := PI * 0.5 * float(i) / float(ends)
 		rows.append([length + sin(angle) * radius, cos(angle) * radius, cos(angle) * radius, colour])
 	return rows
+
+
+## A cartoon eye on [param bone]: a ball of [param radius] at [param at] looking
+## along [param look], with a glint. [param white] says how much of it is white
+## round the [param iris]: none is a glossy bead, more is a stare. Built into a
+## surface coloured by the mesh, which [method gloss_material] is for.
+static func eye(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, at: Vector3,
+		look: Vector3, radius: float, iris: Color, white := 0.0,
+		sclera := Color(0.95, 0.94, 0.9)) -> void:
+	if bone < 0:
+		return
+	var frame := Transform3D(along(look, Vector3.UP), at)
+	lathe(tool, skeleton, bone, frame, ovoid(Vector3.ONE * radius, 0.0, 10,
+		solid(sclera if white > 0.0 else iris)), 14)
+	if white > 0.0:
+		# The dark middle, a cap on the front of the ball just proud of it: most of
+		# the front for a little white, a dot for a lot.
+		lathe(tool, skeleton, bone, frame, _cap(radius * 1.03, lerpf(1.1, 0.42, white), iris), 14)
+	# Up and to the left of the middle, as if the light were always there.
+	var glint := (look.normalized() + Vector3(-0.3, 0.42, 0.0)).normalized()
+	lathe(tool, skeleton, bone, Transform3D(along(glint, Vector3.UP), at),
+		_cap(radius * 1.06, 0.2, Color(1.0, 1.0, 1.0)), 8)
+
+
+## The rows of a cap on a ball of [param radius] for [method lathe]: everything
+## within [param spread] radians of its +Y pole.
+static func _cap(radius: float, spread: float, colour: Color, count := 4) -> Array:
+	var rows: Array = []
+	for i in count + 1:
+		var angle := spread * float(count - i) / float(count)
+		rows.append([radius * cos(angle), radius * sin(angle), radius * sin(angle), colour])
+	return rows
+
+
+## An ear on [param bone], out along its +Y: [param width] across at its widest,
+## [param length] long and [param depth] thick. [param point] shapes it, from a
+## rounded disc (0) to a triangle standing on its base (1). Its back is
+## [param outside] and its face, toward the bone's -Z, [param inside].
+static func ear(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, width: float,
+		length: float, depth: float, point: float, outside: Color, inside: Color) -> void:
+	if bone < 0:
+		return
+	var paint := func(n: Vector3, p: Vector3) -> Color:
+		var t := clampf(p.y / length, 0.0, 1.0)
+		var inner := absf(p.x) < _ear_girth(t, point) * width * 0.7 and t > 0.12 and t < 0.86
+		return inside if n.z < -0.25 and inner else outside
+	var rows: Array = []
+	for i in 13:
+		var t := float(i) / 12.0
+		var girth := _ear_girth(t, point)
+		rows.append([t * length, girth * width, depth * clampf(girth * 1.5, 0.25, 1.0), paint])
+	lathe(tool, skeleton, bone, Transform3D.IDENTITY, rows, 14)
+
+
+## How wide an ear is [param t] of the way out, against its widest.
+static func _ear_girth(t: float, point: float) -> float:
+	var round := sqrt(maxf(sin(PI * t), 0.0))
+	var pointed := smoothstep(0.0, 0.18, t) * (1.0 - t) / 0.82
+	return lerpf(round, pointed, point)
 
 
 ## Something flat — a wing — on [param bone]: out along its +Y for
@@ -403,6 +468,16 @@ static func membrane_material(see_through: bool) -> StandardMaterial3D:
 	material.roughness = 0.35
 	if see_through:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	return material
+
+
+## Coloured by the mesh, and wet-looking: for eyes that are painted rather than
+## lit, and noses.
+static func gloss_material() -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.12
+	material.metallic_specular = 0.7
 	return material
 
 
