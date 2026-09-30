@@ -90,6 +90,14 @@ static func paint(paint_name: String) -> Material:
 	return material
 
 
+## The colour of [param paint_name] as its material has it now: for the shapes
+## built a point at a time, whose colour is carried on their points. They take it
+## when they are built, so a paint changed afterwards reaches them at the next bake.
+static func colour(paint_name: String) -> Color:
+	var material := paint(paint_name) as BaseMaterial3D
+	return material.albedo_color if material != null else Color.MAGENTA
+
+
 ## Where the paint's file lives.
 static func path_of(paint_name: String) -> String:
 	return DIR.path_join(paint_name + ".tres")

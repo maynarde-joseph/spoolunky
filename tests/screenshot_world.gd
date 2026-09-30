@@ -20,6 +20,11 @@ const VIEWS := {
 	"shed_floor": [Vector3(-170.0, 2.2, 9.0), Vector3(-166.0, 1.5, 0.0)],
 	"shed_rafters": [Vector3(-152.0, 26.0, 10.0), Vector3(-172.0, 32.0, -4.0)],
 	"shed_outside": [Vector3(-110.0, 28.0, 48.0), Vector3(-166.0, 14.0, 0.0)],
+	"sewer_drain": [Vector3(-157.0, -12.0, -13.0), Vector3(-168.0, -20.0, 3.0)],
+	"sewer_tunnel": [Vector3(-150.0, -19.0, 3.0), Vector3(-110.0, -19.5, -4.0)],
+	"sewer_hall": [Vector3(-28.0, -9.0, 18.0), Vector3(-50.0, -18.0, -12.0)],
+	"sewer_pipe": [Vector3(-44.0, -17.0, -24.0), Vector3(-44.0, -19.0, -60.0)],
+	"sewer_storm": [Vector3(13.0, -13.0, 5.0), Vector3(32.0, -9.0, -4.0)],
 }
 
 

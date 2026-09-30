@@ -62,14 +62,61 @@ const DOOR := Rect2(-6.0, 1.0, 12.0, 21.0)
 const WINDOW := Rect2(-172.0, 11.0, 12.0, 9.0)
 
 ## The drain in the shed floor, and how far down the shaft under it goes: to the
-## roof of the chamber under the shed.
-const DRAIN_LO := Vector2(-168.6, 1.4)
-const DRAIN_HI := Vector2(-165.4, 4.6)
-const DRAIN_BOTTOM := -8.0
+## roof of the chamber under the shed. Its south side is that chamber's south
+## wall, so the rungs down the shaft go on down the wall to the walkway.
+const DRAIN_LO := Vector2(-168.6, 2.8)
+const DRAIN_HI := Vector2(-165.4, 6.0)
+const DRAIN_BOTTOM := -4.5
 
 ## Where a new spider starts: on the shed floor, between the bench and the drain,
 ## facing the drain.
 const SPAWN := Vector3(-173.0, 1.4, 6.5)
+
+# --- the sewers, under the park -------------------------------------------
+
+## The line the sewer runs along, west to east under the park, and its section:
+## a channel of water down the middle, a walkway either side of it behind a kerb,
+## upright walls, and an arched roof springing from them.
+const SEWER_Z := -4.0
+## Half the channel's width, and half the tunnel's, wall to wall.
+const CHANNEL := 4.0
+const WALKWAY := 10.0
+## The channel's bottom, the walkways, the top of the water, and where the arch
+## springs from the walls.
+const BED := -26.0
+const WALK := -23.0
+const WATER_TOP := -23.8
+const SPRING := -16.0
+
+## The three chambers the tunnel runs between, walkway to ceiling: the one under
+## the shed that the drain comes down into, the hall halfway along where a pipe
+## comes in from the north, and the one under the park where the storm drain goes
+## up.
+const DRAIN_ROOM_LO := Vector3(-178.0, WALK, -16.0)
+const DRAIN_ROOM_HI := Vector3(-154.0, -5.0, 6.0)
+const HALL_LO := Vector3(-64.0, WALK, -30.0)
+const HALL_HI := Vector3(-24.0, -4.0, 22.0)
+const STORM_ROOM_LO := Vector3(10.0, WALK, -16.0)
+const STORM_ROOM_HI := Vector3(34.0, -5.0, 8.0)
+
+## Where the channel starts in the drain chamber, and where it ends in the storm
+## chamber, at a grating.
+const CHANNEL_FROM := -178.0
+const CHANNEL_TO := 22.0
+
+## The pipe into the hall from the north, and where it ends.
+const PIPE_X := -44.0
+const PIPE_RADIUS := 5.0
+const PIPE_END := -70.0
+
+## The storm drain up to the park: a shaft from the storm chamber's roof to the
+## grate on the park's main path, against the chamber's east wall.
+const STORM_LO := Vector2(26.0, -8.0)
+const STORM_HI := Vector2(34.0, 0.0)
+
+## All of the sewers, for the zone.
+const SEWERS_LO := Vector3(-180.0, -28.0, -72.0)
+const SEWERS_HI := Vector3(36.0, -4.0, 24.0)
 
 
 func _ready() -> void:
@@ -80,6 +127,7 @@ func build() -> void:
 	_sky()
 	_ground()
 	_shed()
+	_sewers()
 	_place_the_spider()
 
 
@@ -99,8 +147,8 @@ func _sky() -> void:
 	environment.sky = Sky.new()
 	environment.sky.sky_material = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color(0.7, 0.74, 0.82)
-	environment.ambient_light_energy = 0.4
+	environment.ambient_light_color = Color(0.74, 0.76, 0.8)
+	environment.ambient_light_energy = 0.35
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	var world := WorldEnvironment.new()
 	world.name = "Sky"
@@ -123,9 +171,11 @@ func _ground() -> void:
 	WorldKit.slab(ground, "Grass", GROUND_LO, GROUND_HI, _holes_in_the_ground(), "grass")
 
 
-## Where the ground is open: the drain shaft under the shed.
+## Where the ground is open: the drain shaft under the shed, and the storm drain
+## up from the sewers.
 func _holes_in_the_ground() -> Array[Rect2]:
-	var holes: Array[Rect2] = [Rect2(DRAIN_LO, DRAIN_HI - DRAIN_LO)]
+	var holes: Array[Rect2] = [Rect2(DRAIN_LO, DRAIN_HI - DRAIN_LO),
+		Rect2(STORM_LO, STORM_HI - STORM_LO)]
 	return holes
 
 
@@ -149,6 +199,8 @@ func _shed() -> void:
 	_shed_yard(zone)
 	_drain(zone)
 	Props.place(zone, "bulb", WorldKit.at(Vector3(-167.0, RIDGE - 0.7, 0.0)))
+	_indoors(zone, "Indoors", SHED_LO - Vector3(BOARD, 1.0, BOARD),
+		Vector3(SHED_HI.x + BOARD, RIDGE + 1.0, SHED_HI.z + BOARD), Color(0.82, 0.74, 0.64), 0.3)
 	_stock(zone, "Insects", Vector3(-167.0, 9.0, -2.0), Vector3(34.0, 14.0, 24.0),
 		["midge", "mosquito", "fly", "ant", "beetle", "wasp"], 9)
 	# Moths where moths always are: round the bulb.
@@ -455,7 +507,7 @@ func _drain(zone: Node3D) -> void:
 		"stone")
 	WorldKit.block(shaft, "South", Vector3(lo.x, DRAIN_BOTTOM, hi.y), Vector3(hi.x, top, hi.y + t),
 		"stone")
-	_rungs(shaft, Vector3((lo.x + hi.x) * 0.5, top - 0.8, lo.y), Vector3.BACK, DRAIN_BOTTOM + 0.8,
+	_rungs(shaft, Vector3((lo.x + hi.x) * 0.5, top - 0.8, hi.y), Vector3.FORWARD, DRAIN_BOTTOM,
 		1.2, 0.5)
 
 	var frame := WorldKit.body(zone, "DrainFrame")
@@ -492,6 +544,317 @@ func _dress(gate: Threshold, paint: String, slots: int) -> void:
 		var across := (float(i) + 1.0) / float(slots + 1) - 0.5
 		WorldKit.box(plug, "Slot", Vector3(size.x * 0.72, 0.04, size.z * 0.06),
 			WorldKit.at(Vector3(0.0, size.y * 0.5 + 0.01, across * size.z)), "black", false)
+
+
+# --- the sewers ----------------------------------------------------------
+
+## The sewers: one long tunnel of grey stone under the park, a channel of green
+## water down the middle of it and a walkway either side, running between three
+## chambers — the one under the shed that the drain comes down into, a hall
+## halfway along with a pipe coming in from the north, and the one under the park
+## where the storm drain goes up.
+##
+## It is the first place that fights back. The rats are bigger than a Huntsman and
+## come for one, the roaches run, the bats hang up in the dark of the hall, and
+## the water is somewhere a web cannot go. The way out is the storm grate at the
+## top of the shaft in the far chamber, which gives to a Sewer Widow — or to a
+## Storm Rider, who can ride the draught up through its slots.
+func _sewers() -> void:
+	var zone := Zone.make(self, "The Sewers", SEWERS_LO, SEWERS_HI, Vector2(0.7, 2.0))
+	# Past the stone on every side, so the ceilings and the far walls are in it too,
+	# and short of the grass.
+	_indoors(zone, "Underground", SEWERS_LO - Vector3(3.0, 3.0, 3.0),
+		Vector3(SEWERS_HI.x + 3.0, GROUND_LO.y - 0.2, SEWERS_HI.z + 3.0), Color(0.5, 0.55, 0.52), 0.14)
+	var drain_hole: Array[Rect2] = [Rect2(DRAIN_LO, DRAIN_HI - DRAIN_LO)]
+	var storm_hole: Array[Rect2] = [Rect2(STORM_LO, STORM_HI - STORM_LO)]
+	var drain_room := _chamber(zone, "DrainChamber", DRAIN_ROOM_LO, DRAIN_ROOM_HI,
+		Vector2(CHANNEL_FROM, DRAIN_ROOM_HI.x), ["east"], drain_hole)
+	_tunnel(zone, "WestTunnel", DRAIN_ROOM_HI.x, HALL_LO.x)
+	var no_shafts: Array[Rect2] = []
+	var hall := _chamber(zone, "Hall", HALL_LO, HALL_HI, Vector2(HALL_LO.x, HALL_HI.x),
+		["west", "east"], no_shafts, true)
+	_tunnel(zone, "EastTunnel", HALL_HI.x, STORM_ROOM_LO.x)
+	var storm_room := _chamber(zone, "StormChamber", STORM_ROOM_LO, STORM_ROOM_HI,
+		Vector2(STORM_ROOM_LO.x, CHANNEL_TO), ["west"], storm_hole)
+	_pipe(zone)
+
+	# Down from the shed: the rungs in the drain shaft go on down the chamber wall.
+	_rungs(drain_room, Vector3((DRAIN_LO.x + DRAIN_HI.x) * 0.5, DRAIN_ROOM_HI.y - 0.6,
+		DRAIN_ROOM_HI.z), Vector3.FORWARD, WALK + 0.6, 1.2, 0.5)
+	Props.place(zone, "pipe_mouth", WorldKit.at(Vector3(CHANNEL_FROM, WALK + 1.8, SEWER_Z), -90.0))
+	Props.place(zone, "valve_wheel", WorldKit.at(Vector3(-160.0, -15.0, DRAIN_ROOM_LO.z), 180.0))
+	_lamp(zone, Vector3(-170.0, -13.0, DRAIN_ROOM_LO.z), 180.0)
+
+	# The hall: pillars to the roof, ribs across it, a bridge over the channel, and
+	# what has washed up in it.
+	for x in [HALL_LO.x + 10.0, HALL_HI.x - 10.0]:
+		for z in [HALL_LO.z + 10.0, HALL_HI.z - 10.0]:
+			WorldKit.box(hall, "Pillar", Vector3(3.0, HALL_HI.y - WALK, 3.0),
+				WorldKit.at(Vector3(x, (WALK + HALL_HI.y) * 0.5, z)), "stone")
+	var x := HALL_LO.x + 4.0
+	while x < HALL_HI.x:
+		WorldKit.block(hall, "Rib", Vector3(x - 0.7, HALL_HI.y - 1.6, HALL_LO.z),
+			Vector3(x + 0.7, HALL_HI.y, HALL_HI.z), "stone")
+		x += 8.0
+	WorldKit.block(hall, "Bridge", Vector3(PIPE_X - 3.0, WALK + 0.4, SEWER_Z - CHANNEL - 0.8),
+		Vector3(PIPE_X + 3.0, WALK + 1.0, SEWER_Z + CHANNEL + 0.8), "stone")
+	Props.place(zone, "tyre", WorldKit.at(Vector3(-36.0, BED, SEWER_Z + 1.0)))
+	Props.place(zone, "crate", WorldKit.at(Vector3(-30.0, WALK, 16.0), 20.0))
+	Props.place(zone, "crate", WorldKit.at(Vector3(-58.0, WALK, -24.0), -12.0))
+	_lamp(zone, Vector3(-44.0, -12.0, HALL_HI.z), 0.0)
+	_lamp(zone, Vector3(-58.0, -12.0, HALL_LO.z), 180.0)
+
+	# The storm chamber: the channel ends at a grating, and rungs go up the east
+	# wall and the shaft to the grate.
+	for i in 5:
+		WorldKit.rod(storm_room, "Grating", Vector3(CHANNEL_TO, BED, SEWER_Z - 3.0 + float(i) * 1.5),
+			Vector3(CHANNEL_TO, WALK + 1.0, SEWER_Z - 3.0 + float(i) * 1.5), 0.25, "iron")
+	_rungs(storm_room, Vector3(STORM_ROOM_HI.x, -0.9, (STORM_LO.y + STORM_HI.y) * 0.5),
+		Vector3.LEFT, WALK + 0.6, 1.2, 0.6)
+	_lamp(zone, Vector3(18.0, -12.0, STORM_ROOM_LO.z), 180.0)
+	_storm_drain(zone)
+
+	# Rats and roaches on the walkways and in the pipe, bats up in the hall, and
+	# midges over the water.
+	_stock(zone, "Rats", Vector3(-110.0, WALK + 2.0, SEWER_Z + 7.4), Vector3(80.0, 3.0, 4.0),
+		["rat", "cockroach"], 4)
+	_stock(zone, "HallFloor", Vector3(-44.0, WALK + 2.0, 12.0), Vector3(34.0, 3.0, 16.0),
+		["rat", "cockroach"], 4)
+	_stock(zone, "Bats", Vector3(-44.0, -18.0, -6.0), Vector3(30.0, 4.0, 40.0), ["bat"], 4, false)
+	_stock(zone, "Midges", Vector3(-104.0, -21.0, SEWER_Z), Vector3(80.0, 2.0, 6.0),
+		["midge", "mosquito", "fly"], 6, false)
+	_stock(zone, "Nest", Vector3(PIPE_X, -20.0, -52.0), Vector3(4.0, 2.0, 30.0),
+		["rat", "cockroach"], 3)
+	_stock(zone, "StormChamber", Vector3(28.5, WALK + 2.0, -4.0), Vector3(10.0, 3.0, 20.0),
+		["cockroach", "bat"], 3)
+
+
+## A stretch of the tunnel along x, from one chamber wall to the next: the swept
+## arch with its walkways and channel, stone ribs across the roof, the water, a pipe
+## run along the north wall, and lamps.
+func _tunnel(zone: Node3D, part_name: String, from_x: float, to_x: float) -> void:
+	var body := WorldKit.body(zone, part_name)
+	var length := to_x - from_x
+	var middle := (from_x + to_x) * 0.5
+	var shape := _sewer_section()
+	WorldKit.extrude(body, "Arch", shape[0], shape[1], length,
+		Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(middle, 0.0, SEWER_Z)))
+	var x := from_x + 6.0
+	var n := 0
+	while x < to_x - 3.0:
+		_rib(body, x)
+		if n % 3 == 1:
+			var south := n % 2 == 0
+			_lamp(zone, Vector3(x + 3.0, -17.5, SEWER_Z + (WALKWAY if south else -WALKWAY)),
+				0.0 if south else 180.0)
+		x += 12.0
+		n += 1
+	WorldKit.water(zone, part_name + "Water", Vector3(length, WATER_TOP - BED, CHANNEL * 2.0),
+		WorldKit.at(Vector3(middle, (BED + WATER_TOP) * 0.5, SEWER_Z)), "slime")
+	# A pipe run along the north wall, on brackets.
+	var run_z := SEWER_Z - WALKWAY + 1.4
+	WorldKit.rod(body, "Main", Vector3(from_x, WALK + 2.4, run_z), Vector3(to_x, WALK + 2.4, run_z),
+		1.2, "iron")
+	x = from_x + 4.0
+	while x < to_x:
+		WorldKit.box(body, "Bracket", Vector3(0.5, 0.6, 2.2), WorldKit.at(Vector3(x, WALK + 1.0,
+			SEWER_Z - WALKWAY + 1.1)), "iron")
+		x += 10.0
+	if length > 60.0:
+		for at in [from_x + length * 0.3, from_x + length * 0.62]:
+			Props.place(zone, "pipe_mouth", WorldKit.at(Vector3(at, -19.0, SEWER_Z + WALKWAY)))
+		Props.place(zone, "valve_wheel", WorldKit.at(Vector3(from_x + 14.0, -18.5, SEWER_Z - WALKWAY),
+			180.0))
+		Props.place(zone, "traffic_cone", WorldKit.at(Vector3(from_x + length * 0.55, WALK,
+			SEWER_Z + 7.0), 25.0))
+
+
+## The tunnel's section: (across, up) points round the inside of it, anticlockwise
+## seen from ahead, so the surface faces in, and a colour for each. Across the
+## channel's bed, up its side and over the kerb, along the walkway, up the wall and
+## round the arch, and back down the other side.
+func _sewer_section() -> Array:
+	var slime := Palette.colour("moss").darkened(0.25)
+	var wet := Palette.colour("moss")
+	var dark := Palette.colour("stone_dark")
+	var stone := Palette.colour("stone")
+	var rows := [
+		[Vector2(-CHANNEL, BED), slime], [Vector2(CHANNEL, BED), slime],
+		[Vector2(CHANNEL, WATER_TOP + 0.4), wet], [Vector2(CHANNEL, WALK + 1.0), stone],
+		[Vector2(CHANNEL + 0.8, WALK + 1.0), stone], [Vector2(CHANNEL + 0.8, WALK), dark],
+		[Vector2(WALKWAY, WALK), dark], [Vector2(WALKWAY, WALK), stone],
+		[Vector2(WALKWAY, SPRING), stone],
+	]
+	for i in range(1, 16):
+		var angle := PI * float(i) / 16.0
+		rows.append([Vector2(cos(angle) * WALKWAY, SPRING + sin(angle) * WALKWAY), stone])
+	rows.append_array([
+		[Vector2(-WALKWAY, SPRING), stone], [Vector2(-WALKWAY, WALK), stone],
+		[Vector2(-WALKWAY, WALK), dark], [Vector2(-CHANNEL - 0.8, WALK), dark],
+		[Vector2(-CHANNEL - 0.8, WALK + 1.0), stone], [Vector2(-CHANNEL, WALK + 1.0), stone],
+		[Vector2(-CHANNEL, WATER_TOP + 0.4), wet], [Vector2(-CHANNEL, BED), slime],
+	])
+	var points := PackedVector2Array()
+	var colours := PackedColorArray()
+	for row in rows:
+		points.append(row[0])
+		colours.append(row[1])
+	return [points, colours]
+
+
+## A stone rib round the inside of the arch at [param x], with a pier down each
+## wall to the walkway: blocks set round the curve, each one square to it.
+func _rib(body: Node3D, x: float) -> void:
+	var pieces := 12
+	var chord := 2.0 * WALKWAY * sin(PI / float(pieces) * 0.5) + 0.25
+	for k in pieces:
+		var angle := PI * (float(k) + 0.5) / float(pieces)
+		var out := Vector3(0.0, sin(angle), -cos(angle))
+		var along := Vector3(0.0, cos(angle), sin(angle))
+		var centre := Vector3(x, SPRING, SEWER_Z) + out * (WALKWAY - 0.4)
+		WorldKit.box(body, "Rib", Vector3(1.4, 0.8, chord), Transform3D(Basis(Vector3.RIGHT, out,
+			along), centre), "stone")
+	for side in [-1.0, 1.0]:
+		WorldKit.box(body, "Pier", Vector3(1.4, SPRING - WALK, 0.8), WorldKit.at(Vector3(x,
+			(SPRING + WALK) * 0.5, SEWER_Z + side * (WALKWAY - 0.4))), "stone")
+
+
+## A square chamber of stone, walkway floor to ceiling: the channel let through
+## the floor from [param channel].x to [param channel].y with a kerb along it and
+## water in it, the tunnel's arch open in the end walls it comes through, and
+## [param shafts] let into the roof. [param open_north] leaves the pipe's round
+## mouth in the north wall.
+func _chamber(zone: Node3D, part_name: String, lo: Vector3, hi: Vector3, channel: Vector2,
+		arches: Array, shafts: Array[Rect2], open_north := false) -> StaticBody3D:
+	var room := WorldKit.body(zone, part_name)
+	var wall := 2.0
+	var cut: Array[Rect2] = [Rect2(channel.x, SEWER_Z - CHANNEL, channel.y - channel.x,
+		CHANNEL * 2.0)]
+	WorldKit.slab(room, "Floor", Vector3(lo.x - wall, BED - 2.0, lo.z - wall),
+		Vector3(hi.x + wall, WALK, hi.z + wall), cut, "stone_dark")
+	WorldKit.block(room, "Bed", Vector3(channel.x, BED - 2.0, SEWER_Z - CHANNEL),
+		Vector3(channel.y, BED, SEWER_Z + CHANNEL), "moss")
+	for side in [-1.0, 1.0]:
+		var edge: float = SEWER_Z + side * CHANNEL
+		WorldKit.block(room, "Kerb", Vector3(channel.x, WALK, edge), Vector3(channel.y, WALK + 1.0,
+			edge + side * 0.8), "stone")
+	for end in [channel.x, channel.y]:
+		if end > lo.x + 0.01 and end < hi.x - 0.01:
+			var inward := 0.8 if end == channel.x else -0.8
+			WorldKit.block(room, "Kerb", Vector3(end, WALK, SEWER_Z - CHANNEL - 0.8),
+				Vector3(end - inward, WALK + 1.0, SEWER_Z + CHANNEL + 0.8), "stone")
+	WorldKit.water(zone, part_name + "Water", Vector3(channel.y - channel.x, WATER_TOP - BED,
+		CHANNEL * 2.0), WorldKit.at(Vector3((channel.x + channel.y) * 0.5, (BED + WATER_TOP) * 0.5,
+		SEWER_Z)), "slime")
+
+	# Walls, with the arch open in the ends the tunnel comes through.
+	var arch := Rect2(SEWER_Z - WALKWAY, BED, WALKWAY * 2.0, SPRING + WALKWAY - BED)
+	var shape := _sewer_section()
+	for end in ["west", "east"]:
+		var x: float = lo.x - wall if end == "west" else hi.x
+		var hole := arch if arches.has(end) else Rect2()
+		for piece in _around(Vector3(x, BED - 2.0, lo.z - wall), Vector3(x + wall, hi.y,
+				hi.z + wall), 2, hole):
+			WorldKit.block(room, "Wall", piece.position, piece.end, "stone")
+		if arches.has(end):
+			var face := lo.x if end == "west" else hi.x
+			# Facing into the room: east out of a west wall, west out of an east one.
+			var turn := PI * 0.5 if end == "west" else -PI * 0.5
+			WorldKit.bulkhead(room, "Arch", shape[0], Vector2(0.0, SPRING - 2.0),
+				Vector2(-WALKWAY, BED), Vector2(WALKWAY, SPRING + WALKWAY),
+				Transform3D(Basis(Vector3.UP, turn), Vector3(face, 0.0, SEWER_Z)), "stone")
+	var mouth := Rect2()
+	if open_north:
+		mouth = Rect2(PIPE_X - PIPE_RADIUS, WALK, PIPE_RADIUS * 2.0, PIPE_RADIUS * 2.0)
+	for piece in _around(Vector3(lo.x, BED - 2.0, lo.z - wall), Vector3(hi.x, hi.y, lo.z), 0,
+			mouth):
+		WorldKit.block(room, "Wall", piece.position, piece.end, "stone")
+	if open_north:
+		WorldKit.bulkhead(room, "Mouth", _pipe_section(), Vector2(0.0, WALK + PIPE_RADIUS),
+			Vector2(-PIPE_RADIUS, WALK), Vector2(PIPE_RADIUS, WALK + PIPE_RADIUS * 2.0),
+			WorldKit.at(Vector3(PIPE_X, 0.0, lo.z)), "stone")
+	WorldKit.block(room, "Wall", Vector3(lo.x, BED - 2.0, hi.z), Vector3(hi.x, hi.y, hi.z + wall),
+		"stone")
+	WorldKit.slab(room, "Roof", Vector3(lo.x - wall, hi.y, lo.z - wall),
+		Vector3(hi.x + wall, hi.y + 1.0, hi.z + wall), shafts, "stone")
+	return room
+
+
+## The pipe into the hall: a round tunnel north from the hall's wall to a dead end,
+## dry but for the damp, with an outlet in the end of it. The rats nest in here.
+func _pipe(zone: Node3D) -> void:
+	var body := WorldKit.body(zone, "Pipe")
+	var length := HALL_LO.z - PIPE_END
+	var shape := _pipe_section()
+	var colours := PackedColorArray()
+	for point in shape:
+		colours.append(Palette.colour("moss") if point.y < WALK + 1.0 else Palette.colour("stone"))
+	WorldKit.extrude(body, "Pipe", shape, colours, length,
+		WorldKit.at(Vector3(PIPE_X, 0.0, (HALL_LO.z + PIPE_END) * 0.5)))
+	WorldKit.cylinder(body, "End", PIPE_RADIUS + 0.6, 1.0, Transform3D(Basis(Vector3.RIGHT, PI * 0.5),
+		Vector3(PIPE_X, WALK + PIPE_RADIUS, PIPE_END - 0.5)), "stone")
+	Props.place(zone, "pipe_mouth", WorldKit.at(Vector3(PIPE_X, WALK + PIPE_RADIUS - 1.0, PIPE_END),
+		180.0))
+	Props.place(zone, "traffic_cone", Transform3D(Basis(Vector3.BACK, 0.35), Vector3(PIPE_X + 1.2,
+		WALK + 0.5, -58.0)))
+	_lamp(zone, Vector3(PIPE_X - 3.2, WALK + PIPE_RADIUS + 2.0, PIPE_END + 0.2), 180.0)
+
+
+## The pipe's section: a circle standing on the walkway, run anticlockwise so it
+## faces in.
+func _pipe_section() -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in 25:
+		var angle := -PI * 0.5 + TAU * float(i) / 24.0
+		points.append(Vector2(cos(angle), sin(angle)) * PIPE_RADIUS
+			+ Vector2(0.0, WALK + PIPE_RADIUS))
+	return points
+
+
+## The storm drain: a shaft of stone from the storm chamber's roof up to the park,
+## and at the top of it the storm grate, which is the gate. It gives to a Sewer
+## Widow, or to a Storm Rider, who rides the draught up through the slots.
+func _storm_drain(zone: Node3D) -> void:
+	var shaft := WorldKit.body(zone, "StormShaft")
+	var lo := STORM_LO
+	var hi := STORM_HI
+	var t := 2.0
+	var bottom := STORM_ROOM_HI.y
+	var top := GROUND_LO.y
+	WorldKit.block(shaft, "West", Vector3(lo.x - t, bottom, lo.y - t), Vector3(lo.x, top, hi.y + t),
+		"stone")
+	WorldKit.block(shaft, "East", Vector3(hi.x, bottom, lo.y - t), Vector3(hi.x + t, top, hi.y + t),
+		"stone")
+	WorldKit.block(shaft, "North", Vector3(lo.x, bottom, lo.y - t), Vector3(hi.x, top, lo.y), "stone")
+	WorldKit.block(shaft, "South", Vector3(lo.x, bottom, hi.y), Vector3(hi.x, top, hi.y + t), "stone")
+	var grate := Threshold.make(zone, Vector3(lo.x, -0.8, lo.y), Vector3(hi.x, 0.0, hi.y), 2.0,
+		"StormGrate", "storm_rider")
+	_dress(grate, "iron", 7)
+
+
+## A room that makes its own light from everywhere, [param lo] to [param hi]: dim
+## and [param colour] rather than the sky's. The one light from everywhere is the
+## outdoors' — without this a sewer is as bright as a lawn in its shadows, and
+## grey stone lit like that is a white room.
+func _indoors(zone: Node3D, part_name: String, lo: Vector3, hi: Vector3, colour: Color,
+		energy: float) -> void:
+	var room := ReflectionProbe.new()
+	room.name = part_name
+	room.size = hi - lo
+	room.interior = true
+	room.ambient_mode = ReflectionProbe.AMBIENT_COLOR
+	room.ambient_color = colour
+	room.ambient_color_energy = energy
+	room.intensity = 0.4
+	room.update_mode = ReflectionProbe.UPDATE_ONCE
+	room.position = (lo + hi) * 0.5
+	zone.add_child(room)
+
+
+## A caged lamp on a wall at [param at], turned [param degrees] from facing north
+## — out of a south wall — so it sticks out of the wall it is on.
+func _lamp(zone: Node3D, at: Vector3, degrees: float) -> void:
+	Props.place(zone, "sewer_lamp", WorldKit.at(at, degrees))
 
 
 ## A ladder of iron rungs down a wall, from [param from] to [param down_to]: each

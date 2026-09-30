@@ -482,7 +482,7 @@ static func _sewer_lamp() -> Node3D:
 	for i in 3:
 		WorldKit.ring(it, "Cage", 0.72, 0.08, WorldKit.at(Vector3(0.0, -0.2 - float(i) * 0.5, -2.4)),
 			"iron")
-	_light(it, Vector3(0.0, -0.8, -2.8), 30.0, 1.5, Color(1.0, 0.78, 0.5))
+	_light(it, Vector3(0.0, -0.8, -2.8), 34.0, 2.2, Color(1.0, 0.88, 0.7))
 	return it
 
 

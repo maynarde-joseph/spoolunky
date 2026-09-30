@@ -28,71 +28,71 @@ rings = 1
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_5b0xf"]
 points = PackedVector3Array(0.8, -0.2, 0, 0.6928203, -0.2, 0.4, 0.4, -0.2, 0.6928203, 4.898587e-17, -0.2, 0.8, -0.4, -0.2, 0.6928203, -0.6928203, -0.2, 0.4, -0.8, -0.2, 9.797174e-17, -0.6928203, -0.2, -0.4, -0.4, -0.2, -0.6928203, -1.4695762e-16, -0.2, -0.8, 0.4, -0.2, -0.6928203, 0.6928203, -0.2, -0.4, 0.4, 0.2, 0, 0.34641016, 0.2, 0.2, 0.2, 0.2, 0.34641016, 2.4492935e-17, 0.2, 0.4, -0.2, 0.2, 0.34641016, -0.34641016, 0.2, 0.2, -0.4, 0.2, 4.898587e-17, -0.34641016, 0.2, -0.2, -0.2, 0.2, -0.34641016, -7.347881e-17, 0.2, -0.4, 0.2, 0.2, -0.34641016, 0.34641016, 0.2, -0.2)
 
-[sub_resource type="SphereMesh" id="SphereMesh_r7i8p"]
+[sub_resource type="SphereMesh" id="SphereMesh_fxye2"]
 radius = 1.0
 height = 2.0
 radial_segments = 24
 rings = 12
 
-[sub_resource type="TorusMesh" id="TorusMesh_fxye2"]
+[sub_resource type="TorusMesh" id="TorusMesh_cubrv"]
 inner_radius = 0.68
 outer_radius = 0.76
 rings = 28
 ring_segments = 10
 
-[node name="SewerLamp" type="StaticBody3D" unique_id=982180837]
+[node name="SewerLamp" type="StaticBody3D" unique_id=176427583]
 collision_mask = 0
 
-[node name="Plate" type="MeshInstance3D" parent="." unique_id=835658775]
+[node name="Plate" type="MeshInstance3D" parent="." unique_id=52574904]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.15)
 material_override = ExtResource("1_6okvr")
 mesh = SubResource("BoxMesh_wqm72")
 
-[node name="PlateShape" type="CollisionShape3D" parent="." unique_id=1184976534]
+[node name="PlateShape" type="CollisionShape3D" parent="." unique_id=1959011016]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.15)
 shape = SubResource("BoxShape3D_hstif")
 
-[node name="Arm" type="MeshInstance3D" parent="." unique_id=1811627743]
+[node name="Arm" type="MeshInstance3D" parent="." unique_id=1069189433]
 transform = Transform3D(-1, 0, 0, 0, 0, -1, 0, -1, 0, 0, 0.3, -1.2)
 material_override = ExtResource("1_6okvr")
 mesh = SubResource("CylinderMesh_q8a1l")
 
-[node name="ArmShape" type="CollisionShape3D" parent="." unique_id=123172869]
+[node name="ArmShape" type="CollisionShape3D" parent="." unique_id=1341475840]
 transform = Transform3D(-1, 0, 0, 0, 0, -1, 0, -1, 0, 0, 0.3, -1.2)
 shape = SubResource("CylinderShape3D_r84w0")
 
-[node name="Cap" type="MeshInstance3D" parent="." unique_id=1563538727]
+[node name="Cap" type="MeshInstance3D" parent="." unique_id=1448410162]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, -2.4)
 material_override = ExtResource("1_6okvr")
 mesh = SubResource("CylinderMesh_1e07g")
 
-[node name="CapShape" type="CollisionShape3D" parent="." unique_id=1842716346]
+[node name="CapShape" type="CollisionShape3D" parent="." unique_id=1420061048]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, -2.4)
 shape = SubResource("ConvexPolygonShape3D_5b0xf")
 
-[node name="Glass" type="MeshInstance3D" parent="." unique_id=1435187383]
+[node name="Glass" type="MeshInstance3D" parent="." unique_id=96177516]
 transform = Transform3D(0.55, 0, 0, 0, 0.7, 0, 0, 0, 0.55, 0, -0.7, -2.4)
 material_override = ExtResource("2_rdh10")
-mesh = SubResource("SphereMesh_r7i8p")
+mesh = SubResource("SphereMesh_fxye2")
 
-[node name="Cage" type="MeshInstance3D" parent="." unique_id=1095492266]
+[node name="Cage" type="MeshInstance3D" parent="." unique_id=179626840]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, -2.4)
 material_override = ExtResource("1_6okvr")
-mesh = SubResource("TorusMesh_fxye2")
+mesh = SubResource("TorusMesh_cubrv")
 
-[node name="Cage2" type="MeshInstance3D" parent="." unique_id=293384348]
+[node name="Cage2" type="MeshInstance3D" parent="." unique_id=1703508198]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.7, -2.4)
 material_override = ExtResource("1_6okvr")
-mesh = SubResource("TorusMesh_fxye2")
+mesh = SubResource("TorusMesh_cubrv")
 
-[node name="Cage3" type="MeshInstance3D" parent="." unique_id=1868834377]
+[node name="Cage3" type="MeshInstance3D" parent="." unique_id=1508386655]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.2, -2.4)
 material_override = ExtResource("1_6okvr")
-mesh = SubResource("TorusMesh_fxye2")
+mesh = SubResource("TorusMesh_cubrv")
 
-[node name="Light" type="OmniLight3D" parent="." unique_id=1719391719]
+[node name="Light" type="OmniLight3D" parent="." unique_id=1887657320]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.8, -2.8)
-light_color = Color(1, 0.78, 0.5, 1)
-light_energy = 1.5
+light_color = Color(1, 0.88, 0.7, 1)
+light_energy = 2.2
 shadow_enabled = true
-omni_range = 30.0
+omni_range = 34.0

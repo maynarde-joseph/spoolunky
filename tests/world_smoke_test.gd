@@ -20,12 +20,17 @@ const TESTBED_PATH := "res://game/world/testbed.tscn"
 ## place stocked only with the insects that turn up anywhere.
 const PLACES := [
 	["The Shed", 0.25, 0.7, ""],
+	["The Sewers", 0.7, 2.0, "sewers"],
 ]
+
+## The places that are indoors, and have to bring their own light.
+const INDOORS := ["The Shed", "The Sewers"]
 
 ## The gates, smallest first: what each is called, the size it gives to, and the
 ## trait that opens it as well.
 const GATES := [
 	["DrainLid", 0.7, "hollow_frame"],
+	["StormGrate", 2.0, "storm_rider"],
 ]
 
 
@@ -45,7 +50,9 @@ func run_checks() -> void:
 	_test_props()
 	await _test_the_spider_lands(spider)
 	_test_the_way_down(spider)
+	await _test_the_shafts_are_clear(world as Node3D)
 	_test_the_other_key(world, spider)
+	await _test_the_water(spider)
 
 	# Opening the gym drops the world: two full levels in the tree at once is
 	# more than a headless run needs to hold.
@@ -169,7 +176,7 @@ func _test_lights(world: Node) -> void:
 			suns += 1
 	check(shadowed == lights, "every light casts (%d of %d)" % [shadowed, lights])
 	check(suns == 1, "with one sun for the outdoors (%d)" % suns)
-	for name in ["The Shed"]:
+	for name in INDOORS:
 		var zone := _zone_named(name)
 		if zone == null:
 			continue
@@ -292,11 +299,38 @@ func _test_the_way_down(spider: SpiderPlayer) -> void:
 		var before := spider.stage().body_height
 		check(not gate.open,
 			"%s is still shut at %.2f" % [gate.name, before])
-		while spider.stage().body_height < gate.opens_at:
-			if not spider.growth.feed(60.0, "test"):
-				break
+		# A tier at a time, each fed exactly what it takes: the gates are not all one
+		# tier apart, and a meal that falls short of the next one proves nothing.
+		while spider.stage().body_height < gate.opens_at and spider.growth.next_stage() != null:
+			spider.growth.feed(spider.growth.biomass_to_next() + 1.0, "test")
 		gate._physics_process(0.016)
 		check(gate.open, "%s gives at %.2f" % [gate.name, spider.stage().body_height])
+
+
+## With the gates given, the way through is clear: nothing across the drain between
+## the shed floor and the chamber under it, and nothing across the storm drain
+## between the grate and the floor of the chamber it comes up out of. A gate that
+## opens onto a slab of forgotten ground is not a way through.
+func _test_the_shafts_are_clear(world: Node3D) -> void:
+	await physics_frame
+	var space := world.get_world_3d().direct_space_state
+	var shafts := [
+		["the drain", SpiderWorld.DRAIN_LO, SpiderWorld.DRAIN_HI, SpiderWorld.SHED_LO.y],
+		["the storm drain", SpiderWorld.STORM_LO, SpiderWorld.STORM_HI, 0.0],
+	]
+	for shaft in shafts:
+		var lo: Vector2 = shaft[1]
+		var hi: Vector2 = shaft[2]
+		# Down the middle of the half away from the rungs.
+		var from := Vector3(lo.x + (hi.x - lo.x) * 0.4, float(shaft[3]) + 2.0,
+			lo.y + (hi.y - lo.y) * 0.4)
+		var query := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 40.0,
+			GameLayers.WORLD)
+		var hit := space.intersect_ray(query)
+		var landed: float = hit["position"].y if not hit.is_empty() else INF
+		check(landed < SpiderWorld.WALK + 0.5,
+			"%s is open all the way down to the walkway (first thing in the way at %.1f)"
+			% [shaft[0], landed])
 
 
 ## Size is one key and not the only one. A gate no spider will ever be big
@@ -318,6 +352,34 @@ func _test_the_other_key(world: Node, spider: SpiderPlayer) -> void:
 	gate._physics_process(0.016)
 	check(gate.open, "and gives to the trait instead of to the size")
 	traits.owned.erase("wing_buds")
+
+
+## The sewers run with water, and it is water to a spider: put in the channel, it
+## is swimming rather than walking along the bottom.
+func _test_the_water(spider: SpiderPlayer) -> void:
+	var sewers := _zone_named("The Sewers")
+	if not check(sewers != null, "there are sewers to have water in"):
+		return
+	var stretches := 0
+	for node in root.get_tree().get_nodes_in_group("water"):
+		var pool := node as Area3D
+		if pool != null and pool.collision_layer & GameLayers.WATER != 0 \
+				and sewers.bounds.has_point(pool.global_position):
+			stretches += 1
+	check(stretches > 0, "the sewers run with water (%d stretches of it)" % stretches)
+	var at := Vector3(-110.0, SpiderWorld.WATER_TOP - 0.6, SpiderWorld.SEWER_Z)
+	var top := Prey.water_top_at(spider, at)
+	check(is_equal_approx(top, SpiderWorld.WATER_TOP),
+		"the channel is full to %.1f (%.1f)" % [SpiderWorld.WATER_TOP, top])
+	var was := spider.global_position
+	spider.global_position = at
+	spider.velocity = Vector3.ZERO
+	await run_frames(6)
+	check(not spider.climb.handles_movement(),
+		"and a spider put in it is swimming, not walking the bottom")
+	spider.global_position = was
+	spider.velocity = Vector3.ZERO
+	await run_frames(2)
 
 
 # --- helpers -------------------------------------------------------------
