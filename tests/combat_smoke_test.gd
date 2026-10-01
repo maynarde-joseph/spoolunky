@@ -44,6 +44,7 @@ func _sections() -> Array[Callable]:
 		_test_a_stun_ends_an_attack,
 		_test_a_meal_mends_where_waiting_does_not,
 		_test_waking_somewhere,
+		_test_a_shrine_is_where_you_wake,
 		_test_the_drill_mosquito,
 		_test_the_blade_rat,
 		_test_the_charger_beetle,
@@ -411,6 +412,58 @@ func _test_waking_somewhere() -> void:
 		"and falling out of the world puts you back there too")
 
 
+## A shrine is where you wake. Touching it lights it; resting at it makes you whole
+## and puts back everything you put down; driven off, you wake at it, whole, and
+## everything is put back again. A boss is back at its post if it beat you, and
+## stays down once you have beaten it.
+func _test_a_shrine_is_where_you_wake() -> void:
+	await _arena()
+	var keeper := Checkpoints.new()
+	keeper.wake_after = 0.5
+	_slab.add_child(keeper)
+	var shrine := Shrine.make(_slab, "Test Shrine", _centre() + Vector3(-6.0, 0.0, -5.0),
+		Vector3.RIGHT)
+	var mark := _mark("blade_rat", Vector3(6.5, 0.4, 6.5))
+	var lair := _mark("charger_beetle", Vector3(-6.5, 0.4, 6.5))
+	lair.stays_beaten = true
+	await run_frames(5)
+	check(mark.creature != null and lair.creature != null, "each mark stands its creature up")
+	check(not shrine.lit and keeper.shrine == null, "the shrine is cold until you come to it")
+
+	stand_on(shrine.wake_transform().origin - Vector3(0.0, 0.6, 0.0))
+	var lit: bool = await wait_until(func() -> bool: return shrine.lit, 30)
+	check(lit, "standing at it lights it")
+	check(keeper.shrine == shrine, "and it is where you will wake")
+
+	var first := mark.creature
+	first.bundle()
+	await physics_frame
+	check(mark.is_down(), "put the one at the mark down")
+	spider.health = spider.max_stamina() * 0.3
+	check(keeper.rest_at(shrine), "and rest")
+	await physics_frame
+	check(is_equal_approx(spider.health, spider.max_stamina()), "whole again")
+	check(mark.creature != null and mark.creature != first and not mark.is_down(),
+		"and a fresh one is back on its feet at the mark")
+
+	place(_centre() + Vector3(1.0, 0.6, -6.0))
+	spider.take_bite(spider.max_stamina() + 1.0)
+	check(keeper.is_waking(), "driven off, you are on your way back")
+	await wait_until(func() -> bool: return not keeper.is_waking(), 120)
+	await run_frames(10)
+	var off := spider.global_position.distance_to(shrine.wake_transform().origin)
+	check(off < 1.0, "you wake at the shrine (%.2fm off)" % off)
+	check(is_equal_approx(spider.health, spider.max_stamina()), "whole")
+	check(not lair.is_down(), "and a boss you have not beaten is still at its post")
+
+	lair.creature.bundle()
+	await run_frames(2)
+	check(lair.beaten, "beaten, a boss is beaten for good")
+	keeper.stir()
+	await physics_frame
+	check(lair.creature == null, "and stays down when the Hollows stir")
+
+
 # --- the hostiles -------------------------------------------------------
 #
 # The species themselves, as the game ships them: each one's own move, at the
@@ -679,6 +732,15 @@ func _sheet_between(creature: Prey) -> WebStructure:
 	builder.stop()
 	await run_frames(3)
 	return newest_web("sheet_web")
+
+
+## A mark for one of the hostiles, on the arena, at [param offset] from its middle.
+func _mark(species_id: String, offset: Vector3) -> HostileSpawn:
+	var mark := HostileSpawn.new()
+	mark.species_id = species_id
+	_slab.add_child(mark)
+	mark.global_position = _centre() + offset
+	return mark
 
 
 ## One of the game's own hostiles, as it ships.

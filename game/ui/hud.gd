@@ -671,6 +671,7 @@ func _refresh_state() -> void:
 		state_label.text = "On the ground"
 	_note_tether()
 	_note_meal()
+	_note_shrine()
 
 
 ## A meal in progress takes the line over, because while you are drinking it is
@@ -682,6 +683,16 @@ func _note_meal() -> void:
 		return
 	state_label.text = "Draining the %s   %s   [F] hold" % [
 		meal.species, _charge_bar(meal.drained())]
+
+
+## Standing at a shrine, what resting at it does — the one thing it is for.
+func _note_shrine() -> void:
+	for node in get_tree().get_nodes_in_group("shrines"):
+		var shrine := node as Shrine
+		if shrine != null and shrine.is_near():
+			state_label.text = "At the %s   [F] rest — whole again, and the Hollows stir" \
+				% shrine.display_name
+			return
 
 
 ## What is on the end of your line, in front of wherever you are standing. Easy

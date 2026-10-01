@@ -332,7 +332,7 @@ func _haul() -> void:
 
 
 func _summon() -> void:
-	var kind := _hostile(attack.summons)
+	var kind := hostile_species(attack.summons)
 	if kind == null:
 		return
 	var room := attack.summon_count - _alive_summons()
@@ -449,9 +449,9 @@ func _alive_summons() -> int:
 	return alive.size()
 
 
-## The species a summon calls up, by id: one of the hostiles, or else any species
-## there is — a boss can call up ordinary things as well as its own.
-static func _hostile(id: String) -> PreySpecies:
+## A species by id: one of the hostiles, or else any species there is — a boss can
+## call up ordinary things as well as its own.
+static func hostile_species(id: String) -> PreySpecies:
 	if id.is_empty():
 		return null
 	var path := HOSTILES_DIR.path_join(id + ".tres")
