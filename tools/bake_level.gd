@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Turns a level that builds itself at startup into one made of real nodes.
 ##
-##     godot --headless --script res://tools/bake_level.gd -- testbed hunting_ground hollows
+##     godot --headless --script res://tools/bake_level.gd -- testbed hunting_ground hollow_wood
 ##
 ## The greybox used to be assembled in _ready(), which is fine for getting a
 ## shape down quickly and useless the moment you want to nudge one wall: there is
@@ -18,7 +18,7 @@ extends SceneTree
 const LEVELS := {
 	"testbed": "res://game/world/testbed.tscn",
 	"hunting_ground": "res://game/world/hunting_ground.tscn",
-	"hollows": "res://game/world/hollows.tscn",
+	"hollow_wood": "res://game/world/hollow_wood.tscn",
 }
 
 ## Made while the game runs rather than placed by the builder: creatures a dummy
@@ -129,7 +129,7 @@ func _builder_in(root: Node) -> Node:
 			continue
 		var file: String = str(script.resource_path)
 		if file.ends_with("/testbed.gd") or file.ends_with("/hunting_ground.gd") \
-				or file.ends_with("/hollows.gd"):
+				or file.ends_with("/hollow_wood.gd"):
 			return node
 	return null
 

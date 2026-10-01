@@ -5,7 +5,7 @@ extends Node3D
 ##
 ## Touch one and it is lit, and from then on it is where you wake when you are
 ## driven off. Rest at one — the interact key, standing at it — and you are whole
-## again, and the Hollows stir: everything you put down is back where it stood.
+## again, and the place stirs: everything you put down is back where it stood.
 ## That is the bargain the place makes, and why a shrine is a decision rather than
 ## a free heal. You cannot rest with something coming for you.
 ##

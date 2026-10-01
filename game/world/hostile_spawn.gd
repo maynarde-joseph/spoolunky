@@ -1,8 +1,8 @@
 class_name HostileSpawn
 extends Node3D
 
-## Where one hostile creature lives, and where it is put back when the Hollows
-## stir.
+## Where one hostile creature lives, and where it is put back when the place
+## stirs.
 ##
 ## Something hostile here is a fixture of its room: you learn where it stands,
 ## you get past it or put it down, and when you rest it is back where it was —

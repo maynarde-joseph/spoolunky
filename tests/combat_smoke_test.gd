@@ -532,7 +532,7 @@ func _test_a_shrine_is_where_you_wake() -> void:
 	check(lair.beaten, "beaten, a boss is beaten for good")
 	keeper.stir()
 	await physics_frame
-	check(lair.creature == null, "and stays down when the Hollows stir")
+	check(lair.creature == null, "and stays down when the place stirs")
 
 	# Put down in the very moment the place stirs, it still counts — and says so.
 	var other := _mark("charger_beetle", Vector3(6.5, 0.4, -6.5))

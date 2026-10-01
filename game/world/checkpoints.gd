@@ -1,7 +1,7 @@
 class_name Checkpoints
 extends Node
 
-## The Hollows' memory of you: which shrine you lit last, and what happens when
+## The world's memory of you: which shrine you lit last, and what happens when
 ## you are driven off.
 ##
 ## Driven off, you wake at the last [Shrine] you lit, whole and with nothing in
@@ -105,7 +105,7 @@ func rest_at(at: Shrine) -> bool:
 	shrine = at
 	_spider.vitals.fill()
 	stir()
-	_spider.notice.emit("You rest at the %s — and the Hollows stir" % at.display_name)
+	_spider.notice.emit("You rest at the %s — and the wood stirs" % at.display_name)
 	rested.emit(at)
 	return true
 

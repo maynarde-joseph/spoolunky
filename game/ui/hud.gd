@@ -34,8 +34,8 @@ Q                      the next spell you have — growing opens more
 1-9 / wheel            pick a pocket on the bar
 X                      pick up the item you are looking at
 E                      evolution — what eating has made you, and might
-F                      wrap prey, then drain it — in the Hollows a
-                       meal mends you; at a shrine, rest
+F                      wrap prey, then drain it — in the Hollow Wood
+                       a meal mends you; at a shrine, rest
 X                      pull down the web you're looking at
 O                      the spider's look: detailed, low poly or minimal
 
@@ -764,7 +764,7 @@ func _note_shrine() -> void:
 	for node in get_tree().get_nodes_in_group("shrines"):
 		var shrine := node as Shrine
 		if shrine != null and shrine.is_near():
-			state_label.text = "At the %s   [F] rest — whole again, and the Hollows stir" \
+			state_label.text = "At the %s   [F] rest — whole again, and the wood stirs" \
 				% shrine.display_name
 			return
 

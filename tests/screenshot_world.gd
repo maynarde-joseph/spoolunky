@@ -10,29 +10,12 @@ extends SceneTree
 ##         --path . --script res://tests/screenshot_world.gd
 ##
 ## Name views after `--` to render only those. The shots land in the user data
-## folder as `world_<view>.png`; the paths are printed on the way out. Put
-## `hollows` first to photograph the Hollows instead, from [constant HOLLOWS_VIEWS],
-## as `hollows_<view>.png`.
+## folder as `world_<view>.png`; the paths are printed on the way out. Put `wood`
+## first to photograph the Hollow Wood instead, from [constant WOOD_VIEWS], as
+## `wood_<view>.png`.
 
 const WORLD_PATH := "res://game/world/hunting_ground.tscn"
-const HOLLOWS_PATH := "res://game/world/hollows.tscn"
-
-## The Hollows, the same way. No hour: it is underground.
-const HOLLOWS_VIEWS := {
-	"hall": [Vector3(0.0, 12.0, 17.0), Vector3(0.0, 2.0, -12.0)],
-	"courtyard": [Vector3(30.0, 26.0, -48.0), Vector3(-8.0, 2.0, -88.0)],
-	"courtyard_low": [Vector3(-2.0, 3.0, -48.0), Vector3(0.0, 3.0, -90.0)],
-	"graveyard": [Vector3(96.0, 14.0, -8.0), Vector3(66.0, 0.0, -50.0)],
-	"library": [Vector3(-55.0, 20.0, -12.0), Vector3(-82.0, 4.0, -60.0)],
-	"library_aisle": [Vector3(-68.0, 3.0, -16.0), Vector3(-68.0, 4.0, -60.0)],
-	"tower": [Vector3(8.0, 4.0, -121.0), Vector3(-6.0, 40.0, -136.0)],
-	"belfry": [Vector3(8.0, 60.0, -121.0), Vector3(-4.0, 48.0, -135.0)],
-	"ossuary": [Vector3(-86.0, -14.0, -5.0), Vector3(-92.0, -22.0, -16.0)],
-	"crypt_way": [Vector3(-82.0, -18.0, -12.0), Vector3(-42.0, -19.0, -12.0)],
-	"sunken_cells": [Vector3(-17.0, -14.0, -1.0), Vector3(-36.0, -22.0, -20.0)],
-	"rat_kings_hall": [Vector3(12.0, -10.0, 2.5), Vector3(12.0, -21.0, -16.0)],
-	"undergate": [Vector3(15.0, -13.0, 16.0), Vector3(4.0, -18.0, 7.0)],
-}
+const WOOD_PATH := "res://game/world/hollow_wood.tscn"
 
 ## Where each picture is taken from, what it looks at, and the hour, as a share of
 ## the day: a half is noon, and nought and one are midnight.
@@ -60,6 +43,24 @@ const VIEWS := {
 	"from_above": [Vector3(0.0, 520.0, 520.0), Vector3(0.0, 0.0, -20.0), 0.42],
 }
 
+## The Hollow Wood, the same way. No hour: its light is fixed.
+const WOOD_VIEWS := {
+	"clearing": [Vector3(0.0, 22.0, 152.0), Vector3(0.0, 0.0, 126.0)],
+	"from_the_clearing": [Vector3(0.0, 6.0, 150.0), Vector3(0.0, 4.0, 60.0)],
+	"court": [Vector3(38.0, 30.0, 70.0), Vector3(0.0, 2.0, 18.0)],
+	"court_low": [Vector3(4.0, 3.0, 64.0), Vector3(0.0, 4.0, 10.0)],
+	"graveyard": [Vector3(80.0, 18.0, 70.0), Vector3(124.0, 0.0, 20.0)],
+	"crypt": [Vector3(132.0, 6.0, 15.0), Vector3(144.0, 2.0, 14.0)],
+	"chapel": [Vector3(-96.0, 36.0, 76.0), Vector3(-120.0, 8.0, 20.0)],
+	"chapel_inside": [Vector3(-103.0, 12.0, 20.0), Vector3(-135.0, 4.0, 20.0)],
+	"watchtower": [Vector3(30.0, 30.0, -70.0), Vector3(-20.0, 40.0, -120.0)],
+	"belfry": [Vector3(-4.0, 80.0, -104.0), Vector3(-20.0, 60.0, -120.0)],
+	"barrow": [Vector3(110.0, 14.0, -40.0), Vector3(110.0, 6.0, -90.0)],
+	"barrow_inside": [Vector3(110.0, 10.0, -87.0), Vector3(110.0, 2.0, -110.0)],
+	"mire": [Vector3(-70.0, 16.0, 150.0), Vector3(-110.0, -2.0, 112.0)],
+	"from_above": [Vector3(0.0, 380.0, 200.0), Vector3(0.0, 0.0, -10.0)],
+}
+
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -72,11 +73,11 @@ func _run() -> void:
 	var views := VIEWS
 	var level_path := WORLD_PATH
 	var prefix := "world"
-	if not wanted.is_empty() and wanted[0] == "hollows":
+	if not wanted.is_empty() and wanted[0] == "wood":
 		wanted.remove_at(0)
-		views = HOLLOWS_VIEWS
-		level_path = HOLLOWS_PATH
-		prefix = "hollows"
+		views = WOOD_VIEWS
+		level_path = WOOD_PATH
+		prefix = "wood"
 	if wanted.is_empty():
 		wanted.assign(views.keys())
 	var packed := load(level_path) as PackedScene
