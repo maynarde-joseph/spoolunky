@@ -71,6 +71,15 @@ var _marker: MeshInstance3D
 var _marker_material: StandardMaterial3D
 
 
+## Every spell open, whatever the rung or the traits. See
+## [member SpiderPlayer.all_spells_open].
+var open_all := false:
+	set(value):
+		open_all = value
+		if _spider != null:
+			_read_the_book(false)
+
+
 func _ready() -> void:
 	if book.is_empty():
 		book = SpellLibrary.load_spells()
@@ -129,10 +138,13 @@ func by_id(spell_id: String) -> SpiderSpell:
 
 ## Whether [param spell] can be cast by this spider: its rung reached, or one of
 ## its keys owned. The same either-key rule a gate uses, so the size is what you
-## can always count on and the trait is what luck may hand you first.
+## can always count on and the trait is what luck may hand you first — unless the
+## whole book is open, which a level can hand the spider from the start.
 func is_open(spell: SpiderSpell) -> bool:
 	if spell == null:
 		return false
+	if open_all:
+		return true
 	var rung := _growth.stage_index if _growth != null else 0
 	if rung >= spell.unlock_stage:
 		return true

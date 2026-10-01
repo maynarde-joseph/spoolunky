@@ -75,6 +75,9 @@ signal skill_tree_toggled()
 ## there changes nothing about you, and what you beat gives you what it kept.
 @export var evolves_by_eating := true
 
+## Every spell open from the start, whatever the spider's size or traits.
+@export var all_spells_open := false
+
 ## Whether condition comes back on its own after a quiet spell. A level where the
 ## ways back are a shrine and a meal turns this off.
 @export var mends_on_its_own := true
@@ -149,6 +152,7 @@ func _ready() -> void:
 	vitals.setup(self, climb, tether, jaws)
 	live_line.setup(self, growth, view, climb, web_builder)
 	spells.setup(self, growth, traits, view, web_builder)
+	spells.open_all = all_spells_open
 	if body != null:
 		body.setup(self)
 	growth.shaped_by(traits)

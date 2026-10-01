@@ -40,6 +40,7 @@ func _sections() -> Array[Callable]:
 		_test_lightning_and_water,
 		_test_storm_and_paralysis,
 		_test_firebolt,
+		_test_the_whole_book_open,
 	]
 
 
@@ -813,6 +814,19 @@ func _test_firebolt() -> void:
 	var wrapped := spawn("fly", centre + Vector3(height * 3.0, height, height * 6.0))
 	if check(wrapped != null and wrapped.bundle(), "something already caught"):
 		check(is_zero_approx(wrapped.burn(power)), "is left be: it is caught")
+
+
+## A level can hand the spider the whole book at once: every spell open to a
+## spiderling, and shut again when it takes the book back.
+func _test_the_whole_book_open() -> void:
+	check(spells.open_spells().size() == 1, "a spiderling has silk and nothing else")
+	spells.open_all = true
+	check(spells.open_spells().size() == spells.book.size(),
+		"with the whole book open, it has all %d" % spells.book.size())
+	check(spells.cycle(1) and spells.current().id != "silk", "and Q takes the next in hand")
+	spells.open_all = false
+	check(spells.open_spells().size() == 1 and spells.current().id == "silk",
+		"shut again, it is back to silk")
 
 
 func _last_strike() -> LightningStrike:
