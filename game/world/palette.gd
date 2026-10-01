@@ -74,6 +74,8 @@ const PAINTS := {
 	"paper": {"colour": Color(0.7, 0.66, 0.58)},
 	# Shelf fungus, growing out of a trunk.
 	"fungus_shelf": {"colour": Color(0.74, 0.55, 0.32)},
+	# Wood the water has had, bleached pale.
+	"driftwood": {"colour": Color(0.66, 0.62, 0.55)},
 	# The old stone of the ruins, warmer than rock, in two tones.
 	"ruin": {"colour": Color(0.6, 0.57, 0.5)},
 	"ruin_dark": {"colour": Color(0.47, 0.44, 0.39)},

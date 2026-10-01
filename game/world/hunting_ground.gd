@@ -140,6 +140,7 @@ func build() -> void:
 	_rootways()
 	_bloom_glade()
 	_old_ruins()
+	_the_mere()
 	_place_the_spider()
 
 
@@ -793,6 +794,90 @@ func _statue(place: Node3D) -> void:
 			WorldKit.rod(statue, "Leg", knee, foot, 0.6, "ruin", true, 0.4, 10)
 	WorldKit.ball(statue, "Moss", Vector3(4.0, 1.0, 4.0), WorldKit.at(body + Vector3(0.0, 4.6, 4.6)),
 		"moss", false)
+
+
+# --- the mere -------------------------------------------------------------------
+
+## A round lake in the east of the valley, deep in its middle, with an island of
+## birch and grass out in it, lily pads on the water, reeds all round its edge and
+## driftwood on the shore. It is built for the biggest sizes, because of what is in
+## it: shoals of fish grazing the weed on the bottom, the Mire Kraken in its lair
+## in the deepest part, and the Mere Leviathan, which nothing in the valley hunts.
+## Frogs sit on the banks, mosquitoes and midges rise off the shallows, and stags
+## and wolves come down to the shore.
+func _the_mere() -> void:
+	var place := WorldKit.group(self, "TheMere")
+	var dice := _dice(505)
+	WorldKit.round_water(place, "Water", WATER_EDGE, WATER_TOP - MERE_BED + 1.0,
+		Transform3D(Basis.IDENTITY, Vector3(MERE.x, MERE_BED - 1.0, MERE.y)), "pond")
+
+	# Lily pads out on the water, clear of the island.
+	for i in 34:
+		var turn := dice.randf() * TAU
+		var out := dice.randf_range(55.0, 96.0)
+		var at := MERE + Vector2(cos(turn), sin(turn)) * out
+		if at.distance_to(ISLAND) < ISLAND_REACH + 6.0:
+			continue
+		var size := dice.randf_range(0.8, 1.6)
+		Props.place(place, "lily_pad", Transform3D(Basis(Vector3.UP, dice.randf() * TAU).scaled(
+			Vector3.ONE * size), Vector3(at.x, WATER_TOP - 0.05, at.y)))
+	# Reeds all round the edge, where the ground goes under.
+	var reeds: Array[Vector2] = []
+	for i in 46:
+		var turn := TAU * (float(i) + dice.randf_range(-0.3, 0.3)) / 46.0
+		var at := MERE + Vector2(cos(turn), sin(turn)) * dice.randf_range(94.0, 106.0)
+		reeds.append(at)
+		_prop(place, "reeds", at, dice, Vector2(0.9, 1.5), 0.5)
+	for i in 7:
+		var turn := dice.randf() * TAU
+		_prop(place, "driftwood", MERE + Vector2(cos(turn), sin(turn)) * dice.randf_range(108.0, 118.0),
+			dice, Vector2(0.9, 1.4), 0.4)
+	for i in 14:
+		var turn := dice.randf() * TAU
+		_prop(place, "boulder", MERE + Vector2(cos(turn), sin(turn)) * dice.randf_range(104.0, 124.0),
+			dice, Vector2(1.0, 2.2), 0.8)
+
+	# The island: a birch, some stones, long grass.
+	_prop(place, "tree_birch", ISLAND + Vector2(-3.0, 2.0), dice, Vector2(1.1, 1.2), 0.5)
+	for i in 3:
+		_prop(place, "boulder", _scatter(dice, ISLAND, Vector2(12.0, 12.0), [ISLAND], 5.0), dice,
+			Vector2(1.0, 1.6), 0.6)
+	for i in 14:
+		_prop(place, "tall_grass", _scatter(dice, ISLAND, Vector2(13.0, 13.0), [ISLAND], 3.0), dice,
+			Vector2(0.9, 1.4))
+
+	# Weed on the bottom for the fish, and grass and flowers on the banks.
+	for i in 9:
+		var turn := dice.randf() * TAU
+		var at := MERE + Vector2(cos(turn), sin(turn)) * dice.randf_range(18.0, 80.0)
+		if at.distance_to(ISLAND) < ISLAND_REACH:
+			at = MERE + (at - MERE) * 0.5
+		_patch(place, "moss", at, 7.0, 50.0, 0.3)
+	for i in 4:
+		_patch(place, "grass", reeds[i * 11 + 5] + (reeds[i * 11 + 5] - MERE).normalized() * 12.0, 7.0,
+			60.0, 0.4)
+		_patch(place, "flowers", reeds[i * 11 + 2] + (reeds[i * 11 + 2] - MERE).normalized() * 9.0, 5.0,
+			30.0, 0.3)
+
+	var shoal := _den(place, "fish", MERE + Vector2(-40.0, 20.0), 4, 8, false, 8.0)
+	shoal.position.y = (ground_at(shoal.position.x, shoal.position.z) + WATER_TOP) * 0.5
+	shoal = _den(place, "fish", MERE + Vector2(30.0, 45.0), 4, 8, false, 8.0)
+	shoal.position.y = (ground_at(shoal.position.x, shoal.position.z) + WATER_TOP) * 0.5
+	_den(place, "octopus", MERE + Vector2(-8.0, -10.0), 1, 1, true, 4.0)
+	var deep := _den(place, "shark", MERE + Vector2(10.0, 30.0), 1, 1, false, 10.0)
+	deep.position.y = MERE_BED + 8.0
+	_den(place, "frog", reeds[8] + (reeds[8] - MERE).normalized() * 6.0, 3, 5, true, 6.0)
+	_den(place, "frog", reeds[30] + (reeds[30] - MERE).normalized() * 6.0, 3, 5, true, 6.0)
+	_den(place, "frog", ISLAND + Vector2(6.0, -4.0), 2, 3, true, 4.0)
+	_den(place, "mosquito", reeds[14], 5, 8, false, 6.0)
+	_den(place, "mosquito", reeds[38], 5, 8, false, 6.0)
+	_den(place, "midge", reeds[24], 5, 8, false, 6.0)
+
+	var west := MERE + Vector2(-1.0, 0.1).normalized() * 116.0
+	_haunt(place, "WestShore", west, ["deer", "wolf", "boar"], 18.0)
+	_haunt(place, "SouthShore", MERE + Vector2(0.2, 1.0).normalized() * 118.0, ["deer", "wolf"],
+		18.0)
+	_haunt(place, "Island", ISLAND, ["wyvern"], 16.0).position.y += 30.0
 
 
 # --- putting things down ---------------------------------------------------------

@@ -53,6 +53,8 @@ const ALL := [
 	"tall_grass", "wildflowers", "berry_bush", "beehive", "wasp_tree", "standing_stone",
 	# The old ruins.
 	"ruin_wall", "ruin_arch", "ruin_pillar", "fallen_pillar", "ruin_block", "flagstones",
+	# The mere.
+	"driftwood",
 ]
 
 
@@ -143,6 +145,7 @@ static func build(id: String) -> Node3D:
 		"fallen_pillar": return _fallen_pillar()
 		"ruin_block": return _ruin_block()
 		"flagstones": return _flagstones()
+		"driftwood": return _driftwood()
 	push_error("no such prop: %s" % id)
 	return null
 
@@ -1412,6 +1415,21 @@ static func _flagstones() -> Node3D:
 				(float(k) - 1.0) * 6.6)
 			WorldKit.box(it, "Stone", size, Transform3D(Basis(Vector3.UP, 0.05 * sin(float(i + k))), at),
 				"ruin" if (i + k) % 2 == 0 else "ruin_dark")
+	return it
+
+
+# --- the mere ----------------------------------------------------------
+
+## A branch the water brought ashore and left, bleached pale: a length of it lying
+## along the ground, a fork off one side, and a snapped-off stub sticking up.
+static func _driftwood() -> Node3D:
+	var it := WorldKit.body(null, "Driftwood")
+	WorldKit.rod(it, "Log", Vector3(-9.0, 1.1, 0.0), Vector3(9.0, 0.9, 0.6), 1.3, "driftwood", true,
+		0.8, 10)
+	WorldKit.rod(it, "Fork", Vector3(2.0, 1.0, 0.3), Vector3(8.0, 1.6, -5.0), 0.6, "driftwood", true,
+		0.25, 8)
+	WorldKit.rod(it, "Stub", Vector3(-4.0, 1.4, 0.1), Vector3(-4.8, 5.2, 0.6), 0.55, "driftwood",
+		true, 0.35, 8)
 	return it
 
 
