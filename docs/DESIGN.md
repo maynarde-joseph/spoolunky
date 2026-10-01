@@ -29,6 +29,14 @@ does (§3.1). What you become is what you can cast: the thrown web is the first
 spell, and venom, water and lightning follow, each working off the others and
 off the silk (§3.2).
 
+**A second shape is being tried: the Hollows** (§12), and it is what the project
+opens now. Dungeons pressed together into one world the way a souls-like's are,
+everything in them hostile and fighting back with attacks you learn to read, the
+spider one size the whole way through, and shrines to come back to. The valley
+is still there, and still the game this document mostly describes; the Hollows
+are a prototype of where the game is meant to go, built to see whether the shape
+works before anything is made to look good.
+
 ---
 
 ## 2. The core loop
@@ -1929,7 +1937,7 @@ hold in their head on the first screen.
 | **Q** | The next spell you have — growing, and what you eat, opens more (§3.2) |
 | **1–9 / wheel** | Pick a pocket on the bar |
 | **E** | Evolution — what you are, and your odds on what eating could make you |
-| **F** | Wrap the prey you are looking at, then drain it |
+| **F** | Wrap the prey you are looking at, then drain it. At a shrine in the Hollows, rest (§12) |
 | **X** | Pull down the web or line you are looking at |
 | **L** | Camera: third person or first person |
 | **O** | The spider's look: detailed, low poly or minimal (§7, *The body*) |
@@ -2122,6 +2130,17 @@ have become (§3.2).
 Left: more spells and more traits to feed them — a water line to go with the
 spiral, for a start.
 
+**Milestone 7 — The Hollows** *(prototype)*
+Done: creatures that fight back — every attack a tell, a strike and an opening,
+seven kinds of strike, six hostile species and two bosses (§12); a second
+grapple, the line; the spider held at one size; shrines, waking and resting;
+shortcut gates opened from the far side; a sealed lair with something kept in it;
+a boss that walks a beat; and the Hollows themselves, a hub and five places
+joined in loops.
+Left: the skill tree that size is meant to come from (a "Big Body" that buys
+stamina with size), spells and web interactions built for fights rather than
+hunts, more bosses, and everything about how it looks.
+
 ---
 
 ## 11. Design guardrails
@@ -2173,3 +2192,174 @@ spiral, for a start.
 * **Places are rungs, so keep them small and dense.** Each is built for a
   stretch of sizes and passed back through on the way up, not played out. The
   size jump is the reward; acreage is not.
+
+
+---
+
+## 12. The Hollows — a souls-like prototype
+
+The valley is a hunting ground: nothing in it means you harm, it simply eats
+things your size, and growing is how you stop being one of them. The Hollows ask
+a different question: what if the creatures fought like the spider does — with
+moves of their own — and the world were **a handful of
+dungeons pressed together into one place**, the way a souls-like's world is,
+rather than a valley or a sequence of levels? Compact, so it is never too much
+world. Open, so nothing is locked behind a power you do not have. And looped, so
+the deeper you go the shorter the way home becomes.
+
+It is a greybox on purpose. Every place is a colour and a light of its own and
+the shapes are enough to read and to string silk between; the creatures are the
+valley's bodies, skeletons and all, with no new animation. What is being tested
+is whether the *shape* is fun.
+
+### The decisions it rests on
+
+* **The spider stays silk.** It does not get claws or a sword. What it learns are
+  spells, and the interesting fights are the ones where a spell and a web meet.
+  Binding is still the only way a fight ends: a hostile's health *is* how much
+  silk it can shrug off, and a boss is a creature with a lot of it.
+* **One size, the whole way.** In the Hollows the spider is a Huntsman and stays
+  one: it does not grow by eating (`grows_by_eating`, `start_stage` on the
+  spider). Size is meant to come from a skill tree instead — a "Big Body" that
+  buys stamina at the cost of being bigger is the example — which is not built
+  yet.
+* **Everything is hostile.** No size rule and no aggression roll: a hostile thing
+  comes for you whatever either of you is, as long as it can see you (walls block
+  sight; silk does not), and only gives up when you are well out of its range.
+* **Mending is a decision.** Condition does not come back on its own here. A
+  shrine makes you whole, and so does a meal — every mouthful of something you
+  wrapped and drained gives some back. That is what ties fighting to the hunt: the
+  thing you beat is the thing that heals you.
+* **The grapple is tamed by choice, not by nerfing.** G switches to the line
+  grapple (§7, *Two grapples*): it lays a road and you walk it, fast, so escaping
+  is two things and the second is where you can be caught.
+
+### The shape
+
+```
+                        the Tower ── the Belfry (shrine)
+                            │
+   the Library ──── the Ruined Courtyard ──── the Graveyard (shrine)
+   (gallery shrine)         │      ╲             │
+       ║ gate ┄┄┄┄┄┄ the Shrine Hall ┄┄┄┄┄┄┄┄┄┄┄┄┘
+       ║ (opened from   (shrine, lit)
+       ║  the library)      ┆ hatch (opened from below)
+       ▼ stair              ┆
+   the Ossuary ── the Crypt Way ── the Sunken Cells ── the Rat King's Hall ── the Undergate
+                                   (shrine)            (sealed lair)          (the hatch's lever)
+```
+
+* **The Shrine Hall** is the hub, and the only place with nothing hostile in it.
+  It opens north into the courtyard and east into the graveyard, and the two of
+  those are joined — the first loop, open from the start.
+* **The Ruined Courtyard** is the big open room: a dry fountain, a broken
+  colonnade, fallen walls to put between you and a charge. Blade rats, charger
+  beetles, a mosquito, and the wyrm on its rounds.
+* **The Graveyard**: rows of stones and two crypts, frogs among the stones and
+  mosquitoes over them, a shrine in the far corner. The wyrm's other ground.
+* **The Library**, west of the courtyard: tall shelves in aisles, a gallery down
+  the west wall with a shrine on it, bats in the aisles and wasps on the shelves.
+  Its gate back to the hall opens from the library side only — the first
+  shortcut, reached the long way round.
+* **The Tower**, north of the courtyard: four floors, each with a hole in a
+  different corner, so the way up winds, and fliers on every floor. The belfry at
+  the top is safe, and has a shrine.
+* **The Undercroft**, down the stair under the library's gallery: the ossuary you
+  land in, the crypt way, the sunken cells with a shrine before the boss, and the
+  Rat King's hall. Past the hall is the undergate, a room under the Shrine Hall
+  whose lever opens the hatch in the hall's floor: the second shortcut, and the
+  way home from the deepest place.
+
+Every room is shut on all six sides. A spider climbs whatever it is given, so the
+only way out of a room is a door, a gate spans its passage wall to wall and floor
+to ceiling, and a lever is touched rather than shot.
+
+### Shrines, waking, resting
+
+* **Touch a shrine and it is lit**, and it is where you wake from then on.
+* **Driven off** — condition at nothing — you wake at the last shrine you lit, whole
+  and with nothing in your hands, and every hostile is back on its feet at its
+  mark (`HostileSpawn`). Silk you put up stays: it is the one thing you keep, and
+  what makes scouting a lair worth a trip.
+* **Rest (F) at a shrine** and you are whole, and the Hollows stir the same way.
+  Not with something coming for you.
+* **A boss that beat you** is back at its post as though you never came. **One you
+  have beaten** stays beaten, through every rest and every waking.
+* **Shortcuts stay open.** A gate once found is yours.
+
+### Creatures that fight back
+
+Every attack is three beats, because that is what makes being on the end of one
+fair (`CreatureAttack`, `CreatureFighter`):
+
+1. **A wind-up you can see**: the creature stops, turns to you, and a tell in the
+   attack's colour shows where it will land — a ring round it, as wide as a burst
+   or a sweep, and a line along the ground to you for a lunge or a tongue —
+   brightening as the moment comes.
+2. **The strike.**
+3. **An opening**: it stands there for a moment, which is when to put silk on it.
+
+Anything that takes it out of the fight mid-attack — a web, a stun — ends the
+attack there, tell and all. There are seven kinds of strike:
+
+| Kind | What it does | Answer |
+|---|---|---|
+| **Bite** | the last step, and a bite, if you are still in reach when it closes | step back during the tell |
+| **Lunge** | a straight dash at where you were when it committed; a drill that hits a wall instead sticks there | step aside once it goes; a web across its path catches it |
+| **Spit** | a glob that flies straight at where you were | step aside; silk between you stops it |
+| **Tongue** | a line out to you that drags you in to be bitten | anything between you — a web, a wall — takes the tongue |
+| **Burst** | everything round it at once: thrown, hurt, dazed | be outside the ring |
+| **Sweep** | an arc in front of it; it can cut every line and web it passes | do not be in front of it, and do not trust your silk |
+| **Summon** | calls more of a kind, up to a limit | deal with the caller |
+
+**Holding ground and giving it.** A creature closes on you only for a move it would
+come after you for; a spitter's sting or a squatting frog's bite is kept for when
+you come to it. Something too close for the move it would rather use backs off
+until it has room — a spitter gives ground, a beetle backs up for a run-up — and
+something in reach and waiting holds its ground rather than walking into your web.
+
+### The hostiles
+
+All of them in `game/data/hostiles/`, each with a bite of some kind and one move
+of its own. Shots are orb-web shots from close range by a Huntsman.
+
+| Hostile | Its own move | What it does | Shots |
+|---|---|---|---|
+| **Drill Mosquito** | Drill Dive — lunge, 2 to 7 m | hangs back and comes straight at you: 6 and a throw. Missing, it goes into whatever is behind you and sticks | 2 |
+| **Blade Rat** | Slash — 150° sweep | 5, and cuts every line and web in front of it | 3 |
+| **Charger Beetle** | Horn Charge — lunge, 2.5 to 9 m | a second of scraping, then 7 and a long throw. A web across its path catches it outright | 3–4 |
+| **Spitter Wasp** | Venom Spit — 2.5 to 10 m | 4 a glob, from well off; it never comes in, and backs away if you do | 2 |
+| **Tongue Frog** | Tongue Lash — 2 to 7 m | squats and waits, then drags you to its mouth | 3 |
+| **Screech Bat** | Screech — a 2.6 m ring | throws you and dazes you for a second: no moving, no casting | 2–3 |
+
+### Bosses
+
+A boss is a species marked `boss`: while it is coming for you its name is across
+the foot of the screen with a bar of the fight it has left.
+
+* **The Rat King** is the miniboss, and keeps to a structure: its hall at the far
+  end of the Undercroft, a lair you can look into and scout first. Step over the
+  threshold with it alive and veils of old silk drop over the way in. It whirls
+  where it stands and cuts every thread round it, calls two blade rats out of the
+  walls, pounces across the room and bites hard. About five shots. Beat it and
+  the veils are gone for good, the way on to the undergate opens, and what it
+  kept is yours — Wing Buds, which is a glide and the key to Summon Lightning.
+* **The Hollow Wyrm** is the main boss, and keeps to no room: it walks a beat
+  through the courtyard and the graveyard, moving on from each point after a
+  while, so wherever you are on its rounds is where you fight it. It dives, spits
+  fire from across a room, throws a gust that dazes you and tears silk down, and
+  sweeps with its tail. About seven shots.
+
+The two could swap — the main boss in the structure, the miniboss roaming — and
+nothing in the code cares which: a lair takes any keeper and a beat any mark.
+
+### Open questions
+
+* Whether binding as the only way to win a fight holds up against a boss, or
+  whether spells need to do more than soften.
+* How strong a web should be against a boss. A boss walking into a sheet web is
+  stuck in it like anything else, which may be the best fight in the game or a
+  cheese; the whirl and the gust that tear silk down are the first answer.
+* What the skill tree is, and whether size from it changes the rooms the way
+  size from eating changed the valley.
+
