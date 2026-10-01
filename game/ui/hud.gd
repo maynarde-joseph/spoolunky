@@ -72,6 +72,7 @@ var _crosshair: Crosshair
 var _spell_strip: VBoxContainer
 var _spell_chips := {}
 var _chip_styles := {}
+var _clock_label: Label
 
 @onready var stage_label: Label = $Stats/StageLabel
 @onready var state_label: Label = $Stats/StateLabel
@@ -100,6 +101,7 @@ func _ready() -> void:
 	_build_hotbar()
 	_build_tree()
 	_build_condition()
+	_build_clock()
 	_set_sizes()
 	problem_label.text = ""
 	dial_label.text = ""
@@ -110,6 +112,7 @@ func _process(delta: float) -> void:
 	if _toast_timer > 0.0:
 		_toast_timer -= delta
 		toast_label.modulate.a = clampf(_toast_timer, 0.0, 1.0)
+	_refresh_clock()
 	if _spider == null:
 		return
 	_refresh_state()
@@ -208,6 +211,8 @@ func _set_sizes() -> void:
 		(label as Label).add_theme_font_size_override("font_size", int(sizes[label]))
 	if _condition_label != null:
 		_condition_label.add_theme_font_size_override("font_size", int(BODY_SIZE))
+	if _clock_label != null:
+		_clock_label.add_theme_font_size_override("font_size", int(BODY_SIZE))
 	# The bars grow with the text, or a bar is a hairline under a big number.
 	web_bar.custom_minimum_size = Vector2(0.0, 16.0)
 	biomass_bar.custom_minimum_size = Vector2(0.0, 16.0)
@@ -245,6 +250,31 @@ func _build_condition() -> void:
 	_wind_bar.max_value = 1.0
 	stats.add_child(_wind_bar)
 	stats.move_child(_wind_bar, 3)
+
+
+## The time of day, in the top right — where there is a day going round at all.
+func _build_clock() -> void:
+	_clock_label = Label.new()
+	_clock_label.name = "ClockLabel"
+	_clock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_clock_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_clock_label.anchor_left = 1.0
+	_clock_label.anchor_right = 1.0
+	_clock_label.offset_left = -360.0
+	_clock_label.offset_right = -24.0
+	_clock_label.offset_top = 20.0
+	_clock_label.offset_bottom = 52.0
+	_clock_label.visible = false
+	add_child(_clock_label)
+
+
+func _refresh_clock() -> void:
+	if _clock_label == null:
+		return
+	var world := Ecosystem.of(self)
+	_clock_label.visible = world != null
+	if world != null:
+		_clock_label.text = "%s   %s" % [world.part_of_day().capitalize(), world.clock_text()]
 
 
 ## Reads the spider rather than waiting to be told, the same way the silk limits

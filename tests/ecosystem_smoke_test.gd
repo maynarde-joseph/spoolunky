@@ -44,6 +44,7 @@ func _sections() -> Array[Callable]:
 		_test_starving,
 		_test_resting_out_of_hours,
 		_test_resting_in_the_open,
+		_test_day_and_night,
 	]
 
 
@@ -54,8 +55,15 @@ func _sections() -> Array[Callable]:
 func _test_no_ecosystem() -> void:
 	check(Ecosystem.of(_arena) == null, "an arena with no ecosystem in it")
 	var beetle := _creature("beetle", Vector3(0, 0.3, 0), PackedStringArray(["moss"]))
+	var sun := _sky_and_sun()[1] as DirectionalLight3D
+	var built := sun.global_basis
+	var day := DayNight.new()
+	_arena.add_child(day)
 	await physics_frame
+	await process_frame
 	check(beetle.mind() == null, "has creatures with no minds — they only wander")
+	check(day.moon == null and sun.global_basis.is_equal_approx(built),
+		"and keeps no time: the sun stays where it was put")
 
 
 func _test_the_clock() -> void:
@@ -63,15 +71,18 @@ func _test_the_clock() -> void:
 	_world.time_of_day = 0.5
 	check(_world.is_day() and _world.daylight() > 0.95, "noon is day, and full light")
 	check(_world.clock_text() == "12:00", "which the clock calls 12:00 (%s)" % _world.clock_text())
+	check(_world.part_of_day() == "midday", "and midday (%s)" % _world.part_of_day())
 	check(_world.awake(PreySpecies.Activity.DAY) and not _world.awake(PreySpecies.Activity.NIGHT),
 		"something out by day is out, and something out by night is not")
 	_world.time_of_day = 0.0
 	check(not _world.is_day() and _world.daylight() < 0.05, "midnight is night, and dark")
 	check(_world.awake(PreySpecies.Activity.NIGHT) and _world.awake(PreySpecies.Activity.ALWAYS),
 		"the night creatures are out, and the ones out at all hours")
+	check(_world.part_of_day() == "night", "which is night (%s)" % _world.part_of_day())
 	_world.time_of_day = 0.25
 	var dawn := _world.daylight()
 	check(dawn > 0.2 and dawn < 0.8, "dawn is half light (%.2f)" % dawn)
+	check(_world.part_of_day() == "dawn", "and called dawn (%s)" % _world.part_of_day())
 	_world.day_length = 10.0
 	_world.running = true
 	var was := _world.time_of_day
@@ -514,6 +525,73 @@ func _test_resting_in_the_open() -> void:
 		"and found by anything that looks")
 
 
+# --- day and night ----------------------------------------------------------
+
+## The light follows the clock: the sun overhead at noon, down at midnight with
+## the moon up in its place, and an orange sky at either end of the day.
+func _test_day_and_night() -> void:
+	var lights := _sky_and_sun()
+	var sky := lights[0] as WorldEnvironment
+	var sun := lights[1] as DirectionalLight3D
+	var material := sky.environment.sky.sky_material as ProceduralSkyMaterial
+	var noon_top := material.sky_top_color
+	var noon_ambient := sky.environment.ambient_light_energy
+	var day := DayNight.new()
+	_arena.add_child(day)
+	await physics_frame
+	check(day.sky == sky and day.sun == sun and day.moon != null,
+		"a day and night finds the sky and the sun, and puts up a moon")
+	check(not day.moon in _arena.get_children(), "a moon no bake would save")
+	check(sun.sky_mode == DirectionalLight3D.SKY_MODE_LIGHT_ONLY
+		and day.sun_disc.sky_mode == DirectionalLight3D.SKY_MODE_SKY_ONLY
+		and day.moon_disc.sky_mode == DirectionalLight3D.SKY_MODE_SKY_ONLY,
+		"and discs to draw the sun and the moon in the sky, apart from their light")
+	_world.time_of_day = 0.5
+	day.show_hour()
+	var shining := -sun.global_basis.z
+	check(shining.y < -0.8, "at noon the sun is high (shining %.2f down)" % -shining.y)
+	check(is_equal_approx(sun.light_energy, 1.0) and day.moon.light_energy < 0.01,
+		"and as bright as the level made it, with no moon")
+	check(sun.shadow_enabled and not day.moon.shadow_enabled, "the sun casting the shadows")
+	check(material.sky_top_color.is_equal_approx(noon_top), "under the sky the level was built with")
+	_world.time_of_day = 0.0
+	day.show_hour()
+	check(sun.light_energy < 0.01 and day.moon.light_energy > 0.2,
+		"at midnight the sun is down and the moon up (%.2f)" % day.moon.light_energy)
+	check(-day.moon.global_basis.z.y < -0.8, "high in the sky")
+	check(day.moon.shadow_enabled and not sun.shadow_enabled, "the moon casting the shadows")
+	check(material.sky_top_color.v < noon_top.v * 0.3, "under a dark sky (%.2f against %.2f)"
+		% [material.sky_top_color.v, noon_top.v])
+	var night_ambient := sky.environment.ambient_light_energy
+	check(night_ambient < noon_ambient and night_ambient > noon_ambient * 0.3,
+		"dimmer all round, but not so dark nothing can be seen (%.2f against %.2f)"
+		% [night_ambient, noon_ambient])
+	check(sky.environment.glow_intensity > 0.5, "and what glows, glowing")
+	_world.time_of_day = 0.26
+	day.show_hour()
+	var horizon := material.sky_horizon_color
+	check(horizon.r > horizon.b * 1.3, "at sunrise the sky is warm at the horizon (%s)" % horizon)
+	check(sun.light_color.b < sun.light_color.r * 0.7 and sun.light_energy > 0.05,
+		"and the sun low and orange")
+	check(day.sun_disc.light_energy > 0.9 and day.sun_disc.light_color == sun.light_color,
+		"its disc as bright as at noon, so it does not go down as a dark hole")
+	_world.time_of_day = 0.2
+	day.show_hour()
+	check(day.sun_disc.light_energy < 0.01, "and gone once it is under the horizon")
+	check(day.toward_sun(0.27).x > 0.9 and day.toward_sun(0.73).x < -0.9,
+		"coming up in the east and going down in the west")
+	_world.time_of_day = 0.4
+	_world.day_length = 20.0
+	_world.running = true
+	day.show_hour()
+	var then := -sun.global_basis.z
+	await run_frames(30)
+	_world.running = false
+	check((-sun.global_basis.z).angle_to(then) > deg_to_rad(3.0),
+		"and it goes over as the day goes round (%.1f° in half a second of a twenty-second day)"
+		% rad_to_deg((-sun.global_basis.z).angle_to(then)))
+
+
 # --- building the arena ----------------------------------------------------
 
 func _fresh_arena(with_world := true) -> void:
@@ -576,3 +654,25 @@ func _den(id: String, at: Vector3, diet: PackedStringArray, start := 2, capacity
 	_arena.add_child(den)
 	return den
 
+
+## A sky and a sun, the way a level has them: a day sky, an ambient light, one
+## sun with shadows.
+func _sky_and_sun() -> Array:
+	var material := ProceduralSkyMaterial.new()
+	material.sky_top_color = Color(0.36, 0.56, 0.84)
+	material.sky_horizon_color = Color(0.74, 0.81, 0.88)
+	var environment := Environment.new()
+	environment.background_mode = Environment.BG_SKY
+	environment.sky = Sky.new()
+	environment.sky.sky_material = material
+	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	environment.ambient_light_color = Color(0.74, 0.76, 0.8)
+	environment.ambient_light_energy = 0.35
+	var sky := WorldEnvironment.new()
+	sky.environment = environment
+	_arena.add_child(sky)
+	var sun := DirectionalLight3D.new()
+	sun.shadow_enabled = true
+	_arena.add_child(sun)
+	sun.look_at_from_position(Vector3(0, 50, 0), Vector3(10, 0, 8), Vector3.UP)
+	return [sky, sun]

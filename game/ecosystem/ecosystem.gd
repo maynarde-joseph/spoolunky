@@ -127,6 +127,21 @@ func clock_text() -> String:
 	return "%02d:%02d" % [minutes / 60, minutes % 60]
 
 
+## What part of the day it is, in a word, for the HUD.
+func part_of_day() -> String:
+	if time_of_day < 0.21 or time_of_day >= 0.79:
+		return "night"
+	if time_of_day < 0.29:
+		return "dawn"
+	if time_of_day < 0.45:
+		return "morning"
+	if time_of_day < 0.55:
+		return "midday"
+	if time_of_day < 0.71:
+		return "afternoon"
+	return "dusk"
+
+
 # --- who is near whom ----------------------------------------------------
 
 ## Every creature — alive or a carcass — within [param radius] of [param point],
