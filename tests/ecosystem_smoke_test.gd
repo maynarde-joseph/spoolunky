@@ -25,6 +25,7 @@ func _sections() -> Array[Callable]:
 	return [
 		_test_no_ecosystem,
 		_test_the_clock,
+		_test_the_roster,
 		_test_forage,
 		_test_grazing,
 		_test_a_full_creature_stays_put,
@@ -37,6 +38,7 @@ func _sections() -> Array[Callable]:
 		_test_flies_on_carcasses,
 		_test_running_from_a_hunter,
 		_test_wary_of_the_spider,
+		_test_water_and_land,
 		_test_a_den,
 		_test_breeding,
 		_test_a_meal_is_put_by,
@@ -92,6 +94,35 @@ func _test_the_clock() -> void:
 		"and the day goes round (%.2f -> %.2f in a second of a ten-second day)"
 		% [was, _world.time_of_day])
 
+
+## Every species lives somewhere in the food web: it eats something, says what
+## kind of creature it is, and every name in its diet is something there is.
+func _test_the_roster() -> void:
+	var everyone := PreyLibrary.load_species()
+	var ids := {}
+	var tags := {}
+	for kind in everyone:
+		ids[kind.id] = true
+		for tag in kind.tags:
+			tags[tag] = true
+	var hungry := PackedStringArray()
+	var nameless := PackedStringArray()
+	var unknown := PackedStringArray()
+	for kind in everyone:
+		if kind.diet.is_empty():
+			hungry.append(kind.id)
+		if kind.tags.is_empty():
+			nameless.append(kind.id)
+		for entry in kind.diet:
+			if not (Forage.KINDS.has(entry) or entry == "carrion" or ids.has(entry)
+					or tags.has(entry)):
+				unknown.append("%s eats %s" % [kind.id, entry])
+	check(hungry.is_empty(), "every species eats something (%d species; %s do not)"
+		% [everyone.size(), ", ".join(hungry) if not hungry.is_empty() else "none"])
+	check(nameless.is_empty(), "and says what kind of creature it is (%s do not)"
+		% (", ".join(nameless) if not nameless.is_empty() else "none"))
+	check(unknown.is_empty(), "and every name in a diet is something there is (%s)"
+		% ("; ".join(unknown) if not unknown.is_empty() else "all of them"))
 
 ## A patch only knows how much is on it: it gives what it has, no more, and grows
 ## back.
@@ -180,12 +211,14 @@ func _test_fliers_eat_from_above() -> void:
 func _test_diets() -> void:
 	var fly := PreyLibrary.find("fly").duplicate() as PreySpecies
 	fly.tags = PackedStringArray(["insect"])
+	var moth := PreyLibrary.find("moth").duplicate() as PreySpecies
+	moth.tags = PackedStringArray()
 	var hunter := _creature("wasp", Vector3(0, 1, 0), PackedStringArray(["insect", "moth"]))
 	await physics_frame
 	var mind := hunter.mind()
 	check(mind.eats(fly), "a diet of insects takes anything tagged an insect")
-	check(mind.eats(PreyLibrary.find("moth")), "and a species named outright")
-	check(not mind.eats(PreyLibrary.find("bee")), "and nothing it does not name")
+	check(mind.eats(moth), "and a species named outright")
+	check(not mind.eats(PreyLibrary.find("rat")), "and nothing it does not name")
 	check(mind.forage_kinds().is_empty(), "a hunter has no forage in its diet")
 	var grazer := _creature("beetle", Vector3(4, 0.4, 0), PackedStringArray(["moss", "fungus"]))
 	await physics_frame
@@ -345,6 +378,41 @@ func _test_wary_of_the_spider() -> void:
 	check(rat.mind().threat() == null, "unless it is not the wary kind")
 	spider.queue_free()
 
+
+
+## What swims keeps to the water and everything else keeps out of it: a fish
+## grazes the weed under the surface and not the moss on the bank, a beetle the
+## other way about, and neither hunts nor runs from the other.
+func _test_water_and_land() -> void:
+	WorldKit.water(_arena, "Pond", Vector3(12, 4, 12), Transform3D(Basis.IDENTITY,
+		Vector3(-12, 2, 0)), "pond")
+	var weed := _patch("moss", Vector3(-12, 0.2, 0), 40.0, 2.0)
+	var bank := _patch("moss", Vector3(-2, 0, 0), 40.0, 2.0)
+	var fish := _creature("fish", Vector3(-6.5, 1.5, 0), PackedStringArray(["moss", "beetle"]))
+	var beetle := _creature("beetle", Vector3(-5, 0.3, 3), PackedStringArray(["moss", "fish"]))
+	fish.move_speed = 0.0
+	beetle.move_speed = 0.0
+	# Each big enough to take the other, so only the water is in the way.
+	fish.kind.size_class = 9
+	beetle.kind.size_class = 9
+	beetle.size_class = 9
+	fish.size_class = 9
+	await run_frames(2)
+	_world.sort_now()
+	check(weed.is_underwater() and not bank.is_underwater(),
+		"a patch under the water knows it is, and one on the bank knows it is not")
+	var near := fish.global_position.distance_to(bank.global_position) \
+		< fish.global_position.distance_to(weed.global_position)
+	check(near and fish.mind().find_food() == weed,
+		"a fish goes for the weed, though the moss on the bank is nearer")
+	near = beetle.global_position.distance_to(fish.global_position) \
+		< beetle.global_position.distance_to(bank.global_position)
+	check(near and beetle.mind().find_food() == bank,
+		"and a beetle for the moss, though the fish is nearer")
+	check(not fish.mind().can_take(beetle) and not beetle.mind().can_take(fish),
+		"neither hunts the other, each big enough to and eating the other")
+	check(beetle.mind().threat() == null and fish.mind().threat() == null,
+		"nor runs from it")
 
 ## Something in the spider's group, with a bite of a check's choosing.
 class PretendSpider extends Node3D:

@@ -41,6 +41,9 @@ const BARE := 0.1
 ## How much is on it now.
 var amount := 0.0
 
+## Whether it grows under water, once something has asked: -1 not yet.
+var _wet := -1
+
 var _view: Node3D
 var _growth: Array[Node3D] = []
 var _shown := -1.0
@@ -66,6 +69,16 @@ func _process(delta: float) -> void:
 		amount = minf(capacity, amount + regrow * delta)
 	if absf(share() - _shown) > 0.02:
 		_show()
+
+
+## Whether it grows under water: weed for a fish, and out of reach of anything on
+## legs. Found the first time anything asks, since a patch does not move.
+func is_underwater() -> bool:
+	if _wet < 0:
+		if not is_inside_tree():
+			return false
+		_wet = 1 if Prey.water_top_at(self, global_position + Vector3.UP * 0.05) < INF else 0
+	return _wet == 1
 
 
 ## Takes up to [param want] off it, and returns what was really there.

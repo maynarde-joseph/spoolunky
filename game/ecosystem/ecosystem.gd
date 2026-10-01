@@ -164,14 +164,19 @@ func creatures_near(point: Vector3, radius: float) -> Array[Prey]:
 
 
 ## The nearest patch of anything in [param kinds] with food on it, within
-## [param radius] of [param point], or null.
-func forage_near(point: Vector3, radius: float, kinds: PackedStringArray) -> Forage:
+## [param radius] of [param point], or null — under water if [param underwater],
+## and out of it if not: what swims keeps to the water and everything else keeps
+## out of it.
+func forage_near(point: Vector3, radius: float, kinds: PackedStringArray,
+		underwater := false) -> Forage:
 	var best: Forage = null
 	var best_gap := radius * radius
 	for patch in _forage:
 		if patch == null or not is_instance_valid(patch) or not kinds.has(patch.kind):
 			continue
 		if patch.amount < patch.capacity * 0.1:
+			continue
+		if patch.is_underwater() != underwater:
 			continue
 		var gap := patch.global_position.distance_squared_to(point)
 		if gap < best_gap:

@@ -224,7 +224,7 @@ func threat() -> Node3D:
 	var danger: Node3D = null
 	var closest := INF
 	for other in world.creatures_near(prey.global_position, sight):
-		if other == prey or other.is_dead() or not other.is_loose():
+		if other == prey or other.is_dead() or not other.is_loose() or other.swims != prey.swims:
 			continue
 		var theirs := other.mind()
 		if theirs == null or not theirs.eats(kind) or other.size_class < prey.size_class:
@@ -255,7 +255,7 @@ func find_food() -> Node3D:
 	var best_gap := INF
 	var kinds := forage_kinds()
 	if not kinds.is_empty():
-		var patch := world.forage_near(prey.global_position, kind.senses, kinds)
+		var patch := world.forage_near(prey.global_position, kind.senses, kinds, prey.swims)
 		if patch != null:
 			best = patch
 			best_gap = patch.global_position.distance_to(prey.global_position)
@@ -264,7 +264,7 @@ func find_food() -> Node3D:
 	if not scavenges and not hunts:
 		return best
 	for other in world.creatures_near(prey.global_position, kind.senses):
-		if other == prey:
+		if other == prey or other.swims != prey.swims:
 			continue
 		var gap := other.global_position.distance_to(prey.global_position)
 		if other.is_dead():
@@ -280,11 +280,13 @@ func find_food() -> Node3D:
 
 
 ## Whether [param other] is something it could hunt now: alive, loose, something it
-## eats, and no bigger than it is.
+## eats, no bigger than it is — and where it can get at it. What swims keeps to
+## the water and everything else keeps out of it, so neither hunts the other: a
+## pike does not chase a hare up the bank.
 func can_take(other: Prey) -> bool:
 	if other == null or not is_instance_valid(other) or other == prey:
 		return false
-	if other.is_dead() or not other.is_loose():
+	if other.is_dead() or not other.is_loose() or other.swims != prey.swims:
 		return false
 	return other.size_class <= prey.size_class and eats(other.kind)
 
