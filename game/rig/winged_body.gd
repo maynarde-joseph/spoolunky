@@ -4,7 +4,7 @@ extends CreatureBody
 ## Something that flies on two wings: a body, a head, two wings of two bones each —
 ## an arm out to the wrist and a hand beyond it — two legs, and a tail if it has
 ## one. A bat is this with skin stretched between its fingers and ears as tall as
-## its head; a parrot is this with feathers and a hooked beak; a wyvern is a bat's
+## its head; a raven is this with feathers and a hooked beak; a wyvern is a bat's
 ## wings on something with horns and a long whip of a tail. What tells them apart
 ## is numbers in a .tres of it.
 ##
@@ -102,8 +102,8 @@ const LEG_PARTS := ["Leg", "Foot"]
 @export var leg_thickness := 0.05
 ## How far forward the foot reaches from the ankle, along the floor.
 @export var toes := 0.1
-## How far it tips its body back, nose up, to stand, in degrees: a parrot stands
-## upright on its perch.
+## How far it tips its body back, nose up, to stand, in degrees: a songbird sits
+## up on its perch.
 @export var perch := 0.0
 
 
@@ -250,7 +250,7 @@ func whip_rest() -> Dictionary:
 
 
 ## The jaw's hinge, under the face, in the head's space, and which way it runs: a
-## bat's lower jaw, or a parrot's lower beak.
+## bat's lower jaw, or a raven's lower beak.
 func _mouth() -> Dictionary:
 	var at := _layout()
 	var face_at: Vector3 = at["head"] - at["neck"]

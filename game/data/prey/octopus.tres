@@ -36,4 +36,4 @@ body = ExtResource("2_body")
 body_radius = 2.2
 winged = false
 spawn_weight = 0.7
-habitat = "lake"
+habitat = "wilds"

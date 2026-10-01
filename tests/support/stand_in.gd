@@ -19,7 +19,7 @@ const RADIUS := 0.08
 ## The bodies nothing wears yet that do not walk, by file name: the ones that
 ## fly, and of those the ones that swim — which, for a creature, is flying in
 ## water. A body not named here walks.
-const FLIERS := ["bat", "parrot", "fish", "shark", "octopus"]
+const FLIERS := ["bat", "fish", "shark", "octopus"]
 const SWIMMERS := ["fish", "shark", "octopus"]
 
 

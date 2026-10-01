@@ -175,13 +175,14 @@ enum Activity {
 ## out of the ordinary mix, for something only placed by hand.
 @export var spawn_weight := 1.0
 
-## Where it lives, if that is somewhere in particular — "sewers", "park", "lake".
+## Where it lives, if that is somewhere in particular: "wilds", for the hunting
+## ground.
 ##
 ## The insects turn up anywhere, and a spawner left to choose its own stock draws
-## from them. A rat does not: it lives in the sewers, so only a spawner that names
-## it puts one down. Without this, a room built to test webs in would fill with
-## dogs and sharks the day they were added, because an empty stock meant every
-## species there is.
+## from them. A rat does not: it lives in the wilds, so only a den or a spawner
+## that names it puts one down. Without this, a room built to test webs in would
+## fill with wolves and sharks the day they were added, because an empty stock
+## meant every species there is.
 @export var habitat := ""
 
 

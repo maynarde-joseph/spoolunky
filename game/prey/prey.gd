@@ -1354,7 +1354,7 @@ func _process_hunt(delta: float) -> void:
 	#
 	# Six of its own widths is a margin for a wasp and the far side of the lake for a
 	# shark, so for anything big it is the edge of its body instead: something the
-	# size of a dog has reached you when it is touching you.
+	# size of a wolf has reached you when it is touching you.
 	var girth: float = kind.body_radius if kind != null else 0.05
 	var bite_reach: float = maxf(minf(girth * 6.0, girth * HITBOX_SCALE + _quarry_reach()),
 		_quarry_reach())
@@ -1427,7 +1427,7 @@ func _steer(delta: float, speed: float) -> void:
 	_tow_pull = Vector3.ZERO
 	var ceiling := _water_ceiling()
 	# A swimmer's business is under the surface, whatever it is steering at: a lure on
-	# the bank, a spider on a boat. It follows along underneath instead.
+	# the bank, a spider on the island. It follows along underneath instead.
 	_target.y = minf(_target.y, ceiling)
 	# Wet wings do not lift. Whatever it was making for, a wet flier makes for it
 	# lower down, and so comes down to the ground until it has dried.

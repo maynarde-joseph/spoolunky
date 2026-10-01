@@ -2,7 +2,7 @@ class_name BeastBody
 extends CreatureBody
 
 ## Something on four legs: a body, a head with a snout, ears and a jaw that opens,
-## four legs, and a tail. A rat, a cat and a dog are all this, and so — with the
+## four legs, and a tail. A rat, a fox and a wolf are all this, and so — with the
 ## ears and the tail left off and the legs splayed out to the sides — is a frog.
 ## What tells one from another is numbers in a .tres of it.
 ##

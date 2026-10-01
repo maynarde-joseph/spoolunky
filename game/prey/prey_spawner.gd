@@ -181,8 +181,8 @@ func _random_point(kind: PreySpecies) -> Vector3:
 	var lift := randf_range(hover_height.x, hover_height.y)
 	if kind != null:
 		# Something that walks starts on its feet: a hair above the floor for an ant,
-		# and its whole body's height for a dog, which put down a hair above the floor
-		# would start the game buried to the shoulders.
+		# and its whole body's height for a boar, which put down a hair above the
+		# floor would start the game buried to the shoulders.
 		lift = randf_range(kind.wander_height.x, kind.wander_height.y) if kind.flying \
 			else maxf(0.1, kind.body_radius * Prey.HITBOX_SCALE)
 	return hit["position"] + Vector3.UP * lift

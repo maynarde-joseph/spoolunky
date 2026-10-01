@@ -2324,7 +2324,7 @@ func _test_species() -> void:
 	await process_frame
 
 
-## The rats, cats and fish live somewhere, and only turn up there. The insects turn
+## The rats, wolves and fish live somewhere, and only turn up there. The insects turn
 ## up anywhere, so a spawner left to choose — this room's — draws them and nothing
 ## else, however many other species there are.
 ##
@@ -2377,24 +2377,24 @@ func _test_creatures_that_live_somewhere() -> void:
 		fish.queue_free()
 
 	# Something big is put down on its feet, not buried to the shoulders in the floor.
-	var dog := PreyLibrary.find("dog")
-	var kennel := PreySpawner.new()
-	var dogs: Array[PreySpecies] = [dog]
-	kennel.stock = dogs
-	kennel.population = 0
-	kennel.spawn_extents = Vector3(4.0, 2.0, 4.0)
-	level.add_child(kennel)
-	kennel.global_position = bed.global_position + Vector3(0.0, 2.0, 0.0)
+	var boar := PreyLibrary.find("boar")
+	var wallow := PreySpawner.new()
+	var boars: Array[PreySpecies] = [boar]
+	wallow.stock = boars
+	wallow.population = 0
+	wallow.spawn_extents = Vector3(4.0, 2.0, 4.0)
+	level.add_child(wallow)
+	wallow.global_position = bed.global_position + Vector3(0.0, 2.0, 0.0)
 	await physics_frame
-	if check(dog != null, "there is a dog to put down"):
+	if check(boar != null, "there is a boar to put down"):
 		var lowest := INF
 		for i in 8:
-			lowest = minf(lowest, kennel._random_point(dog).y)
+			lowest = minf(lowest, wallow._random_point(boar).y)
 		var ground := bed.global_position.y + 0.5
-		check(lowest - ground >= dog.body_radius * Prey.HITBOX_SCALE - 0.01,
-			"a dog is put down standing (%.1f above the floor, %.1f of it)"
-			% [lowest - ground, dog.body_radius * Prey.HITBOX_SCALE])
-	kennel.queue_free()
+		check(lowest - ground >= boar.body_radius * Prey.HITBOX_SCALE - 0.01,
+			"a boar is put down standing (%.1f above the floor, %.1f of it)"
+			% [lowest - ground, boar.body_radius * Prey.HITBOX_SCALE])
+	wallow.queue_free()
 	pond.queue_free()
 	bed.queue_free()
 	await physics_frame

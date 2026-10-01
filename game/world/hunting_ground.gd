@@ -28,8 +28,8 @@ extends Node3D
 ##
 ## Everything is to the scale of the [Props], a metre about fourteen units, and
 ## built the way everything else here is built: [WorldKit] solids painted from
-## the [Palette], with the ground itself one height map. Like the old world it is
-## baked into its scene and taken off the node; this is the generator of record:
+## the [Palette], with the ground itself one height map. Like the gym it is baked
+## into its scene and taken off the node; this is the generator of record:
 ##
 ##     godot --headless --path . --script res://tools/bake_level.gd -- hunting_ground --force
 

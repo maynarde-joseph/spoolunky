@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Turns a level that builds itself at startup into one made of real nodes.
 ##
-##     godot --headless --script res://tools/bake_level.gd -- testbed world
+##     godot --headless --script res://tools/bake_level.gd -- testbed hunting_ground
 ##
 ## The greybox used to be assembled in _ready(), which is fine for getting a
 ## shape down quickly and useless the moment you want to nudge one wall: there is
@@ -17,7 +17,6 @@ extends SceneTree
 
 const LEVELS := {
 	"testbed": "res://game/world/testbed.tscn",
-	"world": "res://game/world/world.tscn",
 	"hunting_ground": "res://game/world/hunting_ground.tscn",
 }
 
@@ -37,8 +36,8 @@ const RUNTIME_GROUPS := ["prey", "silk_webs"]
 ## level's to keep.
 const PROPS_DIR := "res://game/world/props/"
 
-## Where the shapes a builder makes a point at a time are kept — the sewer's
-## arches, the bowl of the lake, and what they collide as. They are the bulk of a
+## Where the shapes a builder makes a point at a time are kept — the valley's
+## ground, the bowl of the Mere, and what they collide as. They are the bulk of a
 ## level: written into the scene they are most of the file, and as numbers in
 ## text, which is the most room they could take. In files of their own they are
 ## compressed binary, and the scene reads as the nodes it is.
@@ -129,8 +128,7 @@ func _builder_in(root: Node) -> Node:
 		if script == null:
 			continue
 		var file: String = str(script.resource_path)
-		if file.ends_with("/testbed.gd") or file.ends_with("/world.gd") \
-				or file.ends_with("/hunting_ground.gd"):
+		if file.ends_with("/testbed.gd") or file.ends_with("/hunting_ground.gd"):
 			return node
 	return null
 

@@ -1,65 +1,57 @@
 extends TestSuite
 
-## Headless check on the world, and on the gym.
+## Headless check on the hunting ground, and on the gym.
 ##
 ##     godot --headless --script res://tests/world_smoke_test.gd
 ##
-## A level's job is to be the right shape, so that is what is checked: the places
-## are all there, in order, none inside another and each a plausible size for the
-## body it was built for; every one indoors has a light; the gates between them
-## are shut until there is enough of the spider and give when there is; each
-## place is stocked with what lives there; and every prop it is furnished with
-## is something to stand on. None of this looks at how it plays — that is what
-## opening it is for.
+## A level's job is to be the right shape and to be alive, so that is what is
+## checked: the places are all there, none inside another, each a plausible size
+## for the bodies it was built for and every size with somewhere built for it;
+## there is a sun, a day going round and an ecosystem keeping it; every species
+## lives somewhere in it, every place but the camp grows food and has dens, and
+## the things that roam have haunts to roam between; the ground is under every
+## place and the Mere is water; the spider starts in the camp and the HUD says
+## so; and every prop it is furnished with is something to stand on. None of this
+## looks at how it plays — that is what opening it is for.
 
-const WORLD_PATH := "res://game/world/world.tscn"
+const GROUND_PATH := "res://game/world/hunting_ground.tscn"
 const TESTBED_PATH := "res://game/world/testbed.tscn"
 
-## The places, in the order the spider goes through them: what each is called, the
-## stretch of the tier table it is built for, and what lives there — empty for a
-## place stocked only with the insects that turn up anywhere.
+## The places: what each is called, and the stretch of the tier table it is built
+## for, in body heights.
 const PLACES := [
-	["The Shed", 0.25, 0.7, ""],
-	["The Sewers", 0.7, 2.0, "sewers"],
-	["The Park", 2.0, 3.4, "park"],
-	["The Lake", 3.4, 9.0, "lake"],
-]
-
-## The places that are indoors, and have to bring their own light.
-const INDOORS := ["The Shed", "The Sewers"]
-
-## The gates, smallest first: what each is called, the size it gives to, and the
-## trait that opens it as well.
-const GATES := [
-	["DrainLid", 0.7, "hollow_frame"],
-	["StormGrate", 2.0, "storm_rider"],
+	["The Camp", 0.25, 0.4],
+	["The Fern Floor", 0.25, 0.7],
+	["The Rootways", 0.7, 2.0],
+	["The Bloom Glade", 1.2, 3.4],
+	["The Old Ruins", 2.0, 5.6],
+	["The Mere", 3.4, 9.0],
+	["Wyrm's Crag", 9.0, 9.0],
 ]
 
 
 func run_checks() -> void:
-	var world := await open(WORLD_PATH)
-	if world == null:
+	var ground := await open(GROUND_PATH)
+	if ground == null:
 		return
 
 	var spider := root.get_tree().get_first_node_in_group("spider") as SpiderPlayer
-	if not check(spider != null, "the world has a spider in it"):
+	if not check(spider != null, "the hunting ground has a spider in it"):
 		return
 
 	_test_places()
-	_test_lights(world)
-	_test_gates()
-	_test_the_stock(world)
+	_test_every_size_has_a_place()
+	_test_the_sky_and_the_clock(ground)
+	_test_life(ground)
 	_test_props()
-	await _test_the_spider_lands(spider)
-	_test_the_way_down(spider)
-	await _test_the_shafts_are_clear(world as Node3D)
-	_test_the_other_key(world, spider)
+	await _test_the_ground(ground as Node3D)
+	await _test_the_spider_starts_in_camp(spider)
+	_test_the_other_key(ground, spider)
 	await _test_the_water(spider)
 	await _test_the_swimmers()
-	await _test_the_boats(world as Node3D, spider)
 
-	# Opening the gym drops the world: two full levels in the tree at once is
-	# more than a headless run needs to hold.
+	# Opening the gym drops the hunting ground: two full levels in the tree at once
+	# is more than a headless run needs to hold.
 	await _test_the_testbed()
 
 
@@ -122,8 +114,8 @@ func _test_the_testbed() -> void:
 		"the whole gym is %.0f by %.0f, which is the point of it" % [across.x, across.z])
 
 
-## The places, in order, none of them inside another. Overlapping bounds would make
-## "which place am I in" a coin toss, and everything a place is for hangs off it.
+## The places, none of them inside another. Overlapping bounds would make "which
+## place am I in" a coin toss, and the HUD's naming of them hangs off it.
 func _test_places() -> void:
 	var zones := _zones()
 	var names: Array[String] = []
@@ -133,9 +125,7 @@ func _test_places() -> void:
 	if not check(zones.size() == PLACES.size(),
 			"the places are all here, and nothing else (%d of %d)" % [zones.size(), PLACES.size()]):
 		return
-
-	for i in PLACES.size():
-		var place: Array = PLACES[i]
+	for place in PLACES:
 		var zone := _zone_named(place[0])
 		if not check(zone != null, "%s is there" % place[0]):
 			continue
@@ -143,17 +133,10 @@ func _test_places() -> void:
 			"%s has somewhere to be (%.0f m3)" % [zone.display_name, zone.bounds.get_volume()])
 		check(is_equal_approx(zone.built_for.x, place[1]) and is_equal_approx(zone.built_for.y,
 			place[2]), "and is built for %.2f to %.2f" % [zone.built_for.x, zone.built_for.y])
-		# Scale is the whole point, so it gets asserted rather than eyeballed: a room
-		# should be a room, not a county.
+		# A forest to a spiderling is the point of the place, but a county is not.
 		var across := zone.body_lengths_across()
-		check(across > 20.0 and across < 400.0,
+		check(across > 20.0 and across < 1500.0,
 			"%s is %d body lengths across" % [zone.display_name, roundi(across)])
-		# One place picks up where the last left off, so there is always somewhere
-		# built for the size you are.
-		if i > 0:
-			check(is_equal_approx(PLACES[i - 1][2], place[1]),
-				"and it starts where %s leaves off" % PLACES[i - 1][0])
-
 	var overlaps := 0
 	for i in zones.size():
 		for j in range(i + 1, zones.size()):
@@ -163,90 +146,218 @@ func _test_places() -> void:
 	check(overlaps == 0, "and none of them are inside each other (%d)" % overlaps)
 
 
-## Indoors is lit by its own lamps, and outdoors by the one sun. Every light casts,
-## because a shape reads by its shadow.
-func _test_lights(world: Node) -> void:
-	var lights := 0
-	var shadowed := 0
+## Whatever size the spider is, somewhere is built for it.
+func _test_every_size_has_a_place() -> void:
+	var homeless: Array[String] = []
+	for stage in WebLibrary.default_stages():
+		var found := false
+		for zone in _zones():
+			if stage.body_height >= zone.built_for.x - 0.001 \
+					and stage.body_height <= zone.built_for.y + 0.001:
+				found = true
+		if not found:
+			homeless.append(stage.display_name)
+	check(homeless.is_empty(), "every size has a place built for it (%s without)"
+		% (", ".join(homeless) if not homeless.is_empty() else "none"))
+
+
+## One sun, a sky, a day going round and an ecosystem keeping it.
+func _test_the_sky_and_the_clock(ground: Node) -> void:
 	var suns := 0
-	for node in all_under(world):
-		var light := node as Light3D
-		if light == null:
-			continue
-		lights += 1
-		if light.shadow_enabled:
-			shadowed += 1
-		if light is DirectionalLight3D:
+	var skies := 0
+	for node in all_under(ground):
+		if node is DirectionalLight3D:
 			suns += 1
-	check(shadowed == lights, "every light casts (%d of %d)" % [shadowed, lights])
-	check(suns == 1, "with one sun for the outdoors (%d)" % suns)
-	for name in INDOORS:
-		var zone := _zone_named(name)
-		if zone == null:
-			continue
-		var inside := 0
-		for node in all_under(world):
-			var lamp := node as OmniLight3D
-			if lamp != null and zone.bounds.grow(1.0).has_point(lamp.global_position):
-				inside += 1
-		check(inside > 0, "%s has a lamp of its own (%d)" % [name, inside])
+		if node is WorldEnvironment:
+			skies += 1
+	check(suns == 1 and skies == 1, "one sun and one sky (%d, %d)" % [suns, skies])
+	var clock := Ecosystem.of(ground)
+	check(clock != null and clock.running, "an ecosystem, keeping the day going round")
+	var day := ground.find_child("DayNight", true, false) as DayNight
+	check(day != null and day.moon != null and day.sun != null,
+		"and a day and night driving the sun, with a moon for after dark")
 
 
-## The gates, each shut until there is more of the spider, each with a second key,
-## and each wanting more than the last. The sizes are the tier table's.
-func _test_gates() -> void:
-	var gates := _thresholds()
-	if not check(gates.size() == GATES.size(),
-			"the gates are all here (%d of %d)" % [gates.size(), GATES.size()]):
-		return
-	gates.sort_custom(func(a: Threshold, b: Threshold) -> bool: return a.opens_at < b.opens_at)
-	for i in GATES.size():
-		var gate := gates[i]
-		var want: Array = GATES[i]
-		check(String(gate.name) == want[0] and is_equal_approx(gate.opens_at, want[1]),
-			"%s gives at %.1f (%s at %.1f)" % [want[0], want[1], gate.name, gate.opens_at])
-		check(not gate.open, "and starts shut")
-		check(gate.opens_for == want[2],
-			"and %s opens it too (%s)" % [want[2], gate.opens_for])
-
-
-## Each place is stocked with what lives there and the insects that turn up
-## anywhere — and everything that lives there is stocked somewhere in it.
-func _test_the_stock(world: Node) -> void:
+## Every species lives somewhere here: a den of it in some place. Every place but
+## the camp grows something to eat and has something living in it, and nothing
+## lives in the camp. The things that roam have somewhere to roam to.
+func _test_life(ground: Node) -> void:
+	var dens: Array[Den] = []
+	var patches: Array[Forage] = []
+	var haunts: Array[Haunt] = []
+	for node in all_under(ground):
+		if node is Den:
+			dens.append(node)
+		elif node is Forage:
+			patches.append(node)
+		elif node is Haunt:
+			haunts.append(node)
+	var housed := {}
+	for den in dens:
+		housed[den.species_id] = true
+	var homeless: Array[String] = []
+	for kind in PreyLibrary.load_species():
+		if not housed.has(kind.id):
+			homeless.append(kind.id)
+	check(homeless.is_empty(), "every species has a den here (%d dens; %s without)"
+		% [dens.size(), ", ".join(homeless) if not homeless.is_empty() else "none"])
 	for place in PLACES:
 		var zone := _zone_named(place[0])
 		if zone == null:
 			continue
-		var habitat: String = place[3]
-		var stocked := {}
-		var strays: Array[String] = []
-		var spawners := 0
-		for node in all_under(zone):
-			var spawner := node as PreySpawner
-			if spawner == null:
-				continue
-			spawners += 1
-			for kind in spawner.stock:
-				stocked[kind.id] = true
-				if kind.habitat != "" and kind.habitat != habitat:
-					strays.append(kind.id)
-		check(spawners > 0, "%s has creatures in it (%d spawners, %s)"
-			% [place[0], spawners, ", ".join(stocked.keys())])
-		check(strays.is_empty(), "and none of them live somewhere else (%s)"
-			% (", ".join(strays) if not strays.is_empty() else "none"))
-		if habitat.is_empty():
+		var living := 0
+		for den in dens:
+			if zone.contains(den.global_position):
+				living += 1
+		var growing := 0
+		for patch in patches:
+			if zone.contains(patch.global_position):
+				growing += 1
+		if place[0] == "The Camp":
+			check(living == 0, "nothing lives in the camp (%d dens)" % living)
 			continue
-		var missing: Array[String] = []
-		for kind in PreyLibrary.living_in(habitat):
-			if not stocked.has(kind.id):
-				missing.append(kind.id)
-		check(missing.is_empty(), "and everything that lives in the %s is there (%s missing)"
-			% [habitat, ", ".join(missing) if not missing.is_empty() else "none"])
-	var all_spawners := 0
-	for node in all_under(world):
-		if node is PreySpawner:
-			all_spawners += 1
-	check(all_spawners > 0, "the world is stocked (%d spawners)" % all_spawners)
+		check(living > 0 and growing > 0, "%s has %d dens and %d patches of forage"
+			% [place[0], living, growing])
+	var roamers: Array[String] = []
+	for kind in PreyLibrary.load_species():
+		if not kind.roams:
+			continue
+		var places := 0
+		for haunt in haunts:
+			if haunt.welcomes(kind):
+				places += 1
+		if places < 2:
+			roamers.append("%s (%d)" % [kind.id, places])
+	check(roamers.is_empty(), "everything that roams has haunts to roam between (%s short)"
+		% (", ".join(roamers) if not roamers.is_empty() else "none"))
+	_note_life(dens)
+
+
+## How much there is: said, not checked.
+func _note_life(dens: Array[Den]) -> void:
+	var out := 0
+	for den in dens:
+		out += den.count()
+	note("%d dens, %d creatures out" % [dens.size(), out])
+
+
+## The ground is under every place: straight down from above the middle of each,
+## the first thing hit is the ground, at a height that place could have.
+func _test_the_ground(ground: Node3D) -> void:
+	await physics_frame
+	var space := ground.get_world_3d().direct_space_state
+	var missing: Array[String] = []
+	for place in PLACES:
+		var zone := _zone_named(place[0])
+		if zone == null:
+			continue
+		var middle := zone.bounds.get_center()
+		var query := PhysicsRayQueryParameters3D.create(Vector3(middle.x, 400.0, middle.z),
+			Vector3(middle.x, -100.0, middle.z), GameLayers.WORLD)
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			missing.append(place[0])
+	check(missing.is_empty(), "there is ground under every place (%s without)"
+		% (", ".join(missing) if not missing.is_empty() else "none"))
+	# And the hills rise round the edge, so the valley is a valley.
+	var rim := space.intersect_ray(PhysicsRayQueryParameters3D.create(
+		Vector3(0.0, 400.0, -360.0), Vector3(0.0, -100.0, -360.0), GameLayers.WORLD))
+	var floor_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(
+		Vector3(HuntingGround.GLADE.x, 400.0, HuntingGround.GLADE.y),
+		Vector3(HuntingGround.GLADE.x, -100.0, HuntingGround.GLADE.y), GameLayers.WORLD))
+	if check(not rim.is_empty() and not floor_hit.is_empty(), "the ground is there at the edge too"):
+		check(rim["position"].y > floor_hit["position"].y + 30.0,
+			"and the hills round it stand well over the valley floor (%.0f against %.0f)"
+			% [rim["position"].y, floor_hit["position"].y])
+
+
+## The spider is put in the camp, stays there on its floor, and the HUD says where
+## it is.
+func _test_the_spider_starts_in_camp(spider: SpiderPlayer) -> void:
+	await run_frames(240)
+	var here := Zone.at(root.get_tree(), spider.global_position)
+	check(here != null and here.display_name == "The Camp",
+		"it starts in the camp and stays there (%s)"
+		% (here.display_name if here != null else "nowhere"))
+	var under := HuntingGround.new()
+	var floor_y := under.ground_at(spider.global_position.x, spider.global_position.z)
+	under.free()
+	check(spider.global_position.y > floor_y - 1.0,
+		"standing on its floor rather than through it (%.2f, the ground at %.1f)"
+		% [spider.global_position.y, floor_y])
+	var hud := current_scene.get_node_or_null("HUD")
+	var named: Label = hud.get("_area_label") if hud != null else null
+	check(named != null and named.text == "The Camp", "and the HUD names the place (%s)"
+		% (named.text if named != null else "no label"))
+
+
+## Size is one key and not the only one. A gate no spider will ever be big
+## enough for still gives, if it went up the tree some other way.
+func _test_the_other_key(world: Node, spider: SpiderPlayer) -> void:
+	var traits := spider.traits
+	if not check(traits != null, "the spider has a tree to go up"):
+		return
+
+	# Far from everything, and sized past the end of the ladder, so the only
+	# thing that can open it is the trait.
+	var gate := Threshold.make(world as Node3D, Vector3(200.0, 200.0, 200.0),
+		Vector3(206.0, 200.4, 206.0), 999.0, "TestHatch", "wing_buds")
+	gate._physics_process(0.016)
+	check(not gate.open, "a gate past the end of the ladder stays shut")
+	check(not traits.has("wing_buds"), "with no trait to open it either")
+
+	traits.owned["wing_buds"] = true
+	gate._physics_process(0.016)
+	check(gate.open, "and gives to the trait instead of to the size")
+	traits.owned.erase("wing_buds")
+
+
+## The Mere is water, to a spider as much as anything: put in it, it swims.
+func _test_the_water(spider: SpiderPlayer) -> void:
+	var mere := _zone_named("The Mere")
+	if not check(mere != null, "there is a mere to have water in"):
+		return
+	var pools := 0
+	for node in root.get_tree().get_nodes_in_group("water"):
+		var pool := node as Area3D
+		if pool != null and pool.collision_layer & GameLayers.WATER != 0 \
+				and mere.bounds.has_point(pool.global_position):
+			pools += 1
+	check(pools > 0, "the Mere is full of water (%d bodies of it)" % pools)
+	var at := Vector3(HuntingGround.MERE.x - 30.0, HuntingGround.WATER_TOP - 2.0,
+		HuntingGround.MERE.y)
+	var top := Prey.water_top_at(spider, at)
+	check(is_equal_approx(top, HuntingGround.WATER_TOP),
+		"to the top, at %.1f (%.1f)" % [HuntingGround.WATER_TOP, top])
+	var was := spider.global_position
+	spider.global_position = at
+	spider.velocity = Vector3.ZERO
+	await run_frames(6)
+	check(not spider.climb.handles_movement(),
+		"and a spider put in it is swimming, not walking the bottom")
+	spider.global_position = was
+	spider.velocity = Vector3.ZERO
+	await run_frames(2)
+
+
+## Whatever swims in the Mere keeps all of itself under the top of it.
+func _test_the_swimmers() -> void:
+	var mere := _zone_named("The Mere")
+	if mere == null:
+		return
+	await run_frames(60)
+	var swimmers := 0
+	var highest := -INF
+	for node in root.get_tree().get_nodes_in_group("prey"):
+		var prey := node as Prey
+		if prey == null or not prey.swims or not mere.bounds.has_point(prey.global_position):
+			continue
+		swimmers += 1
+		highest = maxf(highest, prey.global_position.y + prey.hit_radius())
+	check(swimmers >= 4, "there are things in the Mere (%d)" % swimmers)
+	check(highest <= HuntingGround.WATER_TOP + 0.05,
+		"and none of them breaks the surface (the highest comes to %.2f, the water %.2f)"
+		% [highest, HuntingGround.WATER_TOP])
 
 
 ## Every prop has its scene, and every one is something to stand on: a body on the
@@ -275,217 +386,6 @@ func _test_props() -> void:
 	check(baked == Props.ALL.size(), "every prop has a scene (%d of %d)" % [baked, Props.ALL.size()])
 	check(solid == Props.ALL.size(), "and every one is something to stand on (%s)"
 		% (", ".join(bad) if not bad.is_empty() else "all of them"))
-
-
-## The spider is put in the shed, and the shed has to hold it up.
-func _test_the_spider_lands(spider: SpiderPlayer) -> void:
-	var start := spider.global_position
-	check(start.distance_to(SpiderWorld.SPAWN) < 0.5,
-		"the spider is put where a new one starts (%.1fm off)" % start.distance_to(SpiderWorld.SPAWN))
-	await run_frames(240)
-	var here := Zone.at(root.get_tree(), spider.global_position)
-	check(here != null and here.display_name == "The Shed",
-		"it starts in the shed and stays there (%s)"
-		% (here.display_name if here != null else "nowhere"))
-	check(spider.global_position.y > SpiderWorld.SHED_LO.y - 0.5,
-		"standing on its floor rather than through it (%.2f, floor at %.1f)"
-		% [spider.global_position.y, SpiderWorld.SHED_LO.y])
-	check(spider.global_position.distance_to(start) < 30.0,
-		"and near where it was put (%.1fm)" % spider.global_position.distance_to(start))
-
-
-## Growing has to actually open the way. Feed the spider through the tiers and
-## check each gate gives at the size the design says it should.
-func _test_the_way_down(spider: SpiderPlayer) -> void:
-	var gates := _thresholds()
-	gates.sort_custom(func(a: Threshold, b: Threshold) -> bool: return a.opens_at < b.opens_at)
-	for gate in gates:
-		var before := spider.stage().body_height
-		check(not gate.open,
-			"%s is still shut at %.2f" % [gate.name, before])
-		# A tier at a time, each fed exactly what it takes: the gates are not all one
-		# tier apart, and a meal that falls short of the next one proves nothing.
-		while spider.stage().body_height < gate.opens_at and spider.growth.next_stage() != null:
-			spider.growth.feed(spider.growth.biomass_to_next() + 1.0, "test")
-		gate._physics_process(0.016)
-		check(gate.open, "%s gives at %.2f" % [gate.name, spider.stage().body_height])
-
-
-## With the gates given, the way through is clear: nothing across the drain between
-## the shed floor and the chamber under it, and nothing across the storm drain
-## between the grate and the floor of the chamber it comes up out of. A gate that
-## opens onto a slab of forgotten ground is not a way through.
-func _test_the_shafts_are_clear(world: Node3D) -> void:
-	await physics_frame
-	var space := world.get_world_3d().direct_space_state
-	var shafts := [
-		["the drain", SpiderWorld.DRAIN_LO, SpiderWorld.DRAIN_HI, SpiderWorld.SHED_LO.y],
-		["the storm drain", SpiderWorld.STORM_LO, SpiderWorld.STORM_HI, 0.0],
-	]
-	for shaft in shafts:
-		var lo: Vector2 = shaft[1]
-		var hi: Vector2 = shaft[2]
-		# Down the middle of the half away from the rungs.
-		var from := Vector3(lo.x + (hi.x - lo.x) * 0.4, float(shaft[3]) + 2.0,
-			lo.y + (hi.y - lo.y) * 0.4)
-		var query := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 40.0,
-			GameLayers.WORLD)
-		var hit := space.intersect_ray(query)
-		var landed: float = hit["position"].y if not hit.is_empty() else INF
-		check(landed < SpiderWorld.WALK + 0.5,
-			"%s is open all the way down to the walkway (first thing in the way at %.1f)"
-			% [shaft[0], landed])
-
-
-## Size is one key and not the only one. A gate no spider will ever be big
-## enough for still gives, if it went up the tree some other way.
-func _test_the_other_key(world: Node, spider: SpiderPlayer) -> void:
-	var traits := spider.traits
-	if not check(traits != null, "the spider has a tree to go up"):
-		return
-
-	# Far from everything, and sized past the end of the ladder, so the only
-	# thing that can open it is the trait.
-	var gate := Threshold.make(world as Node3D, Vector3(200.0, 200.0, 200.0),
-		Vector3(206.0, 200.4, 206.0), 999.0, "TestHatch", "wing_buds")
-	gate._physics_process(0.016)
-	check(not gate.open, "a gate past the end of the ladder stays shut")
-	check(not traits.has("wing_buds"), "with no trait to open it either")
-
-	traits.owned["wing_buds"] = true
-	gate._physics_process(0.016)
-	check(gate.open, "and gives to the trait instead of to the size")
-	traits.owned.erase("wing_buds")
-
-
-## The sewers run with water, and it is water to a spider: put in the channel, it
-## is swimming rather than walking along the bottom.
-func _test_the_water(spider: SpiderPlayer) -> void:
-	var sewers := _zone_named("The Sewers")
-	if not check(sewers != null, "there are sewers to have water in"):
-		return
-	var stretches := 0
-	for node in root.get_tree().get_nodes_in_group("water"):
-		var pool := node as Area3D
-		if pool != null and pool.collision_layer & GameLayers.WATER != 0 \
-				and sewers.bounds.has_point(pool.global_position):
-			stretches += 1
-	check(stretches > 0, "the sewers run with water (%d stretches of it)" % stretches)
-	var at := Vector3(-110.0, SpiderWorld.WATER_TOP - 0.6, SpiderWorld.SEWER_Z)
-	var top := Prey.water_top_at(spider, at)
-	check(is_equal_approx(top, SpiderWorld.WATER_TOP),
-		"the channel is full to %.1f (%.1f)" % [SpiderWorld.WATER_TOP, top])
-	var was := spider.global_position
-	spider.global_position = at
-	spider.velocity = Vector3.ZERO
-	await run_frames(6)
-	check(not spider.climb.handles_movement(),
-		"and a spider put in it is swimming, not walking the bottom")
-	spider.global_position = was
-	spider.velocity = Vector3.ZERO
-	await run_frames(2)
-
-
-## Whatever swims in the lake keeps all of itself under the top of it.
-func _test_the_swimmers() -> void:
-	var lake := _zone_named("The Lake")
-	if not check(lake != null, "there is a lake to swim in"):
-		return
-	await run_frames(60)
-	var swimmers := 0
-	var highest := -INF
-	for node in root.get_tree().get_nodes_in_group("prey"):
-		var prey := node as Prey
-		if prey == null or not prey.swims or not lake.bounds.has_point(prey.global_position):
-			continue
-		swimmers += 1
-		highest = maxf(highest, prey.global_position.y + prey.hit_radius())
-	check(swimmers >= 4, "there are things in the lake (%d)" % swimmers)
-	check(highest <= SpiderWorld.LAKE_TOP + 0.05,
-		"and none of them breaks the surface (the highest comes to %.2f, the water %.2f)"
-		% [highest, SpiderWorld.LAKE_TOP])
-
-
-## The boats go round the island, a spider standing in one goes round with it,
-## silk spun in one goes with it, and silk tied from one to the jetty snaps.
-func _test_the_boats(world: Node3D, spider: SpiderPlayer) -> void:
-	var ring: BoatRing = null
-	for node in all_under(world):
-		if node is BoatRing:
-			ring = node
-	if not check(ring != null, "there are boats on the lake"):
-		return
-	var boats := ring.boats()
-	check(boats.size() == 6, "six of them (%d)" % boats.size())
-	if boats.is_empty():
-		return
-
-	# Round, at the speed they are set to, and on the water.
-	var middle := ring.global_position
-	var before: Array[float] = []
-	for boat in boats:
-		before.append(_bearing(boat.global_position - middle))
-	var seconds := 2.0
-	await run_frames(roundi(seconds * 60.0))
-	var turned := 0.0
-	var off_ring := 0.0
-	var off_water := 0.0
-	for i in boats.size():
-		var from_middle := boats[i].global_position - middle
-		turned += absf(angle_difference(before[i], _bearing(from_middle)))
-		off_ring = maxf(off_ring, absf(Vector2(from_middle.x, from_middle.z).length() - ring.radius))
-		off_water = maxf(off_water, absf(boats[i].global_position.y - middle.y))
-	var expected := ring.speed / ring.radius * seconds
-	check(turned / float(boats.size()) > expected * 0.8,
-		"they go round the island (%.2f of a turn in %.0fs, %.2f expected)"
-		% [turned / float(boats.size()) / TAU, seconds, expected / TAU])
-	check(off_ring < 0.5 and off_water < ring.bob + 0.1,
-		"on their ring and on the water (%.2f off the ring, %.2f up or down)" % [off_ring, off_water])
-
-	# A spider put down in a boat is carried round in it.
-	var boat := boats[0]
-	spider.global_position = boat.global_transform * Vector3(0.0, 2.0, 2.0)
-	spider.velocity = Vector3.ZERO
-	await run_frames(40)
-	var aboard := boat.global_transform.affine_inverse() * spider.global_position
-	var was := spider.global_position
-	await run_frames(120)
-	var still := boat.global_transform.affine_inverse() * spider.global_position
-	check(was.distance_to(spider.global_position) > 5.0,
-		"a spider standing in a boat goes round with it (%.1fm in two seconds)"
-		% was.distance_to(spider.global_position))
-	check(still.distance_to(aboard) < 2.0 and absf(still.x) < 6.5,
-		"and is still in it (%.1fm from where it stood, in the boat's own frame)"
-		% still.distance_to(aboard))
-
-	# Silk spun in a boat goes with it; silk from a boat to the jetty snaps.
-	var line := load("res://game/data/patterns/frame_line.tres") as WebPattern
-	var webs := world.get_node_or_null("Webs") as Node3D
-	if not check(line != null and webs != null, "there is silk to spin and somewhere to put it"):
-		return
-	var ours := boats[1]
-	var inside := WebStrand.spin(line, ours.global_transform * Vector3(-5.0, 4.1, -2.0),
-		ours.global_transform * Vector3(5.0, 4.1, 7.0), 2.0)
-	inside.place_in(webs)
-	var jetty_end := Vector3(SpiderWorld.LAKE_MIDDLE.x - SpiderWorld.JETTY_END - 1.0, 1.2, 0.0)
-	var across := WebStrand.spin(line, ours.global_transform * Vector3(0.0, 5.8, 10.0), jetty_end, 2.0)
-	across.place_in(webs)
-	var tied := ours.global_transform.affine_inverse() * inside.anchors[0]
-	await run_frames(90)
-	check(is_instance_valid(inside) and not inside.is_queued_for_deletion(),
-		"a line spun across a boat holds")
-	if is_instance_valid(inside):
-		var now := ours.global_transform.affine_inverse() * inside.anchors[0]
-		check(now.distance_to(tied) < 0.3,
-			"and goes round with it (%.2fm off where it was tied, in the boat's frame)"
-			% now.distance_to(tied))
-		inside.demolish()
-	check(not is_instance_valid(across) or across.is_queued_for_deletion(),
-		"and a line from a boat to the jetty snaps as the boat pulls away")
-
-
-func _bearing(offset: Vector3) -> float:
-	return atan2(offset.z, offset.x)
 
 
 # --- helpers -------------------------------------------------------------

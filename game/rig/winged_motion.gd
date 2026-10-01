@@ -3,8 +3,8 @@ extends CreatureMotion
 
 ## How something on two wings holds itself: beating them in flight, the hands a
 ## beat behind the arms and tucking in on the way up; folding them down its sides
-## on the ground, where it walks on its two legs — a parrot standing up straight
-## to do it; flapping in bursts when caught; drooping half open when spent; and
+## on the ground, where it walks on its two legs — a songbird sitting up to do
+## it; flapping in bursts when caught; drooping half open when spent; and
 ## wrapping them round itself at the end.
 
 ## How far the body goes, in body radii, in each step of a walk.
