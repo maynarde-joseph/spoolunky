@@ -36,9 +36,10 @@ func bind(skeleton: Skeleton3D, body: CreatureBody) -> void:
 	_head = _find(skeleton, "Head")
 	_jaw = _find(skeleton, "Jaw")
 	_ears.clear()
-	for s in 2:
-		_ears.append({"bone": _find(skeleton, "Ear.%s" % BeastBody.SIDES[s]),
-			"side": -1.0 if s == 0 else 1.0})
+	if _body.ears != BeastBody.Ears.NONE:
+		for s in 2:
+			_ears.append({"bone": _find(skeleton, "Ear.%s" % BeastBody.SIDES[s]),
+				"side": -1.0 if s == 0 else 1.0})
 	_legs.clear()
 	for end in 2:
 		for s in 2:
@@ -50,8 +51,9 @@ func bind(skeleton: Skeleton3D, body: CreatureBody) -> void:
 				"group": (end + s) % 2, "reach": _body.foot,
 			})
 	_tail.clear()
-	for i in _body.tail_bones:
-		_tail.append(_find(skeleton, BeastBody.tail_bone(i)))
+	if _body.tail > 0.0:
+		for i in _body.tail_bones:
+			_tail.append(_find(skeleton, BeastBody.tail_bone(i)))
 
 
 ## Where the sole of every paw was drawn last frame, in the world: front left,
