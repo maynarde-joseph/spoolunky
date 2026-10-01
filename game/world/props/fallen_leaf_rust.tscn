@@ -1,0 +1,39 @@
+[gd_scene format=4]
+
+[ext_resource type="Material" path="res://game/world/materials/leaf_rust.tres" id="1_u3gvq"]
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_4u12y"]
+_surfaces = [{
+"aabb": AABB(-0.6742487, 0.034999996, -1.4, 1.3484974, 0.050000004, 2.8),
+"attribute_data": PackedByteArray("////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////"),
+"format": 34359738383,
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 156,
+"vertex_data": PackedByteArray("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AiVkvnsUrj0hdKE/AAAAAHsUrj0zM7M/AAAAAChcDz0zM7M/AiVkvnsUrj0hdKE/AAAAAChcDz0zM7M/AiVkvihcDz0hdKE//3///wAA/7//f///AAD/v/9///8AAP+//38AAAAA/7//fwAAAAD/v/9/AAAAAP+//3///wAA/7//f///AAD/v/9///8AAP+//38AAAAA/7//fwAAAAD/v/9/AAAAAP+//3///wAA/7//f///AAD/v/9///8AAP+//38AAAAA/7//fwAAAAD/v/9/AAAAAP+//3///wAA/7//f///AAD/v/9///8AAP+//38AAAAA/7//fwAAAAD/v/9/AAAAAP+//3///wAA/7//f///AAD/v/9///8AAP+//38AAAAA/7//fwAAAAD/v/9/AAAAAP+//3///wAA/7//f///AAD/v/9///8AAP+//38AAAAA/7//fwAAAAD/v/9/AAAAAP+//3///wAA/7//f///AAD/v/9///8AAP+//38AAAAA/7//fwAAAAD/v/9/AAAAAP+//3///wAA/7//f///AAD/v/9///8AAP+//38AAAAA/7//fwAAAAD/v/9/AAAAAP+//3///wAA/7//f///AAD/v/9///8AAP+//38AAAAA/7//fwAAAAD/v/9/AAAAAP+//3///wAA/7//f///AAD/v/9///8AAP+//38AAAAA/7//fwAAAAD/v/9/AAAAAP+//3///wAA/7//f///AAD/v/9///8AAP+//38AAAAA/7//fwAAAAD/v/9/AAAAAP+//3///wAA/7//f///AAD/v/9///8AAP+//38AAAAA/7//fwAAAAD/v/9/AAAAAP+/GLH/f1xYJqAYsf9/XFgmoBix/39cWCagGLH/f1xYJqAYsf9/XFgmoBix/39cWCagrM//f61YErSsz/9/rVgStKzP/3+tWBK0rM//f61YErSsz/9/rVgStKzP/3+tWBK0c9z/f+Ff0rlz3P9/4V/SuXPc/3/hX9K5c9z/f+Ff0rlz3P9/4V/SuXPc/3/hX9K5////f/9//7////9//3//v////3//f/+/////f/9//7////9//3//v////3//f/+///+Lox2g0rn//4ujHaDSuf//i6MdoNK5//+Lox2g0rn//4ujHaDSuf//i6MdoNK5//9SsFGnErT//1KwUacStP//UrBRpxK0//9SsFGnErT//1KwUacStP//UrBRpxK0///lzqKnJqD//+XOoqcmoP//5c6ipyag///lzqKnJqD//+XOoqcmoP//5c6ipyagAADlzlxYJqAAAOXOXFgmoAAA5c5cWCagAADlzlxYJqAAAOXOXFgmoAAA5c5cWCagAABSsK1YErQAAFKwrVgStAAAUrCtWBK0AABSsK1YErQAAFKwrVgStAAAUrCtWBK0AACLo+Ff0rkAAIuj4V/SuQAAi6PhX9K5AACLo+Ff0rkAAIuj4V/SuQAAi6PhX9K5AAD/f/9//78AAP9//3//vwAA/3//f/+/AAD/f/9//78AAP9//3//vwAA/3//f/+/iyP/fx2g0rmLI/9/HaDSuYsj/38doNK5iyP/fx2g0rmLI/9/HaDSuYsj/38doNK5UjD/f1GnErRSMP9/UacStFIw/39RpxK0UjD/f1GnErRSMP9/UacStFIw/39RpxK05k7/f6KnJqDmTv9/oqcmoOZO/3+ipyag5k7/f6KnJqDmTv9/oqcmoOZO/3+ipyag")
+}]
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_y6cio"]
+points = PackedVector3Array(0, 0.085, 1.4, 0.22279742, 0.085, 1.2613565, 0.45841432, 0.085, 0.8728857, 0.6742487, 0.085, 0.3115293, 0.6742487, 0.085, -0.3115293, 0.45841432, 0.085, -0.8728857, 0.22279742, 0.085, -1.2613565, 5.970153e-17, 0.085, -1.4, -0.22279742, 0.085, -1.2613565, -0.45841432, 0.085, -0.8728857, -0.6742487, 0.085, -0.3115293, -0.6742487, 0.085, 0.3115293, -0.45841432, 0.085, 0.8728857, -0.22279742, 0.085, 1.2613565, 0, 0.034999996, 1.4, 0.22279742, 0.034999996, 1.2613565, 0.45841432, 0.034999996, 0.8728857, 0.6742487, 0.034999996, 0.3115293, 0.6742487, 0.034999996, -0.3115293, 0.45841432, 0.034999996, -0.8728857, 0.22279742, 0.034999996, -1.2613565, 5.970153e-17, 0.034999996, -1.4, -0.22279742, 0.034999996, -1.2613565, -0.45841432, 0.034999996, -0.8728857, -0.6742487, 0.034999996, -0.3115293, -0.6742487, 0.034999996, 0.3115293, -0.45841432, 0.034999996, 0.8728857, -0.22279742, 0.034999996, 1.2613565)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_khjqh"]
+top_radius = 0.04
+bottom_radius = 0.04
+height = 2.9
+radial_segments = 12
+rings = 1
+
+[node name="FallenLeafRust" type="StaticBody3D" unique_id=1471858472]
+collision_mask = 0
+
+[node name="Blade" type="MeshInstance3D" parent="." unique_id=644652302]
+material_override = ExtResource("1_u3gvq")
+mesh = SubResource("ArrayMesh_4u12y")
+
+[node name="BladeShape" type="CollisionShape3D" parent="." unique_id=655269100]
+shape = SubResource("ConvexPolygonShape3D_y6cio")
+
+[node name="Rib" type="MeshInstance3D" parent="." unique_id=1302876065]
+transform = Transform3D(-1, 0, 0, 0, 0, -1, 0, -1, 0, 0, 0.1, 0.050000012)
+material_override = ExtResource("1_u3gvq")
+mesh = SubResource("CylinderMesh_khjqh")

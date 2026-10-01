@@ -1,0 +1,370 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/leaf.tres" id="1_wl3ru"]
+[ext_resource type="Material" path="res://game/world/materials/leaf_light.tres" id="2_vrbmw"]
+[ext_resource type="Material" path="res://game/world/materials/petal_red.tres" id="3_7qshe"]
+[ext_resource type="Material" path="res://game/world/materials/yellow.tres" id="4_t7ibv"]
+[ext_resource type="Material" path="res://game/world/materials/petal_yellow.tres" id="5_3h44w"]
+[ext_resource type="Material" path="res://game/world/materials/acorn.tres" id="6_bed2x"]
+[ext_resource type="Material" path="res://game/world/materials/petal_purple.tres" id="7_y3374"]
+[ext_resource type="Material" path="res://game/world/materials/petal_white.tres" id="8_lhv36"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ndufp"]
+top_radius = 0.1
+bottom_radius = 0.14
+height = 5.0249376
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_lfs1b"]
+points = PackedVector3Array(0.14, -2.5124688, 0, 0.12124356, -2.5124688, 0.07, 0.07, -2.5124688, 0.12124356, 8.572528e-18, -2.5124688, 0.14, -0.07, -2.5124688, 0.12124356, -0.12124356, -2.5124688, 0.07, -0.14, -2.5124688, 1.7145055e-17, -0.12124356, -2.5124688, -0.07, -0.07, -2.5124688, -0.12124356, -2.5717583e-17, -2.5124688, -0.14, 0.07, -2.5124688, -0.12124356, 0.12124356, -2.5124688, -0.07, 0.1, 2.5124688, 0, 0.08660254, 2.5124688, 0.05, 0.05, 2.5124688, 0.08660254, 6.123234e-18, 2.5124688, 0.1, -0.05, 2.5124688, 0.08660254, -0.08660254, 2.5124688, 0.05, -0.1, 2.5124688, 1.2246468e-17, -0.08660254, 2.5124688, -0.05, -0.05, 2.5124688, -0.08660254, -1.8369703e-17, 2.5124688, -0.1, 0.05, 2.5124688, -0.08660254, 0.08660254, 2.5124688, -0.05)
+
+[sub_resource type="SphereMesh" id="SphereMesh_855nu"]
+radius = 1.0
+height = 2.0
+radial_segments = 24
+rings = 12
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_cceja"]
+points = PackedVector3Array(0.15, 0.17320508, 0, 0.12135255, 0.17320508, 0.08816779, 0.04635255, 0.17320508, 0.14265849, -0.04635255, 0.17320508, 0.14265849, -0.12135255, 0.17320508, 0.08816779, -0.15, 0.17320508, 1.8369703e-17, -0.12135255, 0.17320508, -0.08816779, -0.04635255, 0.17320508, -0.14265849, 0.04635255, 0.17320508, -0.14265849, 0.12135255, 0.17320508, -0.08816779, 0.25980762, 0.1, 0, 0.21018879, 0.1, 0.1527111, 0.080284975, 0.1, 0.24709174, -0.080284975, 0.1, 0.24709174, -0.21018879, 0.1, 0.1527111, -0.25980762, 0.1, 3.1817257e-17, -0.21018879, 0.1, -0.1527111, -0.080284975, 0.1, -0.24709174, 0.080284975, 0.1, -0.24709174, 0.21018879, 0.1, -0.1527111, 0.3, 1.22464685e-17, 0, 0.2427051, 1.22464685e-17, 0.17633557, 0.0927051, 1.22464685e-17, 0.28531697, -0.0927051, 1.22464685e-17, 0.28531697, -0.2427051, 1.22464685e-17, 0.17633557, -0.3, 1.22464685e-17, 3.6739406e-17, -0.2427051, 1.22464685e-17, -0.17633557, -0.0927051, 1.22464685e-17, -0.28531697, 0.0927051, 1.22464685e-17, -0.28531697, 0.2427051, 1.22464685e-17, -0.17633557, 0.25980762, -0.1, 0, 0.21018879, -0.1, 0.1527111, 0.080284975, -0.1, 0.24709174, -0.080284975, -0.1, 0.24709174, -0.21018879, -0.1, 0.1527111, -0.25980762, -0.1, 3.1817257e-17, -0.21018879, -0.1, -0.1527111, -0.080284975, -0.1, -0.24709174, 0.080284975, -0.1, -0.24709174, 0.21018879, -0.1, -0.1527111, 0.15, -0.17320508, 0, 0.12135255, -0.17320508, 0.08816779, 0.04635255, -0.17320508, 0.14265849, -0.04635255, -0.17320508, 0.14265849, -0.12135255, -0.17320508, 0.08816779, -0.15, -0.17320508, 1.8369703e-17, -0.12135255, -0.17320508, -0.08816779, -0.04635255, -0.17320508, -0.14265849, 0.04635255, -0.17320508, -0.14265849, 0.12135255, -0.17320508, -0.08816779, 0, 0.2, 0, 0, -0.2, 0)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_wmhiq"]
+top_radius = 0.1
+bottom_radius = 0.14
+height = 6.8732104
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_0xqhk"]
+points = PackedVector3Array(0.14, -3.4366052, 0, 0.12124356, -3.4366052, 0.07, 0.07, -3.4366052, 0.12124356, 8.572528e-18, -3.4366052, 0.14, -0.07, -3.4366052, 0.12124356, -0.12124356, -3.4366052, 0.07, -0.14, -3.4366052, 1.7145055e-17, -0.12124356, -3.4366052, -0.07, -0.07, -3.4366052, -0.12124356, -2.5717583e-17, -3.4366052, -0.14, 0.07, -3.4366052, -0.12124356, 0.12124356, -3.4366052, -0.07, 0.1, 3.4366052, 0, 0.08660254, 3.4366052, 0.05, 0.05, 3.4366052, 0.08660254, 6.123234e-18, 3.4366052, 0.1, -0.05, 3.4366052, 0.08660254, -0.08660254, 3.4366052, 0.05, -0.1, 3.4366052, 1.2246468e-17, -0.08660254, 3.4366052, -0.05, -0.05, 3.4366052, -0.08660254, -1.8369703e-17, 3.4366052, -0.1, 0.05, 3.4366052, -0.08660254, 0.08660254, 3.4366052, -0.05)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_jxn8p"]
+top_radius = 0.1
+bottom_radius = 0.14
+height = 5.2339373
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_oxd7v"]
+points = PackedVector3Array(0.14, -2.6169686, 0, 0.12124356, -2.6169686, 0.07, 0.07, -2.6169686, 0.12124356, 8.572528e-18, -2.6169686, 0.14, -0.07, -2.6169686, 0.12124356, -0.12124356, -2.6169686, 0.07, -0.14, -2.6169686, 1.7145055e-17, -0.12124356, -2.6169686, -0.07, -0.07, -2.6169686, -0.12124356, -2.5717583e-17, -2.6169686, -0.14, 0.07, -2.6169686, -0.12124356, 0.12124356, -2.6169686, -0.07, 0.1, 2.6169686, 0, 0.08660254, 2.6169686, 0.05, 0.05, 2.6169686, 0.08660254, 6.123234e-18, 2.6169686, 0.1, -0.05, 2.6169686, 0.08660254, -0.08660254, 2.6169686, 0.05, -0.1, 2.6169686, 1.2246468e-17, -0.08660254, 2.6169686, -0.05, -0.05, 2.6169686, -0.08660254, -1.8369703e-17, 2.6169686, -0.1, 0.05, 2.6169686, -0.08660254, 0.08660254, 2.6169686, -0.05)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_dhw8y"]
+top_radius = 0.1
+bottom_radius = 0.14
+height = 7.0826707
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_yuqjr"]
+points = PackedVector3Array(0.14, -3.5413353, 0, 0.12124356, -3.5413353, 0.07, 0.07, -3.5413353, 0.12124356, 8.572528e-18, -3.5413353, 0.14, -0.07, -3.5413353, 0.12124356, -0.12124356, -3.5413353, 0.07, -0.14, -3.5413353, 1.7145055e-17, -0.12124356, -3.5413353, -0.07, -0.07, -3.5413353, -0.12124356, -2.5717583e-17, -3.5413353, -0.14, 0.07, -3.5413353, -0.12124356, 0.12124356, -3.5413353, -0.07, 0.1, 3.5413353, 0, 0.08660254, 3.5413353, 0.05, 0.05, 3.5413353, 0.08660254, 6.123234e-18, 3.5413353, 0.1, -0.05, 3.5413353, 0.08660254, -0.08660254, 3.5413353, 0.05, -0.1, 3.5413353, 1.2246468e-17, -0.08660254, 3.5413353, -0.05, -0.05, 3.5413353, -0.08660254, -1.8369703e-17, 3.5413353, -0.1, 0.05, 3.5413353, -0.08660254, 0.08660254, 3.5413353, -0.05)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ka5sf"]
+top_radius = 0.1
+bottom_radius = 0.14
+height = 5.4430137
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_3s2pj"]
+points = PackedVector3Array(0.14, -2.7215068, 0, 0.12124356, -2.7215068, 0.07, 0.07, -2.7215068, 0.12124356, 8.572528e-18, -2.7215068, 0.14, -0.07, -2.7215068, 0.12124356, -0.12124356, -2.7215068, 0.07, -0.14, -2.7215068, 1.7145055e-17, -0.12124356, -2.7215068, -0.07, -0.07, -2.7215068, -0.12124356, -2.5717583e-17, -2.7215068, -0.14, 0.07, -2.7215068, -0.12124356, 0.12124356, -2.7215068, -0.07, 0.1, 2.7215068, 0, 0.08660254, 2.7215068, 0.05, 0.05, 2.7215068, 0.08660254, 6.123234e-18, 2.7215068, 0.1, -0.05, 2.7215068, 0.08660254, -0.08660254, 2.7215068, 0.05, -0.1, 2.7215068, 1.2246468e-17, -0.08660254, 2.7215068, -0.05, -0.05, 2.7215068, -0.08660254, -1.8369703e-17, 2.7215068, -0.1, 0.05, 2.7215068, -0.08660254, 0.08660254, 2.7215068, -0.05)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_msnrk"]
+top_radius = 0.1
+bottom_radius = 0.14
+height = 7.292162
+radial_segments = 6
+rings = 1
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_6xjcj"]
+points = PackedVector3Array(0.14, -3.646081, 0, 0.12124356, -3.646081, 0.07, 0.07, -3.646081, 0.12124356, 8.572528e-18, -3.646081, 0.14, -0.07, -3.646081, 0.12124356, -0.12124356, -3.646081, 0.07, -0.14, -3.646081, 1.7145055e-17, -0.12124356, -3.646081, -0.07, -0.07, -3.646081, -0.12124356, -2.5717583e-17, -3.646081, -0.14, 0.07, -3.646081, -0.12124356, 0.12124356, -3.646081, -0.07, 0.1, 3.646081, 0, 0.08660254, 3.646081, 0.05, 0.05, 3.646081, 0.08660254, 6.123234e-18, 3.646081, 0.1, -0.05, 3.646081, 0.08660254, -0.08660254, 3.646081, 0.05, -0.1, 3.646081, 1.2246468e-17, -0.08660254, 3.646081, -0.05, -0.05, 3.646081, -0.08660254, -1.8369703e-17, 3.646081, -0.1, 0.05, 3.646081, -0.08660254, 0.08660254, 3.646081, -0.05)
+
+[node name="Wildflowers" type="StaticBody3D" unique_id=1582124008]
+collision_mask = 0
+
+[node name="Stem" type="MeshInstance3D" parent="." unique_id=17864410]
+transform = Transform3D(-0.9950372, 0.099503726, 0, 0.099503726, 0.9950372, 0, 0, 0, -1, 0.75, 2.5, 0)
+material_override = ExtResource("1_wl3ru")
+mesh = SubResource("CylinderMesh_ndufp")
+
+[node name="StemShape" type="CollisionShape3D" parent="." unique_id=1955568490]
+transform = Transform3D(-0.9950372, 0.099503726, 0, 0.099503726, 0.9950372, 0, 0, 0, -1, 0.75, 2.5, 0)
+shape = SubResource("ConvexPolygonShape3D_lfs1b")
+
+[node name="Leaf" type="MeshInstance3D" parent="." unique_id=1510857818]
+transform = Transform3D(0.9, 0, 0, 0, 0.12, 0, 0, 0, 0.35, 0.7, 2, 0)
+material_override = ExtResource("2_vrbmw")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal" type="MeshInstance3D" parent="." unique_id=854222947]
+transform = Transform3D(0.55, 0, 0, 0, 0.12, 0, 0, 0, 0.3, 1.45, 5, 0)
+material_override = ExtResource("3_7qshe")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal2" type="MeshInstance3D" parent="." unique_id=1558263243]
+transform = Transform3D(0.16995934, 0, -0.28531697, 0, 0.12, 0, 0.5230811, 0, 0.09270509, 1.1390576, 5, 0.42797545)
+material_override = ExtResource("3_7qshe")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal3" type="MeshInstance3D" parent="." unique_id=1168392147]
+transform = Transform3D(-0.4449594, 0, -0.17633556, 0, 0.12, 0, 0.32328185, 0, -0.24270512, 0.63594234, 5, 0.26450336)
+material_override = ExtResource("3_7qshe")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal4" type="MeshInstance3D" parent="." unique_id=2130732212]
+transform = Transform3D(-0.44495934, 0, 0.17633562, 0, 0.12, 0, -0.32328194, 0, -0.24270509, 0.63594234, 5, -0.26450336)
+material_override = ExtResource("3_7qshe")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal5" type="MeshInstance3D" parent="." unique_id=316588756]
+transform = Transform3D(0.16995943, 0, 0.28531694, 0, 0.12, 0, -0.52308106, 0, 0.09270514, 1.1390576, 5, -0.42797545)
+material_override = ExtResource("3_7qshe")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Heart" type="MeshInstance3D" parent="." unique_id=2024284909]
+transform = Transform3D(0.3, 0, 0, 0, 0.2, 0, 0, 0, 0.3, 1, 5.08, 0)
+material_override = ExtResource("4_t7ibv")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="HeartShape" type="CollisionShape3D" parent="." unique_id=1766649501]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 5.08, 0)
+shape = SubResource("ConvexPolygonShape3D_cceja")
+
+[node name="Stem2" type="MeshInstance3D" parent="." unique_id=1875428116]
+transform = Transform3D(-0.9993227, -0.03672564, -0.002310754, -0.03679826, 0.9973505, 0.06275267, 0, 0.0627952, -0.99802643, -0.60278624, 3.4275, 1.030672)
+material_override = ExtResource("1_wl3ru")
+mesh = SubResource("CylinderMesh_wmhiq")
+
+[node name="StemShape2" type="CollisionShape3D" parent="." unique_id=1202854085]
+transform = Transform3D(-0.9993227, -0.03672564, -0.002310754, -0.03679826, 0.9973505, 0.06275267, 0, 0.0627952, -0.99802643, -0.60278624, 3.4275, 1.030672)
+shape = SubResource("ConvexPolygonShape3D_0xqhk")
+
+[node name="Leaf2" type="MeshInstance3D" parent="." unique_id=1020417325]
+transform = Transform3D(0.43632862, 0, 0.3061169, 0, 0.12, 0, -0.7871577, 0, 0.16968335, -0.5775439, 2.742, 0.9875115)
+material_override = ExtResource("2_vrbmw")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal6" type="MeshInstance3D" parent="." unique_id=1022802318]
+transform = Transform3D(0.55, 0, 0, 0, 0.12, 0, 0, 0, 0.3, -0.27899778, 6.855, 1.2464743)
+material_override = ExtResource("5_3h44w")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal7" type="MeshInstance3D" parent="." unique_id=963609360]
+transform = Transform3D(0.16995934, 0, -0.28531697, 0, 0.12, 0, 0.5230811, 0, 0.09270509, -0.58994013, 6.855, 1.6744497)
+material_override = ExtResource("5_3h44w")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal8" type="MeshInstance3D" parent="." unique_id=864686016]
+transform = Transform3D(-0.4449594, 0, -0.17633556, 0, 0.12, 0, 0.32328185, 0, -0.24270512, -1.0930554, 6.855, 1.5109776)
+material_override = ExtResource("5_3h44w")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal9" type="MeshInstance3D" parent="." unique_id=155215131]
+transform = Transform3D(-0.44495934, 0, 0.17633562, 0, 0.12, 0, -0.32328194, 0, -0.24270509, -1.0930554, 6.855, 0.9819709)
+material_override = ExtResource("5_3h44w")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal10" type="MeshInstance3D" parent="." unique_id=1587008853]
+transform = Transform3D(0.16995943, 0, 0.28531694, 0, 0.12, 0, -0.52308106, 0, 0.09270514, -0.58994013, 6.855, 0.81849885)
+material_override = ExtResource("5_3h44w")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Heart2" type="MeshInstance3D" parent="." unique_id=824934494]
+transform = Transform3D(0.3, 0, 0, 0, 0.2, 0, 0, 0, 0.3, -0.72899777, 6.935, 1.2464743)
+material_override = ExtResource("6_bed2x")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="HeartShape2" type="CollisionShape3D" parent="." unique_id=620072789]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.72899777, 6.935, 1.2464743)
+shape = SubResource("ConvexPolygonShape3D_cceja")
+
+[node name="Stem3" type="MeshInstance3D" parent="." unique_id=474137333]
+transform = Transform3D(-0.998895, -0.046834804, 0.0039131455, -0.046997994, 0.99542654, -0.08316996, 0, -0.08326197, -0.99652773, -0.80304724, 2.605, -1.4276412)
+material_override = ExtResource("1_wl3ru")
+mesh = SubResource("CylinderMesh_jxn8p")
+
+[node name="StemShape3" type="CollisionShape3D" parent="." unique_id=1640238727]
+transform = Transform3D(-0.998895, -0.046834804, 0.0039131455, -0.046997994, 0.99542654, -0.08316996, 0, -0.08326197, -0.99652773, -0.80304724, 2.605, -1.4276412)
+shape = SubResource("ConvexPolygonShape3D_oxd7v")
+
+[node name="Leaf3" type="MeshInstance3D" parent="." unique_id=23282991]
+transform = Transform3D(-0.47692737, 0, 0.2968168, 0, 0.12, 0, -0.7632432, 0, -0.18547176, -0.7785342, 2.084, -1.3840624)
+material_override = ExtResource("2_vrbmw")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal11" type="MeshInstance3D" parent="." unique_id=221234527]
+transform = Transform3D(0.55, 0, 0, 0, 0.12, 0, 0, 0, 0.3, -0.47561246, 5.21, -1.6455351)
+material_override = ExtResource("7_y3374")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal12" type="MeshInstance3D" parent="." unique_id=1145536821]
+transform = Transform3D(0.16995934, 0, -0.28531697, 0, 0.12, 0, 0.5230811, 0, 0.09270509, -0.7865548, 5.21, -1.2175597)
+material_override = ExtResource("7_y3374")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal13" type="MeshInstance3D" parent="." unique_id=1102150363]
+transform = Transform3D(-0.4449594, 0, -0.17633556, 0, 0.12, 0, 0.32328185, 0, -0.24270512, -1.2896701, 5.21, -1.3810318)
+material_override = ExtResource("7_y3374")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal14" type="MeshInstance3D" parent="." unique_id=324546220]
+transform = Transform3D(-0.44495934, 0, 0.17633562, 0, 0.12, 0, -0.32328194, 0, -0.24270509, -1.2896701, 5.21, -1.9100385)
+material_override = ExtResource("7_y3374")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal15" type="MeshInstance3D" parent="." unique_id=1317063726]
+transform = Transform3D(0.16995943, 0, 0.28531694, 0, 0.12, 0, -0.52308106, 0, 0.09270514, -0.7865548, 5.21, -2.0735106)
+material_override = ExtResource("7_y3374")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Heart3" type="MeshInstance3D" parent="." unique_id=1105514413]
+transform = Transform3D(0.3, 0, 0, 0, 0.2, 0, 0, 0, 0.3, -0.92561245, 5.29, -1.6455351)
+material_override = ExtResource("4_t7ibv")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="HeartShape3" type="CollisionShape3D" parent="." unique_id=157781913]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.92561245, 5.29, -1.6455351)
+shape = SubResource("ConvexPolygonShape3D_cceja")
+
+[node name="Stem4" type="MeshInstance3D" parent="." unique_id=647966428]
+transform = Transform3D(-0.9975058, 0.070584856, 8.3782485e-05, 0.07058491, 0.99750507, 0.0011840139, 0, 0.0011869745, -0.9999993, 0.88187534, 3.5325, 0.014829861)
+material_override = ExtResource("1_wl3ru")
+mesh = SubResource("CylinderMesh_dhw8y")
+
+[node name="StemShape4" type="CollisionShape3D" parent="." unique_id=132032976]
+transform = Transform3D(-0.9975058, 0.070584856, 8.3782485e-05, 0.07058491, 0.99750507, 0.0011840139, 0, 0.0011869745, -0.9999993, 0.88187534, 3.5325, 0.014829861)
+shape = SubResource("ConvexPolygonShape3D_yuqjr")
+
+[node name="Leaf4" type="MeshInstance3D" parent="." unique_id=480700991]
+transform = Transform3D(-0.8987665, 0, -0.018317595, 0, 0.12, 0, 0.047102384, 0, -0.34952033, 0.8318824, 2.826, 0.013989165)
+material_override = ExtResource("2_vrbmw")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal16" type="MeshInstance3D" parent="." unique_id=1565456400]
+transform = Transform3D(0.55, 0, 0, 0, 0.12, 0, 0, 0, 0.3, 1.58184, 7.065, 0.019033335)
+material_override = ExtResource("8_lhv36")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal17" type="MeshInstance3D" parent="." unique_id=1992320361]
+transform = Transform3D(0.16995934, 0, -0.28531697, 0, 0.12, 0, 0.5230811, 0, 0.09270509, 1.2708976, 7.065, 0.4470088)
+material_override = ExtResource("8_lhv36")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal18" type="MeshInstance3D" parent="." unique_id=333851663]
+transform = Transform3D(-0.4449594, 0, -0.17633556, 0, 0.12, 0, 0.32328185, 0, -0.24270512, 0.76778233, 7.065, 0.2835367)
+material_override = ExtResource("8_lhv36")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal19" type="MeshInstance3D" parent="." unique_id=587330914]
+transform = Transform3D(-0.44495934, 0, 0.17633562, 0, 0.12, 0, -0.32328194, 0, -0.24270509, 0.76778233, 7.065, -0.24547002)
+material_override = ExtResource("8_lhv36")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal20" type="MeshInstance3D" parent="." unique_id=1964169205]
+transform = Transform3D(0.16995943, 0, 0.28531694, 0, 0.12, 0, -0.52308106, 0, 0.09270514, 1.2708976, 7.065, -0.4089421)
+material_override = ExtResource("8_lhv36")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Heart4" type="MeshInstance3D" parent="." unique_id=160057454]
+transform = Transform3D(0.3, 0, 0, 0, 0.2, 0, 0, 0, 0.3, 1.13184, 7.145, 0.019033335)
+material_override = ExtResource("4_t7ibv")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="HeartShape4" type="CollisionShape3D" parent="." unique_id=1388512995]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.13184, 7.145, 0.019033335)
+shape = SubResource("ConvexPolygonShape3D_cceja")
+
+[node name="Stem5" type="MeshInstance3D" parent="." unique_id=294379706]
+transform = Transform3D(-0.9988545, -0.047702312, -0.0037564242, -0.047849983, 0.9957719, 0.07841426, 0, 0.07850419, -0.9969138, -0.6885767, 2.71, 1.133198)
+material_override = ExtResource("1_wl3ru")
+mesh = SubResource("CylinderMesh_ka5sf")
+
+[node name="StemShape5" type="CollisionShape3D" parent="." unique_id=1517625180]
+transform = Transform3D(-0.9988545, -0.047702312, -0.0037564242, -0.047849983, 0.9957719, 0.07841426, 0, 0.07850419, -0.9969138, -0.6885767, 2.71, 1.133198)
+shape = SubResource("ConvexPolygonShape3D_3s2pj")
+
+[node name="Leaf5" type="MeshInstance3D" parent="." unique_id=1746183743]
+transform = Transform3D(-0.39453387, 0, -0.31457794, 0, 0.12, 0, 0.80891466, 0, -0.15342984, -0.6626123, 2.168, 1.0904682)
+material_override = ExtResource("2_vrbmw")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal21" type="MeshInstance3D" parent="." unique_id=559235866]
+transform = Transform3D(0.55, 0, 0, 0, 0.12, 0, 0, 0, 0.3, -0.3683989, 5.42, 1.3468478)
+material_override = ExtResource("5_3h44w")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal22" type="MeshInstance3D" parent="." unique_id=1496963147]
+transform = Transform3D(0.16995934, 0, -0.28531697, 0, 0.12, 0, 0.5230811, 0, 0.09270509, -0.67934126, 5.42, 1.7748232)
+material_override = ExtResource("5_3h44w")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal23" type="MeshInstance3D" parent="." unique_id=1665928434]
+transform = Transform3D(-0.4449594, 0, -0.17633556, 0, 0.12, 0, 0.32328185, 0, -0.24270512, -1.1824565, 5.42, 1.6113511)
+material_override = ExtResource("5_3h44w")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal24" type="MeshInstance3D" parent="." unique_id=248654771]
+transform = Transform3D(-0.44495934, 0, 0.17633562, 0, 0.12, 0, -0.32328194, 0, -0.24270509, -1.1824565, 5.42, 1.0823444)
+material_override = ExtResource("5_3h44w")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal25" type="MeshInstance3D" parent="." unique_id=1725249408]
+transform = Transform3D(0.16995943, 0, 0.28531694, 0, 0.12, 0, -0.52308106, 0, 0.09270514, -0.67934126, 5.42, 0.91887236)
+material_override = ExtResource("5_3h44w")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Heart5" type="MeshInstance3D" parent="." unique_id=396383323]
+transform = Transform3D(0.3, 0, 0, 0, 0.2, 0, 0, 0, 0.3, -0.8183989, 5.5, 1.3468478)
+material_override = ExtResource("6_bed2x")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="HeartShape5" type="CollisionShape3D" parent="." unique_id=1032383994]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8183989, 5.5, 1.3468478)
+shape = SubResource("ConvexPolygonShape3D_cceja")
+
+[node name="Stem6" type="MeshInstance3D" parent="." unique_id=1432669441]
+transform = Transform3D(-0.99946636, -0.03260603, 0.0019703147, -0.03266551, 0.9976465, -0.060285702, 0, -0.06031789, -0.9981792, -0.84170043, 3.6375, -1.5570614)
+material_override = ExtResource("1_wl3ru")
+mesh = SubResource("CylinderMesh_msnrk")
+
+[node name="StemShape6" type="CollisionShape3D" parent="." unique_id=2092972387]
+transform = Transform3D(-0.99946636, -0.03260603, 0.0019703147, -0.03266551, 0.9976465, -0.060285702, 0, -0.06031789, -0.9981792, -0.84170043, 3.6375, -1.5570614)
+shape = SubResource("ConvexPolygonShape3D_6xjcj")
+
+[node name="Leaf6" type="MeshInstance3D" parent="." unique_id=1501853693]
+transform = Transform3D(0.51621866, 0, -0.28670323, 0, 0.12, 0, 0.73723686, 0, 0.2007517, -0.81792355, 2.91, -1.5130767)
+material_override = ExtResource("2_vrbmw")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal26" type="MeshInstance3D" parent="." unique_id=236950820]
+transform = Transform3D(0.55, 0, 0, 0, 0.12, 0, 0, 0, 0.3, -0.51058465, 7.275, -1.7769854)
+material_override = ExtResource("3_7qshe")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal27" type="MeshInstance3D" parent="." unique_id=318510875]
+transform = Transform3D(0.16995934, 0, -0.28531697, 0, 0.12, 0, 0.5230811, 0, 0.09270509, -0.821527, 7.275, -1.34901)
+material_override = ExtResource("3_7qshe")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal28" type="MeshInstance3D" parent="." unique_id=1341082613]
+transform = Transform3D(-0.4449594, 0, -0.17633556, 0, 0.12, 0, 0.32328185, 0, -0.24270512, -1.3246423, 7.275, -1.512482)
+material_override = ExtResource("3_7qshe")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal29" type="MeshInstance3D" parent="." unique_id=913484672]
+transform = Transform3D(-0.44495934, 0, 0.17633562, 0, 0.12, 0, -0.32328194, 0, -0.24270509, -1.3246423, 7.275, -2.0414886)
+material_override = ExtResource("3_7qshe")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Petal30" type="MeshInstance3D" parent="." unique_id=959608313]
+transform = Transform3D(0.16995943, 0, 0.28531694, 0, 0.12, 0, -0.52308106, 0, 0.09270514, -0.821527, 7.275, -2.2049608)
+material_override = ExtResource("3_7qshe")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Heart6" type="MeshInstance3D" parent="." unique_id=641535015]
+transform = Transform3D(0.3, 0, 0, 0, 0.2, 0, 0, 0, 0.3, -0.96058464, 7.355, -1.7769854)
+material_override = ExtResource("4_t7ibv")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="HeartShape6" type="CollisionShape3D" parent="." unique_id=1026980665]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.96058464, 7.355, -1.7769854)
+shape = SubResource("ConvexPolygonShape3D_cceja")

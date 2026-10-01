@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/rock.tres" id="1_wgdk3"]
+[ext_resource type="Material" path="res://game/world/materials/moss.tres" id="2_wm14o"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_855nu"]
+radius = 1.0
+height = 2.0
+radial_segments = 24
+rings = 12
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_5wtyy"]
+points = PackedVector3Array(1.5, 9.526279, 0, 1.2135255, 9.526279, 0.64656377, 0.4635255, 9.526279, 1.0461622, -0.4635255, 9.526279, 1.0461622, -1.2135255, 9.526279, 0.64656377, -1.5, 9.526279, 1.3471115e-16, -1.2135255, 9.526279, -0.64656377, -0.4635255, 9.526279, -1.0461622, 0.4635255, 9.526279, -1.0461622, 1.2135255, 9.526279, -0.64656377, 2.598076, 5.5, 0, 2.101888, 5.5, 1.1198814, 0.8028497, 5.5, 1.812006, -0.8028497, 5.5, 1.812006, -2.101888, 5.5, 1.1198814, -2.598076, 5.5, 2.3332655e-16, -2.101888, 5.5, -1.1198814, -0.8028497, 5.5, -1.812006, 0.8028497, 5.5, -1.812006, 2.101888, 5.5, -1.1198814, 3, 6.735558e-16, 0, 2.427051, 6.735558e-16, 1.2931275, 0.927051, 6.735558e-16, 2.0923245, -0.927051, 6.735558e-16, 2.0923245, -2.427051, 6.735558e-16, 1.2931275, -3, 6.735558e-16, 2.694223e-16, -2.427051, 6.735558e-16, -1.2931275, -0.927051, 6.735558e-16, -2.0923245, 0.927051, 6.735558e-16, -2.0923245, 2.427051, 6.735558e-16, -1.2931275, 2.598076, -5.5, 0, 2.101888, -5.5, 1.1198814, 0.8028497, -5.5, 1.812006, -0.8028497, -5.5, 1.812006, -2.101888, -5.5, 1.1198814, -2.598076, -5.5, 2.3332655e-16, -2.101888, -5.5, -1.1198814, -0.8028497, -5.5, -1.812006, 0.8028497, -5.5, -1.812006, 2.101888, -5.5, -1.1198814, 1.5, -9.526279, 0, 1.2135255, -9.526279, 0.64656377, 0.4635255, -9.526279, 1.0461622, -0.4635255, -9.526279, 1.0461622, -1.2135255, -9.526279, 0.64656377, -1.5, -9.526279, 1.3471115e-16, -1.2135255, -9.526279, -0.64656377, -0.4635255, -9.526279, -1.0461622, 0.4635255, -9.526279, -1.0461622, 1.2135255, -9.526279, -0.64656377, 0, 11, 0, 0, -11, 0)
+
+[node name="StandingStone" type="StaticBody3D" unique_id=1407176289]
+collision_mask = 0
+
+[node name="Stone" type="MeshInstance3D" parent="." unique_id=740595842]
+transform = Transform3D(2.9962509, -0.54977083, 0, 0.14993751, 10.986253, 0, 0, 0, 2.2, 0, 7.5, 0)
+material_override = ExtResource("1_wgdk3")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="StoneShape" type="CollisionShape3D" parent="." unique_id=1503680702]
+transform = Transform3D(0.99875027, -0.04997917, 0, 0.04997917, 0.99875027, 0, 0, 0, 1, 0, 7.5, 0)
+shape = SubResource("ConvexPolygonShape3D_5wtyy")
+
+[node name="Lichen" type="MeshInstance3D" parent="." unique_id=1604961328]
+transform = Transform3D(1.8, 0, 0, 0, 0.6, 0, 0, 0, 1.5, 0.6, 17.4, 0.2)
+material_override = ExtResource("2_wm14o")
+mesh = SubResource("SphereMesh_855nu")
+
+[node name="Lichen2" type="MeshInstance3D" parent="." unique_id=1995402094]
+transform = Transform3D(1.2, 0, 0, 0, 1.6, 0, 0, 0, 0.4, -1.5, 11, -1.7)
+material_override = ExtResource("2_wm14o")
+mesh = SubResource("SphereMesh_855nu")
