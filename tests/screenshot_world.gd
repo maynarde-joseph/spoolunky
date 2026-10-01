@@ -30,7 +30,7 @@ const HOLLOWS_VIEWS := {
 	"ossuary": [Vector3(-86.0, -14.0, -5.0), Vector3(-92.0, -22.0, -16.0)],
 	"crypt_way": [Vector3(-82.0, -18.0, -12.0), Vector3(-42.0, -19.0, -12.0)],
 	"sunken_cells": [Vector3(-17.0, -14.0, -1.0), Vector3(-36.0, -22.0, -20.0)],
-	"rat_kings_hall": [Vector3(-2.0, -11.0, 2.0), Vector3(14.0, -21.0, -18.0)],
+	"rat_kings_hall": [Vector3(12.0, -10.0, 2.5), Vector3(12.0, -21.0, -16.0)],
 	"undergate": [Vector3(15.0, -13.0, 16.0), Vector3(4.0, -18.0, 7.0)],
 }
 
