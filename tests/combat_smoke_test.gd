@@ -42,6 +42,7 @@ func _sections() -> Array[Callable]:
 		_test_a_summon_calls_more,
 		_test_a_stun_ends_an_attack,
 		_test_the_drill_mosquito,
+		_test_the_blade_rat,
 	]
 
 
@@ -380,6 +381,33 @@ func _test_the_drill_mosquito() -> void:
 	check(mosquito.global_position.distance_to(from) > 3.0,
 		"having come the whole way in one go (%.1fm)" % mosquito.global_position.distance_to(from))
 	check(not spider.climb.is_attached(), "and it throws you")
+
+
+## The Blade Rat's slash goes through your silk as well as through you: a line
+## between you is no shield from it.
+func _test_the_blade_rat() -> void:
+	await _arena()
+	var kind := _species("blade_rat")
+	if not _kit(kind, "slash", CreatureAttack.Kind.SWEEP):
+		return
+	var at := _centre() + Vector3(1.4, 0.0, 0.0)
+	var floor_y := spider.global_position.y - 0.2
+	var line := WebStrand.spin(pattern_named("frame_line"),
+		Vector3(at.x - 0.7, floor_y, at.z - 1.0), Vector3(at.x - 0.7, floor_y, at.z + 1.0), 1.0)
+	line.place_in(webs)
+	await physics_frame
+	var rat := _put(kind, Vector3(1.4, 0.3, 0.0))
+	rat.attack_spider(spider)
+	var health := spider.health
+	var slashed: bool = await wait_until(func() -> bool:
+		return _using(rat, "slash") and rat.fighter.beat == CreatureFighter.Beat.RECOVER, 120)
+	if not check(slashed, "a step off, it slashes"):
+		return
+	await run_frames(2)
+	check(spider.health < health - 4.0,
+		"and the slash lands (%.1f -> %.1f)" % [health, spider.health])
+	check(not is_instance_valid(line) or line.is_queued_for_deletion(),
+		"and goes through the line between you on the way")
 
 
 # --- helpers ------------------------------------------------------------
