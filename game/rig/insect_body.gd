@@ -122,6 +122,17 @@ const LEG_PARTS := ["Femur", "Tibia", "Tarsus"]
 @export var flap_centre := 10.0
 
 
+@export_group("Glow")
+
+## How much of the abdomen, back from its tip, gives off light — a firefly's
+## lantern — as a share of its length. Zero for none.
+@export_range(0.0, 1.0) var lantern := 0.0
+@export var lantern_colour := Color(0.82, 1.0, 0.36)
+## How brightly: enough to bloom in the dark, where the light is what you see of
+## it.
+@export var lantern_glow := 1.6
+
+
 @export_group("Walking")
 
 ## How far the body goes, in body radii, while each set of three legs takes a step.
@@ -291,11 +302,13 @@ func _wing(hind: bool, side: float) -> Dictionary:
 # --- the mesh -----------------------------------------------------------------
 
 ## One mesh in three surfaces: the body in its flat colours, the eyes glossy, and
-## the wings drawn from both sides and, unless they are coloured, see-through.
+## the wings drawn from both sides and, unless they are coloured, see-through — and
+## a fourth for a lantern, if it has one, giving off its own light.
 func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 	var body := RigKit.begin()
 	var shine := RigKit.begin()
 	var blades := RigKit.begin()
+	var light := RigKit.begin()
 	var at := _layout()
 	var rod := RigKit.Cut.new(8, 1, 3)
 	var backward := Transform3D(RigKit.along(Vector3.BACK, Vector3.RIGHT), Vector3.ZERO)
@@ -324,6 +337,14 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 	var edges := _band_edges()
 	RigKit.lathe(body, skeleton, hind, tail,
 		RigKit.ovoid(abdomen, abdomen_point, 18, _band_paint(edges), edges), 18)
+	if lantern > 0.0:
+		# The end of the abdomen again, a shade bigger, over the top of it: from
+		# where the lantern starts back to the tip.
+		var start := length * (1.0 - 2.0 * lantern)
+		var rows := RigKit.ovoid(abdomen * 1.04, abdomen_point, 24, RigKit.solid(lantern_colour),
+			PackedFloat32Array([start])).filter(
+			func(row: Array) -> bool: return float(row[0]) >= start - 0.00001)
+		RigKit.lathe(light, skeleton, hind, tail, rows, 18)
 	if cerci > 0.0:
 		for side in [-1.0, 1.0]:
 			var out := Transform3D(RigKit.along(Vector3(side * 0.4, 0.15, 1.0), Vector3.RIGHT),
@@ -383,9 +404,10 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 				size.x, size.y, hind_wing_broadest if back == 1 else wing_broadest, wing_colour,
 				wing_rim)
 
-	return RigKit.commit([body, shine, blades], [RigKit.shell_material(0.75, 0.0, 0.3),
+	return RigKit.commit([body, shine, blades, light], [RigKit.shell_material(0.75, 0.0, 0.3),
 		RigKit.eye_material(eye_colour, eye_colour, 0.15),
-		RigKit.membrane_material(wing_colour.a < 0.99 or wing_rim.a < 0.99)])
+		RigKit.membrane_material(wing_colour.a < 0.99 or wing_rim.a < 0.99),
+		RigKit.glow_material(lantern_colour, lantern_glow)])
 
 
 ## Where the bands on the abdomen start and stop, along it: from a third of the

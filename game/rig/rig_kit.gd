@@ -456,6 +456,17 @@ static func membrane_material(see_through: bool, roughness := 0.35) -> StandardM
 	return material
 
 
+## Gives off its own [param colour], [param energy] strong: a firefly's lantern.
+static func glow_material(colour: Color, energy := 3.0) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = colour
+	material.roughness = 0.6
+	material.emission_enabled = true
+	material.emission = colour
+	material.emission_energy_multiplier = energy
+	return material
+
+
 ## Glossy, with a faint glow of [param shine] so a head can be found across a
 ## dark room.
 static func eye_material(shine: Color, albedo := Color(0.02, 0.02, 0.025),
