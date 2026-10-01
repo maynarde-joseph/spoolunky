@@ -12,27 +12,30 @@ foxes, and what is not eaten goes home and breeds.
 What you eat changes what you are: every meal is a chance to take something from
 it — wings, armour, venom — and the bigger it was next to you, the better the
 odds. And what you are decides what you can cast: the thrown web is the first
-spell, and venom, a whirl of water and lightning open as you grow, each working
-off the others and off your silk.
+spell, and venom, a whirl of water, lightning and fire open as you grow, each
+working off the others and off your silk.
 
-The project opens somewhere else now, though: **the Hollows**, a prototype of a
-second shape for the game. A handful of dungeons pressed together into one world
-the way a souls-like's is — a shrine hall at the middle, a ruined courtyard, a
-graveyard, a library, a tower and an undercroft round it, joined in loops with
-shortcuts you open from the far side. Everything in it is hostile and fights back
-with attacks you can learn to read; the spider is one size the whole way through;
-and there is a miniboss sealed in its hall and a main boss that walks a beat.
-It is a greybox on purpose: it is there to find out whether the shape is fun.
+The project opens somewhere else now, though: **the Hollow Wood**, a prototype of a
+second shape for the game. A stretch of old forest floor under the sky with ruins
+standing in it — a ring of standing stones where you wake, a ruined court, a walled
+graveyard, a chapel with its roof fallen in, a watchtower on a hill, a barrow dug
+into a mound, and a mire — each a place you walk up to, scout from outside and go
+into. Everything in it is hostile and fights back with attacks you can learn to
+read, and the way to beat a thing is the way to catch a monster: wear it down,
+then wrap it. The spider is one size the whole way through, with every spell from
+the start; there is a miniboss sealed in the barrow and a main boss that flies the
+rounds of the whole wood. The structures are greybox on purpose: it is there to
+find out whether the shape is fun.
 
 The full pitch — the loop, the size tiers, the world and what lives in it, the
-trap catalogue, and the Hollows (§12) — is in [`docs/DESIGN.md`](docs/DESIGN.md).
+trap catalogue, and the Hollow Wood (§12) — is in [`docs/DESIGN.md`](docs/DESIGN.md).
 
 ## Where things are
 
 ```
 game/
   data/      web patterns, devices, size tiers, traits, spells, creatures and
-             their bodies, and the Hollows' hostiles and their attacks (plain
+             their bodies, and the hostiles and their attacks (plain
              resources — edit the numbers)
   web/       procedural silk geometry and the webs themselves
   player/    the spider, one node per job: growth, climbing, the camera, the
@@ -46,16 +49,16 @@ game/
              mind every creature in it has
   rig/       bodies: bones, meshes skinned to them, and the motion that poses them
   ui/        HUD
-  world/     the Hollows, the hunting ground and the gym, the kit and the paints
-             they are built from, the props they are furnished with, day and
-             night, gates, and the Hollows' shrines, marks, shortcuts and lair
+  world/     the Hollow Wood, the hunting ground and the gym, the kit and the
+             paints they are built from, the props they are furnished with, day
+             and night, gates, and the shrines, marks, shortcuts and lair
 tools/       the bakes that turn builders into scenes, and the tab check
 tests/       seven headless suites and screenshot tools
   support/   what the suites share: the verdict, and the arena a web check runs in
 addons/character-controller/   the movement template the spider is built on
 ```
 
-The project opens the Hollows, `game/world/hollows.tscn`. The hunting ground,
+The project opens the Hollow Wood, `game/world/hollow_wood.tscn`. The hunting ground,
 `game/world/hunting_ground.tscn`, is the other game, and opening it in the editor
 and pressing F6 plays it. The sandbox the web, spell and combat suites run in is the
 character-controller example level
@@ -84,7 +87,7 @@ one kept to what the keys do today.
 | **Right Mouse** | **cast what is in hand** — the web, to start with: tap, or hold to wind it up |
 | **Q** | the next spell you have — growing, and what you eat, opens more |
 | **E** | evolution — what you are, and your odds on what eating could make you |
-| **F** | wrap caught prey, then drain it (also re-arms a sprung snare). In the Hollows a meal mends you, and at a shrine **F** rests |
+| **F** | wrap caught prey, then drain it (also re-arms a sprung snare). In the Hollow Wood a meal mends you, and at a shrine **F** rests |
 | **Y** | **put a line on a bundle and drag it along** — again to drop what you're carrying |
 | **X** | pull down the web you're looking at, for half the silk back — or pick a device back up |
 | **G** | wire two things together — web or device, press on each end |
@@ -571,35 +574,38 @@ up in the build wheel — the library scans that folder. The fields that matter
 most are `shape` (strand or net), `trigger` (passive, alert, snare or lure),
 `unlock_stage`, the three silk costs, and `hold_strength` / `durability`.
 
-## The Hollows
+## The Hollow Wood
 
-`game/world/hollows.tscn` is what the project opens: dungeons pressed together
-into one world, the way a souls-like's is. The spider is a Huntsman the whole way
-through — eating here neither grows it nor passes anything on — and nothing mends
-it but a shrine and a meal: drink something you have wrapped and you get some of
-yourself back.
+`game/world/hollow_wood.tscn` is what the project opens: a stretch of old forest
+floor, out under a grey late sky, with ruins standing in it. Ferns, toadstools,
+fallen leaves and the old trees fill the ground between the places, and worn paths
+run from the clearing to all of them. The spider is a Huntsman the whole way
+through — eating here neither grows it nor passes anything on — every spell is
+open from the start, and nothing mends it but a shrine and a meal: drink something
+you have wrapped and you get some of yourself back.
 
-* **The Shrine Hall** is the hub, and the only place with nothing hostile in it.
-  You wake here first. North of it is **the Ruined Courtyard** — a dry fountain,
-  a broken colonnade, fallen walls — and east of it **the Graveyard**, rows of
-  stones and two crypts. The courtyard and the graveyard are joined, so the first
-  loop is open from the start.
-* **The Library**, west of the courtyard: tall shelves in aisles and a gallery
-  with a shrine on it. Its gate back to the hall only opens from the library side:
-  touch the lever there and the long way round is short from then on.
-* **The Tower**, north of the courtyard: four floors with a hole in each to climb
-  through, and a shrine in the belfry at the top.
-* **The Undercroft**, down the stair under the library's gallery: the ossuary, the
-  crypt way, the sunken cells, and **the Rat King's hall**. Step into the hall
-  with the king alive and veils drop over the way in; beat it and the way on opens
-  to the undergate, where a lever opens the hatch in the Shrine Hall's floor — the
-  way home.
+* **The Shrine Clearing**, in the south: a ring of standing stones round a dais and
+  a shrine. You wake here, and nothing hostile comes in.
+* **The Ruined Court**, in the middle: old paving, arches and broken walls, columns
+  and a dry fountain. Blade rats and charger beetles, and the wyrm likes it here.
+* **The Graveyard**, east: a walled yard of stones and dead trees, frogs among the
+  stones and mosquitoes over them, and a crypt with a shrine inside.
+* **The Chapel**, west: a long hall with its roof fallen in over the south end,
+  tall shelves in aisles, bats and wasps, and a gallery with a shrine on it. Its
+  great door is open; its side door, towards the clearing, opens only from inside.
+* **The Watchtower**, north, on a hill: four floors with a hole in each, open to
+  the sky at the top, where there is a shrine. Its door is shut and opens from the
+  inside — so the way in is up its outside and down through it.
+* **The Barrow**, north-east: a hall dug into a mound at the end of a cutting, with
+  a shrine before it. **The Rat King** keeps it: step inside with the king alive
+  and a veil drops over the door until one of you is beaten.
+* **The Mire**, south-west: a sunken bog of reeds and lily pads, and frogs.
 
 **Shrines.** Touch one and it is lit, and it is where you wake when you are
 driven off. Rest at one (**F**) and you are whole again — and every hostile is back
 on its feet at its mark. Driven off, the same: you wake at the last shrine you lit
 and the place has stirred. Your webs stay. A boss that beat you is back at its
-post; one you have beaten stays beaten. Shortcuts, once open, stay open.
+post; one you have beaten stays beaten. A door, once opened, stays open.
 
 **What lives here fights back.** Every attack is told before it lands — the
 creature stops, turns to you, and a ring or a line in the attack's colour shows
@@ -615,12 +621,20 @@ to put silk on it. Each hostile has a bite and one move of its own:
 | **Tongue Frog** | a tongue that drags you to its mouth | anything between you takes the tongue |
 | **Screech Bat** | a ring of sound that throws and dazes you | be outside the ring |
 
-And two bosses, named across the foot of the screen with a bar of the fight they
-have left: **the Rat King**, sealed in its hall, which whirls and cuts every
-thread round it, calls blade rats and pounces; and **the Hollow Wyrm**, which keeps
-to no room but walks a beat through the courtyard and the graveyard, and dives,
-spits fire, tears silk down with a gust and sweeps with its tail. Beating the Rat
-King gives you what it kept: Wing Buds, a glide and the key to Summon Lightning.
+**Catching them is like catching a monster.** Everything has health, shown over a
+hostile's head with a thin bar of how much of it is wrapped under it. The lower its
+health, the more of the way each hit of silk gets you — at full health a blade rat
+takes three orb shots; with nothing left, one. **Firebolt** is what wears it down,
+and silk burns: a bolt takes a fifth of its harm off something bare, and all of it
+off something wrapped all the way or hanging in a web. So the loop is wrap, burn,
+wrap.
+
+And two bosses, named across the foot of the screen with their health and wrap:
+**the Rat King**, sealed in the Barrow, which whirls and cuts every thread round
+it, calls blade rats and pounces; and **the Hollow Wyrm**, which keeps to no place
+but flies the rounds of the whole wood, and dives, spits fire, tears silk down
+with a gust and sweeps with its tail. Beating the Rat King gives you what it kept:
+Wing Buds, a glide.
 
 **The line grapple** is one key away: **G** switches from the pull to a grapple
 that lays a line from your feet to where you point and stands you on it. Walking a
@@ -707,9 +721,9 @@ on it, and then fewer hares.
 
 ## Levels are scenes, not scripts
 
-`hollows.tscn`, `hunting_ground.tscn` and `testbed.tscn` hold their geometry as
-real nodes, so anything in them can be selected and moved in the editor. They did
-not start that way — each was assembled in `_ready()` from `hollows.gd`,
+`hollow_wood.tscn`, `hunting_ground.tscn` and `testbed.tscn` hold their geometry
+as real nodes, so anything in them can be selected and moved in the editor. They
+did not start that way — each was assembled in `_ready()` from `hollow_wood.gd`,
 `hunting_ground.gd` and `testbed.gd`, which is quick to write and impossible to
 tweak, because there is nothing in the editor to tweak.
 
@@ -717,12 +731,13 @@ Those scripts are still there as the **generator of record**. To throw the
 hand-placed version away and build the shape again from scratch:
 
 ```sh
-godot --headless --script res://tools/bake_level.gd -- testbed hunting_ground hollows --force
+godot --headless --script res://tools/bake_level.gd -- testbed hunting_ground hollow_wood --force
 ```
 
-What the Hollows hold that is not geometry — shrines, the marks hostiles stand up
-at, shortcut gates, the lair — is nodes with scripts of their own, which survive
-the bake and pick their pieces back up when the scene is loaded.
+What the Hollow Wood holds that is not geometry — shrines, the marks hostiles
+stand up at, the doors that open from inside, the lair — is nodes with scripts of
+their own, which survive the bake and pick their pieces back up when the scene is
+loaded.
 
 Without `--force` it looks at a baked level and leaves it alone, so running it by
 accident costs nothing.
@@ -785,21 +800,22 @@ back, in a plain box room:
 godot --headless --script res://tests/climb_smoke_test.gd
 ```
 
-A third loads the hunting ground, the gym and the Hollows and checks the levels
-themselves — that the seven places are all there, none inside another, and every
-size has one built for it; that there is a sun and a sky, and a day and a night to
-drive them; that every species has a den somewhere, every place has forage, and
-everything that roams has haunts to roam between; that there is ground under every
-place and hills round the edge; that the spider starts in the camp, on its floor,
-with the HUD naming it; that the Mere is full of water and nothing in it comes
-out; that every prop is something to stand on; in the gym, that every station is
-signed and the spider lands on the floor rather than through it; and in the
-Hollows, that the spider is held at a Huntsman, every place is there and every
-one but the hall, the belfry and the undergate has something hostile in it, one
-shrine is lit and the rest are cold, the open ways are open and the two shortcuts
-shut until their levers are touched from the far side, the Rat King is sealed in
-its hall with the way on shut, the wyrm's beat can be flown end to end, and being
-driven off wakes you whole at the shrine:
+A third loads the hunting ground, the gym and the Hollow Wood and checks the
+levels themselves — that the seven places are all there, none inside another, and
+every size has one built for it; that there is a sun and a sky, and a day and a
+night to drive them; that every species has a den somewhere, every place has
+forage, and everything that roams has haunts to roam between; that there is ground
+under every place and hills round the edge; that the spider starts in the camp, on
+its floor, with the HUD naming it; that the Mere is full of water and nothing in it
+comes out; that every prop is something to stand on; in the gym, that every
+station is signed and the spider lands on the floor rather than through it; and in
+the Hollow Wood, that the spider is held at a Huntsman with every spell open, every
+place is there with ground under it and every one but the clearing and the belfry
+has something hostile in it, one shrine is lit and the rest are cold, the chapel,
+the crypt and the barrow can be walked into while the two doors that open from
+inside are shut until their levers are touched, the Rat King keeps the Barrow, the
+wyrm's beat can be flown end to end, and being driven off wakes you whole in the
+clearing:
 
 ```sh
 godot --headless --script res://tests/world_smoke_test.gd
@@ -818,7 +834,8 @@ godot --headless --script res://tests/creature_smoke_test.gd
 A fifth casts every spell in the sandbox: the web as the first of them, what
 opens the rest, the strip that shows them, and what each does — to what it lands
 on, and to the other spells and the silk it meets. Lightning run down a wire to a
-wasp across the room, a whirl filling a web, venom poured into water:
+wasp across the room, a whirl filling a web, venom poured into water, fire that
+burns harder the more silk is on what it hits, and the whole book opened at once:
 
 ```sh
 godot --headless --script res://tests/spell_smoke_test.gd
@@ -842,8 +859,9 @@ can see you; that every kind of attack is told before it lands and does what it
 says — a lunge goes where you were and a drill sticks in the wall, a web stops a
 spit, a tongue drags you in, a burst throws and dazes, a sweep cuts silk, a
 summon calls more and no more than it may; that a spitter keeps its distance;
-that each of the six hostiles and both bosses does its own thing; and that the
-Hollows' machinery holds — a meal mends where waiting does not, a shrine is where
+that each of the six hostiles and both bosses does its own thing; that a hurt
+thing is an easier catch and wears its health over its head; and that the
+machinery holds — a meal mends where waiting does not, a shrine is where
 you wake and resting stirs every mark, a gate opens from its far side, a lair
 seals until its keeper is beaten, and a boss's name is on the screen while it
 fights you:
@@ -925,11 +943,11 @@ xvfb-run -a godot --rendering-driver opengl3 --resolution 1280x720 \
     --path . --script res://tests/screenshot_world.gd
 ```
 
-Put `hollows` first to photograph the Hollows instead — the hall, the courtyard
-from above and from its floor, the graveyard, the library and down an aisle, the
-tower and the belfry, and the undercroft room by room:
+Put `wood` first to photograph the Hollow Wood instead — the clearing, the court,
+the graveyard and its crypt, the chapel outside and in, the watchtower and its
+belfry, the barrow outside and in, the mire, and the wood from above:
 
 ```sh
 xvfb-run -a godot --rendering-driver opengl3 --resolution 1280x720 \
-    --path . --script res://tests/screenshot_world.gd -- hollows
+    --path . --script res://tests/screenshot_world.gd -- wood
 ```
