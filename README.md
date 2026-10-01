@@ -1,16 +1,22 @@
 # Spoolunky
 
-A first-person spider game in Godot 4.6. You start the size of a coin on the floor
-of a garden shed, spin webs to catch whatever walks into them, and eat your way
-down the drain, through the sewers and out into the park, until you are the
-biggest thing on the lake. What you eat changes what you are: every meal is a
-chance to take something from it — wings, armour, venom — and the bigger it was
-next to you, the better the odds. And what you are decides what you can cast:
-the thrown web is the first spell, and venom, a whirl of water and lightning
-open as you grow, each working off the others and off your silk.
+A first-person spider game in Godot 4.6, set in a wild valley that gets on with
+its life whether you are in it or not. You start the size of a coin in a hollow
+stump at the valley's edge, spin webs to catch whatever walks into them, and eat
+your way across it — through the ferns, into the caves under the great tree's
+roots, out over the glade and up into the ruins — until the wyvern circling the
+crag is something you could eat. Everything out there is eating something too:
+hares graze the glade, foxes hunt the hares, wolves come out at dusk for the
+foxes, and what is not eaten goes home and breeds.
 
-The full pitch — the loop, the size tiers, the world, the trap catalogue — is in
-[`docs/DESIGN.md`](docs/DESIGN.md).
+What you eat changes what you are: every meal is a chance to take something from
+it — wings, armour, venom — and the bigger it was next to you, the better the
+odds. And what you are decides what you can cast: the thrown web is the first
+spell, and venom, a whirl of water and lightning open as you grow, each working
+off the others and off your silk.
+
+The full pitch — the loop, the size tiers, the world and what lives in it, the
+trap catalogue — is in [`docs/DESIGN.md`](docs/DESIGN.md).
 
 ## Where things are
 
@@ -25,21 +31,24 @@ game/
   spells/    what spells leave in the world: a whirl of water, a strike of
              lightning, the bloom where one lands
   prey/      things to catch, and something to spawn them
+  ecosystem/ what makes the valley live: the clock, dens, forage, haunts, and the
+             mind every creature in it has
   rig/       bodies: bones, meshes skinned to them, and the motion that poses them
   ui/        HUD
-  world/     the world and the gym, the kit and the paints they are built from,
-             the props they are furnished with, and the gates between places
+  world/     the hunting ground and the gym, the kit and the paints they are built
+             from, the props they are furnished with, day and night, and gates
 tools/       the bakes that turn builders into scenes, and the tab check
-tests/       five headless suites and screenshot tools
+tests/       six headless suites and screenshot tools
   support/   what the suites share: the verdict, and the arena a web check runs in
 addons/character-controller/   the movement template the spider is built on
 ```
 
-The sandbox is the character-controller example level
-(`addons/character-controller/example/main/level.tscn`), which is the project's
-main scene. It has the spider, a HUD, a `Webs` container and a prey spawner
-dropped into it. A `Devices` container is made on demand the first time you put
-something down.
+The game is the hunting ground, `game/world/hunting_ground.tscn`, and it is what
+the project opens. The sandbox the web and spell suites run in is the
+character-controller example level
+(`addons/character-controller/example/main/level.tscn`), with the spider, a HUD, a
+`Webs` container and a prey spawner dropped into it. A `Devices` container is made
+on demand the first time you put something down.
 
 ## Controls
 
@@ -363,46 +372,83 @@ An insect's is an `InsectBody`, where every size, colour and part is a number, a
 a species points at one with its `body` field. One without is still drawn as the
 old placeholder ball.
 
-Past the insects are the creatures that live somewhere in particular — the sewers,
-the park, the lake — and their species say where with a `habitat`. The insects turn
-up anywhere, and a spawner left to choose its own stock takes only them; a rat is
-put down only where a stock names it, so a room built to test webs in does not
-fill with dogs and sharks. They are built to the tier they are food for, so a rat
-is the size of a Sewer Widow and a shark is bigger than anything but the
-Architect, and a big one bites from the edge of its body rather than from six of
-its own widths away, which was a margin for a wasp and was the far bank for a
-shark. The ones that swim say `swims` as well as `flying`, and keep all of
-themselves under the top of the water they are in: steering at a lure on the bank
-or a spider on a boat, they follow along underneath. Their bodies:
+In the hunting ground the insects keep hours: moths, mosquitoes and fireflies come
+out at night, and bees, butterflies, flies and wasps by day.
+
+Past the insects are the creatures of the wilds, whose species say so with a
+`habitat` of `"wilds"`. The insects turn up anywhere, and a spawner left to choose
+its own stock takes only them; a wolf is only put down where a den or a spawner
+names it, so a room built to test webs in does not fill with wolves and sharks.
+Each is built to the tier it is food for, so a rat is the size of a Glade Widow
+and the leviathan is bigger than anything but the Architect, and a big one bites
+from the edge of its body rather than from six of its own widths away, which was
+a margin for a wasp and was the far bank for a shark.
+
+| | Size | Fight | Eats | Out | Lives |
+|---|---|---|---|---|---|
+| **Firefly** | 1 | 3 | flowers | night | the fern floor, drifting low |
+| **Cockroach** | 3 | 22 | carrion, fungus | night | the Rootways and the ruins |
+| **Marsh Frog** | 4 | 27 | insects | always | the banks of the Mere |
+| **Moss Lizard** | 4 | 29 | insects | day | the ruins' walls |
+| **Bat** | 4 | 32 | insects | night | under the great tree's roots |
+| **Songbird** | 4 | 31 | insects, berries | day | the glade's trees |
+| **Rat** | 5 | 43 | carrion, berries, fungus, insects | night | the Rootways and the ruins |
+| **Hare** | 6 | 53 | grass, flowers | always | burrows in the glade |
+| **Raven** | 6 | 55 | carrion, insects, berries | day | the ruined tower and the crag |
+| **Fish** | 6 | 50 | weed | always | the Mere |
+| **Fox** | 7 | 70 | hares, rats, frogs, lizards, songbirds, berries, carrion | night | an earth in the glade |
+| **Mire Kraken** | 7 | 98 | fish, carrion | night | the deep of the Mere |
+| **Glade Stag** | 9 | 113 | grass, flowers, moss, berries | day | the glade, and wherever it roams |
+| **Bristleback Boar** | 9 | 136 | fungus, berries, grass, carrion | always | the ruins, and wherever it roams |
+| **Dusk Wolf** | 9 | 120 | stags, boars, hares, foxes, carrion | night | the foot of the tower, and wherever it roams |
+| **Mere Leviathan** | 9 | 126 | fish, the kraken, carrion | always | the Mere, and never out of it |
+| **Crag Wyvern** | 12 | 280 | stags, boars, wolves, foxes, hares, carrion | day | its nest on the crag; it hunts the whole valley |
+
+The ones that swim say `swims` as well as `flying`, and keep all of themselves
+under the top of the water they are in: steering at a lure on the bank or a
+spider on the island, they follow along underneath. Their bodies:
 
 * the **cockroach**, flat and wide under the shield that hides its head, with
   its wings folded flat as its back and feelers longer than it is;
+* the **firefly**, a dark beetle with an orange shield over its head and a
+  lantern at the tip of its body that glows yellow-green in the dark;
 * the **rat**, the first `BeastBody` — anything furry on four legs: a body, a head
   with a snout, ears and a jaw that opens, four legs and a tail, drawn the
   minimal way: grey, with round pink ears and a long bare tail. It trots two legs
   at a time, shakes its head with its mouth open when it is caught, and curls up
   small once it is wrapped;
+* the **frog** and the **lizard**, the rat's body with the ears left off and the
+  legs splayed out to the sides: the frog squat, green and tailless, with its eyes
+  up on top of its head and a wide mouth; the lizard long, low and mossy, with a
+  tail longer than it is. Caught, each kicks out with all four legs; wrapped, the
+  lizard curls round its own tail;
+* the **hare**, long-legged and brown, with long ears standing up and a white
+  scut; the **fox**, rust-red, with black ears, a long thin snout and a brush
+  tipped in white; the **wolf**, grey and heavy, with its tail held low; the
+  **boar**, dark, deep-bodied and short-legged, its head set low with two pale
+  tusks curving up out of its jaw; and the **stag**, slender, on long legs, its
+  head held up on a long neck under a crown of antlers;
 * the **bat**, the first `WingedBody` — anything that flies on two wings of two
   bones each, an arm and a hand, drawn the minimal way: dark brown, with tall
   ears and wings of skin scalloped between thin finger bones. Its hands beat a
   moment behind its arms; on the ground its wings pleat up along its sides;
   caught, it flaps in bursts; wrapped, it pulls them round itself like a cloak;
-* the **cat**, on the same body as the rat: ginger all over, with pointed ears,
-  green eyes and a tail held up in a hook. Caught, its ears go flat;
-* the **dog**, a third: cream, with floppy brown ears and a black nose. It pants
-  and wags as it trots;
-* the **parrot**, the bat's body in feathers: a scarlet macaw, red, with yellow
-  coverts over blue flight feathers and a pale hooked beak. On the ground it
-  stands up straight on its perch and folds its wings down its sides;
+* the **songbird** and the **raven**, the bat's body in feathers: the songbird
+  small and brown, quick-winged, with a short yellow beak; the raven black all
+  over, with long fingered wings and a heavy beak. On the ground a bird sits up
+  on its perch and folds its wings down its sides;
+* the **wyvern**, the bat's body made huge: a long head with pale horns sweeping
+  back off it and curling down, vast brown wings of skin on long fingers, orange
+  eyes, and a long whip of a tail;
 * the **fish**, the first `FishBody` — anything that swims with its tail,
-  drawn the minimal way: a goldfish, one smooth orange teardrop with flat fins.
-  It swims in a wave that runs down it from nose to tail; out of water it lies
-  on its side and flops when it tries to go anywhere; wrapped, it is bent double.
-  Swimming is flying, as far as a creature is concerned: it keeps itself up in
-  water the way a fly does in air, so a swimmer's species says `flying`;
-* the **shark**, on the fish's body: one grey, with a pointed snout, a tall
+  drawn the minimal way: one smooth orange teardrop with flat fins. It swims in
+  a wave that runs down it from nose to tail; out of water it lies on its side
+  and flops when it tries to go anywhere; wrapped, it is bent double. Swimming
+  is flying, as far as a creature is concerned: it keeps itself up in water the
+  way a fly does in air, so a swimmer's species says `flying`;
+* the **leviathan**, on the fish's body: one grey, with a pointed snout, a tall
   fin on its back, long fins at its sides and a tail with a long top lobe;
-* the **octopus**, an `OctopusBody`, its own kind, drawn the minimal way: a
+* the **kraken**, an `OctopusBody`, its own kind, drawn the minimal way: a
   head with two small eyes, a smooth mantle above it and eight tapering arms of
   four bones each, all one colour. Sitting, ripples run down its arms; swimming,
   it tips mantle-first and pulses, its arms opening wide and snapping shut;
@@ -513,43 +559,96 @@ most are `shape` (strand or net), `trigger` (passive, alert, snare or lure),
 
 ## The world
 
-`game/world/world.tscn` is the game's world: three places, one after another in
-one space, all to one scale — a metre is about fourteen of its units, so the shed
-is a shed and a rowing boat is a boat, and it is the spider that changes size.
+`game/world/hunting_ground.tscn` is the game: one wild valley, laid out the way a
+hunting ground is in the games it is named for — a camp to set out from, and round
+it the places things live, each its own country with its own creatures and its
+own danger. It is all to one scale — a metre is about fourteen of its units — and
+it is the spider that changes size.
 
-* **The Shed**, where a new spider starts: plank walls, a window with the sun
-  coming in, a workbench under a pegboard of tools, shelves of paint tins and
-  pots, the mower, a bulb with moths round it. The insects live here. The way on
-  is the iron **drain lid** in the floor, which gives to a Huntsman — or to a
-  Hollow Frame, which folds through its slots.
-* **The Sewers**, down the drain: a vaulted tunnel of grey stone under the park
-  with a channel of green water down it, walkways either side, and three
-  chambers — a pillared hall halfway with a pipe coming in, and the chamber
-  under the park where rungs go up to the **storm grate**, which gives to a Sewer
-  Widow or a Storm Rider. Rats, roaches and bats. The water is water: a spider
-  in it swims.
-* **The Park**, up through the grate onto the main path: lawns of trees, bushes
-  and flower beds, benches, and an animal area with an aviary for the parrots
-  and a dog run. Cats roam it and are bigger than you.
-* **The Lake**, the park's second half, through the railings at the end of the
-  path: an island with a bandstand, a jetty, and six rowing boats going round
-  the island. A spider standing in a boat goes round with it; silk with every end
-  on one boat goes with it, and silk tied from a boat to anything else snaps.
-  Fish and an octopus live round the island and a shark in the deep, and none of
-  them comes out of the water.
+* **The Camp**, at the south edge: a hollow stump open toward the valley, with
+  moss on its floor and a glowcap for a lamp. Nothing lives here and nothing comes
+  looking. It is where you start, and where you are put back if you fall out of
+  the world.
+* **The Fern Floor**, between the camp and the glade: ferns overhead, toadstools
+  with caps like roofs, pebbles that are boulders, fallen leaves, an anthill and a
+  puddle. Midges, flies, ants and beetles by day; moths and fireflies at night,
+  and mosquitoes over the puddle.
+* **The Rootways**, in the west: the great tree, three and a half metres through,
+  its roots arching over the hollow it stands in so that under each is a cave.
+  Shelf fungus up the bark to climb by, a hollow log to walk the length of, and
+  glowcaps lighting the caves at night. What lives here comes out in the dark:
+  roaches, rats, moths and beetles, and bats that hang under the roots by day.
+* **The Bloom Glade**, the open middle: a meadow in flower, with tall grass and
+  wildflowers to string silk between, brambles of berries, a ring of standing
+  stones, a wild hive and a wasps' nest. The busiest place in the valley by day —
+  bees and butterflies over the flowers and wasps hunting them, hares in the grass
+  and a fox after the hares, songbirds in the trees, and stags grazing all of it.
+* **The Old Ruins**, up on a shelf of ground in the north-west: broken walls round
+  a courtyard, a gateway, columns standing and fallen, a tower with its top broken
+  away, and in the courtyard a statue of a great spider. Lizards on the walls,
+  ravens on the tower, boars in the rubble, rats and roaches out of it at night,
+  and wolves denned at the tower's foot.
+* **The Mere**, in the east: a round lake with an island in it, a birch on the
+  island, lily pads and reeds. Fish graze the weed on its bottom, the Mire Kraken lies in the
+  deepest part, and the Mere Leviathan, which nothing hunts, goes where it likes in
+  all of it. Frogs sit on the banks, and stags and wolves come down to the shore.
+  The water is water: a spider in it swims, and nothing that lives in it comes out.
+* **Wyrm's Crag**, in the north: a rock tower weathered into ledges, with spires
+  standing off it and, in the bowl on top, the wyvern's nest of branches, bones
+  and three eggs. Nothing lives up there but ravens. The wyvern hunts the whole
+  valley.
+
+Each place is built for a stretch of the spider's sizes, smallest nearest the
+camp, so the way across the valley is the way up the sizes. But nothing shuts the
+way to any of it: what keeps a spiderling out of the crag is that the crag would
+eat it. Walk into a place and the HUD names it, and what size it was built for.
+
+## The valley is alive
+
+The hunting ground has an `Ecosystem` in it, which is what makes the creatures in
+it live rather than wander. A day goes round in twelve minutes, with the time in
+the corner of the HUD: the sun goes over and sets, the moon comes up after it, and
+the sky goes with them (`DayNight`). The colours the level was built with are its
+noon, and the rest of the day is worked out from them.
+
+* **Everything gets hungry**, at its own rate, and goes to find what it eats:
+  patches of forage — moss, toadstools, flowers, grass, berries — that it eats
+  down and that grow back slowly; something smaller, which it hunts down, kills and
+  eats where it fell; or anything dead, whoever killed it. Something hungry that
+  can see nothing to eat goes looking, further out each time.
+* **Everything is afraid** of what would eat it, and runs: from as far off as it
+  can see the thing if it is hunting, and only up close if it is not. A wary one
+  keeps clear of a spider big enough to eat it, too.
+* **Dens** put their creatures out when the valley opens and breed them on what
+  they eat: every meal is put by, and a new one is born when enough has been. A
+  den whose creatures go hungry dwindles, and one that is hunted out is found again
+  in the end by a stray of its kind.
+* **Everything keeps hours.** Out of them, a creature goes home and rests — out of
+  sight, if its den is a burrow. Moths, bats, rats, foxes and wolves come out at
+  night; bees, songbirds, stags and the wyvern by day.
+* **The big things roam** between haunts rather than keeping to the country round
+  their den, which is how a stag turns up in the ruins and why the wyvern is
+  sometimes over the glade. And they hold their ground: two that will not give way
+  to each other square up and fight, and the stronger usually wins. Both come out
+  of it hurt — slower, and weaker in a web — and anything hurt badly enough limps
+  home and rests until it has mended.
+
+None of it is scripted. A glade with too many hares on it is a glade with no grass
+on it, and then fewer hares.
 
 ## Levels are scenes, not scripts
 
-`world.tscn` and `testbed.tscn` hold their geometry as real nodes, so anything in
-them can be selected and moved in the editor. They did not start that way — both
-were assembled in `_ready()` from `world.gd` and `testbed.gd`, which is quick to
-write and impossible to tweak, because there is nothing in the editor to tweak.
+`hunting_ground.tscn` and `testbed.tscn` hold their geometry as real nodes, so
+anything in them can be selected and moved in the editor. They did not start that
+way — both were assembled in `_ready()` from `hunting_ground.gd` and `testbed.gd`,
+which is quick to write and impossible to tweak, because there is nothing in the
+editor to tweak.
 
 Those two scripts are still there as the **generator of record**. To throw the
 hand-placed version away and build the shape again from scratch:
 
 ```sh
-godot --headless --script res://tools/bake_level.gd -- testbed world --force
+godot --headless --script res://tools/bake_level.gd -- testbed hunting_ground --force
 ```
 
 Without `--force` it looks at a baked level and leaves it alone, so running it by
@@ -559,18 +658,19 @@ The world is built out of `WorldKit` solids — each one a mesh and a collider o
 the same shape, so everything you can see you can stand on and stick silk to —
 painted from the `Palette`, a few flat matte paints kept one to a file in
 `game/world/materials/`. Change a colour there and everything painted with it
-follows. The shapes the builder makes a point at a time — the sewer's arches,
-the lake's bowl — are kept by the bake in `game/world/meshes/`, one compressed
-file each, rather than written into the scene as numbers.
+follows. The ground is one height map, drawn in pieces and collided as one. The
+shapes the builder makes a point at a time — the valley's ground, the hollow log —
+are kept by the bake in `game/world/meshes/`, one compressed file each, rather
+than written into the scene as numbers.
 
-The things in it — sixty of them, from a hammer to a rowing boat — are **props**:
-each built in `game/world/props.gd` and baked into its own scene in
+The things in it — thirty-one of them, from an acorn to a fallen pillar — are
+**props**: each built in `game/world/props.gd` and baked into its own scene in
 `game/world/props/`, so the world holds instances of them and the editor has them
-to drag in. Like the levels, a prop that has a scene is left alone unless you
-say otherwise:
+to drag in. Like the levels, a prop that has a scene is left alone unless you say
+otherwise:
 
 ```sh
-godot --headless --path . --script res://tools/bake_props.gd -- --force bench
+godot --headless --path . --script res://tools/bake_props.gd -- --force fern
 ```
 
 One thing to know if you add to a level: **only `@export` properties survive being
@@ -578,8 +678,7 @@ saved into a scene.** A value set in code on a plain `var` is there while the
 builder runs and gone the moment it is baked — which is how the zones ended up
 measuring nothing and the gates stopped opening the first time round. And a
 change made *inside* an instanced scene is not saved either; what the builder
-hangs on a prop after putting it down — the words on a sign — is the one
-exception the bake keeps.
+hangs on a prop after putting it down is the one exception the bake keeps.
 
 ## The gym
 
@@ -613,13 +712,15 @@ back, in a plain box room:
 godot --headless --script res://tests/climb_smoke_test.gd
 ```
 
-A third loads the world and the gym and checks the levels themselves — that the
-places are all there, in order and joined up, each stocked with what lives in
-it; that the gates give at the sizes the tier table names and the shafts behind
-them are clear; that the water is water and nothing in the lake comes out of it;
-that the boats go round and carry what stands and is spun in them; that every
-prop is something to stand on; and in the gym, that every station is signed and
-the spider lands on the floor rather than through it:
+A third loads the hunting ground and the gym and checks the levels themselves —
+that the seven places are all there, none inside another, and every size has one
+built for it; that there is a sun and a sky, and a day and a night to drive them;
+that every species has a den somewhere, every place has forage, and everything
+that roams has haunts to roam between; that there is ground under every place and
+hills round the edge; that the spider starts in the camp, on its floor, with the
+HUD naming it; that the Mere is full of water and nothing in it comes out; that
+every prop is something to stand on; and in the gym, that every station is signed
+and the spider lands on the floor rather than through it:
 
 ```sh
 godot --headless --script res://tests/world_smoke_test.gd
@@ -644,8 +745,21 @@ wasp across the room, a whirl filling a web, venom poured into water:
 godot --headless --script res://tests/spell_smoke_test.gd
 ```
 
-Each prints a line per check and exits non-zero if any fail. Together they take
-about four minutes, most of it the web suite and the creatures.
+A sixth puts creatures in a bare arena with an `Ecosystem` and checks that they
+live: that they get hungry and graze, and stop when they are full; that a hunter
+hunts, kills and eats, and that what it hunts runs; that the dead are eaten by
+whatever eats carrion; that something hungry with nothing in sight goes looking;
+that swimmers and walkers keep to their own; that dens breed on what is eaten
+and are found again when they empty; that creatures keep their hours, roam
+between haunts, square up over ground, and limp home when they are hurt:
+
+```sh
+godot --headless --script res://tests/ecosystem_smoke_test.gd
+```
+
+Each prints a line per check and exits non-zero if any fail — and fails on any
+script error printed on the way, even one that did not fail a check. Together
+they take about five minutes, most of it the web suite and the creatures.
 
 The web suite puts its sections back to a bare spiderling in an empty room
 between each one, so nothing depends on what ran before it. To check that is
@@ -657,7 +771,7 @@ SPOOLUNKY_SHUFFLE=whatever godot --headless --script res://tests/web_smoke_test.
 ```
 
 They also run on every push: `.github/workflows/tests.yml` fetches the newest
-Linux build matching `GODOT_VERSION` and runs all five. Bump that one variable
+Linux build matching `GODOT_VERSION` and runs all six. Bump that one variable
 when the project moves to a new engine version — the workflow finds the build
 itself rather than holding a URL that rots.
 
@@ -705,9 +819,11 @@ xvfb-run -a godot --rendering-driver opengl3 --resolution 800x600 \
     --path . --script res://tests/screenshot_props.gd
 ```
 
-And the world from a set of named places — in the shed, down the sewer, at the
-grate, the pets' corner, the jetty, under the lake, from above. Name them after
-`--` to render only those, for instance `-- shed lake_boat`:
+And the hunting ground from a set of named places, each at an hour of its own —
+the camp, the fern floor, the caves under the great tree, the glade by day and at
+night, the ruins' gate, the Mere's shore, its island and under it, the Mere at
+dusk, the wyvern's nest, and the valley from above. Name them after `--` to render
+only those, for instance `-- camp glade_at_night`:
 
 ```sh
 xvfb-run -a godot --rendering-driver opengl3 --resolution 1280x720 \

@@ -1,8 +1,8 @@
 # Spoolunky — Design Document
 
-> You are a spider. You start the size of a coin on the floor of a garden shed.
-> You end the biggest thing in the park, hanging a web between the boats on
-> the lake. The only way up is to eat.
+> You are a spider. You start the size of a coin in a hollow stump at the edge
+> of a wild valley. You end the biggest thing in it, with the wyvern that hunts
+> the whole valley hanging in your web. The only way up is to eat.
 
 ---
 
@@ -13,13 +13,14 @@ A first-person predator sim about **building traps, not chasing prey**.
 You do not fight. You engineer. Your one verb is *silk*: you use it to build
 webs, bridges, triplines and snares, and you get it back by eating whatever
 those webs catch. Every meal makes you bigger, and being bigger is what opens
-the way out — not because the room rejects you, but because the drain lid is
-sprung for something heavier than you currently are.
+the valley — not because anything shuts you in, but because everything past the
+ferns is bigger than you, and eats spiders.
 
 The fantasy is **scale creep**. The rat that was a boss at size 3 is food at
 size 5. The world never changes; you do — and the world is full of things
 built for a body that is not yours, which start responding to you once your
-body is enough.
+body is enough. Nor does it wait for you: everything in it is eating something,
+and it breeds, rests and roams whether you are watching or not (§8.1).
 
 And you become what you eat. Any meal can change you — wings from the things
 that fly, venom from the things that sting — and the bigger it was next to you,
@@ -285,28 +286,32 @@ what gaps you fit through.
 ## 3. Size tiers
 
 Size is the progression system, the difficulty curve and the map key all at
-once. Eight tiers, each roughly doubling body length.
+once. Eight tiers, each standing about two-thirds again as tall as the last —
+heights in the world's units, where a metre is about fourteen.
 
-| # | Name | Body | Eats | Silk | New capability |
+| # | Name | Stands | Eats | Silk | New capability |
 |---|------|------|------|------|----------------|
-| 1 | Spiderling | 8 mm | midges, flies, ants | tiny | single strands, tripline |
-| 2 | House Spider | 2 cm | moths, bees, butterflies | small | sheet web, wall climbing |
-| 3 | Huntsman | 6 cm | beetles, wasps, roaches | medium | orb web, silk bridge, pressure snare |
-| 4 | Gutter Spider | 18 cm | bats | large | funnel lure, silk winch (drag prey) |
-| 5 | Sewer Widow | 50 cm | rats, parrots | big | venom sacs, web tunnels, trapdoors |
-| 6 | Park Recluse | 1.5 m | cats, fish | huge | anchored canopy webs, ambush burrows |
-| 7 | City Weaver | 4 m | dogs, the octopus | vast | structural webs across streets |
-| 8 | The Architect | 12 m | the shark | — | permanent territory webs |
+| 1 | Spiderling | 0.25 | midges, mosquitoes, flies, fireflies, ants | tiny | single strands, tripline |
+| 2 | Fern Spinner | 0.4 | moths, bees, butterflies | small | sheet web, wall climbing |
+| 3 | Huntsman | 0.7 | beetles, wasps, roaches | medium | orb web, silk bridge, pressure snare |
+| 4 | Root Weaver | 1.2 | frogs, lizards, bats, songbirds | large | funnel lure, silk winch (drag prey) |
+| 5 | Glade Widow | 2.0 | rats | big | venom sacs, web tunnels, trapdoors |
+| 6 | Ruin Stalker | 3.4 | hares, ravens, fish | huge | anchored canopy webs, ambush burrows |
+| 7 | Elder Weaver | 5.6 | foxes, the kraken | vast | structural webs across the ruins |
+| 8 | The Architect | 9.0 | stags, boars, wolves, the leviathan | — | permanent territory webs |
 
 What each eats is what it is built for: the creature whose size class the
 tier's bite power reaches. Anything bigger is still food if you can hold it,
-and the best meal in the game — it is how you evolve fastest (§3.1). The shed
-is built for the first three, the sewers for the third to the fifth, the park
-for the fifth and sixth, and the lake for the rest.
+and the best meal in the game — it is how you evolve fastest (§3.1); the wyvern
+is past every tier's bite, and only ever that kind of meal. The names are the
+places: each place in the hunting ground is built for a stretch of tiers (§4),
+the fern floor for the first three, the Rootways for the third to the fifth, the
+glade for the fourth to the sixth, the ruins for the fifth to the seventh, the
+Mere for the sixth up, and the crag for the Architect.
 
 Growth is **visible and physical**: the camera rises, your stride lengthens,
 your webs get coarser and stronger, the level geometry shrinks around you. The
-same shed you started in becomes a dollhouse.
+fern you hid under on the first night becomes something you step over.
 
 ### Growth is the key, and never the lock
 
@@ -319,7 +324,9 @@ why, because it is an idea that keeps coming back:
   must never give a reason to stop eating.
 * It turns the escalation fantasy ambivalent. "I am enormous now" is the whole
   pitch, and it does not survive "…which is a problem".
-* It forces backtracking into a world that is physically one-way (see §4).
+* It turns going back into a chore. A place you have outgrown is worth passing
+  back through for a meal (§4); it should never be somewhere you are sent
+  because you got too big.
 
 So every gate reads the same direction: you could not do this before, you can
 now. A door you are too big for is never the design; a door that needs more of
@@ -345,7 +352,7 @@ go into it:
 | | |
 |---|---|
 | **The trait** | Its own chance a meal, for a spiderling: 12% for the first of a branch, 8% for the second, 5% for the third |
-| **The ladder** | Every rung past the first adds a quarter of that. A Sewer Widow, on the fifth, has twice a spiderling's odds; The Architect nearly three times |
+| **The ladder** | Every rung past the first adds a quarter of that. A Glade Widow, on the fifth, has twice a spiderling's odds; The Architect nearly three times |
 | **Bad luck** | Every meal that could have passed a trait on and did not adds half its chance to the next roll, until it is certain. A one-in-eight trait always comes by the sixteenth meal. Luck can slow you down; it cannot lock you out |
 | **The size of it** | One size past your bite doubles the odds. Two or more past it is a **sure thing** — and if the creature carries nothing you could take, it pays in something else you could |
 
@@ -382,18 +389,18 @@ And what carries each:
 
 | Trait | Carried by |
 |---|---|
-| Heavy Frame | ant, beetle, cockroach, rat, dog |
-| Broad Back | beetle, cockroach, rat, cat, dog |
-| Girder Legs | beetle, rat, dog, octopus, shark |
-| Wing Buds | midge, mosquito, fly, moth, butterfly, bee, bat, parrot |
-| Hollow Frame | midge, moth, butterfly, bat, parrot, cat |
-| Storm Rider | wasp, bee, bat, parrot |
-| Paralytic Bite | mosquito, ant, wasp, bee |
-| Digestive Flood | fly, moth, cockroach, rat, fish, octopus |
-| Hunting Fangs | wasp, beetle, cat, octopus, shark |
+| Heavy Frame | ant, beetle, cockroach, rat, boar, stag |
+| Broad Back | beetle, cockroach, rat, boar, wolf |
+| Girder Legs | beetle, rat, hare, stag, wolf, kraken, leviathan |
+| Wing Buds | midge, mosquito, fly, firefly, moth, butterfly, bee, bat, songbird, raven, wyvern |
+| Hollow Frame | midge, moth, butterfly, bat, songbird, raven |
+| Storm Rider | wasp, bee, firefly, bat, raven, wyvern |
+| Paralytic Bite | mosquito, ant, wasp, bee, frog |
+| Digestive Flood | fly, moth, cockroach, rat, raven, fish, boar, kraken |
+| Hunting Fangs | wasp, beetle, lizard, fox, wolf, kraken, leviathan, wyvern |
 
-Every creature carries at least one, and the smallest things in the shed carry
-all three roots, so a spiderling can start down any branch.
+Every creature carries at least one, and the smallest things on the fern floor
+carry all three roots, so a spiderling can start down any branch.
 
 **Size is one branch, not the trunk.** Bulk *is* the old ladder, made into
 something you grow into instead of a consequence. Flight is the other end of
@@ -416,19 +423,19 @@ announced down the same channel as growing a tier, so the body resizes through
 the code that already did that.
 
 **Gates take either key.** A threshold names a size *and* may name a trait, and
-either opens it — the drain lid in the shed floor gives to a Huntsman or to a
-Hollow Frame that folds through its slots; the storm grate gives to a Sewer
-Widow or to a Storm Rider riding the draught up through its slots. With traits
-coming by chance, the size is the key you can always count on and the trait is
-the shortcut luck may hand you early. The gate never says which key you are
-missing. It dips and settles back, the same as always, and the answer is what
-you go and try.
+either opens it — a lid that gives to a Huntsman, or to a Hollow Frame that
+folds through its slots. The hunting ground has none: its creatures are its
+gates (§4). But the gym keeps three, and a level that wants one has it. With
+traits coming by chance, the size is the key you can always count on and the
+trait is the shortcut luck may hand you early. The gate never says which key you
+are missing. It dips and settles back, the same as always, and the answer is
+what you go and try.
 
 **The screen.** Opened on **E**. Nothing on it is bought any more, so it is a
 map rather than a shop: every trait you do not have says what carries it and
 your odds from a meal of each, as you are now, grouped and least likely first
 so the end of the line is where to go hunting — `Ant 12% · Beetle, Cockroach
-24% · Rat, Dog sure`. Locked traits are shown rather than hidden, with what they
+24% · Rat, Bristleback Boar, Glade Stag sure`. Locked traits are shown rather than hidden, with what they
 stand on, because "you can always see the next thing" is the one property of
 the genre this game is not that was worth keeping. Opening it frees the mouse,
 which is what stops you firing silk into the page you are reading.
@@ -453,9 +460,9 @@ an area puts a ring where it will land, as wide as it will be.
 | Spell | Opens at | Or with | What it does | Wait |
 |---|---|---|---|---|
 | **Silk** | the start | — | the thrown web: it sticks where it lands and wraps what it lands on | 3.5 s |
-| **Venom Spit** | House Spider | Paralytic Bite | a glob thrown like silk; what it hits is dosed, and softens from the inside for 6–10 s | 4 s |
+| **Venom Spit** | Fern Spinner | Paralytic Bite | a glob thrown like silk; what it hits is dosed, and softens from the inside for 6–10 s | 4 s |
 | **Water Spiral** | Huntsman | Digestive Flood | a whirl on the floor where you point, for 5–8 s: it carries anything loose round and in, soaks it and holds it turning. Wet wings do not lift | 9 s |
-| **Summon Lightning** | Gutter Spider | Wing Buds | strikes where you point, and stuns what it reaches for 2.5–4 s: going nowhere, biting nothing, fighting nothing. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight | 7 s |
+| **Summon Lightning** | Root Weaver | Wing Buds | strikes where you point, and stuns what it reaches for 2.5–4 s: going nowhere, biting nothing, fighting nothing. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight | 7 s |
 
 **Opening is the gates' rule.** A spell opens at a rung of the ladder, which is
 the key you can always count on, or sooner with a trait it names, which is the
@@ -508,94 +515,75 @@ winning the fight the silk was already having.
 
 ## 4. The world
 
-Three places, one after another in one continuous space: a garden shed, the
-sewers under a park, and the park itself with its lake. A place is fully
-explorable and you choose your own route through it; places come in order, and
-the order is your own body.
+One wild valley — the hunting ground — laid out the way a hunting ground is in
+the games it is named for: a camp to set out from, and round it the places things
+live, each its own country with its own creatures and its own danger. Seven
+places in one continuous space, all open to one another. Places still come in an
+order, and the order is still your own body.
 
 The first cut was five zones — an attic, the walls and crawlspace, the gutter
-and sewer, the park and the city — greyboxed in white. It was scrapped for these
-three, built to look like what they are: plank and paint tins, grey stone and
-green water, grass and a lake with boats on it. Everything is to one scale, the
-scale of the props — a metre is about fourteen of the world's units — so the
-shed is a shed and a rowing boat is a boat. The places are the size they would
-be; what they are built for is how big the spider is by the time it gets there.
+and sewer, the park and the city — greyboxed in white. It was scrapped for three
+built to look like what they were — a garden shed, the sewers under a park, and
+the park with its lake — and those were scrapped in turn for the valley, when the
+game became a hunting ground: a shed and a sewer are rooms, and what the game
+needed was somewhere alive. Everything is to one scale, the scale of the props —
+a metre is about fourteen of the world's units — so a fern is a fern and a stag
+is a stag. The places are the size they would be; what they are built for is how
+big the spider is by the time it gets there.
 
-### The shape: a sequence of sandboxes, not a Metroidvania
+### The shape: a hunting ground, not a sequence
 
-Worth naming, because "Metroidvania" is the nearest genre word and it is the
-wrong one. That genre's core pleasure is *returning* — you gain the ability,
-you go back to the room you could not reach. Physical size escalation is a
-**one-way ratchet**: once you are park-sized you will never fit down that
-drain again, and no amount of design will make you.
+The shed and the sewers were a **sequence of sandboxes**, each ended by
+outgrowing it — the drain lid in the shed floor, the grate at the top of the
+sewer — and size is a one-way ratchet, so each was played once and left behind.
 
-So this is a **sequence of sandboxes**, each ended by outgrowing it. Katamari's
-structure rather than Hollow Knight's. Two properties of the genre are worth
-keeping and the rest is let go:
+The valley keeps the ratchet and drops the sequence. Nothing shuts the way to any
+of it: there is no door between the fern floor and the crag. The order is kept by
+what lives in each place — the glade's foxes eat spiderlings, the ruins' wolves
+eat anything a fox would, and the wyvern eats wolves. What keeps a spiderling out
+of the crag is that the crag would eat it. The two properties of the old shape
+worth keeping survive:
 
-* **Legible gates.** You can always see the next place, and you always know
-  what you are short of.
-* **No timer.** Inside a place there is total freedom and nothing is owed. No
-  daily quota, no global clock — those would turn a game about making a place
-  yours into a game about hitting a number.
+* **Legible danger.** You can always see the next place, and what lives there
+  tells you what you are short of: a stag grazing the glade is a size you are not
+  yet.
+* **No timer.** Inside the valley there is total freedom and nothing is owed.
+  The day goes round, and changes what is out, but nothing falls due when it
+  does — no quota, no deadline.
 
-What is given up is backtracking. What replaces it is **scale**: standing in
-the park and looking back down the grate you came up through, or across the
-lawns at the shed. That is the better trade for this game, and it is the
-stronger pitch.
+And it adds what the sequence never could: **going back**. A place you have
+outgrown is still there and still alive, still full of what you used to eat —
+worth less to you now, but a meal on the way somewhere, and the camp is always at
+the south edge of it. Nor do the big things keep to their places: a stag turns up
+in the ruins, the wyvern over the glade, a boar rooting through the ferns. The map
+is a ladder you climb, and also somewhere things happen to you on the way up.
 
-**The cost, stated plainly so nobody is surprised by it later:** each place is
-played *once*. There is no revisiting to stretch content over. So places should
-be **short** — the size jump is the reward, not the acreage. Build them fast and
-thin, then thicken whichever turns out to be fun.
+### The creatures are the gates
 
-### How a place ends: the body is the key
+A threshold — a **physical thing that responds to your body**, not a locked door
+with a message — is still how a place shuts when it has to. The model is a
+pressure lid: stand on it too small and it **shifts slightly and settles back**,
+which tells you it is a lid, that it is yours to open, and that you are not
+enough yet, in one motion and no words. It is built on size, not weight — mass
+would be derived from `body_height` and nothing else, so "heavy enough" and "big
+enough" would be the same comparison in different units — and it may name a
+trait as a second key (§3.1), so a spider that went up Flight instead of Bulk is
+never stuck behind a door it can only grow into.
 
-A threshold is a **physical thing that responds to your body**, not a locked
-door with a message. The model is the drain lid between the shed and the
-sewer: it is a pressure lid, and it opens when something heavy enough stands
-on it. Early on you stand on it and nothing happens. Later you stand on it and
-it gives.
-
-This is the whole direction system, and it needs no quest marker, no objective
-text and no gate dialogue — not even a readout. The feedback is the thing
-itself: stand on the lid too small and it **shifts slightly and settles back**.
-That tells you it is a lid, that it is yours to open, and that you are not
-enough yet, in one motion and no words.
-
-**Built on size, not on weight.** It is tempting to give the spider a mass and
-have the lid read it. Do not: mass would be derived from `body_height` and
-nothing else, so it is a monotonic function of a number already in hand — "is
-it heavy enough" and "is it big enough" become the same comparison in different
-units, and the only thing gained is a second number to keep in sync. `body_height`
-is already the one value everything physical hangs off. A gate names a size and
-compares.
-
-**Size is one key and not the only one.** A gate may also name a trait that
-opens it (§3.1), so a spider that went up Flight or Venom instead of Bulk is
-never stuck behind a door it can only grow into. Both keys open the same gate
-and the gate still says nothing about which one you are missing — it dips and
-settles back, and the answer is what you go and try.
-
-And most gates should not even be that. **A gap you fit through or you do not
-is the collider's business**, not a rule's — the spider's own shape against the
-hole's, decided by the physics that is already running. Reserve explicit size
-checks for things that *react* to you, like the lid; let geometry handle
-everything that simply is or is not wide enough. The cheapest gate in the game
-is a hole that was always that size.
-
-There are two gates, not three. A fence is only a wall, and a spider climbs
-walls: a gate between the park and the lake could only be a gate you walk
-round. So the park and the lake are one place in two halves, joined by a gap
-in the railings, and what keeps a small spider off the water is what is in it.
+The gym keeps three. The hunting ground has none, and needs none. **A gap you fit
+through or you do not is the collider's business**, not a rule's — the spider's
+own shape against the hole's, decided by the physics that is already running.
+And a place you are not ready for is the business of what lives in it. The
+cheapest gate in the game is a hole that was always that size; the next cheapest
+is a wolf.
 
 It also solves push versus pull in one move. Nothing ever *expels* you: you can
-live in the shed as long as you like, and it stays valuable because it is
-where your network is. You leave because you can, and because the sewer has
-things in it worth twice what the shed holds.
+live on the fern floor as long as you like, and it stays valuable because it is
+where your network is. You move on because you can, and because the Rootways
+have things in them worth twice what the fern floor holds.
 
 **You carry your belongings.** Moving on does not mean hauling your larder
-through a pipe — the bag comes with you. What stays behind is the silk: the
+across the valley — the bag comes with you. What stays behind is the silk: the
 network you built is the thing you cannot take, which is what makes each move
 cost something without making it a chore.
 
@@ -607,67 +595,80 @@ is usually one multiplier on something that already exists.
 
 | Place | How it fights you | What it taxes |
 |------|-------------------|---------------|
-| The Shed | nothing — it is dry, still and cluttered | *learn here* |
-| The Sewers | rats that fight back, and water no web can cross | spans — build above the water |
-| The Park | open ground, nothing overhead, cats bigger than you | anchors — they are far apart, and a web between two trees is a long one |
-| The Lake | deep water, and the ground under your silk moves | where you tie it — a web in a boat goes round with it, and one from a boat to the bank snaps |
+| The Fern Floor | nothing much — it is sheltered, still and cluttered | *learn here* |
+| The Rootways | the dark, and rats that fight back | *timing* — what lives here is out at night, so a web is strung by day and fills after dark |
+| The Bloom Glade | open ground, foxes, and the wyvern overhead | *anchors* — they are far apart, and a web between two trees is a long one |
+| The Old Ruins | wolves and boars, and bare stone | *spans* — walls with gaps between them, little to tie to, and what walks through fights |
+| The Mere | deep water, and what is in it | *where you stand* — no web crosses water, and a spider in it is swimming with the leviathan |
+| Wyrm's Crag | height, and the wyvern | *everything* — one thing up there is worth hunting, and it is hunting you |
 
-The pressure a global clock would have provided belongs **inside one place**,
-not over the whole game. A place can have a clock of its own — a sewer that
-floods, a keeper who clears out the aviary — and that is the place's clock,
-not your life's.
+The valley does have a clock — the day — but it is the valley's clock, not your
+life's: it changes what is out, never what you owe.
 
-### 4.1 The Shed (tier 1–3) — *tutorial*
-A garden shed at the west edge of the park, seen from floorboard height: plank
-walls, a window to the south with the sun coming in across the boards, a
-workbench under a pegboard of tools, two sets of shelves loaded with paint tins,
-pots, jars and seed trays, a mower, and a bulb on a flex with the moths round
-it. At a spiderling's size a paint tin is ten times your height, and the tie
-beams under the roof are the first crossing from wall to wall.
-Lives here: the insects. Teaches: anchors, strands, first sheet web, feeding.
-**Exit:** the drain in the floor — an iron lid with slots in it over a shaft of
-stone, which gives to a Huntsman, or to a Hollow Frame lean enough to fold
-through the slots.
+### 4.1 The Camp — *where you start*
+A hollow stump at the south edge of the valley: a ring of bark open on the north
+side, toward everything, with moss on its floor and a glowcap for a lamp.
+Nothing lives here and nothing comes looking. It is where a new spider starts,
+and where one that falls out of the world is put back.
 
-### 4.2 The Sewers (tier 3–5)
-Grey stone and green water: one long vaulted tunnel under the park, a channel
-down the middle with a walkway either side behind a kerb, running between three
-chambers — the one under the shed that the drain comes down into, a pillared
-hall with a pipe coming in from the north, and the one under the park where the
-storm drain goes up. Lamp-lit, and dark between the lamps.
-Rats bigger than a Huntsman come for you; roaches run; bats hang up in the hall;
-midges hang over the water. The water is somewhere no web can go, and a spider
-in it swims.
-**Exit:** the storm grate at the top of the far shaft, onto the park's main path
-— a grate sprung for a Sewer Widow, which a Storm Rider can ride the draught
-up through.
+### 4.2 The Fern Floor (tier 1–3) — *tutorial*
+The forest floor between the camp and the glade, seen from a spiderling's
+height: ferns overhead, toadstools whose caps are roofs, pebbles that are
+boulders, fallen leaves and acorns to cross, an anthill, and a puddle. Old trees
+stand over it, so the floor is in their shade.
+Lives here: midges and flies, beetles grazing the moss, the ants, moths and
+fireflies at night, and mosquitoes over the puddle. Teaches: anchors, strands,
+first sheet web, feeding.
 
-### 4.3 The Park (tier 5–6)
-The first open space. The main path runs from the shed door to the lake, and
-the grate you come up through is in the middle of it, in a ring of paving with
-benches round it. Lawns either side, with oaks, birches and pines, bushes and
-beds of flowers, and in the corner an animal area: a picket fence, an aviary for
-the parrots, and a dog run.
-Cats roam the lawns and are bigger than you; the dogs keep to their run; bees
-and butterflies are over the beds. At this size a bench is a frame and a tree is
-a building.
-**Exit:** none. The lake is past the railings at the end of the path.
+### 4.3 The Rootways (tier 3–5)
+The great tree of the west side and what is under it: a trunk three and a half
+metres through, its roots arching out over the hollow it stands in so that under
+each is a cave, shelf fungus up the bark to climb by, and a hollow log lying on
+the floor to walk the length of. Glowcaps light the caves at night.
+What lives here comes out in the dark: roaches, rats bigger than a Huntsman that
+come for you, moths, beetles, and bats that hang under the roots by day.
 
-### 4.4 The Lake (tier 6–8) — *endgame*
-The park's second half: a round boating lake with a stone bank and a ring of
-paving, an island in the middle with a bandstand, a jetty out from the west bank,
-and six rowing boats going round the island. Fish and an octopus live round the
-island and a shark in the deep, and none of them comes out of the water — but
-the shark follows you round underneath until you are the biggest thing in the
-park.
-The boats are the way across and the ground that moves: they come by the end of
-the jetty close enough to step aboard, and anything standing in one goes round
-with it. Silk goes with a boat if every end of it is on that boat, and snaps if
-it is tied between a boat and anything else, because nothing tied to both
-could do anything else.
+### 4.4 The Bloom Glade (tier 4–6)
+The open middle of the valley: a meadow in flower, with tall grass and
+wildflowers to climb and string silk between, brambles of berries, a few trees,
+a ring of standing stones at its heart, a wild hive in a stump and a wasps' nest
+on a dead tree. The busiest place in the valley by day: bees and butterflies over
+the flowers and wasps hunting them, hares in the grass and a fox after the hares,
+songbirds in the trees, and the stags grazing all of it. Wolves cross it at
+night, and the wyvern hunts it from the air.
 
-**Not yet:** running water that takes silk back, wind, rain, and a day and a
-night; people.
+### 4.5 The Old Ruins (tier 5–7)
+A keep nobody remembers, up on its shelf of ground in the north-west: broken
+walls round a courtyard of flagstones, a gateway arch toward the glade, a row of
+columns and fallen ones, a tower still standing at one corner with its top
+broken away, and in the middle of the courtyard a statue of a spider — a great
+one, older than the stones round it. Whoever built the keep knew what the largest
+of them become.
+Lizards sun on the walls and live in their cracks, ravens roost on the tower,
+boars root in the rubble, rats and cockroaches come out of it at night, and the
+wolves den at the tower's foot.
+
+### 4.6 The Mere (tier 6–8)
+A round lake in the east of the valley, deep in its middle, with an island out in
+it, lily pads on the water, reeds all round its edge and driftwood on the shore.
+It is built for the biggest sizes because of what is in it: shoals of fish
+grazing the weed on the bottom, the Mire Kraken in its lair in the deepest part,
+and the Mere Leviathan, which nothing in the valley hunts. Frogs sit on the
+banks, mosquitoes and midges rise off the shallows, and stags and wolves come
+down to the shore. None of what lives in the water comes out of it — but the
+leviathan follows a spider round underneath until the spider is the biggest
+thing in the valley.
+
+### 4.7 Wyrm's Crag (tier 8) — *endgame*
+The rock tower in the north of the valley, weathered into ledges with cliffs
+between, heaps of fallen rock on its shelves and spires standing up off it, and
+in the bowl at its top the wyvern's nest: a ring of branches it carried up,
+bones, and its eggs. Nothing lives up here but ravens on the spires. The wyvern
+hunts the whole valley — stags, boars, wolves — and nothing hunts it. It is the
+reason to grow.
+
+**Not yet:** wind and rain; running water that takes silk back; a creature that
+remembers a web it has been caught in once.
 
 ### The interface scales, and is laid out once
 
@@ -688,9 +689,9 @@ nobody adjusts.
 
 ---
 
-### 4.5 The testbed — a gym, not a place
+### 4.8 The testbed — a gym, not a place
 
-`game/world/testbed.tscn` is the workshop, and it is what the project opens.
+`game/world/testbed.tscn` is the workshop; the project opens the hunting ground.
 Nine stations on one flat floor, fifty-two metres by forty, all in sight of the
 middle: corners for web fitting, three slots wide to narrow, a wall-overhang-
 ceiling run with slopes at twenty through eighty degrees, grapple anchors at
@@ -698,9 +699,9 @@ one/three/seven/thirteen metres, a roof with a hole for draglines, two posts of
 different heights for a zipline, the three size gates side by side, a prey pen,
 and a hole in the floor for falling out of the world.
 
-It exists because the real world (§4.1–4.5) is two hundred and eighty metres
-across and mostly corridor, so checking whether a web fits a corner meant a
-walk, and checking a *different* corner meant another one.
+It exists because the hunting ground (§4.1–4.7) is the best part of eight
+hundred metres across, so checking whether a web fits a corner meant a walk,
+and checking a *different* corner meant another one.
 
 **The rule for adding to it:** a station tests one thing and says on it what
 that thing is — the signs are the documentation, because a gym you have to read
@@ -1232,7 +1233,7 @@ each web tier is built to keep the prey tier below it:
 | Pressure snare | a wasp |
 
 Silk quality climbs with size, and multiplies hold, so every one of those lines
-moves up as you grow — a City Weaver's sheet web keeps things a Spiderling's
+moves up as you grow — an Elder Weaver's sheet web keeps things a Spiderling's
 orb web never could. A wired web that tenses just before the hit holds through a
 thrash it would otherwise lose, which is a real reason to run signal lines.
 
@@ -1720,11 +1721,12 @@ feet go down fresh when it comes back into view.
 
 | Class | Examples | Behaviour |
 |-------|----------|-----------|
-| **Drifters** | gnats, moths, flies | wander, attracted to light; tiny biomass, easy |
-| **Trailers** | ants, roaches, mice | follow fixed routes along edges; predictable, good for triplines |
-| **Fliers** | wasps, sparrows, bats | fast, 3D routes; need strong webs and high anchors |
-| **Fighters** | rats, cats, dogs | will attack you if you are small; damage webs badly |
-| **Hunters** | wasp nests, birds, pest control, people | hunt *you*; your web is your cover, not just your larder |
+| **Drifters** | midges, moths, flies, fireflies | wander, drawn to light; tiny biomass, easy |
+| **Trailers** | ants, beetles, roaches | walk the ground; predictable, good for triplines |
+| **Fliers** | wasps, bats, songbirds, ravens | fast, 3D routes; need strong webs and high anchors |
+| **Grazers** | hares, stags, fish | never come for you; run from anything that could eat them, you included |
+| **Fighters** | rats, boars, the kraken | will attack you if you are small; damage webs badly |
+| **Hunters** | foxes, wolves, the leviathan, the wyvern | hunt *you*, and everything else; your web is your cover, not just your larder |
 
 Everything you can eat can also eat you at the wrong size. The tension curve
 is: each new place opens with you as the smallest thing in it.
@@ -1739,15 +1741,17 @@ the cast. Wasps hunt hard and fast; beetles hunt slowly and on the ground;
 midges never hunt anything.
 
 **Where they live.** The insects turn up anywhere. Everything else has a
-`habitat` — the sewers, the park, the lake — and is only put down where a spawner
-names it, so a room built for something else never fills with dogs. Each place
-is stocked with what lives in it: roaches, rats and bats in the sewers, cats,
-dogs and parrots in the park, fish, an octopus and a shark in the lake. They are
-built to the tier they are food for — a rat is as big as a Sewer Widow — and a
-big one bites from the edge of its body, not from a wasp's margin scaled up to
-a shark's. Something that swims keeps all of itself under the top of the water
-it is in: steering at a spider on the bank or on a boat, it follows along
-underneath.
+`habitat` of `"wilds"` and is only put down where a den or a spawner names it, so
+a room built for something else never fills with wolves. In the hunting ground
+every species has dens, in the places built for the size it is food for (§4):
+ants, beetles and fireflies on the fern floor; roaches, rats and bats under the
+great tree; hares, foxes, songbirds and stags in the glade; lizards, ravens, boars
+and wolves in the ruins; frogs on the banks of the Mere and fish, the kraken and
+the leviathan in it; and the wyvern on its crag. They are built to the tier they
+are food for — a rat is as big as a Glade Widow — and a big one bites from the
+edge of its body, not from a wasp's margin scaled up to a leviathan's. Something
+that swims keeps all of itself under the top of the water it is in: steering at
+a spider on the bank, it follows along underneath.
 
 **What spells do to them.** Three things a creature can be besides caught, each
 read by the rest of the game rather than counted against a number (§3.2).
@@ -1757,6 +1761,59 @@ until it dries. *Stunned*: it steers nowhere and bites nothing, a flier falls,
 a hunter gives up the chase, and in a web it stops pulling on the silk while its
 fight runs down — it hangs limp, the pose of something that has fought itself
 out. And while a whirl has hold of it, the whirl decides where it goes.
+
+### 8.1 The valley is alive
+
+A hunting ground is only worth the name if its creatures are doing something
+when you are not looking. So none of what they do is scripted: no spawn waves, no
+patrol routes, no encounter tables. Each creature has a mind (`CreatureMind`) and
+a few needs, and what the valley looks like on any given evening is what those
+needs added up to.
+
+* **Hunger.** Every creature gets hungry at its species' own rate and goes to
+  find what its `diet` names: forage — moss, toadstools, flowers, grass, berries,
+  growing in patches that are eaten down and grow back slowly — or other
+  creatures, or carrion. Meat first: a fox that can see a hare and a bramble goes
+  for the hare. Something it can take, it hunts down, kills and eats where it
+  fell. Something hungry that can see nothing it eats goes looking, a little
+  further out each time, and gives up on an errand it cannot finish.
+* **Fear.** Anything that would eat it, and could, it runs from — from as far as
+  it can see the thing if it is hunting, and only up close if it is not, so a
+  glade can go on grazing with a fox at its edge that is not hunting. A wary creature counts the
+  spider as one of those once the spider is big enough to eat it, which is the
+  moment the hares stop letting you near.
+* **Dens.** A species lives somewhere — a burrow, a hive, a roost, a nest — and its
+  den is the whole population model. It breeds on meals: each one its creatures
+  finish is put by, and a new one is born when enough has been. Nothing is told to
+  keep the balance. Too many hares eat the grass down and stop breeding; foxes
+  eating hares breed, and then there are fewer hares, and the foxes go hungry. A
+  den hunted out is found again by a stray of its kind in the end, so a species
+  can be hunted out of a place but never out of the world.
+* **Hours.** A creature is out by day, by night, or always, and out of its hours
+  it goes home and rests — out of sight, for a burrow. The clock is the
+  `Ecosystem`'s, a day every twelve minutes, and the `DayNight` puts the sun and
+  the moon where it says. The valley at night is a different place: the bees, the
+  songbirds and the stags are gone from the glade, the wolves come out of the
+  ruins, and the fireflies and the glowcaps are what a spider sees by.
+* **Roaming.** The big things do not keep to the country round their den. Every
+  so often one leaves for another of its haunts and wanders about that instead,
+  which is how a stag turns up in the ruins and why the wyvern is sometimes over
+  the glade and sometimes not.
+* **Turf.** Two big territorial creatures that meet, neither able to take the
+  other, square up and fight over the ground. The stronger usually wins — size,
+  how hard it fights, what has already hurt it, and some luck — and both come out
+  of it hurt, the loser running. A hurt creature is slower and weaker in a web,
+  and one hurt badly enough limps home and rests until it has mended.
+
+That last pair is where the hunting-ground fantasy lives for a spider. A stag is
+too much for a Ruin Stalker's silk — until it has lost a fight with a boar and is
+limping home across the glade, past the web you strung there. Watching is a way of
+hunting: what is out, where it is going, what just hurt it.
+
+Without an `Ecosystem` in a level none of this runs. The sandbox, the gym and the
+test arenas have creatures that wander as they always did, hungry for nothing and
+afraid of nothing, which is what every check written before the ecosystem was
+written against.
 
 ### Bodies
 
@@ -1776,12 +1833,13 @@ says what it is doing. It does not need detail.
   each species is a
   `.tres` of it, in `game/data/bodies/`, holding every size, colour and part as a
   number — the stripes on a wasp, the length of a mosquito's proboscis, whether a
-  rat's ears are round or a cat's pointed. A `PreySpecies` points at one; without one it is still
-  the placeholder ball. So a new creature is still files, never a scene.
+  rat's ears are round or a fox's pointed. A `PreySpecies` points at one; without
+  one it is still the placeholder ball. So a new creature is still files, never a
+  scene.
 * **A body can come before its species.** A body says what a creature looks like
   and how it moves; everything else — how big, how strong, where it lives — is the
-  species. The creatures of the sewers, the park and the lake were drawn before
-  there was anywhere for them to live, and until they had species the checks and
+  species. The first creatures past the insects were drawn before there was
+  anywhere for them to live, and until they had species the checks and
   the pictures put them on a stand-in (`tests/support/stand_in.gd`) that makes up
   just enough to walk one, fly it and catch it. Every body has its species now;
   the stand-in is there for the next one drawn ahead of its place.
@@ -1803,7 +1861,7 @@ says what it is doing. It does not need detail.
   swimming, and coils them up at the end. Swimming is flying: a swimmer keeps
   itself up in water the way a fly does in air, and where the water is is a
   place, not a pose — its species says it swims, and it stays in the water.
-* **The same look for everything, not just insects.** A rat, a parrot or a shark
+* **The same look for everything, not just insects.** A rat, a raven or a leviathan
   is drawn by the rules a fly is: smooth parts, limbs of one width bent at round
   joints — a beast's legs, a bat's finger bones, an octopus's arms tapering to a
   point — wings and fins flat with a rim round them, a few flat colours, and two
@@ -1811,7 +1869,7 @@ says what it is doing. It does not need detail.
   eyes with whites and a glint, buck teeth, whiskers, tongues, lips, fangs and
   patches made them cartoons rather than creatures. A mouth is a jaw bone that
   moves, drawn only where the head's shape needs it — the underside of a beast's
-  snout, the lower half of a parrot's beak — and, like the spider's jaws in its
+  snout, the lower half of a raven's beak — and, like the spider's jaws in its
   minimal look, a fish's is the bone and nothing more.
 * **It faces where it is going.** The prey never turned: its collider is a ball,
   so it had no reason to. The body turns to its heading instead, and pitches nose
@@ -2002,12 +2060,14 @@ frame. First person hides the body for now. The camera defaults to third person
 and never rolls; that is settled, see section 7.
 
 **Milestone 3 — The world** *(built)*
-Done: the shed, the sewers under the park, and the park with its lake, to one
-scale and in one space, furnished from a kit of props and stocked with what
-lives in each; the drain lid and the storm grate; water you swim in; boats that
-go round the lake and carry what is tied to them.
+Done: the hunting ground — a camp and six places in one wild valley, to one
+scale, furnished from a kit of props, each built for a stretch of sizes and
+stocked by dens with what lives there (§4); water you swim in; a day and a
+night. Before it came a shed, the sewers under a park and the park with its
+lake, with a drain lid and a grate between them and boats that went round the
+lake; they were retired for the valley.
 Left: real prey lanes, running water that takes silk back, wind and weather,
-day and night, and the first "you are too big for this" moment made to land.
+and the first "you are too big for this" moment made to land.
 
 **Milestone 4 — Trap chains** *(started)*
 Done: trigger links — wire any web to any other, snares strike at range when
@@ -2021,9 +2081,13 @@ Left: re-fitting a placed design's anchors to local geometry, renaming designs,
 tension silk, repair, web sacks, saving built webs with the world, and somewhere
 to *find* devices rather than starting with them.
 
-**Milestone 5 — The loop at scale**
-Predators with habits — rats that go about in packs, a shark that circles the
-boats — streaming between places, and a reason to go back to the shed.
+**Milestone 5 — The loop at scale** *(started)*
+Done: the valley lives (§8.1) — hunger, fear, dens that breed on what is eaten,
+hours kept by day and by night, the big things roaming between haunts, turf
+wars and the wounds they leave — and with it a reason to go back through the
+places you have outgrown.
+Left: packs that hunt together, creatures that learn a web they have been
+caught in, and the valley remembering what you did to it.
 
 **Milestone 6 — Evolution and magic** *(started)*
 Done: traits come from what you eat, by chance — likelier up the ladder, never
@@ -2033,9 +2097,7 @@ first, then Venom Spit, Water Spiral and Summon Lightning, opened by growing or
 by traits, working off each other and off the silk, and changed by what you
 have become (§3.2).
 Left: more spells and more traits to feed them — a water line to go with the
-spiral, for a start — then a fantasy world of hunting grounds in the Monster
-Hunter mould, a camp and numbered areas with big creatures that roam between
-them.
+spiral, for a start.
 
 ---
 
@@ -2074,15 +2136,17 @@ them.
   on a screen the player has to go and read.
 * **Gates are physical, and say nothing.** A threshold is a thing in the world
   that responds to your body — a sprung lid, a weak flap, a drop you can now
-  survive. If it needs a line of dialogue or an objective marker to be
-  understood, it is the wrong gate. Prefer a shape the collider decides over a
+  survive, or more often what lives past it. If it needs a line of dialogue or an
+  objective marker to be understood, it is the wrong gate. Prefer a shape the collider decides over a
   rule that compares; prefer a rule that compares `body_height` over inventing
   a second number to compare instead.
 * **Nothing expels the player.** Places are left because somewhere else is
   better, never because this one stopped working. The first place must stay
   worth having, because it is where the network is.
-* **No clock over the whole game.** Time pressure belongs to *one place* — a
-  sewer floods; your life does not have a deadline. A global quota would make
-  this a game about a number.
-* **Places are played once, so keep them short.** There is no backtracking to
-  stretch content over. The size jump is the reward; acreage is not.
+* **No deadline over the whole game.** The valley's day goes round and changes
+  what is out, but nothing falls due when it does. Time pressure belongs to *one
+  place* or one hunt; your life does not have a deadline. A global quota would
+  make this a game about a number.
+* **Places are rungs, so keep them small and dense.** Each is built for a
+  stretch of sizes and passed back through on the way up, not played out. The
+  size jump is the reward; acreage is not.
