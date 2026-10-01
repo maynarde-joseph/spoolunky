@@ -59,6 +59,8 @@ func _process(delta: float) -> void:
 	var flat := Vector3(velocity.x, 0.0, velocity.z)
 	motion.pose = (held as CreatureMotion.Pose) if held >= 0 else _pose()
 	motion.speed = flat.length() / unit
+	if _prey != null:
+		motion.top_speed = maxf(_prey.move_speed / unit, 0.5)
 	motion.climb = velocity.y / unit
 	motion.effort = _prey.fight_left() if _prey != null else 0.0
 	_turn(delta, flat, velocity)

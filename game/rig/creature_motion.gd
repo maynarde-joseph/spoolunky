@@ -30,6 +30,11 @@ var pose: Pose = Pose.FLYING
 ## Speed along the ground or through the air, in body radii a second.
 var speed := 0.0
 
+## The fastest it goes, in the same units: what [member speed] is out of. Big
+## things go fewer of their own lengths a second than small ones, so how hard one
+## is working is how fast it is going against this, not against any fixed pace.
+var top_speed := 4.0
+
 ## How fast it is rising, or sinking if negative, in body radii a second.
 var climb := 0.0
 

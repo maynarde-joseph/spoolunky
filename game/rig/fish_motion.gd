@@ -62,7 +62,7 @@ func _process_modification_with_delta(delta: float) -> void:
 func _pose_body(skeleton: Skeleton3D) -> void:
 	var swing := deg_to_rad(_body.swing)
 	var wave := _wave * TAU
-	var cruise := swing * (0.45 + 0.55 * clampf(speed / 4.0, 0.0, 1.0)) * _air
+	var cruise := swing * (0.45 + 0.55 * clampf(speed / top_speed, 0.0, 1.0)) * _air
 	var fight := swing * 1.7 * _thrash
 	var idle := swing * (0.06 * _walk + 0.15 * _slack)
 	var reach := cruise + fight + idle

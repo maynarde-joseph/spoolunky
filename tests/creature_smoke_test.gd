@@ -87,6 +87,11 @@ func _check_flight(prey: Prey, view: CreatureView, motion: CreatureMotion,
 		going: String) -> void:
 	var facing := 0
 	var moving := 0
+	# Sent somewhere level, a few seconds off. Left to its own wandering, something
+	# that ranges high can pick somewhere nearly straight overhead and spend the
+	# whole look climbing, which goes nowhere across the ground to face.
+	var off := Vector3(1.0, 0.0, 0.3).normalized() * prey.move_speed * 4.0
+	prey.go_to(prey.global_position + off, prey.hit_radius())
 	await run_frames(30)
 	var first := _local(view, motion.strokes())
 	var sweep := 0.0
