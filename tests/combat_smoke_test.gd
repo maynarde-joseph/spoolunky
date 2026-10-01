@@ -964,11 +964,14 @@ func _tells(creature: Prey) -> int:
 	return count
 
 
+## Every creature of that name on the arena — not elsewhere in the sandbox, where
+## its own spawners keep putting things.
 func _named(display_name: String) -> Array[Prey]:
 	var found: Array[Prey] = []
 	for node in level.get_tree().get_nodes_in_group("prey"):
 		var creature := node as Prey
 		if creature != null and creature.species == display_name \
-				and not creature.is_queued_for_deletion():
+				and not creature.is_queued_for_deletion() \
+				and creature.global_position.distance_to(ARENA) < 30.0:
 			found.append(creature)
 	return found
