@@ -23,6 +23,8 @@ var _tail := PackedInt32Array()
 var _stride := 0.0
 ## How much of a stride the legs are taking: none standing still.
 var _pace := 0.0
+## How far its legs splay out to the sides, 0 to 1.
+var _splay := 0.0
 
 var _feet := PackedVector3Array()
 
@@ -32,6 +34,7 @@ func bind(skeleton: Skeleton3D, body: CreatureBody) -> void:
 	if _body == null:
 		return
 	_keep_rest(skeleton)
+	_splay = clampf(_body.sprawl / 70.0, 0.0, 1.0)
 	_trunk = _find(skeleton, "Body")
 	_head = _find(skeleton, "Head")
 	_jaw = _find(skeleton, "Jaw")
@@ -117,7 +120,13 @@ func _pose_legs(skeleton: Skeleton3D) -> void:
 			+ _thrash * (0.8 + 0.8 * cos(paddle)) + _slack * 0.25 + _curl * 2.0)
 		# The paw stays level, whatever the leg above it is doing, until the end.
 		var paw := -(upper + lower) * (1.0 - _curl) + _curl * 0.4 - _thrash * 0.4
-		_turn(skeleton, bones[0], Quaternion(Vector3.RIGHT, upper))
+		# Legs splayed out to the sides kick up and down as well when it is caught:
+		# short as they are, swinging back and forth alone they hardly move. Wrapped,
+		# they come in under it, out of the splay.
+		var kick := _thrash * sin(paddle * 0.7 + 1.0) * 1.2 * _splay \
+			+ _curl * deg_to_rad(_body.sprawl) * 0.9
+		_turn(skeleton, bones[0], Quaternion(Vector3.BACK, -float(leg["side"]) * kick)
+			* Quaternion(Vector3.RIGHT, upper))
 		_turn(skeleton, bones[1], Quaternion(Vector3.RIGHT, lower))
 		_turn(skeleton, bones[2], Quaternion(Vector3.RIGHT, paw))
 
