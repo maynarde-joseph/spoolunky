@@ -17,6 +17,13 @@ extends Resource
 ## keep hold of it; and [member flying], which says where in the room you have
 ## to put the web.
 
+## When a creature is out and about. Out of its hours it goes home and rests.
+enum Activity {
+	ALWAYS,
+	DAY,
+	NIGHT,
+}
+
 @export var id := "fly"
 @export var display_name := "Fly"
 @export var description := ""
@@ -97,6 +104,38 @@ extends Resource
 
 ## How strongly it drifts toward a lure it can smell.
 @export_range(0.0, 1.0, 0.05) var lure_susceptibility := 0.85
+
+
+@export_group("Living")
+
+## What it eats, where there is an [Ecosystem] for it to live in: kinds of
+## [Forage] ("moss", "fungus", "flowers", "grass", "berries"), species ids, the
+## [member tags] a kind of creature carries ("insect", "bird"…), and "carrion" for
+## anything dead. Empty, it eats nothing and is never hungry.
+##
+## A creature can only take what it can overpower: something in its diet that is
+## no bigger than it is. What is bigger it leaves alone however hungry it gets.
+@export var diet := PackedStringArray()
+
+## What kind of creature it is, for a diet that names a kind rather than a species
+## — "insect", "bird", "fish", "beast".
+@export var tags := PackedStringArray()
+
+## How quickly it gets hungry: how much of a whole belly it empties a second.
+@export var hunger_rate := 0.007
+
+## How long it can stay at its hungriest before it starves, in seconds.
+@export var starve_after := 150.0
+
+## How far off it notices food and danger, in metres.
+@export var senses := 10.0
+
+## When it is out. Out of its hours it goes home to its [Den] and rests there.
+@export var active: Activity = Activity.ALWAYS
+
+## Whether it keeps clear of a spider big enough to eat it. Insects blunder into
+## webs; a hare does not let a spider walk up to it.
+@export var wary := false
 
 
 @export_group("Body")

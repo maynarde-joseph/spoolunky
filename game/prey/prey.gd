@@ -23,6 +23,7 @@ enum State {
 	WRAPPED,   ## bundled up, going nowhere
 	FLEEING,   ## just tore loose, getting out
 	BUNDLED,   ## wrapped where it stood and dropped, out of any web
+	FEEDING,   ## standing at something it eats, eating it
 }
 
 ## How much better than a catch's total thrash a web has to be to keep it.
@@ -251,6 +252,20 @@ var _wings: Array[Node3D] = []
 var _applied := false
 var _tow_pull := Vector3.ZERO
 
+## What it wants and what it does about it, where there is an [Ecosystem] for it
+## to live in. Null anywhere else, and then it wanders as it always did.
+var _mind: CreatureMind = null
+
+## Whether the wander target is somewhere its mind sent it, rather than somewhere
+## picked at random — and how close to it counts as there.
+var _errand := false
+var _errand_reach := 0.3
+var _errand_goal := Vector3.ZERO
+var _detour_left := 0.0
+
+## What it is eating, while it eats.
+var _meal: Node3D = null
+
 ## The top of the water a swimmer is in, as high as its middle may go: its own
 ## body's depth under the surface, so none of it breaks the top. INF for anything
 ## that does not swim, and for a swimmer that was put down out of the water.
@@ -314,6 +329,9 @@ func _ready() -> void:
 	_build_body()
 	_home = global_position
 	_pick_target()
+	var world := Ecosystem.of(self)
+	if world != null and kind != null:
+		_mind = CreatureMind.new(self, kind, world)
 
 
 func _physics_process(delta: float) -> void:
@@ -344,6 +362,8 @@ func _physics_process(delta: float) -> void:
 		wet = maxf(0.0, wet - delta)
 	if stunned > 0.0:
 		stunned = maxf(0.0, stunned - delta)
+	if _mind != null:
+		_mind.tick(delta)
 
 	# Carried by something stronger than it, or out of it altogether: either way
 	# it is not steering.
@@ -358,6 +378,8 @@ func _physics_process(delta: float) -> void:
 			_process_hunt(delta)
 		State.STUCK, State.WRAPPED:
 			_process_stuck(delta)
+		State.FEEDING:
+			_process_feeding(delta)
 		State.FLEEING:
 			_flee_timer -= delta
 			if _flee_timer <= 0.0:
@@ -554,7 +576,85 @@ func is_stunned() -> bool:
 ## On its own feet or wings: not caught, not wrapped, not a bundle.
 func is_loose() -> bool:
 	return not eaten and (_state == State.WANDER or _state == State.HUNTING
-		or _state == State.FLEEING)
+		or _state == State.FLEEING or _state == State.FEEDING)
+
+
+# --- living -------------------------------------------------------------
+
+## What it wants, where it has an [Ecosystem] to want things in. Null anywhere
+## else.
+func mind() -> CreatureMind:
+	return _mind
+
+
+## Whether it is free to act on what it wants: loose, awake to the world, and not
+## being carried off by anything.
+func can_decide() -> bool:
+	return is_loose() and not is_stunned() and not _current_fresh
+
+
+func is_feeding() -> bool:
+	return _state == State.FEEDING
+
+
+## Sends it to [param point], arriving within [param reach] of it. Its mind hears
+## when it gets there.
+func go_to(point: Vector3, reach := 0.3) -> void:
+	if not can_decide():
+		return
+	if _state == State.FEEDING:
+		_meal = null
+		_state = State.WANDER
+	_errand_goal = point
+	_errand_reach = maxf(reach, 0.05)
+	_target = point
+	_errand = true
+	_detour_left = 0.0
+	_wander_timer = 30.0
+
+
+## Starts eating [param food] where it stands.
+func start_feeding(food: Node3D) -> void:
+	if not can_decide() or food == null:
+		return
+	_errand = false
+	_meal = food
+	_state = State.FEEDING
+	velocity = Vector3.ZERO
+
+
+## Stops eating, and goes back to its own business.
+func stop_feeding() -> void:
+	if _state != State.FEEDING:
+		return
+	_meal = null
+	_state = State.WANDER
+	_pick_target()
+
+
+## Eating: stands where it is — or hovers, on the wing — and takes a mouthful a
+## frame, until there is nothing left to take or its mind says it has had enough.
+func _process_feeding(delta: float) -> void:
+	if _mind == null or _meal == null or not is_instance_valid(_meal):
+		stop_feeding()
+		return
+	velocity.x = move_toward(velocity.x, 0.0, delta * 8.0)
+	velocity.z = move_toward(velocity.z, 0.0, delta * 8.0)
+	if flying:
+		velocity.y = move_toward(velocity.y, 0.0, delta * 8.0)
+	else:
+		velocity.y -= _gravity * delta
+	velocity += _tow_pull
+	_tow_pull = Vector3.ZERO
+	move_and_slide()
+	var got := 0.0
+	var patch := _meal as Forage
+	if patch != null:
+		got = patch.graze(_mind.gulp() * delta)
+	if got > 0.0:
+		_mind.swallowed(got)
+	else:
+		stop_feeding()
 
 
 ## Carried this frame at [param velocity] by something stronger than it — a whirl
@@ -925,11 +1025,30 @@ func _process_wander(delta: float) -> void:
 		_look_for_a_spider()
 		if _state == State.HUNTING:
 			return
+	if _errand:
+		_run_errand(delta)
+		return
 	if _lure_timer <= 0.0:
 		_lure_timer = 0.75
 		_sniff_for_lures()
 	if _wander_timer <= 0.0 or global_position.distance_to(_target) < _arrival_distance():
 		_pick_target()
+	_steer(delta, current_speed())
+
+
+## Somewhere its mind sent it. It goes straight there — round anything it walks
+## into — and says so when it arrives.
+func _run_errand(delta: float) -> void:
+	if _detour_left > 0.0:
+		_detour_left -= delta
+		if _detour_left <= 0.0:
+			_target = _errand_goal
+	if global_position.distance_to(_errand_goal) <= _errand_reach:
+		_errand = false
+		velocity = velocity * 0.5
+		if _mind != null:
+			_mind.arrived()
+		return
 	_steer(delta, current_speed())
 
 
@@ -968,7 +1087,7 @@ func _steer(delta: float, speed: float) -> void:
 		global_position.y = ceiling
 		velocity.y = minf(velocity.y, 0.0)
 	if is_on_wall():
-		_pick_target()
+		_bumped()
 
 
 ## How high a swimmer's middle may go: the top of the water it is in, less its own
@@ -1012,7 +1131,27 @@ static func water_top_at(from: Node3D, point: Vector3) -> float:
 	return top
 
 
+## Walked into something. Wandering, it just goes somewhere else; on an errand it
+## steps round, a body or two to one side, and carries on.
+func _bumped() -> void:
+	if not _errand:
+		_pick_target()
+		return
+	if _detour_left > 0.0:
+		return
+	var ahead := _errand_goal - global_position
+	ahead.y = 0.0
+	var side := Vector3.UP.cross(ahead.normalized()) * (1.0 if randf() < 0.5 else -1.0)
+	_target = global_position + side * maxf(hit_radius() * 6.0, 0.6) - ahead.normalized() \
+		* hit_radius()
+	if flying:
+		_target.y = global_position.y + hit_radius() * 2.0
+	_detour_left = 0.6
+
+
 func _pick_target() -> void:
+	_errand = false
+	_detour_left = 0.0
 	_wander_timer = wander_interval * randf_range(0.6, 1.4)
 	var offset := Vector3(randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0)).normalized()
 	offset *= wander_radius * randf_range(0.2, 1.0)

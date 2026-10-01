@@ -56,6 +56,12 @@ const PAINTS := {
 	"petal_yellow": {"colour": Color(0.96, 0.82, 0.26)},
 	"petal_purple": {"colour": Color(0.58, 0.36, 0.78)},
 	"petal_white": {"colour": Color(0.95, 0.94, 0.9)},
+	# What grows to be eaten: a toadstool's cap and stalk, a berry, and the
+	# fungus that lights a cave.
+	"cap": {"colour": Color(0.66, 0.3, 0.2)},
+	"stem": {"colour": Color(0.88, 0.84, 0.74)},
+	"berry": {"colour": Color(0.62, 0.12, 0.2)},
+	"glowcap": {"colour": Color(0.46, 0.9, 0.78), "glow": 1.2},
 	# See-through.
 	"glass": {"colour": Color(0.8, 0.9, 0.95, 0.2), "rough": 0.1},
 	"netting": {"colour": Color(0.85, 0.85, 0.82, 0.28)},
