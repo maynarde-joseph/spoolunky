@@ -45,6 +45,7 @@ func _sections() -> Array[Callable]:
 		_test_the_blade_rat,
 		_test_the_charger_beetle,
 		_test_the_spitter_wasp,
+		_test_the_tongue_frog,
 	]
 
 
@@ -469,6 +470,42 @@ func _test_the_spitter_wasp() -> void:
 		await physics_frame
 		nearest = minf(nearest, _span(wasp))
 	check(nearest > 3.0, "and it keeps its distance after (nearest %.1fm)" % nearest)
+
+
+## The Tongue Frog sits where it is, and from a few metres off its tongue reels you
+## in to its mouth. Silk between you takes the tongue instead.
+func _test_the_tongue_frog() -> void:
+	await _arena()
+	var kind := _species("tongue_frog")
+	if not _kit(kind, "tongue_lash", CreatureAttack.Kind.TONGUE):
+		return
+	var frog := _put(kind, Vector3(5.0, 0.3, 0.0))
+	await run_frames(10)
+	var sits := frog.global_position
+	var web := await _sheet_between(frog)
+	if not check(web != null, "a web goes up between you"):
+		return
+	frog.attack_spider(spider)
+	var health := spider.health
+	var lashed: bool = await wait_until(func() -> bool:
+		return _using(frog, "tongue_lash") and frog.fighter.beat == CreatureFighter.Beat.RECOVER,
+		120)
+	if not check(lashed, "from five metres off, its tongue comes out"):
+		return
+	check(not spider.is_dragged() and is_equal_approx(spider.health, health),
+		"and the web takes it")
+
+	# The same again with nothing in the way.
+	web.demolish()
+	await physics_frame
+	var dragged: bool = await wait_until(func() -> bool: return spider.is_dragged(), 400)
+	check(dragged, "with the web gone, the next one gets hold of you")
+	check(frog.global_position.distance_to(sits) < 1.5,
+		"having waited about where it sat rather than come to you (%.2fm)"
+		% frog.global_position.distance_to(sits))
+	var bitten: bool = await wait_until(func() -> bool: return spider.health < health, 120)
+	check(bitten, "and reels you in to be bitten (%.1f -> %.1f)" % [health, spider.health])
+	check(_span(frog) < 2.0, "right up to its mouth (%.1fm)" % _span(frog))
 
 
 # --- helpers ------------------------------------------------------------
