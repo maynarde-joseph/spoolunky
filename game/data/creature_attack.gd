@@ -42,6 +42,11 @@ enum Kind {
 ## Seconds after it starts before it can be started again.
 @export var cooldown := 3.0
 
+## Whether it comes after you to get this in reach. One that does not is kept for
+## when you come to it: the sting of something that would rather spit, the bite of
+## something that would rather sit and wait.
+@export var chases := true
+
 @export_group("Beats")
 
 ## The tell: seconds it stands winding up before it goes.

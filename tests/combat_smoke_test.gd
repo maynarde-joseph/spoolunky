@@ -35,6 +35,7 @@ func _sections() -> Array[Callable]:
 		_test_a_lunge_goes_where_you_were,
 		_test_a_drill_sticks_in_the_wall,
 		_test_a_spit_flies_and_a_web_stops_it,
+		_test_a_spitter_keeps_its_distance,
 		_test_a_tongue_drags_you_in,
 		_test_a_burst_throws_and_dazes,
 		_test_a_sweep_cuts_silk,
@@ -189,6 +190,48 @@ func _test_a_spit_flies_and_a_web_stops_it() -> void:
 		"having kept its distance rather than walk into your web")
 	check(spitter.global_position.distance_to(stands) < 0.8,
 		"near where it started (%.2fm)" % spitter.global_position.distance_to(stands))
+
+
+## Something that would rather fight from off you keeps off you. Too close for its
+## spit, it gives ground until it has room rather than come in with its sting; it
+## does not walk up to you while the spit cools; and only if you come to it does it
+## sting.
+func _test_a_spitter_keeps_its_distance() -> void:
+	await _arena()
+	var spit := _move(CreatureAttack.Kind.SPIT, 8.0, 0.3)
+	spit.min_reach = 2.5
+	spit.speed = 14.0
+	spit.cooldown = 2.0
+	var sting := _move(CreatureAttack.Kind.BITE, 0.9, 0.3)
+	sting.id = "sting"
+	sting.chases = false
+	sting.cooldown = 1.0
+	var spitter := _put(_kind("spitter", [sting, spit]), Vector3(1.5, 0.3, 0.0))
+	spitter.attack_spider(spider)
+	var started: bool = await wait_until(func() -> bool:
+		return spitter.fighter.is_attacking(), 240)
+	if not check(started, "close in, it still gets an attack off"):
+		return
+	check(spitter.fighter.attack == spit,
+		"and it is the spit, not the sting (%s)" % spitter.fighter.attack.id)
+	check(_span(spitter) > 2.3,
+		"from far enough off for one, having given ground (%.1fm, from 1.5m)" % _span(spitter))
+	await wait_until(func() -> bool: return not spitter.fighter.is_attacking(), 120)
+	var nearest := INF
+	for i in 60:
+		await physics_frame
+		nearest = minf(nearest, _span(spitter))
+	check(nearest > 2.0,
+		"and while it waits to spit again it does not come in (nearest %.1fm)" % nearest)
+
+	# Come to it, though, and it stings.
+	await wait_until(func() -> bool: return not spitter.fighter.is_attacking(), 120)
+	var beside := spitter.global_position + (spider.global_position
+		- spitter.global_position).normalized() * 0.7
+	place(Vector3(beside.x, spider.global_position.y, beside.z))
+	var stung: bool = await wait_until(func() -> bool:
+		return spitter.fighter.attack == sting, 60)
+	check(stung, "but walk up to it and it stings")
 
 
 ## A tongue goes out to you in a straight line and reels you in to be bitten.
@@ -368,6 +411,10 @@ func _put(kind: PreySpecies, offset: Vector3) -> Prey:
 	level.add_child(creature)
 	creature.global_position = _centre() + offset
 	return creature
+
+
+func _span(creature: Prey) -> float:
+	return creature.global_position.distance_to(spider.global_position)
 
 
 func _tells(creature: Prey) -> int:

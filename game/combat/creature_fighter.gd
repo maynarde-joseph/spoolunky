@@ -104,12 +104,20 @@ func hunt(delta: float, quarry: Node3D) -> void:
 	if chosen != null:
 		_begin(chosen)
 		return
-	if not _wants_closer(span):
-		# In reach of what it has and waiting on it: it holds its ground, turned to
-		# you, rather than walking into whatever you have put between you.
-		creature.steer_at(quarry.global_position, creature.current_speed() * CREEP, delta)
+	if _wants_closer(span):
+		creature.steer_at(quarry.global_position, creature.current_speed() * Prey.CHASE_DASH, delta)
 		return
-	creature.steer_at(quarry.global_position, creature.current_speed() * Prey.CHASE_DASH, delta)
+	if _wants_further(span):
+		# Too close for what it would rather use: it gives ground until it has room.
+		var away := creature.global_position - quarry.global_position
+		away.y = 0.0
+		away = away.normalized() if away.length_squared() > 0.000001 \
+			else creature.global_basis.z
+		creature.steer_at(creature.global_position + away * 2.0, creature.current_speed(), delta)
+		return
+	# In reach of what it has and waiting on it: it holds its ground, turned to
+	# you, rather than walking into whatever you have put between you.
+	creature.steer_at(quarry.global_position, creature.current_speed() * CREEP, delta)
 
 
 ## Ends whatever attack is under way, tell and all.
@@ -120,15 +128,24 @@ func cancel() -> void:
 	_clear_tell()
 
 
-## Whether getting nearer would help: something it has is ready but not yet in
-## reach, or nothing it has reaches this far at all.
+## Whether getting nearer would help: something it would come after you for is
+## ready but not yet in reach, or nothing it has reaches this far at all.
 func _wants_closer(span: float) -> bool:
 	var longest := 0.0
 	for move in attacks:
 		longest = maxf(longest, move.reach)
-		if cooling(move) <= 0.0 and move.reach < span:
+		if move.chases and cooling(move) <= 0.0 and move.reach < span:
 			return true
 	return span > longest
+
+
+## Whether backing off would help: something it has is ready but needs more room
+## than it has — a spit from too close, a dive with no run-up.
+func _wants_further(span: float) -> bool:
+	for move in attacks:
+		if cooling(move) <= 0.0 and move.min_reach > span:
+			return true
+	return false
 
 
 func _choose(span: float) -> CreatureAttack:
