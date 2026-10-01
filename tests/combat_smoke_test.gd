@@ -45,6 +45,7 @@ func _sections() -> Array[Callable]:
 		_test_a_meal_mends_where_waiting_does_not,
 		_test_waking_somewhere,
 		_test_a_shrine_is_where_you_wake,
+		_test_a_gate_opens_from_its_far_side,
 		_test_the_drill_mosquito,
 		_test_the_blade_rat,
 		_test_the_charger_beetle,
@@ -462,6 +463,28 @@ func _test_a_shrine_is_where_you_wake() -> void:
 	keeper.stir()
 	await physics_frame
 	check(lair.creature == null, "and stays down when the Hollows stir")
+
+
+## A shortcut gate is a wall from the near side and opens from the far one: touch
+## its lever and it rises out of the way, and stays out of it.
+func _test_a_gate_opens_from_its_far_side() -> void:
+	await _arena()
+	var gate := ShortcutGate.make(_slab, "Test Gate", _centre() + Vector3(2.0, 0.0, -2.5),
+		_centre() + Vector3(2.4, 3.0, 2.5), _centre() + Vector3(4.5, 0.0, 0.0))
+	await physics_frame
+	var through := func() -> bool:
+		var query := PhysicsRayQueryParameters3D.create(_centre() + Vector3(0.0, 1.0, 0.0),
+			_centre() + Vector3(4.0, 1.0, 0.0), GameLayers.WORLD)
+		return level.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+	check(not through.call(), "shut, it fills the way")
+	await run_frames(30)
+	check(not gate.open, "and from the near side nothing opens it")
+	stand_on(gate.lever_at + Vector3(0.6, 0.0, 0.0))
+	var opened: bool = await wait_until(func() -> bool: return gate.open, 30)
+	check(opened, "touch the lever on the far side and it opens")
+	var clear: bool = await wait_until(func() -> bool: return gate.is_clear(), 180)
+	check(clear, "rising all the way out of the way")
+	check(through.call(), "and the way through is open")
 
 
 # --- the hostiles -------------------------------------------------------
