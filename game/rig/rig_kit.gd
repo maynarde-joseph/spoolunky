@@ -201,6 +201,44 @@ static func lathe(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, frame: Tra
 	sew(tool, skeleton.get_bone_global_rest(bone), bone, grid, plain(Color.WHITE), false)
 
 
+## A horn on [param bone]: a smooth rod from [param root] out along
+## [param direction], [param thickness] round at the root and coming to a point
+## [param length] away, bending [param curl] degrees over its length about
+## [param axis] — a tusk curving up, a horn sweeping back, the beam of an antler.
+## Drawn in [param pieces] lengths with a ball at every bend, so it reads as one
+## curve. Returns where it went — the [code]points[/code] down it, the
+## [code]ways[/code] it ran from each and its [code]radii[/code] there — for
+## antlers to branch from.
+static func horn(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, root: Vector3,
+		direction: Vector3, axis: Vector3, length: float, thickness: float, curl: float,
+		colour: Color, pieces := 5) -> Dictionary:
+	var points: Array[Vector3] = [root]
+	var ways: Array[Vector3] = []
+	var radii: Array[float] = []
+	var turn := deg_to_rad(curl) / float(pieces)
+	var piece := length / float(pieces)
+	var spin := axis.normalized()
+	for i in pieces + 1:
+		var t := float(i) / float(pieces)
+		radii.append(thickness * (1.0 - t * 0.82) if i < pieces else 0.0)
+	for i in pieces:
+		var way := direction.normalized().rotated(spin, turn * (float(i) + 0.5))
+		ways.append(way)
+		points.append(points[i] + way * piece)
+	if bone < 0:
+		return {"points": points, "ways": ways, "radii": radii}
+	var paint := plain(colour)
+	ellipsoid(tool, skeleton, bone, root, Vector3.ONE * radii[0], paint, 10, 6)
+	for i in pieces:
+		var frame := Transform3D(along(ways[i], spin), points[i])
+		lathe(tool, skeleton, bone, frame, [
+			[0.0, radii[i], radii[i], colour],
+			[piece * (1.0 if i == pieces - 1 else 1.02), radii[i + 1], radii[i + 1], colour]], 10)
+		if i > 0:
+			ellipsoid(tool, skeleton, bone, points[i], Vector3.ONE * radii[i], paint, 10, 6)
+	return {"points": points, "ways": ways, "radii": radii}
+
+
 ## The rows of an egg for [method lathe]: [param radii] across, up and half its
 ## length, centred on the lathe's origin, narrowing toward its +Y end by
 ## [param point] — 0 is an egg's round end, 1 comes to a point. [param paint]

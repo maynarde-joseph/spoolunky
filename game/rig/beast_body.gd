@@ -91,6 +91,11 @@ enum Ears {
 @export_range(0.3, 1.2) var jaw := 0.8
 ## Mouth open whenever it is not caught: a dog's.
 @export var pants := false
+## A pair of tusks this long and this thick at the root, curving up out of the
+## lower jaw, so they come up with it when it opens its mouth: a boar's. Zero for
+## none.
+@export var tusks := Vector2.ZERO
+@export var tusk_colour := Color(0.9, 0.86, 0.74)
 
 
 @export_group("Legs")
@@ -302,6 +307,9 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 			RigKit.solid(colour)).map(
 			func(row: Array) -> Array: return [row[0] + length * 0.5, row[1], row[2], row[3]]), 12)
 
+	if tusks != Vector2.ZERO:
+		_build_tusks(coat, skeleton)
+
 	for s in 2:
 		var side := -1.0 if s == 0 else 1.0
 		# Set into the head, a little proud of it, out toward the sides as far as
@@ -340,3 +348,15 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 
 	return RigKit.commit([coat, shine], [RigKit.shell_material(0.75, 0.0, 0.3),
 		RigKit.eye_material(eye_colour, eye_colour, 0.15)])
+
+
+## Two tusks on the jaw, from near its front: out, up and forward, and curling
+## back toward the face. In the jaw's own space its length runs up +Y and +Z is
+## the way the face's top is.
+func _build_tusks(coat: SurfaceTool, skeleton: Skeleton3D) -> void:
+	var jaw_bone := skeleton.find_bone("Jaw")
+	var length: float = _mouth()["length"]
+	for side in [-1.0, 1.0]:
+		RigKit.horn(coat, skeleton, jaw_bone,
+			Vector3(side * snout.x * 0.55, length * 0.72, snout.y * 0.15),
+			Vector3(side * 0.4, 0.45, 0.8), Vector3.RIGHT, tusks.x, tusks.y, 60.0, tusk_colour)

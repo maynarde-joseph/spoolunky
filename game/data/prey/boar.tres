@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="PreySpecies" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/data/prey_species.gd" id="1_species"]
+[ext_resource type="Resource" path="res://game/data/bodies/boar.tres" id="2_body"]
+
+[resource]
+script = ExtResource("1_species")
+id = "boar"
+display_name = "Bristleback Boar"
+description = "Roots through the glade for fungus and berries, and through anything dead for the rest. It is afraid of nothing that lives there, charges whatever comes near — a spider too, until the spider is the bigger thing — and fights a web for longer than anything on legs."
+sort_order = 74
+biomass = 600.0
+size_class = 9
+struggle_power = 8.5
+struggle_stamina = 16.0
+settled_drain = 0.07
+move_speed = 6.0
+flying = false
+swims = false
+wander_radius = 40.0
+wander_height = Vector2(0.0, 0.2)
+wander_interval = 4.0
+lure_susceptibility = 0.2
+aggression = 0.8
+hunt_range = 20.0
+bite_damage = 13.0
+bite_interval = 1.5
+diet = PackedStringArray("fungus", "berries", "grass", "carrion")
+tags = PackedStringArray("beast")
+active = 0
+senses = 70.0
+colour = Color(0.3, 0.24, 0.2, 1)
+sheen = Color(0.2, 0.16, 0.13, 1)
+body = ExtResource("2_body")
+body_radius = 4.5
+winged = false
+habitat = "wilds"
