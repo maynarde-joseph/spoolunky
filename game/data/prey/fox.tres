@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="PreySpecies" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/data/prey_species.gd" id="1_species"]
+[ext_resource type="Resource" path="res://game/data/bodies/fox.tres" id="2_body"]
+
+[resource]
+script = ExtResource("1_species")
+id = "fox"
+display_name = "Fox"
+description = "Hunts the glade's edges at night for hares, frogs and anything else small enough, and takes a spider small enough as readily as any of them. It is quick, clever about a web it has seen before, and bites hard — and it keeps its distance from anything that could eat it back."
+sort_order = 64
+biomass = 200.0
+size_class = 7
+struggle_power = 5.4
+struggle_stamina = 13.0
+settled_drain = 0.05
+move_speed = 6.8
+flying = false
+swims = false
+wander_radius = 30.0
+wander_height = Vector2(0.0, 0.2)
+wander_interval = 3.0
+lure_susceptibility = 0.15
+aggression = 0.6
+hunt_range = 14.0
+bite_damage = 8.0
+bite_interval = 1.2
+diet = PackedStringArray("hare", "rat", "frog", "lizard", "songbird", "berries", "carrion")
+tags = PackedStringArray("beast")
+active = 2
+senses = 55.0
+wary = true
+colour = Color(0.7, 0.36, 0.15, 1)
+sheen = Color(0.45, 0.22, 0.08, 1)
+body = ExtResource("2_body")
+body_radius = 2.3
+winged = false
+habitat = "wilds"

@@ -114,6 +114,10 @@ enum Ears {
 @export_range(2, 8) var tail_bones := 5
 ## How thick the tail is at its root, and at its tip.
 @export var tail_thickness := Vector2(0.07, 0.025)
+## How much of it, back from the tip, is [member tail_tip_colour]: a fox's white
+## brush. Zero for none.
+@export_range(0.0, 1.0) var tail_tip := 0.0
+@export var tail_tip_colour := Color(0.92, 0.9, 0.86)
 ## Which way it leaves the body, in degrees above straight back.
 @export var tail_lift := -15.0
 ## How much further up it bends at each bone, in degrees: a cat's hooked tail.
@@ -326,11 +330,13 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 	if tail > 0.0:
 		var rest := tail_rest()
 		var piece: float = rest["piece"]
+		var tipped := float(tail_bones) * (1.0 - tail_tip) - 0.001
 		for i in tail_bones:
 			var from := lerpf(tail_thickness.x, tail_thickness.y, float(i) / float(tail_bones))
 			var to := lerpf(tail_thickness.x, tail_thickness.y, float(i + 1) / float(tail_bones))
+			var paint := tail_tip_colour if tail_tip > 0.0 and float(i) >= tipped else tail_colour
 			RigKit.segment(coat, skeleton, skeleton.find_bone(tail_bone(i)), piece, from, to,
-				RigKit.plain(tail_colour), rod)
+				RigKit.plain(paint), rod)
 
 	return RigKit.commit([coat, shine], [RigKit.shell_material(0.75, 0.0, 0.3),
 		RigKit.eye_material(eye_colour, eye_colour, 0.15)])

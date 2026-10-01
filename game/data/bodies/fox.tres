@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="BeastBody" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/rig/beast_body.gd" id="1_body"]
+
+[resource]
+script = ExtResource("1_body")
+colour = Color(0.7, 0.36, 0.15, 1)
+ear_colour = Color(0.24, 0.15, 0.1, 1)
+tail_colour = Color(0.7, 0.36, 0.15, 1)
+nose_colour = Color(0.08, 0.06, 0.06, 1)
+eye_colour = Color(0.6, 0.4, 0.06, 1)
+body = Vector3(0.4, 0.4, 0.84)
+body_point = 0.2
+head = Vector3(0.3, 0.29, 0.32)
+head_lift = 0.36
+snout = Vector3(0.13, 0.12, 0.44)
+snout_point = 0.7
+snout_drop = 0.25
+nose = 0.05
+stance = 0.95
+eye = 0.05
+eye_spread = 0.45
+eye_lift = 0.42
+ears = 1
+ear = Vector2(0.25, 0.38)
+ear_lean = 14.0
+jaw = 0.8
+leg_thickness = 0.055
+foot = 0.1
+tail = 2.0
+tail_bones = 6
+tail_thickness = Vector2(0.19, 0.17)
+tail_tip = 0.2
+tail_tip_colour = Color(0.93, 0.9, 0.85, 1)
+tail_lift = -22.0
+tail_curl = 3.0
+stride = 1.4
