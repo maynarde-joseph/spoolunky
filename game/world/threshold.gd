@@ -27,7 +27,7 @@ extends Node3D
 signal opened()
 
 ## Body height that shifts it. The tier table in the design doc is the source:
-## 0.4 is a House Spider, 0.7 a Huntsman, 1.2 a Gutter Spider.
+## 0.4 is a Fern Spinner, 0.7 a Huntsman, 1.2 a Root Weaver.
 @export var opens_at := 0.4
 
 ## A trait id that also opens it, whatever size you are. Empty for a gate that

@@ -68,7 +68,10 @@ static func load_devices() -> Array[DeviceKind]:
 	return kinds
 
 
-## The size tiers, smallest first. Stage 0 is where a new spider starts.
+## The size tiers, smallest first. Stage 0 is where a new spider starts. They are
+## named for the places in the hunting ground each is the size for: a Fern
+## Spinner spins among the ferns, a Root Weaver under the great tree, a Ruin
+## Stalker up on the old walls.
 ##
 ## The jump numbers are upward velocity, so the height they buy is v² / 2g —
 ## a spiderling clears about a metre and a half, which is six of its own body
@@ -77,12 +80,12 @@ static func load_devices() -> Array[DeviceKind]:
 static func default_stages() -> Array[GrowthStage]:
 	var stages: Array[GrowthStage] = []
 	stages.append(_stage("Spiderling", 0.0, 0.25, 2.4, 5.6, 3.2, 2.4, 1.0, 1, 0.6))
-	stages.append(_stage("House Spider", 24.0, 0.4, 3.0, 6.7, 4.8, 3.6, 1.35, 2, 0.9))
+	stages.append(_stage("Fern Spinner", 24.0, 0.4, 3.0, 6.7, 4.8, 3.6, 1.35, 2, 0.9))
 	stages.append(_stage("Huntsman", 70.0, 0.7, 3.8, 7.8, 7.0, 5.2, 1.8, 3, 1.3))
-	stages.append(_stage("Gutter Spider", 160.0, 1.2, 4.8, 9.2, 9.5, 7.2, 2.4, 4, 1.9))
-	stages.append(_stage("Sewer Widow", 340.0, 2.0, 6.0, 10.9, 13.0, 10.0, 3.2, 5, 2.7))
-	stages.append(_stage("Park Recluse", 700.0, 3.4, 7.4, 12.9, 18.0, 14.0, 4.2, 6, 3.8))
-	stages.append(_stage("City Weaver", 1400.0, 5.6, 9.2, 14.8, 26.0, 20.0, 5.5, 7, 5.2))
+	stages.append(_stage("Root Weaver", 160.0, 1.2, 4.8, 9.2, 9.5, 7.2, 2.4, 4, 1.9))
+	stages.append(_stage("Glade Widow", 340.0, 2.0, 6.0, 10.9, 13.0, 10.0, 3.2, 5, 2.7))
+	stages.append(_stage("Ruin Stalker", 700.0, 3.4, 7.4, 12.9, 18.0, 14.0, 4.2, 6, 3.8))
+	stages.append(_stage("Elder Weaver", 1400.0, 5.6, 9.2, 14.8, 26.0, 20.0, 5.5, 7, 5.2))
 	stages.append(_stage("The Architect", 2800.0, 9.0, 11.0, 16.8, 40.0, 30.0, 7.0, 9, 7.5))
 	return stages
 

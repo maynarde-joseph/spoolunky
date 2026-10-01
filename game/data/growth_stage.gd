@@ -10,7 +10,7 @@ extends Resource
 
 @export_group("Identity")
 
-## Name shown in the HUD, e.g. "House Spider".
+## Name shown in the HUD, e.g. "Fern Spinner".
 @export var display_name := "Spiderling"
 
 ## Total biomass eaten before this stage is reached. The first stage is 0.
