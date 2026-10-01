@@ -48,6 +48,11 @@ var _view: Node3D
 var _growth: Array[Node3D] = []
 var _shown := -1.0
 
+## The few shapes every patch is drawn with, made once and shared: a valley has a
+## hundred patches of ten parts each, and a thousand copies of one sphere is a
+## thousand meshes to draw.
+static var _shapes := {}
+
 
 func _ready() -> void:
 	add_to_group(GROUP)
@@ -174,11 +179,13 @@ func _scatter(dice: RandomNumberGenerator, spread: float) -> Vector3:
 
 
 func _lump(at: Vector3, radii: Vector3, paint: String) -> MeshInstance3D:
-	var sphere := SphereMesh.new()
-	sphere.radius = 1.0
-	sphere.height = 2.0
-	sphere.radial_segments = 10
-	sphere.rings = 5
+	var sphere := _shape("lump", func() -> Mesh:
+		var made := SphereMesh.new()
+		made.radius = 1.0
+		made.height = 2.0
+		made.radial_segments = 10
+		made.rings = 5
+		return made)
 	var part := _part(sphere, paint)
 	part.position = at
 	part.scale = radii
@@ -187,14 +194,18 @@ func _lump(at: Vector3, radii: Vector3, paint: String) -> MeshInstance3D:
 
 
 func _stalk(at: Vector3, tall: float, thick: float, paint: String) -> MeshInstance3D:
-	var tube := CylinderMesh.new()
-	tube.top_radius = thick * 0.8
-	tube.bottom_radius = thick
-	tube.height = tall
-	tube.radial_segments = 6
-	tube.rings = 1
+	# A unit stalk, stretched: tall by its height, wide by its thickness.
+	var tube := _shape("stalk", func() -> Mesh:
+		var made := CylinderMesh.new()
+		made.top_radius = 0.8
+		made.bottom_radius = 1.0
+		made.height = 1.0
+		made.radial_segments = 6
+		made.rings = 1
+		return made)
 	var part := _part(tube, paint)
 	part.position = at + Vector3.UP * tall * 0.5
+	part.scale = Vector3(thick, tall, thick)
 	return part
 
 
@@ -202,12 +213,14 @@ func _stalk(at: Vector3, tall: float, thick: float, paint: String) -> MeshInstan
 ## root, so a grazed blade is a short blade rather than a floating one.
 func _blade(at: Vector3, tall: float, thick: float, paint: String,
 		dice: RandomNumberGenerator) -> Node3D:
-	var cone := CylinderMesh.new()
-	cone.top_radius = 0.0
-	cone.bottom_radius = thick
-	cone.height = 1.0
-	cone.radial_segments = 4
-	cone.rings = 1
+	var cone := _shape("blade", func() -> Mesh:
+		var made := CylinderMesh.new()
+		made.top_radius = 0.0
+		made.bottom_radius = 1.0
+		made.height = 1.0
+		made.radial_segments = 4
+		made.rings = 1
+		return made)
 	var root := Node3D.new()
 	_view.add_child(root)
 	root.position = at
@@ -215,9 +228,16 @@ func _blade(at: Vector3, tall: float, thick: float, paint: String,
 		dice.randf_range(-0.25, 0.25))
 	var blade := _part(cone, paint, root)
 	blade.position = Vector3.UP * 0.5
+	blade.scale = Vector3(thick, 1.0, thick)
 	root.scale = Vector3(1.0, tall, 1.0)
 	root.set_meta("full", root.scale)
 	return root
+
+
+static func _shape(key: String, make: Callable) -> Mesh:
+	if not _shapes.has(key):
+		_shapes[key] = make.call()
+	return _shapes[key]
 
 
 func _part(mesh: Mesh, paint: String, parent: Node3D = null) -> MeshInstance3D:
