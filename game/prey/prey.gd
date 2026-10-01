@@ -1316,6 +1316,11 @@ func _look_for_a_spider() -> void:
 ## because it grew, or got away, or because silk took hold of the hunter — drops
 ## straight back to wandering rather than following you round the level for ever.
 func _process_hunt(delta: float) -> void:
+	# Eaten down to nothing by something else, or rotted away, while it was being
+	# chased: there is nothing left to chase.
+	if not is_instance_valid(_quarry):
+		break_off()
+		return
 	var creature := _quarry as Prey
 	if creature != null:
 		_process_chase(delta, creature)

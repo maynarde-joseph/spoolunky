@@ -34,6 +34,7 @@ func _sections() -> Array[Callable]:
 		_test_fliers_eat_from_above,
 		_test_diets,
 		_test_a_kill,
+		_test_quarry_gone,
 		_test_meat_first,
 		_test_too_big_to_take,
 		_test_carcasses,
@@ -301,6 +302,25 @@ func _test_a_kill() -> void:
 	await run_frames(20)
 	check(not is_instance_valid(fly) or fly.biomass < left,
 		"the carcass going down as it does (%.1f)" % (fly.biomass if is_instance_valid(fly) else 0.0))
+
+
+## Something that is eaten to nothing, or rots away, while it is being chased or
+## between two sorts of the grid is simply gone: the hunter gives up, and nothing
+## looking about finds it.
+func _test_quarry_gone() -> void:
+	var wasp := _creature("wasp", Vector3(0, 1.0, 0), PackedStringArray(["fly"]))
+	var fly := _creature("fly", Vector3(20, 1.0, 0), PackedStringArray())
+	fly.move_speed = 0.0
+	await physics_frame
+	_world.sort_now()
+	wasp.hunt(fly)
+	await physics_frame
+	check(wasp.is_hunting(), "a wasp hunting a fly")
+	fly.free()
+	check(_world.creatures_near(Vector3(20, 1.0, 0), 5.0).is_empty(),
+		"which is eaten to nothing: the grid does not find it, though it has not been sorted since")
+	await run_frames(2)
+	check(not wasp.is_hunting(), "and the wasp gives up the chase")
 
 
 ## A hunter that eats berries too goes for something to hunt over a bramble

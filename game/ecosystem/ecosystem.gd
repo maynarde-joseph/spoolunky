@@ -161,8 +161,12 @@ func creatures_near(point: Vector3, radius: float) -> Array[Prey]:
 		for z in range(lo.y, hi.y + 1):
 			var square: Array = _cells.get(Vector2i(x, z), [])
 			for node in square:
+				# The grid is as of the last sort, and something in it may have been
+				# eaten to nothing since: asked after before it is cast.
+				if not is_instance_valid(node):
+					continue
 				var creature := node as Prey
-				if creature == null or not is_instance_valid(creature) or creature.eaten:
+				if creature == null or creature.eaten:
 					continue
 				if creature.global_position.distance_squared_to(point) <= reach:
 					found.append(creature)
