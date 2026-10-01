@@ -43,6 +43,7 @@ func _sections() -> Array[Callable]:
 		_test_a_stun_ends_an_attack,
 		_test_the_drill_mosquito,
 		_test_the_blade_rat,
+		_test_the_charger_beetle,
 	]
 
 
@@ -167,16 +168,7 @@ func _test_a_spit_flies_and_a_web_stops_it() -> void:
 	check(hit, "in the open the spit hits (%.1f -> %.1f)" % [health, spider.health])
 
 	# Now a web across the line of fire, while it waits to spit again.
-	var middle := spider.global_position.lerp(spitter.global_position, 0.5)
-	select_pattern("sheet_web")
-	builder.start()
-	for corner in [Vector3(0.0, -0.9, -0.9), Vector3(0.0, 0.9, -0.9),
-			Vector3(0.0, 0.9, 0.9), Vector3(0.0, -0.9, 0.9)]:
-		builder.add_anchor(middle + corner)
-	builder.finish()
-	builder.stop()
-	await run_frames(3)
-	if not check(newest_web("sheet_web") != null, "a web goes up between you"):
+	if not check(await _sheet_between(spitter) != null, "a web goes up between you"):
 		return
 	health = spider.health
 	var again: bool = await wait_until(func() -> bool:
@@ -410,6 +402,52 @@ func _test_the_blade_rat() -> void:
 		"and goes through the line between you on the way")
 
 
+## The Charger Beetle comes from a long way off in a straight line and throws you
+## a long way. A web across its path stops it dead.
+func _test_the_charger_beetle() -> void:
+	await _arena()
+	var kind := _species("charger_beetle")
+	if not _kit(kind, "horn_charge", CreatureAttack.Kind.LUNGE):
+		return
+	var beetle := _put(kind, Vector3(6.0, 0.3, 0.0))
+	var from := beetle.global_position
+	beetle.attack_spider(spider)
+	var health := spider.health
+	var charged: bool = await wait_until(func() -> bool:
+		return _using(beetle, "horn_charge"), 120)
+	if not check(charged, "from six metres off, it charges"):
+		return
+	var hit: bool = await wait_until(func() -> bool: return spider.health < health, 180)
+	check(hit and health - spider.health > 6.0,
+		"and it lands (%.1f -> %.1f)" % [health, spider.health])
+	check(beetle.global_position.distance_to(from) > 4.0,
+		"having crossed the gap (%.1fm)" % beetle.global_position.distance_to(from))
+	check(spider.velocity.length() > 5.0,
+		"and it throws you hard (%.1f m/s)" % spider.velocity.length())
+
+	# Another, from the other side, with a web across its path.
+	beetle.queue_free()
+	stand_on(_centre())
+	await run_frames(20)
+	var other := _put(kind, Vector3(-6.0, 0.3, 0.0))
+	await run_frames(10)
+	if not check(await _sheet_between(other) != null, "a web goes up between you and another"):
+		return
+	health = spider.health
+	other.attack_spider(spider)
+	var again: bool = await wait_until(func() -> bool:
+		return _using(other, "horn_charge") \
+			and other.fighter.beat == CreatureFighter.Beat.STRIKE, 180)
+	if not check(again, "which charges too"):
+		return
+	var caught: bool = await wait_until(func() -> bool: return other.is_stuck(), 120)
+	check(caught, "into the web, which stops it dead")
+	await run_frames(2)
+	check(not other.fighter.is_attacking(), "and that is the end of the charge")
+	check(is_equal_approx(spider.health, health),
+		"which never reaches you (%.1f -> %.1f)" % [health, spider.health])
+
+
 # --- helpers ------------------------------------------------------------
 
 ## A slab of its own, far from everything, with a whole Huntsman standing on it.
@@ -468,6 +506,22 @@ func _put(kind: PreySpecies, offset: Vector3) -> Prey:
 	level.add_child(creature)
 	creature.global_position = _centre() + offset
 	return creature
+
+
+## A sheet web stood across the way halfway between the spider and [param creature].
+func _sheet_between(creature: Prey) -> WebStructure:
+	var middle := spider.global_position.lerp(creature.global_position, 0.5)
+	var across := creature.global_position - spider.global_position
+	across.y = 0.0
+	var side := across.normalized().cross(Vector3.UP)
+	select_pattern("sheet_web")
+	builder.start()
+	for corner in [Vector2(-0.9, -0.9), Vector2(0.9, -0.9), Vector2(0.9, 0.9), Vector2(-0.9, 0.9)]:
+		builder.add_anchor(middle + side * corner.x + Vector3.UP * corner.y)
+	builder.finish()
+	builder.stop()
+	await run_frames(3)
+	return newest_web("sheet_web")
 
 
 ## One of the game's own hostiles, as it ships.
