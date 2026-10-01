@@ -229,6 +229,8 @@ func rewind_growth() -> void:
 	if spider == null:
 		return
 	spider.growth.biomass = 0.0
+	spider.growth.grows = true
+	spider.growth.start_stage = 0
 	spider.growth.apply_initial()
 	spider.health = spider.max_stamina()
 	spider.vitals.quiet = 0.0

@@ -23,6 +23,14 @@ signal fed(amount: float, source: String)
 var biomass := 0.0
 var stage_index := 0
 
+## Whether a meal can move the spider up the ladder. Off, biomass is still counted
+## — it is what eating was worth — but the tier stays where it started, for a
+## level where size comes from what you become rather than from what you eat.
+var grows := true
+
+## The tier the spider starts at, counted from nought.
+var start_stage := 0
+
 ## What the spider has become. Set by the spider; null means the bare ladder.
 var traits: SpiderTraits
 
@@ -46,7 +54,9 @@ func shaped_by(new_traits: SpiderTraits) -> void:
 
 ## Announces the starting stage. Called by the spider once it is set up.
 func apply_initial() -> void:
-	stage_index = 0
+	stage_index = clampi(start_stage, 0, maxi(stages.size() - 1, 0))
+	if not stages.is_empty():
+		biomass = maxf(biomass, base_stage().biomass_required)
 	_reshape()
 	stage_changed.emit(current_stage(), stage_index)
 	biomass_changed.emit(biomass, progress())
@@ -79,7 +89,7 @@ func feed(amount: float, source := "") -> int:
 	biomass += amount
 	fed.emit(amount, source)
 	var gained := 0
-	while true:
+	while grows:
 		var next := next_stage()
 		if next == null or biomass < next.biomass_required:
 			break

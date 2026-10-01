@@ -62,6 +62,14 @@ signal skill_tree_toggled()
 ## Falling below this puts the spider back where it started.
 @export var kill_plane := -60.0
 
+## Whether eating grows the spider. A level where size comes only from what the
+## spider becomes — a skill, not a meal — turns this off, and the spider stays at
+## [member start_stage] whatever it eats.
+@export var grows_by_eating := true
+
+## The size tier the spider starts at, counted from nought: 2 is the Huntsman.
+@export var start_stage := 0
+
 ## Ignore build and feeding input while the mouse is free, so clicking around a
 ## menu doesn't spin a web. Turn off for automated tests and headless runs,
 ## where the display server cannot capture the mouse at all.
@@ -140,6 +148,8 @@ func _ready() -> void:
 	climb.line_dropped.connect(_on_line_dropped)
 	climb.line_cut.connect(_on_line_cut)
 	growth.stage_changed.connect(_on_stage_changed)
+	growth.grows = grows_by_eating
+	growth.start_stage = start_stage
 	growth.apply_initial()
 
 

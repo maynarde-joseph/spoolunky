@@ -198,7 +198,9 @@ func _on_biomass_changed(biomass: float, progress: float) -> void:
 	if _spider == null:
 		return
 	var remaining := _spider.growth.biomass_to_next()
-	if remaining <= 0.0:
+	if not _spider.growth.grows:
+		biomass_label.text = "Biomass   %d" % roundi(biomass)
+	elif remaining <= 0.0:
 		biomass_label.text = "Biomass   %d   (fully grown)" % roundi(biomass)
 	else:
 		biomass_label.text = "Biomass   %d   (%d to grow)" % [roundi(biomass), ceili(remaining)]

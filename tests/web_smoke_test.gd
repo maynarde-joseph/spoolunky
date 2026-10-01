@@ -32,6 +32,7 @@ func _sections() -> Array[Callable]:
 		_test_catching,
 		_test_strands,
 		_test_growth,
+		_test_held_at_one_size,
 		_test_tripline_alert,
 		_test_pressure_snare,
 		_test_trigger_links,
@@ -311,6 +312,32 @@ func _test_growth() -> void:
 		check(bridge.get_node_or_null("Walkway") != null, "the bridge is solid enough to walk on")
 		check(bridge.catch_area == null, "but it does not catch anything")
 	builder.stop()
+
+
+## A level can hold the spider at one size: eating is still worth its biomass,
+## but it grows nothing. That is the world where size comes from what you become
+## rather than from what you eat. And it can start the spider bigger than a
+## spiderling.
+func _test_held_at_one_size() -> void:
+	var growth := spider.growth
+	growth.grows = false
+	growth.start_stage = 2
+	growth.apply_initial()
+	await physics_frame
+	check(growth.stage_index == 2 and spider.stage().display_name == "Huntsman",
+		"a level can start the spider as a Huntsman (%s)" % spider.stage().display_name)
+	var capsule := spider.collision.shape as CapsuleShape3D
+	check(is_equal_approx(capsule.height, spider.stage().body_height),
+		"and the body is that size (%.2f)" % capsule.height)
+	var before := growth.biomass
+	var gained := growth.feed(5000.0, "test")
+	await physics_frame
+	check(gained == 0 and growth.stage_index == 2,
+		"and held there, eating grows it nothing (%d tiers from a feast)" % gained)
+	check(growth.biomass > before, "though the meal still counts (%d -> %d)"
+		% [roundi(before), roundi(growth.biomass)])
+	growth.grows = true
+	growth.start_stage = 0
 
 
 func _test_tripline_alert() -> void:
