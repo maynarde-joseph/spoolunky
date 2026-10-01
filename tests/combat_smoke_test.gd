@@ -31,6 +31,7 @@ func run_checks() -> void:
 func _sections() -> Array[Callable]:
 	return [
 		_test_a_hostile_comes_whatever_its_size,
+		_test_a_hostile_must_see_you,
 		_test_a_bite_is_told_first,
 		_test_a_lunge_goes_where_you_were,
 		_test_a_drill_sticks_in_the_wall,
@@ -72,6 +73,23 @@ func _test_a_hostile_comes_whatever_its_size() -> void:
 	check(noticed, "it comes for you on its own once it has seen you")
 	check(not other.is_hunting(), "and the other one does not")
 	check(biter.fighter != null, "with its moves to come for you with")
+
+
+## A hostile thing still has to know you are there. Behind a wall it does not
+## come for you, however near; take the wall away and it does.
+func _test_a_hostile_must_see_you() -> void:
+	await _arena()
+	var wall := add_slab(_centre() + Vector3(1.6, 1.5, 0.0), Vector3(0.4, 3.0, 16.0), _slab)
+	await physics_frame
+	var kind := _kind("biter", [_move(CreatureAttack.Kind.BITE, 0.9)])
+	kind.wander_radius = 1.5
+	var biter := _put(kind, Vector3(4.0, 0.3, 0.0))
+	await run_frames(240)
+	check(not biter.is_hunting(),
+		"behind a wall, %.1fm off, it has not seen you" % _span(biter))
+	wall.queue_free()
+	var seen: bool = await wait_until(func() -> bool: return biter.is_hunting(), 120)
+	check(seen, "and with the wall gone, it comes")
 
 
 ## Even a bite is told before it lands: a ring round the creature while it winds

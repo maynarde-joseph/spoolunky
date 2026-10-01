@@ -1340,9 +1340,24 @@ func _look_for_a_spider() -> void:
 		return
 	if not is_hostile() and randf() > aggression:
 		return
+	# Something that comes for you whatever you are has to know you are there: in
+	# a place of walls, the one in the next room has not seen you.
+	if is_hostile() and not can_see(spider):
+		return
 	_quarry = spider
 	_chase_left = CHASE_STAMINA
 	_state = State.HUNTING
+
+
+## Whether nothing solid stands between it and [param target]. Silk does not
+## count: a web is something you can see through.
+func can_see(target: Node3D) -> bool:
+	if target == null or not is_instance_valid(target) or not is_inside_tree():
+		return false
+	var eye := global_position + Vector3.UP * hit_radius() * 0.5
+	var query := PhysicsRayQueryParameters3D.create(eye, target.global_position,
+		GameLayers.WORLD)
+	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 
 
 ## Coming for you. Steers at the spider and bites when it arrives.
