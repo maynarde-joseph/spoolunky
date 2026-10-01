@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/ruin.tres" id="1_k1h4s"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_dinon"]
+size = Vector3(5.85, 3.1, 4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_s686j"]
+size = Vector3(5.85, 3.1, 4)
+
+[node name="RuinBlock" type="StaticBody3D" unique_id=26343911]
+collision_mask = 0
+
+[node name="Block" type="MeshInstance3D" parent="." unique_id=1042890227]
+transform = Transform3D(0.99280864, -0.11932933, -0.009566763, 0.119712204, 0.9896334, 0.079339996, 0, -0.07991469, 0.99680173, 0, 1.6, 0)
+material_override = ExtResource("1_k1h4s")
+mesh = SubResource("BoxMesh_dinon")
+
+[node name="BlockShape" type="CollisionShape3D" parent="." unique_id=1237227494]
+transform = Transform3D(0.99280864, -0.11932933, -0.009566763, 0.119712204, 0.9896334, 0.079339996, 0, -0.07991469, 0.99680173, 0, 1.6, 0)
+shape = SubResource("BoxShape3D_s686j")

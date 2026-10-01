@@ -51,6 +51,8 @@ const ALL := [
 	"bracket_fungus",
 	# The bloom glade.
 	"tall_grass", "wildflowers", "berry_bush", "beehive", "wasp_tree", "standing_stone",
+	# The old ruins.
+	"ruin_wall", "ruin_arch", "ruin_pillar", "fallen_pillar", "ruin_block", "flagstones",
 ]
 
 
@@ -135,6 +137,12 @@ static func build(id: String) -> Node3D:
 		"beehive": return _beehive()
 		"wasp_tree": return _wasp_tree()
 		"standing_stone": return _standing_stone()
+		"ruin_wall": return _ruin_wall()
+		"ruin_arch": return _ruin_arch()
+		"ruin_pillar": return _ruin_pillar()
+		"fallen_pillar": return _fallen_pillar()
+		"ruin_block": return _ruin_block()
+		"flagstones": return _flagstones()
 	push_error("no such prop: %s" % id)
 	return null
 
@@ -1299,6 +1307,111 @@ static func _standing_stone() -> Node3D:
 		false)
 	WorldKit.ball(it, "Lichen", Vector3(1.2, 1.6, 0.4), WorldKit.at(Vector3(-1.5, 11.0, -1.7)),
 		"moss", false)
+	return it
+
+
+# --- the old ruins -----------------------------------------------------
+
+## A length of ruined wall, thirty long and four thick: courses of big blocks laid
+## in a running bond and broken off unevenly along the top, each block a little
+## out of true with the next — which is what a spider climbs by.
+static func _ruin_wall() -> Node3D:
+	var it := WorldKit.body(null, "RuinWall")
+	var course := 3.2
+	var block := 6.0
+	# How many courses still stand at each place along it, end to end.
+	var standing := [9, 8, 8, 6, 7, 4, 3]
+	for row in 9:
+		var offset := block * 0.5 if row % 2 == 1 else 0.0
+		var count := 5 if row % 2 == 0 else 4
+		for k in count:
+			var x := -15.0 + offset + block * (float(k) + 0.5)
+			var column := clampi(int((x + 15.0) / 30.0 * float(standing.size())), 0,
+				standing.size() - 1)
+			if row >= int(standing[column]):
+				continue
+			var jog := 0.18 * sin(float(row * 7 + k * 3))
+			var turn := 0.02 * sin(float(row * 5 + k * 11))
+			WorldKit.box(it, "Block", Vector3(block - 0.15, course - 0.12, 4.0 + jog),
+				Transform3D(Basis(Vector3.UP, turn), Vector3(x, course * (float(row) + 0.5), jog * 0.5)),
+				"ruin" if (row + k) % 3 != 0 else "ruin_dark")
+	WorldKit.ball(it, "Moss", Vector3(9.0, 1.4, 3.2), WorldKit.at(Vector3(-6.0, 0.4, 2.2)), "moss",
+		false)
+	WorldKit.ball(it, "Moss", Vector3(6.0, 1.1, 2.6), WorldKit.at(Vector3(8.0, 0.3, -2.0)), "moss",
+		false)
+	return it
+
+
+## An arch between two pillars: each pillar a stack of drums with a square stone on
+## top, and the arch sprung between them in wedge-shaped stones.
+static func _ruin_arch() -> Node3D:
+	var it := WorldKit.body(null, "RuinArch")
+	var span := 10.0
+	for side in [-1.0, 1.0]:
+		var x: float = side * span
+		WorldKit.box(it, "Base", Vector3(6.4, 2.0, 6.4), WorldKit.at(Vector3(x, 1.0, 0.0)), "ruin_dark")
+		for drum in 3:
+			WorldKit.cylinder(it, "Drum", 2.5, 7.4, WorldKit.at(Vector3(x, 2.0 + 7.5 * (float(drum)
+				+ 0.5), 0.0), float(drum) * 23.0), "ruin", true, -1.0, 14)
+		WorldKit.box(it, "Capital", Vector3(6.2, 1.6, 6.2), WorldKit.at(Vector3(x, 25.3, 0.0)),
+			"ruin_dark")
+	var stones := 9
+	for k in stones:
+		var angle := PI * (float(k) + 0.5) / float(stones)
+		var at := Vector3(cos(angle) * span, 26.1 + sin(angle) * span, 0.0)
+		var facing := Basis(Vector3.BACK, angle - PI * 0.5)
+		WorldKit.box(it, "Voussoir", Vector3(3.3, 2.8, 5.0), Transform3D(facing, at),
+			"ruin" if k % 2 == 0 else "ruin_dark")
+	return it
+
+
+## A column still standing on its base: three drums, the top one cracked off at a
+## slant, and no capital any more.
+static func _ruin_pillar() -> Node3D:
+	var it := WorldKit.body(null, "RuinPillar")
+	WorldKit.box(it, "Base", Vector3(6.4, 2.0, 6.4), WorldKit.at(Vector3(0.0, 1.0, 0.0)), "ruin_dark")
+	WorldKit.cylinder(it, "Drum", 2.5, 7.4, WorldKit.at(Vector3(0.0, 5.75, 0.0)), "ruin", true, -1.0,
+		14)
+	WorldKit.cylinder(it, "Drum", 2.5, 7.4, Transform3D(Basis(Vector3.UP, 0.4), Vector3(0.12, 13.25,
+		0.05)), "ruin", true, -1.0, 14)
+	WorldKit.cylinder(it, "Broken", 2.5, 4.6, Transform3D(Basis(Vector3.BACK, 0.12), Vector3(0.1,
+		19.3, 0.0)), "ruin_dark", true, -1.0, 14)
+	return it
+
+
+## A column that came down: its drums lying where they rolled, one broken.
+static func _fallen_pillar() -> Node3D:
+	var it := WorldKit.body(null, "FallenPillar")
+	var lying := Basis(Vector3.BACK, PI * 0.5)
+	WorldKit.box(it, "Base", Vector3(6.4, 2.0, 6.4), WorldKit.at(Vector3(-13.0, 1.0, 0.0)),
+		"ruin_dark")
+	for drum in 3:
+		var turn := Basis(Vector3.UP, 0.12 * float(drum - 1))
+		WorldKit.cylinder(it, "Drum", 2.5, 7.4, Transform3D(turn * lying, Vector3(-6.0 + 8.0
+			* float(drum), 2.4, 0.6 * float(drum - 1))), "ruin", true, -1.0, 14)
+	WorldKit.box(it, "Capital", Vector3(6.2, 1.6, 6.2), Transform3D(Basis(Vector3.UP, 0.5)
+		* Basis(Vector3.RIGHT, 0.3), Vector3(20.0, 1.8, 2.0)), "ruin_dark")
+	return it
+
+
+## One block off a wall, lying where it fell.
+static func _ruin_block() -> Node3D:
+	var it := WorldKit.body(null, "RuinBlock")
+	WorldKit.box(it, "Block", Vector3(5.85, 3.1, 4.0), Transform3D(Basis(Vector3.BACK, 0.12)
+		* Basis(Vector3.RIGHT, -0.08), Vector3(0.0, 1.6, 0.0)), "ruin")
+	return it
+
+
+## Flagstones: a patch of old paving, the stones uneven and gapped, grass between.
+static func _flagstones() -> Node3D:
+	var it := WorldKit.body(null, "Flagstones")
+	for i in 3:
+		for k in 3:
+			var size := Vector3(6.4 + 0.6 * sin(float(i * 3 + k)), 0.6, 6.0 + 0.5 * cos(float(i + k * 2)))
+			var at := Vector3((float(i) - 1.0) * 7.0, 0.3 + 0.1 * sin(float(i * 5 + k)),
+				(float(k) - 1.0) * 6.6)
+			WorldKit.box(it, "Stone", size, Transform3D(Basis(Vector3.UP, 0.05 * sin(float(i + k))), at),
+				"ruin" if (i + k) % 2 == 0 else "ruin_dark")
 	return it
 
 

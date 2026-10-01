@@ -97,6 +97,14 @@ const TREE_GIRTH := 22.0
 const TREE_TOP_GIRTH := 15.0
 const TREE_HEIGHT := 230.0
 
+## The ruined keep: its tower, at the north-west corner, how wide and how many
+## courses of stone it still has at its highest; and the statue in its courtyard.
+const TOWER := Vector2(-268.0, -128.0)
+const TOWER_RADIUS := 18.0
+const TOWER_COURSES := 20
+const COURSE := 3.4
+const STATUE := Vector2(-212.0, -82.0)
+
 ## The hollow log on the floor of the rootways, end to end, and how big round.
 const LOG_FROM := Vector2(-146.0, 218.0)
 const LOG_TO := Vector2(-262.0, 244.0)
@@ -131,6 +139,7 @@ func build() -> void:
 	_fern_floor()
 	_rootways()
 	_bloom_glade()
+	_old_ruins()
 	_place_the_spider()
 
 
@@ -631,6 +640,159 @@ func _bloom_glade() -> void:
 	_haunt(place, "Heart", heart, ["deer", "boar", "wolf", "wyvern"], 24.0)
 	_haunt(place, "EastMeadow", GLADE + Vector2(70.0, 20.0), ["deer", "wolf"], 24.0)
 	_haunt(place, "WestMeadow", GLADE + Vector2(-70.0, 30.0), ["deer", "boar", "wyvern"], 24.0)
+
+
+# --- the old ruins ---------------------------------------------------------------
+
+## A keep nobody remembers, up on its shelf of ground in the north-west: broken
+## walls round a courtyard of flagstones, a gateway arch toward the glade, a row of
+## columns, fallen ones, a tower still standing at one corner with its top broken
+## away, and in the middle of the courtyard a statue of a spider — a great one,
+## older than the stones round it. It is built for the bigger sizes. Lizards sun
+## on the walls and live in their cracks, ravens roost on the tower, rats and
+## cockroaches come out of the rubble at night, and wolves den in the tower's
+## foot.
+func _old_ruins() -> void:
+	var place := WorldKit.group(self, "OldRuins")
+	var dice := _dice(404)
+	var keep: Array[Vector2] = [TOWER, STATUE]
+	# The walls round the courtyard: a broken rectangle, turned a little off true.
+	var square := Basis(Vector3.UP, 0.22)
+	var walls := [
+		[Vector2(-30.0, -48.0), 0.0], [Vector2(2.0, -48.0), 0.0], [Vector2(34.0, -48.0), 0.0],
+		[Vector2(-64.0, -15.0), PI * 0.5], [Vector2(-64.0, 18.0), PI * 0.5],
+		[Vector2(66.0, -18.0), PI * 0.5], [Vector2(66.0, 30.0), PI * 0.5],
+		[Vector2(-34.0, 50.0), 0.0], [Vector2(36.0, 50.0), 0.0],
+	]
+	for wall in walls:
+		var local: Vector2 = wall[0]
+		var turned := square * Vector3(local.x, 0.0, local.y)
+		var at := RUINS + Vector2(turned.x, turned.z)
+		var facing := Basis(Vector3.UP, float(wall[1]) + 0.22)
+		Props.place(place, "ruin_wall", Transform3D(facing, on_ground(at.x, at.y, -0.6)))
+		keep.append(at)
+	# The gateway in the south wall, toward the glade.
+	var gate := square * Vector3(0.0, 0.0, 50.0)
+	Props.place(place, "ruin_arch", Transform3D(Basis(Vector3.UP, 0.22),
+		on_ground(RUINS.x + gate.x, RUINS.y + gate.z, -0.4)))
+	keep.append(RUINS + Vector2(gate.x, gate.z))
+	# A colonnade across the courtyard's east side, some of it down.
+	for k in 5:
+		var row := square * Vector3(42.0, 0.0, -30.0 + 15.0 * float(k))
+		var at := RUINS + Vector2(row.x, row.z)
+		_prop(place, "ruin_pillar" if k != 2 else "ruin_block", at, dice, Vector2(0.95, 1.05), 0.3)
+		keep.append(at)
+	for i in 3:
+		_prop(place, "fallen_pillar", _scatter(dice, RUINS, Vector2(70.0, 60.0), keep, 22.0), dice,
+			Vector2(0.95, 1.05), 0.4)
+	for i in 14:
+		_prop(place, "ruin_block", _scatter(dice, RUINS, Vector2(85.0, 75.0), keep, 9.0), dice,
+			Vector2(0.9, 1.1), 0.3)
+	for i in 7:
+		_prop(place, "flagstones", _scatter(dice, RUINS, Vector2(40.0, 32.0), keep, 10.0), dice,
+			Vector2(0.95, 1.1), 0.25)
+
+	_tower(place)
+	_statue(place)
+
+	for i in 45:
+		_prop(place, "tall_grass", _scatter(dice, RUINS, Vector2(90.0, 85.0), keep, 6.0), dice,
+			Vector2(0.9, 1.6))
+	for i in 12:
+		_prop(place, "wildflowers", _scatter(dice, RUINS, Vector2(90.0, 85.0), keep, 6.0), dice,
+			Vector2(0.9, 1.4))
+	var brambles: Array[Vector2] = []
+	for i in 3:
+		brambles.append(_scatter(dice, RUINS, Vector2(80.0, 75.0), keep, 14.0))
+		_prop(place, "berry_bush", brambles[i], dice, Vector2(1.0, 1.4), 0.5)
+	for i in 10:
+		_prop(place, "fern", _scatter(dice, RUINS + Vector2(-20.0, 40.0), Vector2(70.0, 40.0), keep,
+			10.0), dice, Vector2(1.5, 2.2))
+
+	var lawns: Array[Vector2] = []
+	for i in 6:
+		lawns.append(_scatter(dice, RUINS, Vector2(70.0, 60.0), keep, 12.0))
+		_patch(place, "grass", lawns[i], 7.0, 60.0, 0.4)
+	for i in 6:
+		_patch(place, "moss", _scatter(dice, RUINS, Vector2(80.0, 70.0), keep, 10.0), 5.0, 36.0, 0.2)
+	for spot in brambles:
+		_patch(place, "berries", spot + Vector2(9.0, 0.0), 6.0, 45.0, 0.15)
+	for i in 3:
+		_patch(place, "flowers", _scatter(dice, RUINS, Vector2(80.0, 70.0), keep, 10.0), 5.0, 30.0,
+			0.3)
+	_patch(place, "fungus", TOWER + Vector2(4.0, 2.0), 4.0, 30.0, 0.15)
+
+	var north := square * Vector3(10.0, 0.0, -44.0)
+	var west := square * Vector3(-60.0, 0.0, 0.0)
+	_den(place, "lizard", RUINS + Vector2(north.x, north.z), 2, 4, true, 6.0)
+	_den(place, "lizard", RUINS + Vector2(west.x, west.z), 2, 4, true, 6.0)
+	_den(place, "raven", TOWER, 2, 4, false, 10.0).position.y += TOWER_COURSES * COURSE * 0.8
+	_den(place, "wolf", TOWER + Vector2(0.0, 2.0), 2, 3, true, 8.0)
+	_den(place, "rat", RUINS + Vector2(-30.0, 30.0), 2, 4, true, 6.0)
+	_den(place, "cockroach", RUINS + Vector2(30.0, -25.0), 3, 6, true, 4.0)
+	_den(place, "moth", lawns[0], 3, 6, false, 5.0)
+	_den(place, "boar", RUINS + Vector2(80.0, 60.0), 1, 2, false, 12.0)
+
+	_haunt(place, "Courtyard", RUINS + Vector2(-12.0, -10.0), ["wolf", "deer", "boar"], 26.0)
+	_haunt(place, "Rubble", RUINS + Vector2(70.0, 40.0), ["boar", "wolf"], 22.0)
+	_haunt(place, "TowerTop", TOWER, ["wyvern"], 20.0).position.y += TOWER_COURSES * COURSE
+
+
+## The keep's tower: a ring of stone courses, with a doorway at its foot and
+## windows up it, and its top broken away to one side so that it stands highest
+## at its back. Hollow, and open to the sky.
+func _tower(place: Node3D) -> void:
+	var tower := WorldKit.body(place, "Tower", Transform3D(Basis.IDENTITY,
+		on_ground(TOWER.x, TOWER.y, -1.0)))
+	var around := 16
+	var thick := 4.0
+	var wide := TAU * TOWER_RADIUS / float(around) * 1.04
+	for c in TOWER_COURSES:
+		for k in around:
+			var angle := TAU * (float(k) + 0.5 * float(c % 2)) / float(around)
+			# The way in faces the courtyard; windows go up the other sides.
+			if c < 6 and (k == 2 or k == 3):
+				continue
+			if (c == 10 or c == 11 or c == 16) and k % 4 == 0:
+				continue
+			# Broken away at the front: what still stands is highest at the back.
+			var top := TOWER_COURSES - roundi(9.0 * maxf(sin(angle + 1.2), 0.0))
+			if c >= top:
+				continue
+			var out := Vector3(cos(angle), 0.0, sin(angle))
+			WorldKit.box(tower, "Course", Vector3(wide, COURSE - 0.1, thick),
+				Transform3D(Basis.looking_at(out, Vector3.UP), out * (TOWER_RADIUS - thick * 0.5)
+					+ Vector3.UP * COURSE * (float(c) + 0.5)), "ruin" if (c + k) % 4 != 0 else "ruin_dark")
+	WorldKit.cylinder(tower, "Floor", TOWER_RADIUS - thick * 0.8, 0.8, WorldKit.at(Vector3(0.0, 0.2,
+		0.0)), "ruin_dark", true, -1.0, 24)
+
+
+## The statue in the courtyard: a great spider in the old stone, crouched on a
+## plinth with its legs gripping the edges. Whoever built the keep knew what the
+## largest of them become.
+func _statue(place: Node3D) -> void:
+	var statue := WorldKit.body(place, "Statue", Transform3D(Basis(Vector3.UP, 0.6),
+		on_ground(STATUE.x, STATUE.y, -0.5)))
+	WorldKit.box(statue, "Plinth", Vector3(16.0, 5.0, 16.0), WorldKit.at(Vector3(0.0, 2.5, 0.0)),
+		"ruin_dark")
+	WorldKit.box(statue, "Step", Vector3(19.0, 1.4, 19.0), WorldKit.at(Vector3(0.0, 0.7, 0.0)), "ruin")
+	var body := Vector3(0.0, 10.0, 0.0)
+	WorldKit.ball(statue, "Abdomen", Vector3(4.6, 3.8, 5.6), WorldKit.at(body + Vector3(0.0, 1.2,
+		4.6)), "ruin")
+	WorldKit.ball(statue, "Head", Vector3(3.4, 2.6, 3.6), WorldKit.at(body + Vector3(0.0, 0.0,
+		-2.4)), "ruin")
+	for side in [-1.0, 1.0]:
+		for pair in 4:
+			var reach := deg_to_rad(-55.0 + 36.0 * float(pair))
+			var out := Vector3(float(side) * cos(reach), 0.0, sin(reach))
+			var hip := body + Vector3(float(side) * 2.4, 0.0, -1.6 + float(pair) * 1.1)
+			var knee := hip + out * 6.5 + Vector3.UP * 4.5
+			var foot := hip + out * 11.0 + Vector3.DOWN * 5.0
+			WorldKit.rod(statue, "Leg", hip, knee, 0.75, "ruin", true, 0.6, 10)
+			WorldKit.ball(statue, "Knee", Vector3.ONE * 0.75, WorldKit.at(knee), "ruin")
+			WorldKit.rod(statue, "Leg", knee, foot, 0.6, "ruin", true, 0.4, 10)
+	WorldKit.ball(statue, "Moss", Vector3(4.0, 1.0, 4.0), WorldKit.at(body + Vector3(0.0, 4.6, 4.6)),
+		"moss", false)
 
 
 # --- putting things down ---------------------------------------------------------
