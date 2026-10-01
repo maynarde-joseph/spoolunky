@@ -4403,6 +4403,7 @@ floor_snap_length = 0.175
 script = ExtResource("4_spider")
 grows_by_eating = false
 start_stage = 2
+evolves_by_eating = false
 mends_on_its_own = false
 drink_heals = 0.6
 underwater_env = ExtResource("5_underwater")

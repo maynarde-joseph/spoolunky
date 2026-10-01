@@ -2219,10 +2219,11 @@ is whether the *shape* is fun.
   Binding is still the only way a fight ends: a hostile's health *is* how much
   silk it can shrug off, and a boss is a creature with a lot of it.
 * **One size, the whole way.** In the Hollows the spider is a Huntsman and stays
-  one: it does not grow by eating (`grows_by_eating`, `start_stage` on the
-  spider). Size is meant to come from a skill tree instead — a "Big Body" that
-  buys stamina at the cost of being bigger is the example — which is not built
-  yet.
+  one: it does not grow by eating, and a meal passes no trait on either, since
+  some traits are size (`grows_by_eating`, `evolves_by_eating` and `start_stage`
+  on the spider). Size is meant to come from a skill tree instead — a "Big Body"
+  that buys stamina at the cost of being bigger is the example — which is not
+  built yet. The one trait to be had is the one a boss keeps.
 * **Everything is hostile.** No size rule and no aggression roll: a hostile thing
   comes for you whatever either of you is, as long as it can see you (walls block
   sight; silk does not), and only gives up when you are well out of its range.

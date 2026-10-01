@@ -70,6 +70,11 @@ signal skill_tree_toggled()
 ## The size tier the spider starts at, counted from nought: 2 is the Huntsman.
 @export var start_stage := 0
 
+## Whether a meal can pass a trait on to the spider. A level that holds the spider
+## to one size turns this off as well, since some traits are size: what you eat
+## there changes nothing about you, and what you beat gives you what it kept.
+@export var evolves_by_eating := true
+
 ## Whether condition comes back on its own after a quiet spell. A level where the
 ## ways back are a shrine and a meal turns this off.
 @export var mends_on_its_own := true
@@ -166,6 +171,7 @@ func _ready() -> void:
 	growth.stage_changed.connect(_on_stage_changed)
 	growth.grows = grows_by_eating
 	growth.start_stage = start_stage
+	traits.evolving = evolves_by_eating
 	growth.apply_initial()
 
 

@@ -162,8 +162,10 @@ func _test_the_hollows() -> void:
 	await run_frames(60)
 
 	# One size the whole way through, and no mending but a shrine and a meal.
-	check(spider.growth.stage_index == 2 and not spider.growth.grows,
-		"the spider is a Huntsman and stays one (%s)" % spider.stage().display_name)
+	check(spider.growth.stage_index == 2 and not spider.growth.grows
+		and not spider.traits.evolving,
+		"the spider is a Huntsman and stays one, eating nothing into it (%s)"
+		% spider.stage().display_name)
 	check(not spider.mends_on_its_own and spider.drink_heals > 0.0,
 		"and nothing mends it but a shrine and a meal")
 

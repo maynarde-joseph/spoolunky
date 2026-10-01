@@ -575,8 +575,9 @@ most are `shape` (strand or net), `trigger` (passive, alert, snare or lure),
 
 `game/world/hollows.tscn` is what the project opens: dungeons pressed together
 into one world, the way a souls-like's is. The spider is a Huntsman the whole way
-through — it does not grow by eating here — and nothing mends it but a shrine
-and a meal: drink something you have wrapped and you get some of yourself back.
+through — eating here neither grows it nor passes anything on — and nothing mends
+it but a shrine and a meal: drink something you have wrapped and you get some of
+yourself back.
 
 * **The Shrine Hall** is the hub, and the only place with nothing hostile in it.
   You wake here first. North of it is **the Ruined Courtyard** — a dry fountain,
