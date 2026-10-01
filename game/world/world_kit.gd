@@ -457,6 +457,78 @@ static func bulkhead(on: Node3D, part_name: String, profile: PackedVector2Array,
 	return view
 
 
+# --- ground --------------------------------------------------------------
+
+## Ground over the square [param cells] × [param cell] across, centred on
+## [param centre] in (x, z), shaped by [param height] — called with x and z, it
+## says how high the ground is there — and painted by [param paint], called with
+## the point and the way the ground faces there, which says its colour.
+##
+## Drawn in [param chunks] × [param chunks] pieces so that what is behind the
+## camera is not drawn, smooth from one sample to the next; and collided as one
+## height map, sample for sample the same, so what is walked on is what is seen.
+## [param cells] should be a power of two: a height map that is not square and a
+## power of two cells across is collided as triangles, which is far slower.
+static func terrain(on: Node3D, part_name: String, centre: Vector2, cells: int, cell: float,
+		height: Callable, paint: Callable, chunks := 8) -> void:
+	var n := cells + 1
+	var origin := centre - Vector2.ONE * float(cells) * cell * 0.5
+	var heights := PackedFloat32Array()
+	heights.resize(n * n)
+	for j in n:
+		for i in n:
+			heights[j * n + i] = float(height.call(origin.x + float(i) * cell,
+				origin.y + float(j) * cell))
+	var per := cells / chunks
+	for cj in chunks:
+		for ci in chunks:
+			var tool := SurfaceTool.new()
+			tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+			for j in range(cj * per, (cj + 1) * per + 1):
+				for i in range(ci * per, (ci + 1) * per + 1):
+					var at := Vector3(origin.x + float(i) * cell, heights[j * n + i],
+						origin.y + float(j) * cell)
+					var left := heights[j * n + maxi(i - 1, 0)]
+					var right := heights[j * n + mini(i + 1, cells)]
+					var near := heights[maxi(j - 1, 0) * n + i]
+					var far := heights[mini(j + 1, cells) * n + i]
+					var normal := Vector3(left - right, 2.0 * cell, near - far).normalized()
+					tool.set_normal(normal)
+					tool.set_color(paint.call(at, normal))
+					tool.add_vertex(at)
+			var row := per + 1
+			for j in per:
+				for i in per:
+					var a := j * row + i
+					tool.add_index(a)
+					tool.add_index(a + 1)
+					tool.add_index(a + row)
+					tool.add_index(a + 1)
+					tool.add_index(a + row + 1)
+					tool.add_index(a + row)
+			var view := MeshInstance3D.new()
+			view.name = "%s%d" % [part_name, cj * chunks + ci]
+			view.mesh = tool.commit()
+			view.material_override = Palette.paint("painted")
+			on.add_child(view, true)
+	var shape := HeightMapShape3D.new()
+	shape.map_width = n
+	shape.map_depth = n
+	var scaled := PackedFloat32Array()
+	scaled.resize(n * n)
+	for k in n * n:
+		scaled[k] = heights[k] / cell
+	shape.map_data = scaled
+	var solid := CollisionShape3D.new()
+	solid.name = part_name + "Shape"
+	solid.shape = shape
+	# Scaled the same every way, which is the only way a shape may be: one sample a
+	# cell apart, and the heights given in cells to match.
+	solid.transform = Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * cell),
+		Vector3(centre.x, 0.0, centre.y))
+	on.add_child(solid, true)
+
+
 # --- water ---------------------------------------------------------------
 
 ## A body of water [param size] across, centred on [param where]: an area on the

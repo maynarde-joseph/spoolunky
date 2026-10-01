@@ -1,0 +1,30 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://game/world/hunting_ground.gd" id="1_ground"]
+[ext_resource type="PackedScene" path="res://game/player/spider.tscn" id="2_spider"]
+[ext_resource type="PackedScene" path="res://game/ui/hud.tscn" id="3_hud"]
+[ext_resource type="Script" path="res://game/player/spider.gd" id="4_spider"]
+[ext_resource type="Environment" path="res://addons/character-controller/example/main/underwater.tres" id="5_underwater"]
+[ext_resource type="Script" path="res://game/ui/hud.gd" id="6_hud"]
+
+[node name="HuntingGround" type="Node3D"]
+
+[node name="Greybox" type="Node3D" parent="."]
+script = ExtResource("1_ground")
+
+[node name="Webs" type="Node3D" parent="."]
+
+[node name="Player" parent="." instance=ExtResource("2_spider")]
+collision_layer = 2
+collision_mask = 33
+floor_snap_length = 0.0625
+script = ExtResource("4_spider")
+underwater_env = ExtResource("5_underwater")
+speed = 2.4
+step_interval = 1.0
+height_in_crouch = 0.2
+jump_height = 5.6
+abilities_path = Array[NodePath]([NodePath("Crouch Ability 3D"), NodePath("Sprint Ability 3D"), NodePath("Walk Ability 3D"), NodePath("Jump Ability 3D"), NodePath("Fly Ability 3D"), NodePath("Swim Ability 3D")])
+
+[node name="HUD" parent="." instance=ExtResource("3_hud")]
+script = ExtResource("6_hud")

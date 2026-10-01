@@ -18,6 +18,7 @@ extends SceneTree
 const LEVELS := {
 	"testbed": "res://game/world/testbed.tscn",
 	"world": "res://game/world/world.tscn",
+	"hunting_ground": "res://game/world/hunting_ground.tscn",
 }
 
 ## Made while the game runs rather than placed by the builder: creatures a dummy
@@ -128,7 +129,8 @@ func _builder_in(root: Node) -> Node:
 		if script == null:
 			continue
 		var file: String = str(script.resource_path)
-		if file.ends_with("/testbed.gd") or file.ends_with("/world.gd"):
+		if file.ends_with("/testbed.gd") or file.ends_with("/world.gd") \
+				or file.ends_with("/hunting_ground.gd"):
 			return node
 	return null
 
@@ -172,8 +174,8 @@ func _keep_apart(root: Node, level: String) -> int:
 			if _keep(view.mesh, folder, _file_name(root, node) + ".mesh.res"):
 				kept += 1
 		var solid := node as CollisionShape3D
-		if solid != null and solid.shape is ConcavePolygonShape3D \
-				and solid.shape.resource_path.is_empty():
+		if solid != null and (solid.shape is ConcavePolygonShape3D
+				or solid.shape is HeightMapShape3D) and solid.shape.resource_path.is_empty():
 			if _keep(solid.shape, folder, _file_name(root, node) + ".shape.res"):
 				kept += 1
 	return kept

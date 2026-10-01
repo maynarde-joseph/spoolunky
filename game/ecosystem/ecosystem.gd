@@ -75,8 +75,14 @@ static func of(node: Node) -> Ecosystem:
 	return node.get_tree().get_first_node_in_group(GROUP) as Ecosystem
 
 
-func _ready() -> void:
+## In the group as it arrives rather than once it is ready: everything in a level
+## arrives before anything in it is ready, and a creature in a den that comes
+## before this in the scene is ready first — it has to find the ecosystem then.
+func _enter_tree() -> void:
 	add_to_group(GROUP)
+
+
+func _ready() -> void:
 	time_of_day = start_time
 	if fly_kind == null:
 		fly_kind = PreyLibrary.find("fly")
