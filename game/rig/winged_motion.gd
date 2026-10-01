@@ -54,7 +54,10 @@ func bind(skeleton: Skeleton3D, body: CreatureBody) -> void:
 			"reach": _body.leg_rest(side)["reach"],
 		})
 	_tail.clear()
-	if _body.tail > 0.0:
+	if _body.whip > 0.0:
+		for i in _body.whip_bones:
+			_tail.append(_find(skeleton, "Tail.%d" % (i + 1)))
+	elif _body.tail > 0.0:
 		for i in 2:
 			_tail.append(_find(skeleton, "Tail.%d" % (i + 1)))
 
@@ -177,8 +180,11 @@ func _pose_head(skeleton: Skeleton3D, tilt: float) -> void:
 
 
 ## Bobbing as it walks, flicking when caught, hanging when spent, tucked under
-## at the end.
+## at the end. A whip lashes instead.
 func _pose_tail(skeleton: Skeleton3D) -> void:
+	if _body.whip > 0.0:
+		_pose_whip(skeleton)
+		return
 	var stepping := _walk * _pace
 	var pitch := sin(_stride * TAU * 2.0) * 0.12 * stepping \
 		+ sin(clock * 1.5) * 0.04 * (1.0 - _curl) + _thrash * sin(clock * 12.0) * 0.4 \
@@ -188,6 +194,23 @@ func _pose_tail(skeleton: Skeleton3D) -> void:
 		var across := Vector3.UP if i == 0 else Vector3.FORWARD
 		_turn(skeleton, _tail[i], Quaternion(across, fan)
 			* Quaternion(Vector3.RIGHT, pitch * (1.0 if i == 0 else 0.5)))
+
+
+## A whip: a slow wave down it from the root as it flies or stands, lashing when
+## it is caught, hanging when it is spent, and wrapped round to one side at the
+## end. Side to side is about up for the first bone, whose parent is the body, and
+## about its parent's -Z for the rest, as down a beast's tail.
+func _pose_whip(skeleton: Skeleton3D) -> void:
+	var calm := clampf(1.0 - _curl - _thrash - _slack, 0.0, 1.0)
+	var rate := 1.8 * calm + 9.0 * _thrash
+	var reach := 0.12 * calm + 0.5 * _thrash
+	var count := float(maxi(_tail.size(), 1))
+	for i in _tail.size():
+		var lag := float(i) * 0.6
+		var across := sin(clock * rate - lag) * reach + _curl * 2.0 / count
+		var droop := (0.8 * _slack + 0.3 * _walk + 0.4 * _curl) / count
+		var up := Vector3.UP if i == 0 else Vector3.FORWARD
+		_turn(skeleton, _tail[i], Quaternion(up, across) * Quaternion(Vector3.RIGHT, droop))
 
 
 func _record(skeleton: Skeleton3D) -> void:

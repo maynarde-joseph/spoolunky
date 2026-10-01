@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="PreySpecies" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/data/prey_species.gd" id="1_species"]
+[ext_resource type="Resource" path="res://game/data/bodies/wyvern.tres" id="2_body"]
+
+[resource]
+script = ExtResource("1_species")
+id = "wyvern"
+display_name = "Crag Wyvern"
+description = "Nests on the crag and hunts the whole hunting ground from the air: stags, boars, wolves, whatever it sees from up there, carried off whole. Nothing here hunts it. It is the reason to grow, and taking one down changes whatever does it."
+sort_order = 90
+biomass = 2000.0
+size_class = 12
+struggle_power = 14.0
+struggle_stamina = 20.0
+settled_drain = 0.1
+move_speed = 11.0
+flying = true
+swims = false
+wander_radius = 90.0
+wander_height = Vector2(10.0, 80.0)
+wander_interval = 5.0
+lure_susceptibility = 0.0
+aggression = 0.9
+hunt_range = 50.0
+bite_damage = 25.0
+bite_interval = 1.6
+diet = PackedStringArray("deer", "boar", "wolf", "fox", "hare", "carrion")
+tags = PackedStringArray("monster")
+active = 1
+senses = 160.0
+colour = Color(0.3, 0.35, 0.25, 1)
+sheen = Color(0.2, 0.24, 0.15, 1)
+body = ExtResource("2_body")
+body_radius = 9.0
+winged = false
+habitat = "wilds"

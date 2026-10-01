@@ -9,6 +9,6 @@ display_name = "Wing Buds"
 description = "Two stubs of membrane. Not enough to fly. Enough that a fall becomes a descent."
 branch = 1
 depth = 0
-carried_by = PackedStringArray("midge", "mosquito", "fly", "moth", "butterfly", "bee", "bat", "parrot", "firefly", "songbird", "raven")
+carried_by = PackedStringArray("midge", "mosquito", "fly", "moth", "butterfly", "bee", "bat", "parrot", "firefly", "songbird", "raven", "wyvern")
 chance = 0.12
 glide = 0.5

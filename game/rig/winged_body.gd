@@ -1,11 +1,12 @@
 class_name WingedBody
 extends CreatureBody
 
-## Something with fur or feathers that flies on two wings: a body, a head, two
-## wings of two bones each — an arm out to the wrist and a hand beyond it — two
-## legs, and a tail if it has one. A bat is this with skin stretched between its
-## fingers and ears as tall as its head; a parrot is this with feathers and a
-## hooked beak. What tells them apart is numbers in a .tres of it.
+## Something that flies on two wings: a body, a head, two wings of two bones each —
+## an arm out to the wrist and a hand beyond it — two legs, and a tail if it has
+## one. A bat is this with skin stretched between its fingers and ears as tall as
+## its head; a parrot is this with feathers and a hooked beak; a wyvern is a bat's
+## wings on something with horns and a long whip of a tail. What tells them apart
+## is numbers in a .tres of it.
 ##
 ## Drawn the minimal way, as the spider and the insects are: smooth parts, thin
 ## legs of one width, flat wings with a rim round them, a few flat colours, and
@@ -59,6 +60,10 @@ const LEG_PARTS := ["Leg", "Foot"]
 @export var ears := Vector2.ZERO
 ## How far out from upright the ears lean, in degrees.
 @export var ear_lean := 20.0
+## A pair of horns this long and this thick at the root, sweeping back off the top
+## of the head and curling down: a wyvern's. Zero for none.
+@export var horns := Vector2.ZERO
+@export var horn_colour := Color(0.82, 0.76, 0.62)
 
 
 @export_group("Wings")
@@ -109,6 +114,12 @@ const LEG_PARTS := ["Leg", "Foot"]
 @export var tail_width := 0.18
 ## Which way it leaves the body, in degrees below straight back.
 @export var tail_droop := 10.0
+## A long whip of a tail instead of a fan of feathers: this long, in
+## [member whip_bones] bones, tapering from the first of [member whip_thickness] at
+## the root to the second at the tip. Zero for none.
+@export var whip := 0.0
+@export_range(2, 10) var whip_bones := 6
+@export var whip_thickness := Vector2(0.16, 0.02)
 
 
 # --- the bones ----------------------------------------------------------------
@@ -145,7 +156,13 @@ func build_bones(skeleton: Skeleton3D) -> void:
 			Transform3D(RigKit.along(Vector3.DOWN, Vector3.RIGHT), limb["at"]))
 		RigKit.add_bone(skeleton, leg_bone(s, 1), hip,
 			Transform3D(RigKit.along(limb["foot"], Vector3.RIGHT), limb["ankle"]))
-	if tail > 0.0:
+	if whip > 0.0:
+		var lash := whip_rest()
+		var parent := trunk
+		for i in whip_bones:
+			parent = RigKit.add_bone(skeleton, "Tail.%d" % (i + 1), parent,
+				Transform3D(RigKit.along(lash["directions"][i], Vector3.RIGHT), lash["joints"][i]))
+	elif tail > 0.0:
 		var rest := tail_rest()
 		var parent := trunk
 		for i in 2:
@@ -219,6 +236,19 @@ func tail_rest() -> Dictionary:
 	return {"joints": [root, root + direction * tail * 0.5], "direction": direction}
 
 
+## A whip of a tail at rest: where each bone starts and which way it runs — back
+## and a little down from the body, lifting a little toward the tip.
+func whip_rest() -> Dictionary:
+	var joints: Array[Vector3] = [_layout()["tail"]]
+	var directions: Array[Vector3] = []
+	var piece := whip / float(whip_bones)
+	for i in whip_bones:
+		var pitch := deg_to_rad(-tail_droop + 3.0 * float(i))
+		directions.append(Vector3(0.0, sin(pitch), cos(pitch)))
+		joints.append(joints[i] + directions[i] * piece)
+	return {"joints": joints, "directions": directions, "piece": piece}
+
+
 ## The jaw's hinge, under the face, in the head's space, and which way it runs: a
 ## bat's lower jaw, or a parrot's lower beak.
 func _mouth() -> Dictionary:
@@ -281,6 +311,11 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 		_build_beak(coat, skeleton, face_at)
 	if snout != Vector3.ZERO:
 		_build_snout(coat, skeleton)
+	if horns != Vector2.ZERO:
+		for side in [-1.0, 1.0]:
+			RigKit.horn(coat, skeleton, face,
+				face_at + Vector3(side * head.x * 0.45, head.y * 0.7, head.z * 0.15),
+				Vector3(side * 0.3, 0.55, 0.78), Vector3.RIGHT, horns.x, horns.y, 45.0, horn_colour)
 
 	# Legs of one width, a round end at the ankle, and the foot the same rod on
 	# along the floor.
@@ -293,7 +328,15 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 		RigKit.segment(coat, skeleton, skeleton.find_bone(leg_bone(s, 1)), limb["reach"],
 			leg_thickness, leg_thickness, RigKit.plain(leg_colour), rod)
 
-	if tail > 0.0:
+	if whip > 0.0:
+		var lash := whip_rest()
+		var piece: float = lash["piece"]
+		for i in whip_bones:
+			var from := lerpf(whip_thickness.x, whip_thickness.y, float(i) / float(whip_bones))
+			var to := lerpf(whip_thickness.x, whip_thickness.y, float(i + 1) / float(whip_bones))
+			RigKit.segment(coat, skeleton, skeleton.find_bone("Tail.%d" % (i + 1)), piece, from, to,
+				RigKit.plain(tail_colour), rod)
+	elif tail > 0.0:
 		for i in 2:
 			var from := tail_width * (0.55 if i == 0 else 1.0)
 			var to := tail_width * (1.0 if i == 0 else 0.75)
