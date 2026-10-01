@@ -28,8 +28,16 @@ var failures := 0
 ## the verdict can tear it down even when a suite returns early.
 var scene: Node
 
+## Every script error the engine reports while the suite runs. An error in game
+## code — a call on null, a cast of something already freed — does not stop
+## anything: the engine logs it, hands back null and carries on, and a check
+## written against what happened next passes right over the top of it. So the
+## verdict counts them as a failure of their own.
+var _errors := ErrorLog.new()
+
 
 func _initialize() -> void:
+	OS.add_logger(_errors)
 	_drive.call_deferred()
 
 
@@ -77,6 +85,9 @@ func _report() -> void:
 	# tree at exit does not get reported as a leak against the suite.
 	await process_frame
 	await process_frame
+	var seen := _errors.take()
+	check(seen.is_empty(), "and no script errors on the way (%s)"
+		% ("none" if seen.is_empty() else "; ".join(seen.slice(0, 5))))
 	print("")
 	if failures == 0:
 		print("%d checks passed" % checks)
@@ -189,3 +200,30 @@ func all_under(node: Node) -> Array[Node]:
 		found.append(child)
 		found.append_array(all_under(child))
 	return found
+
+
+## Hears every error the engine logs and keeps the script errors, from whatever
+## thread they come on.
+class ErrorLog extends Logger:
+	var _seen := PackedStringArray()
+	var _lock := Mutex.new()
+
+	func _log_error(_function: String, file: String, line: int, code: String, rationale: String,
+			_editor_notify: bool, error_type: int, _script_backtraces: Array[ScriptBacktrace]) -> void:
+		if error_type != ERROR_TYPE_SCRIPT:
+			return
+		_lock.lock()
+		_seen.append("%s:%d %s" % [file.get_file(), line, rationale if not rationale.is_empty()
+			else code])
+		_lock.unlock()
+
+	func _log_message(_message: String, _error: bool) -> void:
+		pass
+
+	## What it has kept, and forgets it.
+	func take() -> PackedStringArray:
+		_lock.lock()
+		var kept := _seen
+		_seen = PackedStringArray()
+		_lock.unlock()
+		return kept
