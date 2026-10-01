@@ -6,15 +6,23 @@ extends RefCounted
 ## A creature living in an [Ecosystem] has one of these, made when it arrives. It
 ## gets hungry at its species' own rate, and when it is hungry enough it goes and
 ## finds something it eats — see [member PreySpecies.diet] — and eats until it is
-## full. That is the whole of it for now, and it is enough to make a meadow of
-## grazers a place with somewhere to be: they go to the grass, they eat it down,
-## they move on to the next patch.
+## full:
+##
+## * **Forage** it walks or flies to, and grazes where it stands.
+## * **Something alive** it hunts, if it is no bigger than itself: chases it down,
+##   kills it, and eats the carcass where it fell.
+## * **Carrion** — anything dead — it goes to and eats, whoever killed it.
+##
+## And before any of that it keeps an eye out. Anything near that would eat it, and
+## could, it runs from — from as far off as it can see it if the thing is hunting,
+## and only up close if it is not. A wary creature keeps clear of a spider big
+## enough to eat it as well.
 ##
 ## It never moves the creature itself. It decides, and asks the creature to go
-## somewhere or to eat something; the creature does the going and the eating —
-## see [method Prey.go_to] and [method Prey.start_feeding]. Caught in silk, wrapped,
-## stunned or carried off by water, a creature has no say in what happens to it,
-## and neither does its mind.
+## somewhere, eat something, chase something or run; the creature does the going —
+## see [method Prey.go_to], [method Prey.start_feeding], [method Prey.hunt] and
+## [method Prey.flee_from]. Caught in silk, wrapped, stunned, carried off by water
+## or dead, a creature has no say in what happens to it, and neither does its mind.
 
 ## How often it stops to think, in seconds, give or take a fifth. Each creature
 ## thinks on its own beat, so a meadow of them does not all decide at once.
@@ -33,6 +41,14 @@ const APPETITE := 0.6
 ## creature eats is somewhere to put a web.
 const MEAL_TIME := 8.0
 
+## How far off danger is noticed, as a share of how far it notices anything. Food
+## is worth walking to; danger only matters when it is close.
+const FEAR := 0.6
+
+## How much nearer carrion is than it looks: a free meal is worth going a little
+## further for than one that has to be chased.
+const CARRION_PULL := 0.7
+
 var prey: Prey
 var kind: PreySpecies
 var world: Ecosystem
@@ -40,8 +56,16 @@ var world: Ecosystem
 ## How empty its belly is: 0 full, 1 as hungry as it gets.
 var hunger := 0.0
 
-## What it is eating, or on its way to eat.
+## What it is eating, or on its way to eat or to kill.
 var food: Node3D = null
+
+## What it last ran from, while it is running.
+var fleeing_from: Node3D = null
+
+## How many kills it has made, and how many meals it has finished. A den reads
+## these to know whether its creatures are eating well.
+var kills := 0
+var meals := 0
 
 var _think := 0.0
 
@@ -61,6 +85,8 @@ func eats_anything() -> bool:
 
 ## Every physics frame, from the creature.
 func tick(delta: float) -> void:
+	if prey.is_dead():
+		return
 	if eats_anything() and prey.is_loose():
 		hunger = minf(1.0, hunger + kind.hunger_rate * world.tempo * delta)
 	_think -= delta
@@ -89,16 +115,31 @@ func arrived() -> void:
 	decide()
 
 
+## The creature caught and killed [param victim], and is eating it.
+func made_a_kill(victim: Prey) -> void:
+	kills += 1
+	food = victim
+
+
 ## Looks at where things stand and does the next thing.
 func decide() -> void:
 	if not prey.can_decide():
 		return
+	var danger := threat()
+	if danger != null:
+		fleeing_from = danger
+		food = null
+		prey.flee_from(danger.global_position)
+		return
+	fleeing_from = null
 	if prey.is_feeding():
 		if hunger <= SATED or not _worth_eating(food):
+			if hunger <= SATED:
+				meals += 1
 			food = null
 			prey.stop_feeding()
 		return
-	# Coming for the spider is its own business, and it sees that through.
+	# A chase is seen through, or given up by the creature itself.
 	if prey.is_hunting():
 		return
 	if eats_anything() and hunger >= HUNGRY:
@@ -107,12 +148,79 @@ func decide() -> void:
 			_go_for(meal)
 
 
-## The nearest thing it eats that it can get at, or null.
+# --- danger --------------------------------------------------------------
+
+## The nearest thing that would eat it and could, close enough to run from — or
+## null. Something hunting is run from as far off as danger is noticed at all;
+## something only passing, from half that.
+func threat() -> Node3D:
+	var sight := kind.senses * FEAR
+	var danger: Node3D = null
+	var closest := INF
+	for other in world.creatures_near(prey.global_position, sight):
+		if other == prey or other.is_dead() or not other.is_loose():
+			continue
+		var theirs := other.mind()
+		if theirs == null or not theirs.eats(kind) or other.size_class < prey.size_class:
+			continue
+		var gap := other.global_position.distance_to(prey.global_position)
+		if not other.is_hunting() and gap > sight * 0.5:
+			continue
+		if gap < closest:
+			closest = gap
+			danger = other
+	if kind.wary:
+		var spider := prey.get_tree().get_first_node_in_group("spider") as Node3D
+		if spider != null and spider.has_method("stage") \
+				and spider.stage().bite_power >= prey.size_class:
+			var gap := spider.global_position.distance_to(prey.global_position)
+			var keep := maxf(sight * 0.5, spider.stage().body_height * 3.0)
+			if gap < keep and gap < closest:
+				danger = spider
+	return danger
+
+
+# --- food ----------------------------------------------------------------
+
+## The best thing it eats that it can get at — a patch, a carcass, or something to
+## hunt — or null. Nearest wins, with carrion counted a little nearer than it is.
 func find_food() -> Node3D:
+	var best: Node3D = null
+	var best_gap := INF
 	var kinds := forage_kinds()
-	if kinds.is_empty():
-		return null
-	return world.forage_near(prey.global_position, kind.senses, kinds)
+	if not kinds.is_empty():
+		var patch := world.forage_near(prey.global_position, kind.senses, kinds)
+		if patch != null:
+			best = patch
+			best_gap = patch.global_position.distance_to(prey.global_position)
+	var scavenges := kind.diet.has("carrion")
+	var hunts := _hunts_anything()
+	if not scavenges and not hunts:
+		return best
+	for other in world.creatures_near(prey.global_position, kind.senses):
+		if other == prey:
+			continue
+		var gap := other.global_position.distance_to(prey.global_position)
+		if other.is_dead():
+			if scavenges and other.biomass > 0.5:
+				gap *= CARRION_PULL
+				if gap < best_gap:
+					best_gap = gap
+					best = other
+		elif hunts and can_take(other) and gap < best_gap:
+			best_gap = gap
+			best = other
+	return best
+
+
+## Whether [param other] is something it could hunt now: alive, loose, something it
+## eats, and no bigger than it is.
+func can_take(other: Prey) -> bool:
+	if other == null or not is_instance_valid(other) or other == prey:
+		return false
+	if other.is_dead() or not other.is_loose():
+		return false
+	return other.size_class <= prey.size_class and eats(other.kind)
 
 
 ## The kinds of forage in its diet.
@@ -144,7 +252,7 @@ func within_reach(meal: Node3D) -> bool:
 
 
 ## Where to stand, or hover, to eat [param meal]: at the edge of a patch on foot,
-## over it on the wing, where the heads of the flowers are.
+## over it on the wing, where the heads of the flowers are; beside a carcass.
 func feeding_spot(meal: Node3D) -> Vector3:
 	var patch := meal as Forage
 	if patch == null:
@@ -156,13 +264,29 @@ func feeding_spot(meal: Node3D) -> Vector3:
 
 ## How close counts, for [param meal].
 func reach_of(meal: Node3D) -> float:
+	var edge := 0.0
 	var patch := meal as Forage
-	var edge := patch.size * 0.5 if patch != null else 0.0
+	if patch != null:
+		edge = patch.size * 0.5
+	var corpse := meal as Prey
+	if corpse != null:
+		edge = corpse.hit_radius()
 	return edge + maxf(prey.hit_radius() * 2.0, 0.15)
+
+
+func _hunts_anything() -> bool:
+	for entry in kind.diet:
+		if entry != "carrion" and not Forage.KINDS.has(entry):
+			return true
+	return false
 
 
 func _go_for(meal: Node3D) -> void:
 	food = meal
+	var quarry := meal as Prey
+	if quarry != null and not quarry.is_dead():
+		prey.hunt(quarry)
+		return
 	if within_reach(meal):
 		prey.start_feeding(meal)
 	else:
@@ -175,4 +299,7 @@ func _worth_eating(meal: Node3D) -> bool:
 	var patch := meal as Forage
 	if patch != null:
 		return patch.amount > 0.01
+	var corpse := meal as Prey
+	if corpse != null:
+		return corpse.is_dead() and not corpse.eaten and corpse.biomass > 0.01
 	return false

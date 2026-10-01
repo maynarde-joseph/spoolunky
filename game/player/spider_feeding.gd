@@ -114,7 +114,8 @@ func interact() -> void:
 ## outright, or venom. While it is still fighting, it is not yours yet.
 func handle(prey: Prey) -> void:
 	var current := _spider.stage()
-	if prey.wrapped:
+	# Something already dead is food for whatever finds it, the spider included.
+	if prey.wrapped or prey.is_dead():
 		begin(prey)
 		return
 
@@ -144,7 +145,8 @@ func begin(prey: Prey) -> bool:
 	meal = prey
 	_taken = 0.0
 	_species = prey.species
-	_past = prey.size_class - _spider.stage().bite_power
+	# Carrion was taken down by something else, so there is nothing hard about it.
+	_past = 0 if prey.is_dead() else prey.size_class - _spider.stage().bite_power
 	# Said on the way in, because a tap now takes a mouthful rather than the
 	# whole creature, and without this a tap would look like nothing happened.
 	notice.emit("Feeding on the %s — hold to drink" % prey.species)

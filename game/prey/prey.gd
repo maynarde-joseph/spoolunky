@@ -16,6 +16,9 @@ signal snared(prey: Prey)
 signal broke_free(prey: Prey)
 signal eaten_by_spider(prey: Prey)
 
+## Killed, or starved: a carcass from now on. See [method die].
+signal died(prey: Prey)
+
 enum State {
 	WANDER,    ## going about its business
 	HUNTING,   ## coming for a spider it outclasses
@@ -24,7 +27,11 @@ enum State {
 	FLEEING,   ## just tore loose, getting out
 	BUNDLED,   ## wrapped where it stood and dropped, out of any web
 	FEEDING,   ## standing at something it eats, eating it
+	DEAD,      ## killed or starved: a carcass, until it is eaten or rots
 }
+
+## How long a carcass lasts before it rots away, in seconds.
+const ROT_AFTER := 120.0
 
 ## How much better than a catch's total thrash a web has to be to keep it.
 ## Tuned so each web tier holds the prey tier below it: a sheet web keeps a
@@ -266,6 +273,10 @@ var _detour_left := 0.0
 ## What it is eating, while it eats.
 var _meal: Node3D = null
 
+## How long it lasts dead before it rots away, and how long it has been dead.
+var rot_after := ROT_AFTER
+var _rot := 0.0
+
 ## The top of the water a swimmer is in, as high as its middle may go: its own
 ## body's depth under the surface, so none of it breaks the top. INF for anything
 ## that does not swim, and for a swimmer that was put down out of the water.
@@ -380,6 +391,8 @@ func _physics_process(delta: float) -> void:
 			_process_stuck(delta)
 		State.FEEDING:
 			_process_feeding(delta)
+		State.DEAD:
+			_process_dead(delta)
 		State.FLEEING:
 			_flee_timer -= delta
 			if _flee_timer <= 0.0:
@@ -398,7 +411,7 @@ func _physics_process(delta: float) -> void:
 ## and without this the web grabs it back on the next frame and pins it in
 ## mid-air instead of letting it fall.
 func can_be_snared() -> bool:
-	if eaten or wrapped or _state == State.STUCK:
+	if eaten or wrapped or _state == State.STUCK or _state == State.DEAD:
 		return false
 	return _recatch_cooldown <= 0.0
 
@@ -549,7 +562,8 @@ func is_wet() -> bool:
 ## fight gone with it, so a strike is how a web wins a fight it was losing.
 ## Returns whether it took, which it does unless the creature is past caring.
 func shock(seconds: float) -> bool:
-	if eaten or seconds <= 0.0 or _state == State.BUNDLED or _state == State.WRAPPED:
+	if eaten or seconds <= 0.0 or _state == State.BUNDLED or _state == State.WRAPPED \
+			or _state == State.DEAD:
 		return false
 	var hard := WET_SHOCK if is_wet() else 1.0
 	stun(seconds * hard)
@@ -651,10 +665,131 @@ func _process_feeding(delta: float) -> void:
 	var patch := _meal as Forage
 	if patch != null:
 		got = patch.graze(_mind.gulp() * delta)
+	var corpse := _meal as Prey
+	if corpse != null and corpse.is_dead():
+		got = corpse.feed_on(_mind.gulp() * delta)
 	if got > 0.0:
 		_mind.swallowed(got)
 	else:
 		stop_feeding()
+
+
+## Chases [param target] down to eat it. Faster than it wanders while its sprint
+## lasts, the same as a hunt for the spider — and it gives up the same way, when
+## the sprint runs out or the quarry gets too far ahead.
+func hunt(target: Prey) -> void:
+	if not can_decide() or target == null:
+		return
+	_meal = null
+	_errand = false
+	_quarry = target
+	_chase_left = CHASE_STAMINA
+	_state = State.HUNTING
+
+
+## Runs from [param danger]: away from it, for a moment, and then thinks again.
+## Not the scramble out of a web — nothing about running from a fox makes a
+## creature any harder to catch in silk.
+func flee_from(danger: Vector3) -> void:
+	if not can_decide():
+		return
+	_meal = null
+	_errand = false
+	_quarry = null
+	var away := global_position - danger
+	away.y = 0.0
+	if away.length() < 0.01:
+		away = Vector3(randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0))
+	_target = global_position + away.normalized() * maxf(wander_radius * 0.6, hit_radius() * 8.0)
+	if flying:
+		_target.y = global_position.y + hit_radius() * 2.0
+	_state = State.FLEEING
+	_flee_timer = 1.5
+
+
+func is_dead() -> bool:
+	return _state == State.DEAD
+
+
+## Dead: killed by something that eats it, or starved. A carcass from now on —
+## food for whatever eats carrion, the spider included — until it has been eaten
+## or has rotted away. It drops where it was, whatever it was doing, and lies
+## still on its side.
+func die() -> void:
+	if eaten or _state == State.DEAD:
+		return
+	if is_instance_valid(_web):
+		_web.on_prey_taken(self)
+	_web = null
+	_state = State.DEAD
+	_quarry = null
+	_errand = false
+	_meal = null
+	stunned = 0.0
+	_rot = 0.0
+	velocity = Vector3(0.0, minf(velocity.y, 0.0), 0.0)
+	_set_marked(false)
+	# Something dead is not something that hovers.
+	motion_mode = CharacterBody3D.MOTION_MODE_GROUNDED
+	up_direction = Vector3.UP
+	died.emit(self)
+
+
+## Takes a mouthful for something other than the spider. The same as
+## [method drain] — biomass is biomass — except that eating the last of it does
+## not say the spider ate it.
+func feed_on(amount: float) -> float:
+	if eaten or amount <= 0.0:
+		return 0.0
+	var taken: float = minf(amount, biomass)
+	biomass -= taken
+	if biomass <= 0.001:
+		_vanish()
+	return taken
+
+
+## Gone: eaten to nothing by something that is not the spider, or rotted away.
+func _vanish() -> void:
+	if eaten:
+		return
+	eaten = true
+	biomass = 0.0
+	queue_free()
+
+
+## A carcass lies where it fell, and falls if anything drags it. It rots in the
+## end, so a hunting ground does not fill up with them.
+func _process_dead(delta: float) -> void:
+	_fall(delta)
+	_rot += delta
+	if _rot >= rot_after:
+		_vanish()
+
+
+## After something it is hunting. It gives up when its mind no longer wants it, the
+## sprint runs out, or the quarry gets well away; it kills on reaching it, and eats
+## the carcass where it fell.
+func _process_chase(delta: float, target: Prey) -> void:
+	if _mind == null or not _mind.can_take(target):
+		break_off()
+		return
+	var span := global_position.distance_to(target.global_position)
+	if span > _mind.kind.senses * 1.6:
+		break_off()
+		return
+	_chase_left -= delta
+	if _chase_left <= 0.0:
+		break_off()
+		return
+	_target = target.global_position
+	var winded := _chase_left < CHASE_STAMINA * (1.0 - CHASE_SECOND_WIND)
+	_steer(delta, current_speed() * (CHASE_SPENT if winded else CHASE_DASH))
+	if span <= hit_radius() + target.hit_radius() + maxf(hit_radius() * 0.5, 0.05):
+		target.die()
+		_quarry = null
+		_state = State.WANDER
+		_mind.made_a_kill(target)
+		start_feeding(target)
 
 
 ## Carried this frame at [param velocity] by something stronger than it — a whirl
@@ -910,7 +1045,7 @@ func _process_stuck(delta: float) -> void:
 ## spider's bite is food, a creature outside it and aggressive is a problem. Grow
 ## and the same wasp changes sides.
 func would_hunt(spider: Node3D) -> bool:
-	if aggression <= 0.0 or eaten or wrapped:
+	if aggression <= 0.0 or eaten or wrapped or _state == State.DEAD:
 		return false
 	if spider == null or not is_instance_valid(spider):
 		return false
@@ -970,6 +1105,10 @@ func _look_for_a_spider() -> void:
 ## because it grew, or got away, or because silk took hold of the hunter — drops
 ## straight back to wandering rather than following you round the level for ever.
 func _process_hunt(delta: float) -> void:
+	var creature := _quarry as Prey
+	if creature != null:
+		_process_chase(delta, creature)
+		return
 	if not would_hunt(_quarry):
 		break_off()
 		return

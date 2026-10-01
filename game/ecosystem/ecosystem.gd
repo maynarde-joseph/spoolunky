@@ -32,6 +32,11 @@ const CELL := 24.0
 ## is less than anything moves far enough in to matter.
 const SORT_EVERY := 0.25
 
+## How often the carcasses are looked over for flies to come off them, in seconds;
+## and how many flies one carcass draws at a time.
+const FLIES_EVERY := 3.0
+const FLIES_PER_CARCASS := 3
+
 ## How long one whole day is, in seconds: dawn to dawn.
 @export var day_length := 720.0
 
@@ -46,12 +51,21 @@ const SORT_EVERY := 0.25
 ## for the pace of the whole world.
 @export_range(0.0, 10.0, 0.05) var tempo := 1.0
 
+## Whether flies come off carcasses — see [method _breed_flies] — and the most
+## there can be in the whole world at once.
+@export var breeds_flies := true
+@export var max_flies := 40
+
+## What comes off a carcass. The game's fly, unless a check says otherwise.
+var fly_kind: PreySpecies
+
 ## Where the day has got to, 0 to 1. See [member start_time].
 var time_of_day := 0.32
 
 var _cells := {}
 var _sort_in := 0.0
 var _forage: Array[Forage] = []
+var _flies_in := FLIES_EVERY
 
 
 ## The ecosystem a node is living in, or null if it is not living in one.
@@ -64,6 +78,8 @@ static func of(node: Node) -> Ecosystem:
 func _ready() -> void:
 	add_to_group(GROUP)
 	time_of_day = start_time
+	if fly_kind == null:
+		fly_kind = PreyLibrary.find("fly")
 
 
 func _process(delta: float) -> void:
@@ -76,6 +92,11 @@ func _physics_process(delta: float) -> void:
 	if _sort_in <= 0.0:
 		_sort_in = SORT_EVERY
 		_sort()
+	_flies_in -= delta
+	if _flies_in <= 0.0:
+		_flies_in = FLIES_EVERY
+		if breeds_flies:
+			_breed_flies()
 
 
 # --- the clock ----------------------------------------------------------
@@ -158,6 +179,52 @@ func add_forage(patch: Forage) -> void:
 
 func remove_forage(patch: Forage) -> void:
 	_forage.erase(patch)
+
+
+## Every carcass with something left on it.
+func carcasses() -> Array[Prey]:
+	var found: Array[Prey] = []
+	for node in get_tree().get_nodes_in_group("prey"):
+		var creature := node as Prey
+		if creature != null and is_instance_valid(creature) and creature.is_dead() \
+				and not creature.eaten and creature.biomass > 1.0:
+			found.append(creature)
+	return found
+
+
+## Flies come off carcasses. A kill left lying draws a few, and they hang about it
+## eating — which is what makes a carcass somewhere to put a web, and somewhere a
+## bird or a frog comes to. Capped per carcass and across the world, so a hunting
+## ground after a good night is not a cloud.
+func _breed_flies() -> void:
+	if fly_kind == null:
+		return
+	var dead := carcasses()
+	if dead.is_empty():
+		return
+	var flies := 0
+	for node in get_tree().get_nodes_in_group("prey"):
+		var creature := node as Prey
+		if creature != null and creature.kind != null and creature.kind.id == fly_kind.id \
+				and not creature.is_dead() and not creature.eaten:
+			flies += 1
+	for corpse in dead:
+		if flies >= max_flies:
+			return
+		var around := corpse.hit_radius() * 4.0 + 3.0
+		var near := 0
+		for other in creatures_near(corpse.global_position, around):
+			if other.kind != null and other.kind.id == fly_kind.id and not other.is_dead():
+				near += 1
+		if near >= FLIES_PER_CARCASS or randf() > 0.6:
+			continue
+		var fly := Prey.of(fly_kind)
+		if fly == null:
+			return
+		corpse.get_parent().add_child(fly)
+		fly.global_position = corpse.global_position + Vector3(randf_range(-0.3, 0.3),
+			corpse.hit_radius() + 0.4, randf_range(-0.3, 0.3))
+		flies += 1
 
 
 ## Sorts every creature into the grid.

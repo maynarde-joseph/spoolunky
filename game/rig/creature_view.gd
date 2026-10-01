@@ -70,8 +70,9 @@ func _pose() -> CreatureMotion.Pose:
 		return CreatureMotion.Pose.FLYING
 	if _prey.wrapped or _prey.is_bundled():
 		return CreatureMotion.Pose.CURLED
-	# Out of it: limp, the way something that has fought itself out hangs.
-	if _prey.is_stunned():
+	# Out of it — stunned, or dead — limp, the way something that has fought
+	# itself out hangs.
+	if _prey.is_stunned() or _prey.is_dead():
 		return CreatureMotion.Pose.SPENT
 	if _prey.is_fighting():
 		return CreatureMotion.Pose.STRUGGLING
@@ -95,4 +96,7 @@ func _turn(delta: float, flat: Vector3, velocity: Vector3) -> void:
 	var target := _heading
 	if pose == CreatureMotion.Pose.CURLED:
 		target = _heading * Quaternion(Vector3.RIGHT, -PI * 0.5)
+	elif _prey != null and _prey.is_dead():
+		# Dead, it lies on its side.
+		target = _heading * Quaternion(Vector3.BACK, PI * 0.5)
 	quaternion = quaternion.slerp(target, clampf(TURN_RATE * delta, 0.0, 1.0))

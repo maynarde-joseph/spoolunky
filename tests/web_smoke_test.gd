@@ -50,6 +50,7 @@ func _sections() -> Array[Callable]:
 		_test_a_catch_comes_over_a_wall,
 		_test_a_meal_takes_time,
 		_test_anything_you_can_hold,
+		_test_carrion,
 		_test_something_hunts_you,
 		_test_a_hunt_runs_out,
 		_test_wrapped_things_fall,
@@ -1638,6 +1639,36 @@ func _test_a_web_can_lose_a_fight() -> void:
 	else:
 		check(true, "and took the whole web with it")
 	brute.queue_free()
+
+
+## Anything dead is food. A carcass is drunk where it lies and dragged home like a
+## bundle — but something else took it down, so it is never a hard kill.
+func _test_carrion() -> void:
+	var slab := add_slab(Vector3(-60, 0.0, 140))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+	clear_prey_near(spider.global_position, 6.0, null)
+	var wasp := spawn("wasp", spider.global_position + Vector3(0.3, 0.1, 0.0))
+	if not check(wasp != null, "a wasp"):
+		return
+	wasp.aggression = 0.0
+	await physics_frame
+	wasp.die()
+	await run_frames(20)
+	check(wasp.is_dead(), "dead")
+	check(spider.tether.can_carry(wasp), "dead, it can be dragged home like a bundle")
+	check(builder.shot_target() != wasp, "and silk is not thrown at it")
+	Input.action_press("interact")
+	spider.jaws.handle(wasp)
+	var started: bool = spider.feeding == wasp
+	var past: int = spider.jaws._past
+	Input.action_release("interact")
+	spider.jaws.stop()
+	check(started, "it is drunk where it lies, past a spiderling's bite as it is")
+	check(past == 0, "but it was taken down by something else: no hard kill (%d)" % past)
+	var got: float = await eat(wasp, 900)
+	check(got > 0.0, "a meal all the same (+%.1f)" % got)
 
 
 ## Anything you can hold, you can eat. Size used to refuse a meal outright — too

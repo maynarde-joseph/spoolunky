@@ -116,7 +116,7 @@ func aimed_creature() -> Prey:
 		var mark := node as Prey
 		if mark == null or not is_instance_valid(mark):
 			continue
-		if mark.eaten or mark.wrapped or mark.is_stuck() or mark.is_bundled():
+		if mark.eaten or mark.wrapped or mark.is_stuck() or mark.is_bundled() or mark.is_dead():
 			continue
 		var offset := mark.global_position - origin
 		var along := offset.dot(forward)

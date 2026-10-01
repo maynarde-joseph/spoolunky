@@ -465,7 +465,7 @@ func shot_target() -> Prey:
 		var prey := node as Prey
 		if prey == null or not is_instance_valid(prey) or prey.eaten or prey.wrapped:
 			continue
-		if prey.is_bundled():
+		if prey.is_bundled() or prey.is_dead():
 			continue
 		var at := prey.global_position
 		if from.distance_to(at) > reach:

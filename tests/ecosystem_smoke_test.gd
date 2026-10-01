@@ -30,6 +30,13 @@ func _sections() -> Array[Callable]:
 		_test_a_full_creature_stays_put,
 		_test_fliers_eat_from_above,
 		_test_diets,
+		_test_a_kill,
+		_test_too_big_to_take,
+		_test_carcasses,
+		_test_scavengers,
+		_test_flies_on_carcasses,
+		_test_running_from_a_hunter,
+		_test_wary_of_the_spider,
 	]
 
 
@@ -169,6 +176,167 @@ func _test_diets() -> void:
 	await run_frames(30)
 	check(not idle.mind().eats_anything() and is_equal_approx(idle.mind().hunger, was),
 		"something with no diet never goes hungry")
+
+
+# --- eating each other -----------------------------------------------------
+
+## A hungry predator hunts what it eats, kills it, and eats the carcass where it
+## fell.
+func _test_a_kill() -> void:
+	var wasp := _creature("wasp", Vector3(0, 1.0, 0), PackedStringArray(["fly"]))
+	var fly := _creature("fly", Vector3(3, 1.0, 0), PackedStringArray())
+	fly.move_speed = 0.0
+	await physics_frame
+	_world.sort_now()
+	wasp.mind().hunger = 0.9
+	var hunting: bool = await wait_until(func() -> bool: return wasp.is_hunting(), 120)
+	check(hunting, "a hungry wasp goes after a fly")
+	var killed: bool = await wait_until(func() -> bool:
+		return not is_instance_valid(fly) or fly.is_dead(), 300)
+	if not check(killed and is_instance_valid(fly), "catches it and kills it"):
+		return
+	check(wasp.is_feeding() and wasp.mind().kills == 1, "and eats it where it fell")
+	var left := fly.biomass
+	await run_frames(20)
+	check(not is_instance_valid(fly) or fly.biomass < left,
+		"the carcass going down as it does (%.1f)" % (fly.biomass if is_instance_valid(fly) else 0.0))
+
+
+## However hungry, a predator leaves alone what it cannot overpower.
+func _test_too_big_to_take() -> void:
+	var wasp := _creature("wasp", Vector3(0, 1.0, 0), PackedStringArray(["rat"]))
+	var rat := _creature("rat", Vector3(3, 0.8, 0), PackedStringArray())
+	rat.move_speed = 0.0
+	await physics_frame
+	_world.sort_now()
+	wasp.mind().hunger = 1.0
+	check(rat.size_class > wasp.size_class, "a rat is bigger than a wasp")
+	await run_frames(120)
+	check(not wasp.is_hunting() and not rat.is_dead(), "so a starving wasp leaves it be")
+
+
+## Dead, a creature drops and lies still on its side, is no use to silk, and rots
+## away in the end.
+func _test_carcasses() -> void:
+	var moth := _creature("moth", Vector3(0, 2.0, 0), PackedStringArray())
+	await physics_frame
+	var heard: Array = []
+	moth.died.connect(func(who: Prey) -> void: heard.append(who))
+	moth.die()
+	check(moth.is_dead() and heard == [moth], "a moth dies, and says so")
+	check(not moth.is_loose() and not moth.can_be_snared() and not moth.can_decide(),
+		"and is no longer loose, catchable, or minding anything")
+	var high := moth.global_position.y
+	await run_frames(60)
+	check(moth.global_position.y < high - 0.5, "it falls (%.2f -> %.2f m)"
+		% [high, moth.global_position.y])
+	var view := moth.get_node_or_null("Body") as CreatureView
+	if view != null:
+		check(view.motion.pose == CreatureMotion.Pose.SPENT, "and lies limp")
+	check(not moth.shock(2.0), "lightning does nothing to it")
+	moth.rot_after = 0.5
+	var held: WeakRef = weakref(moth)
+	var rotted: bool = await wait_until(func() -> bool: return held.get_ref() == null, 90)
+	check(rotted, "and it rots away")
+
+
+## Something that eats carrion eats whatever it finds dead, down to nothing.
+func _test_scavengers() -> void:
+	var dead := _creature("moth", Vector3(3, 0.3, 0), PackedStringArray())
+	await physics_frame
+	dead.die()
+	var beetle := _creature("beetle", Vector3(0, 0.4, 0), PackedStringArray(["carrion"]))
+	await run_frames(10)
+	_world.sort_now()
+	beetle.mind().hunger = 1.0
+	var feeding: bool = await wait_until(func() -> bool: return beetle.is_feeding(), 900)
+	check(feeding, "a hungry beetle finds a dead moth and eats it")
+	var held: WeakRef = weakref(dead)
+	var gone: bool = await wait_until(func() -> bool: return held.get_ref() == null, 900)
+	check(gone, "down to nothing")
+
+
+## Flies come off a carcass: a few, and no more.
+func _test_flies_on_carcasses() -> void:
+	var fly := PreyLibrary.find("fly").duplicate() as PreySpecies
+	fly.diet = PackedStringArray(["carrion"])
+	_world.fly_kind = fly
+	var rat := _creature("rat", Vector3(0, 0.8, 0), PackedStringArray())
+	await physics_frame
+	rat.die()
+	await run_frames(20)
+	_world.sort_now()
+	check(_world.carcasses().has(rat), "a dead rat is a carcass")
+	for i in 30:
+		_world._breed_flies()
+		_world.sort_now()
+	var around := 0
+	for node in _arena.get_children():
+		var other := node as Prey
+		if other != null and other.kind == fly:
+			around += 1
+	check(around == Ecosystem.FLIES_PER_CARCASS,
+		"flies come off it, as many as one carcass draws (%d)" % around)
+
+
+# --- danger ---------------------------------------------------------------
+
+## Something being hunted runs; something only passing is run from up close.
+func _test_running_from_a_hunter() -> void:
+	var beetle := _creature("beetle", Vector3(0, 0.4, 0), PackedStringArray())
+	beetle.kind.tags = PackedStringArray(["insect"])
+	beetle.move_speed = 0.0
+	var sight := beetle.kind.senses * CreatureMind.FEAR
+	var bird := _creature("wasp", Vector3(sight * 0.75, 1.0, 0), PackedStringArray(["insect"]))
+	bird.move_speed = 0.0
+	await physics_frame
+	_world.sort_now()
+	check(beetle.mind().threat() == null,
+		"a wasp passing %.0f m off is no threat to a beetle" % beetle.global_position.distance_to(
+			bird.global_position))
+	bird.hunt(beetle)
+	await physics_frame
+	_world.sort_now()
+	check(beetle.mind().threat() == bird, "a wasp hunting it is")
+	var away: bool = await wait_until(func() -> bool:
+		return beetle._state == Prey.State.FLEEING, 120)
+	check(away, "and it runs")
+	bird.break_off()
+	bird.global_position = beetle.global_position + Vector3(sight * 0.3, 0.6, 0.0)
+	await physics_frame
+	_world.sort_now()
+	check(beetle.mind().threat() == bird, "a wasp only passing is a threat up close")
+
+
+## A wary creature keeps clear of a spider big enough to eat it, and only that.
+func _test_wary_of_the_spider() -> void:
+	var rat := _creature("rat", Vector3(0, 0.8, 0), PackedStringArray())
+	rat.kind.wary = true
+	var spider := PretendSpider.new()
+	_arena.add_child(spider)
+	spider.global_position = Vector3(1.5, 0.3, 0)
+	await physics_frame
+	spider.bite = 1
+	check(rat.mind().threat() == null, "a rat does not mind a spider that cannot eat it")
+	spider.bite = 9
+	check(rat.mind().threat() == spider, "and keeps clear of one that can")
+	rat.kind.wary = false
+	check(rat.mind().threat() == null, "unless it is not the wary kind")
+	spider.queue_free()
+
+
+## Something in the spider's group, with a bite of a check's choosing.
+class PretendSpider extends Node3D:
+	var bite := 1
+
+	func _ready() -> void:
+		add_to_group("spider")
+
+	func stage() -> GrowthStage:
+		var tier := GrowthStage.new()
+		tier.bite_power = bite
+		tier.body_height = 0.4
+		return tier
 
 
 # --- building the arena ----------------------------------------------------

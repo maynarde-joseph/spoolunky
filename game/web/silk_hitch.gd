@@ -111,7 +111,8 @@ func _physics_process(delta: float) -> void:
 func _still_worth_holding() -> bool:
 	if cargo == null or not is_instance_valid(cargo) or cargo.is_queued_for_deletion():
 		return false
-	return not cargo.eaten and not cargo.is_stuck() and not cargo.is_bundled()
+	return not cargo.eaten and not cargo.is_stuck() and not cargo.is_bundled() \
+		and not cargo.is_dead()
 
 
 ## How much line is out, as a share of its length. Nothing to do with whether it

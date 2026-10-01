@@ -241,7 +241,8 @@ func can_carry(target: Node3D) -> bool:
 		# wrapped. Eating one where it hangs is still F, at fang reach.
 		if prey.eaten or prey.held_by() != null:
 			return false
-		return prey.wrapped or prey.is_secured()
+		# A carcass is dead weight, the same as a bundle: something to drag home.
+		return prey.wrapped or prey.is_secured() or prey.is_dead()
 	return target is SilkDevice
 
 
