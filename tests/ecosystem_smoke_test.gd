@@ -28,10 +28,13 @@ func _sections() -> Array[Callable]:
 		_test_the_roster,
 		_test_forage,
 		_test_grazing,
+		_test_searching,
+		_test_errands_end,
 		_test_a_full_creature_stays_put,
 		_test_fliers_eat_from_above,
 		_test_diets,
 		_test_a_kill,
+		_test_meat_first,
 		_test_too_big_to_take,
 		_test_carcasses,
 		_test_scavengers,
@@ -184,6 +187,45 @@ func _test_grazing() -> void:
 	check(moss.amount > 0.0, "having eaten what it needed and left the rest (%.1f)" % moss.amount)
 
 
+## Hungry, with nothing it eats in sight, a creature goes looking further off —
+## further each time — and finds what it could not see from home.
+func _test_searching() -> void:
+	for i in 6:
+		var turn := TAU * float(i) / 6.0
+		_patch("moss", Vector3(cos(turn), 0.0, sin(turn)) * 24.0, 40.0, 3.0)
+	var beetle := _creature("beetle", Vector3(0, 0.4, 0), PackedStringArray(["moss"]))
+	beetle.kind.senses = 8.0
+	beetle.move_speed = 4.0
+	beetle.wander_radius = 6.0
+	await physics_frame
+	var mind := beetle.mind()
+	check(mind.find_food() == null, "a beetle cannot see the moss 24 m off all round it")
+	mind.hunger = 0.9
+	mind.decide()
+	check(beetle.is_on_errand(), "so hungry, it goes off to look")
+	var first := beetle._errand_goal.distance_to(beetle.home())
+	var looked: bool = await wait_until(func() -> bool: return mind._searches >= 2, 900)
+	check(looked and beetle._errand_goal.distance_to(beetle.home()) > first,
+		"looking further the second time (%.0f m out, then %.0f m)"
+		% [first, beetle._errand_goal.distance_to(beetle.home())])
+	var found: bool = await wait_until(func() -> bool: return beetle.is_feeding(), 3600)
+	check(found, "and in the end finds some, and eats")
+
+
+## An errand that cannot be finished is given up, rather than walked at for ever.
+func _test_errands_end() -> void:
+	var beetle := _creature("beetle", Vector3(0, 0.4, 0), PackedStringArray())
+	await physics_frame
+	beetle.go_to(Vector3(0, 40, 0), 0.5)
+	check(beetle.is_on_errand(), "a beetle sent somewhere up in the air sets off")
+	var given_up: bool = await wait_until(func() -> bool: return not beetle.is_on_errand(),
+		roundi(Prey.ERRAND_TIME * 60.0) + 60)
+	check(given_up, "and gives up on it in the end")
+	beetle.go_to(beetle.global_position + Vector3(3, 2.5, 0), 0.5)
+	var there: bool = await wait_until(func() -> bool: return not beetle.is_on_errand(), 400)
+	check(there, "while somewhere a step up the ground counts as reached from beside it")
+
+
 ## Something that is not hungry leaves food alone.
 func _test_a_full_creature_stays_put() -> void:
 	var moss := _patch("moss", Vector3(3, 0, 0), 40.0, 2.0)
@@ -259,6 +301,26 @@ func _test_a_kill() -> void:
 	await run_frames(20)
 	check(not is_instance_valid(fly) or fly.biomass < left,
 		"the carcass going down as it does (%.1f)" % (fly.biomass if is_instance_valid(fly) else 0.0))
+
+
+## A hunter that eats berries too goes for something to hunt over a bramble
+## nearly as near.
+func _test_meat_first() -> void:
+	var bramble := _patch("berries", Vector3(5, 0, 0), 40.0, 2.0)
+	var wasp := _creature("wasp", Vector3(0, 1.0, 0), PackedStringArray(["fly", "berries"]))
+	var fly := _creature("fly", Vector3(-6.5, 1.0, 0), PackedStringArray())
+	fly.move_speed = 0.0
+	wasp.move_speed = 0.0
+	await physics_frame
+	_world.sort_now()
+	check(wasp.mind().find_food() == fly,
+		"a wasp goes after a fly over a bramble a little nearer (%.1f m against %.1f m)"
+		% [wasp.global_position.distance_to(fly.global_position),
+			wasp.global_position.distance_to(bramble.global_position)])
+	fly.global_position = Vector3(-30, 1.0, 0)
+	await physics_frame
+	_world.sort_now()
+	check(wasp.mind().find_food() == bramble, "but not over one far nearer")
 
 
 ## However hungry, a predator leaves alone what it cannot overpower.

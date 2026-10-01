@@ -55,6 +55,11 @@ const FEAR := 0.6
 ## further for than one that has to be chased.
 const CARRION_PULL := 0.7
 
+## And how much nearer something to hunt is, for a hunter that will eat berries
+## too: a wasp that only ever went to the bramble because it was nearer would
+## never hunt at all.
+const PREY_PULL := 0.6
+
 ## Weak enough — hurt, or bound in silk it tore out of — to limp home and rest
 ## until it is over it; and over it.
 const LIMP_AT := 0.5
@@ -105,6 +110,13 @@ var turf_rest := 0.0
 var roam_in := 0.0
 
 var _think := 0.0
+
+## How many times running it has gone looking for food and found none: each look
+## goes further than the last, and off a different way — turned from the last by
+## the golden angle, so that however many looks it takes they spread evenly round
+## home rather than bunching up.
+var _searches := 0
+var _search_turn := randf() * TAU
 
 
 func _init(creature: Prey, species: PreySpecies, ecosystem: Ecosystem) -> void:
@@ -255,7 +267,11 @@ func decide() -> void:
 	if eats_anything() and hunger >= HUNGRY:
 		var meal := find_food()
 		if meal != null:
+			_searches = 0
 			_go_for(meal)
+			return
+		if not prey.is_on_errand():
+			search()
 			return
 	if kind.roams and roam_in <= 0.0:
 		roam()
@@ -332,6 +348,21 @@ func _square_up_to(other: Prey) -> void:
 	other.clash(prey, false)
 
 
+## Hungry with nothing it eats in sight, it goes to look further off than it
+## usually goes from home — further each time it finds nothing — and sees what
+## is there on the way, since it thinks as it goes.
+func search() -> void:
+	_searches += 1
+	var reach := maxf(prey.wander_radius * 2.5, kind.senses * 1.5) \
+		* minf(1.0 + 0.5 * float(_searches - 1), 4.0)
+	_search_turn = fposmod(_search_turn + 2.39996, TAU)
+	var spot := prey.home() + Vector3(cos(_search_turn), 0.0, sin(_search_turn)) * reach \
+		* randf_range(0.75, 1.0)
+	if prey.flying and not prey.swims:
+		spot.y = prey.home().y + randf_range(kind.wander_height.x, kind.wander_height.y)
+	prey.go_to(spot, maxf(reach * 0.15, prey.hit_radius() * 2.0))
+
+
 ## Off to another of its haunts, to wander about that one once it is there.
 func roam() -> void:
 	roam_in = randf_range(ROAM_EVERY.x, ROAM_EVERY.y)
@@ -375,8 +406,8 @@ func find_food() -> Node3D:
 				if gap < best_gap:
 					best_gap = gap
 					best = other
-		elif hunts and can_take(other) and gap < best_gap:
-			best_gap = gap
+		elif hunts and can_take(other) and gap * PREY_PULL < best_gap:
+			best_gap = gap * PREY_PULL
 			best = other
 	return best
 

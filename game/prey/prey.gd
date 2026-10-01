@@ -280,6 +280,12 @@ var _mind: CreatureMind = null
 var _errand := false
 var _errand_reach := 0.3
 var _errand_goal := Vector3.ZERO
+
+## How long an errand has left before it is given up, in seconds: somewhere it
+## cannot get to — up a cliff, round something it cannot get round — is not
+## somewhere to walk at for ever.
+const ERRAND_TIME := 30.0
+var _errand_left := 0.0
 var _detour_left := 0.0
 
 ## What it is eating, while it eats.
@@ -668,6 +674,7 @@ func go_to(point: Vector3, reach := 0.3) -> void:
 		_state = State.WANDER
 	_errand_goal = point
 	_errand_reach = maxf(reach, 0.05)
+	_errand_left = ERRAND_TIME
 	_target = point
 	_errand = true
 	_detour_left = 0.0
@@ -759,6 +766,16 @@ func flee_from(danger: Vector3, time := 1.5) -> void:
 ## down: a haunt it has gone to. See [Haunt].
 func wander_about(point: Vector3) -> void:
 	_home = point
+
+
+## Where it wanders about.
+func home() -> Vector3:
+	return _home
+
+
+## Whether it is on its way somewhere its mind sent it.
+func is_on_errand() -> bool:
+	return _errand and _state == State.WANDER
 
 
 # --- turf wars ----------------------------------------------------------
@@ -1376,7 +1393,13 @@ func _run_errand(delta: float) -> void:
 		_detour_left -= delta
 		if _detour_left <= 0.0:
 			_target = _errand_goal
-	if global_position.distance_to(_errand_goal) <= _errand_reach:
+	# On its feet, there is there whatever the lie of the ground: a point a step up
+	# a slope is as good as reached.
+	var gap := _errand_goal - global_position
+	if not flying:
+		gap.y = 0.0
+	_errand_left -= delta
+	if gap.length() <= _errand_reach or _errand_left <= 0.0:
 		_errand = false
 		velocity = velocity * 0.5
 		if _mind != null:
@@ -1406,6 +1429,11 @@ func _steer(delta: float, speed: float) -> void:
 	if flying and not swims and is_wet():
 		_target.y = minf(_target.y, global_position.y - maxf(hit_radius(), 0.02))
 	var to_target := _target - global_position
+	# On its feet it can only go across the ground: whatever height the target is
+	# at, it walks at it flat, at its full pace, rather than spending part of that
+	# pace trying to go up or down.
+	if not flying:
+		to_target.y = 0.0
 	var going := to_target.length() >= 0.001
 	if not going and pull.length_squared() < 0.000001:
 		return
