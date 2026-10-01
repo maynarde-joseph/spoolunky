@@ -116,6 +116,13 @@ func fill() -> void:
 	health = max_stamina()
 
 
+## Some of it back, up to the whole of it: a meal, where a meal mends.
+func heal(amount: float) -> void:
+	if amount <= 0.0:
+		return
+	health = minf(max_stamina(), health + amount)
+
+
 ## Trims what is left to fit a body that just changed size without changing tier —
 ## a trait reshaping you rather than a meal growing you.
 ##

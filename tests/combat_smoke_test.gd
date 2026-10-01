@@ -42,6 +42,8 @@ func _sections() -> Array[Callable]:
 		_test_a_sweep_cuts_silk,
 		_test_a_summon_calls_more,
 		_test_a_stun_ends_an_attack,
+		_test_a_meal_mends_where_waiting_does_not,
+		_test_waking_somewhere,
 		_test_the_drill_mosquito,
 		_test_the_blade_rat,
 		_test_the_charger_beetle,
@@ -366,6 +368,47 @@ func _test_a_stun_ends_an_attack() -> void:
 	check(_tells(biter) == 0, "and so is the tell")
 	await run_frames(30)
 	check(is_equal_approx(spider.health, health), "and the bite never comes")
+
+
+## Where nothing mends on its own, a meal does: a quiet spell gives nothing back,
+## and drinking something you have wrapped does.
+func _test_a_meal_mends_where_waiting_does_not() -> void:
+	await _arena()
+	spider.mends_on_its_own = false
+	spider.drink_heals = 0.6
+	spider.health = spider.max_stamina() * 0.4
+	spider.vitals.quiet = 0.0
+	var low := spider.health
+	await run_frames(240)
+	check(is_equal_approx(spider.health, low),
+		"four quiet seconds give nothing back (%.1f)" % spider.health)
+	var meal := spawn("cockroach", spider.global_position + Vector3(0.6, 0.2, 0.0))
+	if not check(meal != null and meal.bundle(), "something wrapped to drink"):
+		return
+	await run_frames(20)
+	var got: float = await eat(meal, 600)
+	check(got > 0.0, "it goes down (+%.1f biomass)" % got)
+	check(spider.health > low + got * 0.5,
+		"and mends you as it does (%.1f -> %.1f)" % [low, spider.health])
+
+
+## Waking somewhere puts you there whole, with nothing in hand, and makes it where
+## you come back to if you fall out of the world.
+func _test_waking_somewhere() -> void:
+	await _arena()
+	spider.health = spider.max_stamina() * 0.25
+	spider.daze(5.0)
+	var bed := Transform3D(Basis(Vector3.UP, PI * 0.5), _centre() + Vector3(-3.0, 0.6, 2.0))
+	spider.wake_at(bed)
+	await run_frames(30)
+	check(spider.global_position.distance_to(bed.origin) < 1.0,
+		"you wake where you were put (%.2fm off)" % spider.global_position.distance_to(bed.origin))
+	check(is_equal_approx(spider.health, spider.max_stamina()), "whole")
+	check(not spider.is_dazed(), "and clear-headed")
+	spider.global_position = _centre() + Vector3(0.0, spider.kill_plane - 10.0 - _centre().y, 0.0)
+	await run_frames(3)
+	check(spider.global_position.distance_to(bed.origin) < 1.5,
+		"and falling out of the world puts you back there too")
 
 
 # --- the hostiles -------------------------------------------------------

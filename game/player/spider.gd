@@ -70,6 +70,13 @@ signal skill_tree_toggled()
 ## The size tier the spider starts at, counted from nought: 2 is the Huntsman.
 @export var start_stage := 0
 
+## Whether condition comes back on its own after a quiet spell. A level where the
+## ways back are a shrine and a meal turns this off.
+@export var mends_on_its_own := true
+
+## Condition back for every unit of biomass drunk. Nought, and a meal is only food.
+@export var drink_heals := 0.0
+
 ## Ignore build and feeding input while the mouse is free, so clicking around a
 ## menu doesn't spin a web. Turn off for automated tests and headless runs,
 ## where the display server cannot capture the mouse at all.
@@ -145,6 +152,7 @@ func _ready() -> void:
 	climb.notice.connect(_on_notice)
 	tether.notice.connect(_on_notice)
 	jaws.notice.connect(_on_notice)
+	jaws.drank.connect(_on_drank)
 	vitals.notice.connect(_on_notice)
 	live_line.notice.connect(_on_notice)
 	spells.notice.connect(_on_notice)
@@ -380,7 +388,8 @@ func _process(delta: float) -> void:
 	_watch_for_release()
 	_take_aim(delta)
 	jaws.drink(delta)
-	vitals.mend(delta)
+	if mends_on_its_own:
+		vitals.mend(delta)
 	climb.haul = tether.drag_factor()
 	climb.glide = traits.glide() if traits != null else 0.0
 	view.update(stage().body_height, climb.view_up())
@@ -522,6 +531,33 @@ func daze(seconds: float) -> void:
 
 func is_dazed() -> bool:
 	return _dazed > 0.0
+
+
+## Puts the spider down at [param where], whole and with nothing in its hands, and
+## makes that the place it comes back to if it falls out of the world: waking at
+## a shrine.
+func wake_at(where: Transform3D) -> void:
+	_spawn_transform = where
+	if jaws.meal != null:
+		jaws.stop()
+	if tether.is_towing():
+		tether.cut()
+	climb.release()
+	global_transform = where
+	velocity = Vector3.ZERO
+	_dazed = 0.0
+	_drag_left = 0.0
+	climb.stand_upright()
+	view.settle()
+	view.face(-where.basis.z)
+	vitals.fill()
+	respawned.emit()
+
+
+## A mouthful down. Where a meal mends, some condition comes back with it.
+func _on_drank(food: float) -> void:
+	if drink_heals > 0.0:
+		vitals.heal(food * drink_heals)
 
 
 ## Thrown, at [param push], off whatever it was standing on.

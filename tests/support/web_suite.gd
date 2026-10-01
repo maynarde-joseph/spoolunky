@@ -234,6 +234,8 @@ func rewind_growth() -> void:
 	spider.growth.apply_initial()
 	spider.health = spider.max_stamina()
 	spider.vitals.quiet = 0.0
+	spider.mends_on_its_own = true
+	spider.drink_heals = 0.0
 	if traits != null:
 		traits.owned.clear()
 		traits.larder.clear()

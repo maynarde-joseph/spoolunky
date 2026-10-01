@@ -12,6 +12,9 @@ extends Node
 ## Said out loud to the player. The spider passes these through.
 signal notice(text: String)
 
+## A mouthful went down: how much biomass it was worth.
+signal drank(food: float)
+
 ## Biomass swallowed per second, at a bite power of one.
 ##
 ## A meal is a few seconds you spend standing still, and that is the whole point
@@ -178,6 +181,7 @@ func drink(delta: float) -> void:
 		return
 	var food := swallowed * yield_scale
 	_taken += food
+	drank.emit(food)
 	# Banked as it comes, not at the end, so half a meal is half a meal. Fed
 	# quietly: a notice a frame would bury everything else the HUD has to say.
 	if _growth.feed(food, _species) > 0:
