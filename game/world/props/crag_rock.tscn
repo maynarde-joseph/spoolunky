@@ -1,0 +1,52 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/rock.tres" id="1_pv3wp"]
+[ext_resource type="Material" path="res://game/world/materials/rock_dark.tres" id="2_elfps"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_turm6"]
+size = Vector3(12, 9, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_fmaf3"]
+size = Vector3(12, 9, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ksvjk"]
+size = Vector3(8, 7, 9)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_jvrxx"]
+size = Vector3(8, 7, 9)
+
+[sub_resource type="BoxMesh" id="BoxMesh_n4aan"]
+size = Vector3(6, 5, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_6c14s"]
+size = Vector3(6, 5, 6)
+
+[node name="CragRock" type="StaticBody3D" unique_id=1851065345]
+collision_mask = 0
+
+[node name="Rock" type="MeshInstance3D" parent="." unique_id=1282499853]
+transform = Transform3D(0.9259708, -0.014611445, 0.37731227, 0.11599064, 0.96194464, -0.24740396, -0.35933858, 0.27285355, 0.89242744, 0, 3.6, 0)
+material_override = ExtResource("1_pv3wp")
+mesh = SubResource("BoxMesh_turm6")
+
+[node name="RockShape" type="CollisionShape3D" parent="." unique_id=479601972]
+transform = Transform3D(0.9259708, -0.014611445, 0.37731227, 0.11599064, 0.96194464, -0.24740396, -0.35933858, 0.27285355, 0.89242744, 0, 3.6, 0)
+shape = SubResource("BoxShape3D_fmaf3")
+
+[node name="Rock2" type="MeshInstance3D" parent="." unique_id=635417262]
+transform = Transform3D(0.33578685, -0.4029395, 0.85140294, 0.32758278, 0.89741707, 0.29552022, -0.88314027, 0.17967314, 0.4333369, 8, 2.4, 3)
+material_override = ExtResource("2_elfps")
+mesh = SubResource("BoxMesh_ksvjk")
+
+[node name="RockShape2" type="CollisionShape3D" parent="." unique_id=1908705627]
+transform = Transform3D(0.33578685, -0.4029395, 0.85140294, 0.32758278, 0.89741707, 0.29552022, -0.88314027, 0.17967314, 0.4333369, 8, 2.4, 3)
+shape = SubResource("BoxShape3D_jvrxx")
+
+[node name="Rock3" type="MeshInstance3D" parent="." unique_id=1817302240]
+transform = Transform3D(0.8656101, 0.46938434, 0.17434874, -0.34174675, 0.80830705, -0.47942555, -0.36596215, 0.35541248, 0.86008936, -6.5, 1.8, -4)
+material_override = ExtResource("1_pv3wp")
+mesh = SubResource("BoxMesh_n4aan")
+
+[node name="RockShape3" type="CollisionShape3D" parent="." unique_id=1989294132]
+transform = Transform3D(0.8656101, 0.46938434, 0.17434874, -0.34174675, 0.80830705, -0.47942555, -0.36596215, 0.35541248, 0.86008936, -6.5, 1.8, -4)
+shape = SubResource("BoxShape3D_6c14s")

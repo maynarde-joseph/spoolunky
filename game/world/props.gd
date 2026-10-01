@@ -55,6 +55,8 @@ const ALL := [
 	"ruin_wall", "ruin_arch", "ruin_pillar", "fallen_pillar", "ruin_block", "flagstones",
 	# The mere.
 	"driftwood",
+	# Wyrm's crag.
+	"crag_rock", "crag_spire",
 ]
 
 
@@ -146,6 +148,8 @@ static func build(id: String) -> Node3D:
 		"ruin_block": return _ruin_block()
 		"flagstones": return _flagstones()
 		"driftwood": return _driftwood()
+		"crag_rock": return _crag_rock()
+		"crag_spire": return _crag_spire()
 	push_error("no such prop: %s" % id)
 	return null
 
@@ -1430,6 +1434,36 @@ static func _driftwood() -> Node3D:
 		0.25, 8)
 	WorldKit.rod(it, "Stub", Vector3(-4.0, 1.4, 0.1), Vector3(-4.8, 5.2, 0.6), 0.55, "driftwood",
 		true, 0.35, 8)
+	return it
+
+
+# --- wyrm's crag --------------------------------------------------------
+
+## A heap of fallen crag: three angular blocks of rock leaning on one another,
+## the way they came down.
+static func _crag_rock() -> Node3D:
+	var it := WorldKit.body(null, "CragRock")
+	WorldKit.box(it, "Rock", Vector3(12.0, 9.0, 10.0), Transform3D(Basis.from_euler(Vector3(0.25,
+		0.4, 0.12)), Vector3(0.0, 3.6, 0.0)), "rock")
+	WorldKit.box(it, "Rock", Vector3(8.0, 7.0, 9.0), Transform3D(Basis.from_euler(Vector3(-0.3, 1.1,
+		0.35)), Vector3(8.0, 2.4, 3.0)), "rock_dark")
+	WorldKit.box(it, "Rock", Vector3(6.0, 5.0, 6.0), Transform3D(Basis.from_euler(Vector3(0.5, 0.2,
+		-0.4)), Vector3(-6.5, 1.8, -4.0)), "rock")
+	return it
+
+
+## A spire of rock standing up off the crag: a tall pillar leaning a little, a
+## broken cap on it, rubble round its foot. A perch.
+static func _crag_spire() -> Node3D:
+	var it := WorldKit.body(null, "CragSpire")
+	WorldKit.box(it, "Pillar", Vector3(9.0, 34.0, 8.0), Transform3D(Basis.from_euler(Vector3(0.04,
+		0.3, 0.06)), Vector3(0.0, 15.0, 0.0)), "rock")
+	WorldKit.box(it, "Cap", Vector3(7.0, 9.0, 6.5), Transform3D(Basis.from_euler(Vector3(0.12, 0.9,
+		-0.1)), Vector3(0.8, 34.5, 0.4)), "rock_dark")
+	for i in 4:
+		var turn := float(i) * 1.7
+		WorldKit.box(it, "Rubble", Vector3(4.0, 3.0, 3.5), Transform3D(Basis.from_euler(Vector3(
+			0.3 * float(i), turn, 0.2)), Vector3(cos(turn) * 7.0, 1.0, sin(turn) * 7.0)), "rock_dark")
 	return it
 
 

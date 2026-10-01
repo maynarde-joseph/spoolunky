@@ -1,0 +1,79 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/rock.tres" id="1_2jv8x"]
+[ext_resource type="Material" path="res://game/world/materials/rock_dark.tres" id="2_q5u4f"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_witil"]
+size = Vector3(9, 34, 8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_egbvj"]
+size = Vector3(9, 34, 8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_26duw"]
+size = Vector3(7, 9, 6.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_l0tat"]
+size = Vector3(7, 9, 6.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_r2pfv"]
+size = Vector3(4, 3, 3.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5cycf"]
+size = Vector3(4, 3, 3.5)
+
+[node name="CragSpire" type="StaticBody3D" unique_id=555153973]
+collision_mask = 0
+
+[node name="Pillar" type="MeshInstance3D" parent="." unique_id=1466604148]
+transform = Transform3D(0.95432603, -0.045489416, 0.29528382, 0.05991604, 0.9974021, -0.039989334, -0.2926976, 0.0558551, 0.9545723, 0, 15, 0)
+material_override = ExtResource("1_2jv8x")
+mesh = SubResource("BoxMesh_witil")
+
+[node name="PillarShape" type="CollisionShape3D" parent="." unique_id=1098115056]
+transform = Transform3D(0.95432603, -0.045489416, 0.29528382, 0.05991604, 0.9974021, -0.039989334, -0.2926976, 0.0558551, 0.9545723, 0, 15, 0)
+shape = SubResource("BoxShape3D_egbvj")
+
+[node name="Cap" type="MeshInstance3D" parent="." unique_id=347306507]
+transform = Transform3D(0.6091428, 0.15536276, 0.77769375, -0.09911548, 0.98784876, -0.119712204, -0.78684264, -0.004159674, 0.61713976, 0.8, 34.5, 0.4)
+material_override = ExtResource("2_q5u4f")
+mesh = SubResource("BoxMesh_26duw")
+
+[node name="CapShape" type="CollisionShape3D" parent="." unique_id=127849051]
+transform = Transform3D(0.6091428, 0.15536276, 0.77769375, -0.09911548, 0.98784876, -0.119712204, -0.78684264, -0.004159674, 0.61713976, 0.8, 34.5, 0.4)
+shape = SubResource("BoxShape3D_l0tat")
+
+[node name="Rubble" type="MeshInstance3D" parent="." unique_id=1289147439]
+transform = Transform3D(0.9800666, -0.19866933, 0, 0.19866933, 0.9800666, 0, 0, 0, 1, 7, 1, 0)
+material_override = ExtResource("2_q5u4f")
+mesh = SubResource("BoxMesh_r2pfv")
+
+[node name="RubbleShape" type="CollisionShape3D" parent="." unique_id=945450651]
+transform = Transform3D(0.9800666, -0.19866933, 0, 0.19866933, 0.9800666, 0, 0, 0, 1, 7, 1, 0)
+shape = SubResource("BoxShape3D_5cycf")
+
+[node name="Rubble2" type="MeshInstance3D" parent="." unique_id=213201619]
+transform = Transform3D(-0.0680548, 0.31281283, 0.9473736, 0.18979606, 0.9362934, -0.29552022, -0.97946215, 0.15969622, -0.123089895, -0.90191144, 1, 6.9416537)
+material_override = ExtResource("2_q5u4f")
+mesh = SubResource("BoxMesh_r2pfv")
+
+[node name="RubbleShape2" type="CollisionShape3D" parent="." unique_id=1839050272]
+transform = Transform3D(-0.0680548, 0.31281283, 0.9473736, 0.18979606, 0.9362934, -0.29552022, -0.97946215, 0.15969622, -0.123089895, -0.90191144, 1, 6.9416537)
+shape = SubResource("BoxShape3D_5cycf")
+
+[node name="Rubble3" type="MeshInstance3D" parent="." unique_id=1779174889]
+transform = Transform3D(-0.97619253, 0.05065991, -0.21090727, 0.16396888, 0.80888385, -0.5646425, 0.14199473, -0.585782, -0.797933, -6.767587, 1, -1.7887877)
+material_override = ExtResource("2_q5u4f")
+mesh = SubResource("BoxMesh_r2pfv")
+
+[node name="RubbleShape3" type="CollisionShape3D" parent="." unique_id=1781034734]
+transform = Transform3D(-0.97619253, 0.05065991, -0.21090727, 0.16396888, 0.80888385, -0.5646425, 0.14199473, -0.585782, -0.797933, -6.767587, 1, -1.7887877)
+shape = SubResource("BoxShape3D_5cycf")
+
+[node name="Rubble4" type="MeshInstance3D" parent="." unique_id=258034271]
+transform = Transform3D(0.22636518, -0.78585213, -0.5754957, 0.12349484, 0.6092192, -0.7833269, 0.9661822, 0.10624722, 0.2349547, 2.6458442, 1, -6.480703)
+material_override = ExtResource("2_q5u4f")
+mesh = SubResource("BoxMesh_r2pfv")
+
+[node name="RubbleShape4" type="CollisionShape3D" parent="." unique_id=893544662]
+transform = Transform3D(0.22636518, -0.78585213, -0.5754957, 0.12349484, 0.6092192, -0.7833269, 0.9661822, 0.10624722, 0.2349547, 2.6458442, 1, -6.480703)
+shape = SubResource("BoxShape3D_5cycf")

@@ -83,6 +83,7 @@ const ISLAND_REACH := 20.0
 const CRAG_FOOT := 82.0
 const CRAG_STEEP := 36.0
 const CRAG_TOP := 104.0
+const CRAG_LEDGES := 7.0
 
 ## Where a new spider starts: inside the stump at the camp.
 const SPAWN_HEIGHT := 1.0
@@ -141,6 +142,7 @@ func build() -> void:
 	_bloom_glade()
 	_old_ruins()
 	_the_mere()
+	_wyrms_crag()
 	_place_the_spider()
 
 
@@ -167,13 +169,19 @@ func ground_at(x: float, z: float) -> float:
 		if island < ISLAND_REACH:
 			height = maxf(height, lerpf(3.0, WATER_TOP - 2.0, smoothstep(ISLAND_REACH * 0.35,
 				ISLAND_REACH, island)))
-	var crag := at.distance_to(CRAG)
+	# The crag's foot wanders in and out, so it does not stand up out of the valley
+	# as a cone.
+	var crag := at.distance_to(CRAG) + 10.0 * _broad.get_noise_2d(x * 3.0, z * 3.0)
 	if crag < CRAG_FOOT:
 		var rise := pow(smoothstep(CRAG_FOOT, CRAG_STEEP, crag), 0.7)
-		var rough := 6.0 * _fine.get_noise_2d(x * 4.0, z * 4.0) * (1.0 - rise * 0.6)
+		# In ledges, the way a crag weathers: each a shelf most of the way across,
+		# then a cliff up to the next.
+		var ledge := rise * CRAG_LEDGES
+		rise = (floorf(ledge) + smoothstep(0.7, 1.0, ledge - floorf(ledge))) / CRAG_LEDGES
+		var rough := 4.0 * _fine.get_noise_2d(x * 4.0, z * 4.0)
 		height = maxf(height, CRAG_TOP * rise + rough * rise)
 		# A bowl in the top, where the nest is.
-		height -= 5.0 * smoothstep(16.0, 4.0, crag)
+		height -= 5.0 * smoothstep(16.0, 4.0, at.distance_to(CRAG))
 	return height
 
 
@@ -878,6 +886,80 @@ func _the_mere() -> void:
 	_haunt(place, "SouthShore", MERE + Vector2(0.2, 1.0).normalized() * 118.0, ["deer", "wolf"],
 		18.0)
 	_haunt(place, "Island", ISLAND, ["wyvern"], 16.0).position.y += 30.0
+
+
+# --- wyrm's crag -----------------------------------------------------------------
+
+## The rock tower in the north of the valley, weathered into ledges with cliffs
+## between, heaps of fallen rock on its shelves and spires standing up off it, and
+## in the bowl at its top the wyvern's nest: a ring of branches it carried up,
+## bones, and its eggs. Nothing lives up here but ravens, perched on the spires,
+## and what lives here — the wyvern — hunts the whole valley.
+func _wyrms_crag() -> void:
+	var place := WorldKit.group(self, "WyrmsCrag")
+	var dice := _dice(606)
+	for i in 26:
+		var turn := dice.randf() * TAU
+		var out := dice.randf_range(24.0, CRAG_FOOT - 6.0)
+		_prop(place, "crag_rock", CRAG + Vector2(cos(turn), sin(turn)) * out, dice, Vector2(0.8, 1.8),
+			2.0)
+	var spires: Array[Vector2] = []
+	for i in 6:
+		var turn := TAU * (float(i) + dice.randf_range(-0.2, 0.2)) / 6.0
+		spires.append(CRAG + Vector2(cos(turn), sin(turn)) * dice.randf_range(20.0, 30.0))
+		_prop(place, "crag_spire", spires[i], dice, Vector2(0.8, 1.3), 3.0)
+	for i in 10:
+		var turn := dice.randf() * TAU
+		_prop(place, "boulder", CRAG + Vector2(cos(turn), sin(turn)) * dice.randf_range(70.0, 100.0),
+			dice, Vector2(1.5, 3.0), 1.0)
+	for i in 20:
+		var turn := dice.randf() * TAU
+		_prop(place, "tall_grass", CRAG + Vector2(cos(turn), sin(turn)) * dice.randf_range(78.0, 110.0),
+			dice, Vector2(1.0, 1.6))
+	_nest(place)
+
+	for i in 5:
+		var turn := dice.randf() * TAU
+		_patch(place, "moss", CRAG + Vector2(cos(turn), sin(turn)) * dice.randf_range(40.0, 70.0), 6.0,
+			36.0, 0.2)
+	for i in 2:
+		var turn := dice.randf() * TAU
+		var at := CRAG + Vector2(cos(turn), sin(turn)) * dice.randf_range(85.0, 100.0)
+		_prop(place, "berry_bush", at, dice, Vector2(1.0, 1.3), 0.5)
+		_patch(place, "berries", at + Vector2(9.0, 0.0), 6.0, 45.0, 0.15)
+
+	_den(place, "wyvern", CRAG, 1, 1, false, 6.0)
+	var roost := _den(place, "raven", spires[1], 2, 3, false, 8.0)
+	roost.position.y += 36.0
+	_haunt(place, "CragTop", CRAG, ["wyvern"], 20.0).position.y += 20.0
+
+
+## The wyvern's nest, in the bowl at the top of the crag: a ring of branches laid
+## round and over one another, bones among them, and three eggs in the middle.
+func _nest(place: Node3D) -> void:
+	var nest := WorldKit.body(place, "Nest", Transform3D(Basis.IDENTITY,
+		on_ground(CRAG.x, CRAG.y, -0.5)))
+	var dice := _dice(607)
+	for layer in 2:
+		for i in 16:
+			var turn := TAU * (float(i) + 0.5 * float(layer)) / 16.0 + dice.randf_range(-0.1, 0.1)
+			var out := Vector3(cos(turn), 0.0, sin(turn))
+			var across := Vector3(-out.z, 0.0, out.x)
+			var middle := out * dice.randf_range(10.0, 13.0) + Vector3.UP * (1.2 + 1.6 * float(layer))
+			var half := across * dice.randf_range(4.0, 6.0) + out * dice.randf_range(-1.0, 1.0)
+			WorldKit.rod(nest, "Branch", middle - half, middle + half, dice.randf_range(0.6, 0.9),
+				"bark" if i % 3 != 0 else "driftwood", true, 0.4, 8)
+	for i in 5:
+		var turn := dice.randf() * TAU
+		var at := Vector3(cos(turn), 0.0, sin(turn)) * dice.randf_range(5.0, 9.0) + Vector3.UP * 0.8
+		var along := Vector3(cos(turn + 1.4), 0.1, sin(turn + 1.4)) * 2.6
+		WorldKit.rod(nest, "Bone", at - along, at + along, 0.35, "stem", false)
+		WorldKit.ball(nest, "Knob", Vector3.ONE * 0.6, WorldKit.at(at + along), "stem", false)
+		WorldKit.ball(nest, "Knob", Vector3.ONE * 0.6, WorldKit.at(at - along), "stem", false)
+	for i in 3:
+		var turn := TAU * float(i) / 3.0
+		WorldKit.ball(nest, "Egg", Vector3(2.2, 3.0, 2.2), Transform3D(Basis(Vector3.BACK, 0.25 * float(i
+			- 1)), Vector3(cos(turn) * 2.4, 2.6, sin(turn) * 2.4)), "white")
 
 
 # --- putting things down ---------------------------------------------------------
