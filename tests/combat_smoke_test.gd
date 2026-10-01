@@ -41,6 +41,7 @@ func _sections() -> Array[Callable]:
 		_test_a_sweep_cuts_silk,
 		_test_a_summon_calls_more,
 		_test_a_stun_ends_an_attack,
+		_test_the_drill_mosquito,
 	]
 
 
@@ -353,6 +354,34 @@ func _test_a_stun_ends_an_attack() -> void:
 	check(is_equal_approx(spider.health, health), "and the bite never comes")
 
 
+# --- the hostiles -------------------------------------------------------
+#
+# The species themselves, as the game ships them: each one's own move, at the
+# range it is meant for, doing what its description says it does.
+
+## The Drill Mosquito keeps out of reach of its own bite and dives from there,
+## hard enough to throw a Huntsman.
+func _test_the_drill_mosquito() -> void:
+	await _arena()
+	var kind := _species("drill_mosquito")
+	if not _kit(kind, "drill_dive", CreatureAttack.Kind.LUNGE):
+		return
+	var mosquito := _put(kind, Vector3(4.5, 1.0, 0.0))
+	var from := mosquito.global_position
+	mosquito.attack_spider(spider)
+	var health := spider.health
+	var dove: bool = await wait_until(func() -> bool:
+		return _using(mosquito, "drill_dive"), 120)
+	if not check(dove, "from across the slab, it dives"):
+		return
+	var hit: bool = await wait_until(func() -> bool: return spider.health < health, 120)
+	check(hit and health - spider.health > 5.0,
+		"and the dive lands hard (%.1f -> %.1f)" % [health, spider.health])
+	check(mosquito.global_position.distance_to(from) > 3.0,
+		"having come the whole way in one go (%.1fm)" % mosquito.global_position.distance_to(from))
+	check(not spider.climb.is_attached(), "and it throws you")
+
+
 # --- helpers ------------------------------------------------------------
 
 ## A slab of its own, far from everything, with a whole Huntsman standing on it.
@@ -411,6 +440,43 @@ func _put(kind: PreySpecies, offset: Vector3) -> Prey:
 	level.add_child(creature)
 	creature.global_position = _centre() + offset
 	return creature
+
+
+## One of the game's own hostiles, as it ships.
+func _species(id: String) -> PreySpecies:
+	return load(CreatureFighter.HOSTILES_DIR.path_join(id + ".tres")) as PreySpecies
+
+
+## That [param kind] is a hostile as one should be: hostile whatever its size, a
+## bite of some sort to fall back on, the move it is known for, and a fight an orb
+## web wins in a few shots — not one, and not a siege. Returns whether there is
+## enough of it to go on with.
+func _kit(kind: PreySpecies, signature: String, of_kind: CreatureAttack.Kind) -> bool:
+	if not check(kind != null, "it is one of the hostiles"):
+		return false
+	check(kind.hostile, "the %s is hostile" % kind.display_name)
+	var bite: CreatureAttack = null
+	var move: CreatureAttack = null
+	for each in kind.attacks:
+		if each.kind == CreatureAttack.Kind.BITE and bite == null:
+			bite = each
+		if each.id == signature:
+			move = each
+	check(bite != null, "with a bite to fall back on (%s)" % (bite.id if bite != null else "none"))
+	if not check(move != null and move.kind == of_kind, "and its own %s, a %s"
+			% [signature, String(CreatureAttack.Kind.keys()[of_kind]).to_lower()]):
+		return false
+	var hold := builder.shot_hold(pattern_named("orb_web"), 2.0)
+	var shots := ceili(kind.total_thrash() / maxf(hold * Prey.ESCAPE_MARGIN, 0.001))
+	check(shots >= 2 and shots <= 4,
+		"and an orb web takes it in %d shots: more than one, and not a siege" % shots)
+	return true
+
+
+## Whether [param creature] is in the middle of the move called [param move_id].
+func _using(creature: Prey, move_id: String) -> bool:
+	return creature.fighter != null and creature.fighter.attack != null \
+		and creature.fighter.attack.id == move_id
 
 
 func _span(creature: Prey) -> float:
