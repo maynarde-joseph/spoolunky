@@ -69,6 +69,9 @@ const PAINTS := {
 	"acorn_cup": {"colour": Color(0.4, 0.31, 0.19)},
 	"leaf_fallen": {"colour": Color(0.64, 0.42, 0.18)},
 	"leaf_rust": {"colour": Color(0.56, 0.27, 0.13)},
+	# Wild honeycomb, and the paper of a wasps' nest.
+	"honey": {"colour": Color(0.86, 0.64, 0.2)},
+	"paper": {"colour": Color(0.7, 0.66, 0.58)},
 	# Shelf fungus, growing out of a trunk.
 	"fungus_shelf": {"colour": Color(0.74, 0.55, 0.32)},
 	# Wild rock, a shade darker than stone anyone has cut.

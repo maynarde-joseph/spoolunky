@@ -130,6 +130,7 @@ func build() -> void:
 	_camp()
 	_fern_floor()
 	_rootways()
+	_bloom_glade()
 	_place_the_spider()
 
 
@@ -553,6 +554,83 @@ func _hollow_log(place: Node3D) -> void:
 		var t := (float(i) + 0.5) / 9.0 - 0.5
 		WorldKit.ball(hollow, "Moss", Vector3(4.5, 1.2, 6.0), WorldKit.at(Vector3(0.0, LOG_RADIUS - 0.4,
 			t * length * 0.9)), "moss", false)
+
+
+# --- the bloom glade -------------------------------------------------------------
+
+## The open middle of the valley: a meadow in flower, with tall grass and
+## wildflowers to climb and string silk between, brambles of berries, a few
+## trees, a ring of standing stones at its heart, a wild hive in a stump and a
+## wasps' nest on a dead tree. It is built for the middle sizes, and it is the
+## busiest place in the valley by day: bees and butterflies over the flowers and
+## wasps hunting them, hares in the grass and a fox after the hares, songbirds in
+## the trees, and the stags grazing all of it.
+func _bloom_glade() -> void:
+	var place := WorldKit.group(self, "BloomGlade")
+	var dice := _dice(303)
+	var half := Vector2(112.0, 100.0)
+	var heart := GLADE + Vector2(-10.0, 10.0)
+	var keep: Array[Vector2] = []
+	for i in 7:
+		var turn := TAU * float(i) / 7.0
+		var stone := heart + Vector2(cos(turn), sin(turn)) * 26.0
+		_prop(place, "standing_stone", stone, dice, Vector2(0.85, 1.25), 1.5)
+		keep.append(stone)
+
+	var trees: Array[Vector2] = [GLADE + Vector2(-85.0, -60.0), GLADE + Vector2(70.0, -78.0),
+		GLADE + Vector2(95.0, 40.0), GLADE + Vector2(-92.0, 52.0), GLADE + Vector2(30.0, 80.0),
+		GLADE + Vector2(-40.0, -85.0)]
+	for i in trees.size():
+		_prop(place, "tree_oak" if i % 2 == 0 else "tree_birch", trees[i], dice, Vector2(1.1, 1.5),
+			0.5)
+		keep.append(trees[i])
+	var hive := GLADE + Vector2(48.0, -30.0)
+	_prop(place, "beehive", hive, dice, Vector2(1.0, 1.1), 0.4)
+	keep.append(hive)
+	var wasps := GLADE + Vector2(-58.0, -20.0)
+	_prop(place, "wasp_tree", wasps, dice, Vector2(1.0, 1.15), 0.5)
+	keep.append(wasps)
+
+	for i in 150:
+		_prop(place, "tall_grass", _scatter(dice, GLADE, half, keep, 5.0), dice, Vector2(0.8, 1.5))
+	for i in 64:
+		_prop(place, "wildflowers", _scatter(dice, GLADE, half, keep, 5.0), dice, Vector2(0.8, 1.5))
+	var brambles: Array[Vector2] = []
+	for i in 8:
+		brambles.append(_scatter(dice, GLADE, half * 0.9, keep, 14.0))
+		_prop(place, "berry_bush", brambles[i], dice, Vector2(0.9, 1.3), 0.5)
+		keep.append(brambles[i])
+	for i in 10:
+		_prop(place, "boulder", _scatter(dice, GLADE, half, keep, 10.0), dice, Vector2(1.2, 2.2), 0.6)
+
+	var grass: Array[Vector2] = []
+	for i in 14:
+		grass.append(_scatter(dice, GLADE, half * 0.85, keep, 10.0))
+		_patch(place, "grass", grass[i], 8.0, 80.0, 0.6)
+	var flowers: Array[Vector2] = []
+	for i in 12:
+		flowers.append(_scatter(dice, GLADE, half * 0.85, keep, 10.0))
+		_patch(place, "flowers", flowers[i], 5.0, 40.0, 0.4)
+	for spot in brambles.slice(0, 5):
+		_patch(place, "berries", spot + Vector2(8.0, 0.0), 7.0, 60.0, 0.2)
+	for i in 3:
+		_patch(place, "moss", _scatter(dice, GLADE, half, keep, 10.0), 5.0, 36.0, 0.2)
+
+	_den(place, "bee", hive, 5, 8, true, 4.0)
+	_den(place, "wasp", wasps + Vector2(9.0, 0.0), 3, 5, true, 4.0)
+	_den(place, "butterfly", flowers[0], 3, 6, false, 5.0)
+	_den(place, "butterfly", flowers[6], 3, 6, false, 5.0)
+	_den(place, "midge", flowers[3], 5, 8, false, 4.0)
+	_den(place, "hare", grass[2], 2, 4, true, 8.0)
+	_den(place, "hare", grass[9], 2, 4, true, 8.0)
+	_den(place, "songbird", trees[1] + Vector2(10.0, 0.0), 2, 3, false, 6.0)
+	_den(place, "songbird", trees[3] + Vector2(10.0, 0.0), 2, 3, false, 6.0)
+	_den(place, "fox", GLADE + Vector2(-100.0, 92.0), 1, 2, true, 8.0)
+	_den(place, "deer", GLADE + Vector2(82.0, -90.0), 2, 3, false, 14.0)
+
+	_haunt(place, "Heart", heart, ["deer", "boar", "wolf", "wyvern"], 24.0)
+	_haunt(place, "EastMeadow", GLADE + Vector2(70.0, 20.0), ["deer", "wolf"], 24.0)
+	_haunt(place, "WestMeadow", GLADE + Vector2(-70.0, 30.0), ["deer", "boar", "wyvern"], 24.0)
 
 
 # --- putting things down ---------------------------------------------------------

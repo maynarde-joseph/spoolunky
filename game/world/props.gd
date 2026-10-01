@@ -49,6 +49,8 @@ const ALL := [
 	"fallen_leaf_rust", "twig", "anthill", "forest_tree",
 	# The rootways.
 	"bracket_fungus",
+	# The bloom glade.
+	"tall_grass", "wildflowers", "berry_bush", "beehive", "wasp_tree", "standing_stone",
 ]
 
 
@@ -127,6 +129,12 @@ static func build(id: String) -> Node3D:
 		"anthill": return _anthill()
 		"forest_tree": return _forest_tree()
 		"bracket_fungus": return _bracket_fungus()
+		"tall_grass": return _tall_grass()
+		"wildflowers": return _wildflowers()
+		"berry_bush": return _berry_bush()
+		"beehive": return _beehive()
+		"wasp_tree": return _wasp_tree()
+		"standing_stone": return _standing_stone()
 	push_error("no such prop: %s" % id)
 	return null
 
@@ -1184,8 +1192,113 @@ static func _bracket_fungus() -> Node3D:
 		var deep: float = shelf[2]
 		WorldKit.ball(it, "Shelf", Vector3(wide, 0.7, deep),
 			WorldKit.at(Vector3(0.0, shelf[0], -deep * 0.45)), "fungus_shelf")
-		WorldKit.ring(it, "Rim", wide * 0.62, 0.3, Transform3D(Basis.IDENTITY.scaled(Vector3(1.0,
-			1.0, deep / wide)), Vector3(0.0, float(shelf[0]) + 0.25, -deep * 0.45)), "wood_light")
+	return it
+
+
+# --- the bloom glade ---------------------------------------------------
+
+## A clump of meadow grass, waist high to a person and a forest to a spider:
+## blades from one root, leaning out, each a stalk to climb and a post for silk.
+static func _tall_grass() -> Node3D:
+	var it := WorldKit.body(null, "TallGrass")
+	for i in 11:
+		var turn := float(i) * 2.39
+		var lean := 0.15 + 0.3 * fposmod(float(i) * 0.47, 1.0)
+		var tall := 7.0 + 6.0 * fposmod(float(i) * 0.61, 1.0)
+		var base := Vector3(cos(turn), 0.0, sin(turn)) * (0.3 + 0.9 * fposmod(float(i) * 0.29, 1.0))
+		var tip := base + Vector3(cos(turn) * lean * tall, tall, sin(turn) * lean * tall)
+		WorldKit.rod(it, "Blade", base, tip, 0.22, "grass" if i % 3 != 0 else "leaf_light", true, 0.04,
+			5)
+		if i % 4 == 0:
+			WorldKit.capsule(it, "Seed", 0.28, 1.8, Transform3D(WorldKit.upright(tip - base), tip),
+				"straw", false)
+	return it
+
+
+## Wildflowers: stems of a few heights, a leaf or two on each, and a head of
+## petals on top in one of the meadow's colours.
+static func _wildflowers() -> Node3D:
+	var it := WorldKit.body(null, "Wildflowers")
+	var petals := ["petal_red", "petal_yellow", "petal_purple", "petal_white", "petal_yellow"]
+	for i in 6:
+		var turn := float(i) * 2.1
+		var base := Vector3(cos(turn), 0.0, sin(turn)) * (0.5 + 1.2 * fposmod(float(i) * 0.37, 1.0))
+		var tall := 5.0 + 3.5 * fposmod(float(i) * 0.53, 1.0)
+		var tip := base + Vector3(cos(turn) * 0.5, tall, sin(turn) * 0.5)
+		WorldKit.rod(it, "Stem", base, tip, 0.14, "leaf", true, 0.1, 6)
+		WorldKit.ball(it, "Leaf", Vector3(0.9, 0.12, 0.35), WorldKit.at(base.lerp(tip, 0.4),
+			float(i) * 61.0), "leaf_light", false)
+		var paint: String = petals[i % petals.size()]
+		for k in 5:
+			var round := TAU * float(k) / 5.0
+			WorldKit.ball(it, "Petal", Vector3(0.55, 0.12, 0.3), Transform3D(Basis(Vector3.UP, -round),
+				tip + Vector3(cos(round), 0.0, sin(round)) * 0.45), paint, false)
+		WorldKit.ball(it, "Heart", Vector3(0.3, 0.2, 0.3), WorldKit.at(tip + Vector3.UP * 0.08),
+			"yellow" if paint != "petal_yellow" else "acorn")
+	return it
+
+
+## A bramble of berries: overlapping mounds of dark leaves, berries all over.
+static func _berry_bush() -> Node3D:
+	var it := WorldKit.body(null, "BerryBush")
+	var mounds := [
+		[Vector3(0.0, 5.0, 0.0), Vector3(7.0, 6.0, 7.0), "leaf_dark"],
+		[Vector3(5.0, 3.6, 2.4), Vector3(4.6, 4.2, 4.6), "leaf"],
+		[Vector3(-4.4, 3.4, -1.8), Vector3(4.8, 4.0, 4.6), "leaf_dark"],
+	]
+	for mound in mounds:
+		WorldKit.ball(it, "Leaves", mound[1], WorldKit.at(mound[0]), mound[2])
+	# On the big mound's skin, over its top and round its middle where they show.
+	for i in 24:
+		var around := float(i) * 2.4
+		var down := PI * (0.12 + 0.45 * fposmod(float(i) * 0.37, 1.0))
+		var at := Vector3(cos(around) * sin(down) * 7.0, 5.0 + cos(down) * 6.0,
+			sin(around) * sin(down) * 7.0)
+		WorldKit.ball(it, "Berry", Vector3.ONE * 0.65, WorldKit.at(at), "berry", false)
+	return it
+
+
+## A wild hive in an old stump: the comb built up out of the top of it, gold, with
+## the way in dark at its foot.
+static func _beehive() -> Node3D:
+	var it := WorldKit.body(null, "Beehive")
+	WorldKit.cylinder(it, "Stump", 3.4, 5.0, WorldKit.at(Vector3(0.0, 2.5, 0.0)), "bark", true, 3.0,
+		16)
+	WorldKit.cylinder(it, "Cut", 3.0, 0.3, WorldKit.at(Vector3(0.0, 5.05, 0.0)), "wood_light", false,
+		-1.0, 16)
+	WorldKit.ball(it, "Comb", Vector3(2.6, 3.2, 2.6), WorldKit.at(Vector3(0.0, 7.4, 0.0)), "honey")
+	WorldKit.ball(it, "Comb", Vector3(1.8, 2.2, 1.8), WorldKit.at(Vector3(0.9, 9.6, 0.3)), "honey")
+	WorldKit.ball(it, "WayIn", Vector3(0.6, 0.45, 0.25), WorldKit.at(Vector3(0.0, 5.8, -2.45)),
+		"black", false)
+	return it
+
+
+## A dead tree, bare and grey, with a wasps' nest hanging off its one long limb.
+static func _wasp_tree() -> Node3D:
+	var it := WorldKit.body(null, "WaspTree")
+	WorldKit.cylinder(it, "Trunk", 2.0, 26.0, WorldKit.at(Vector3(0.0, 13.0, 0.0)), "stone_dark",
+		true, 1.2, 12)
+	WorldKit.rod(it, "Limb", Vector3(0.0, 20.0, 0.0), Vector3(12.0, 26.0, 1.0), 0.9, "stone_dark",
+		true, 0.4, 8)
+	WorldKit.rod(it, "Limb", Vector3(0.0, 23.0, 0.0), Vector3(-6.0, 31.0, -3.0), 0.7, "stone_dark",
+		true, 0.3, 8)
+	WorldKit.rod(it, "Stalk", Vector3(9.0, 24.6, 0.8), Vector3(9.0, 22.6, 0.8), 0.3, "paper")
+	WorldKit.ball(it, "Nest", Vector3(3.4, 4.2, 3.4), WorldKit.at(Vector3(9.0, 19.2, 0.8)), "paper")
+	WorldKit.ball(it, "WayIn", Vector3(0.7, 0.7, 0.4), WorldKit.at(Vector3(9.0, 15.3, 0.8)), "black",
+		false)
+	return it
+
+
+## A standing stone, older than anything else in the valley: tall, leaning a
+## little, rough, with lichen on its shoulders.
+static func _standing_stone() -> Node3D:
+	var it := WorldKit.body(null, "StandingStone")
+	WorldKit.ball(it, "Stone", Vector3(3.0, 11.0, 2.2), Transform3D(Basis(Vector3.BACK, 0.05),
+		Vector3(0.0, 7.5, 0.0)), "rock")
+	WorldKit.ball(it, "Lichen", Vector3(1.8, 0.6, 1.5), WorldKit.at(Vector3(0.6, 17.4, 0.2)), "moss",
+		false)
+	WorldKit.ball(it, "Lichen", Vector3(1.2, 1.6, 0.4), WorldKit.at(Vector3(-1.5, 11.0, -1.7)),
+		"moss", false)
 	return it
 
 
