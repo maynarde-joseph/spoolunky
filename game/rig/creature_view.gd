@@ -76,7 +76,7 @@ func _pose() -> CreatureMotion.Pose:
 	# itself out hangs.
 	if _prey.is_stunned() or _prey.is_dead():
 		return CreatureMotion.Pose.SPENT
-	if _prey.is_fighting():
+	if _prey.is_fighting() or _prey.is_clashing():
 		return CreatureMotion.Pose.STRUGGLING
 	if _prey.is_stuck():
 		return CreatureMotion.Pose.SPENT

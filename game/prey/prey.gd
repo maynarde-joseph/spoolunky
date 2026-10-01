@@ -29,10 +29,21 @@ enum State {
 	FEEDING,   ## standing at something it eats, eating it
 	DEAD,      ## killed or starved: a carcass, until it is eaten or rots
 	RESTING,   ## at home, out of its hours — out of sight, in a burrow
+	CLASHING,  ## squaring up to a rival for the ground it is on: a turf war
 }
 
 ## How long a carcass lasts before it rots away, in seconds.
 const ROT_AFTER := 120.0
+
+## How much of a wound heals in a second, and how many times faster at rest.
+const WOUND_HEAL := 0.004
+const RESTING_HEAL := 4.0
+
+## How long a turf war lasts, in seconds, and what it leaves on the loser and on
+## the winner.
+const CLASH_TIME := 3.5
+const LOSER_WOUND := 0.45
+const WINNER_WOUND := 0.12
 
 ## How much better than a catch's total thrash a web has to be to keep it.
 ## Tuned so each web tier holds the prey tier below it: a sheet web keeps a
@@ -281,6 +292,15 @@ var _rot := 0.0
 ## Where it lives, if it lives somewhere. See [Den].
 var den: Den = null
 
+## How hurt it is, 0 to 1: what a turf war leaves, on the loser mostly. It slows a
+## creature and takes the fight out of it in a web, and it heals, slowly — four
+## times as fast at rest. See [method wound].
+var wounded := 0.0
+
+var _rival: Prey = null
+var _clash_left := 0.0
+var _leads_clash := false
+
 ## Whether it is resting out of sight and out of reach, in a burrow.
 var _sheltered := false
 
@@ -380,6 +400,9 @@ func _physics_process(delta: float) -> void:
 		wet = maxf(0.0, wet - delta)
 	if stunned > 0.0:
 		stunned = maxf(0.0, stunned - delta)
+	if wounded > 0.0 and _state != State.DEAD:
+		var heal := WOUND_HEAL * (RESTING_HEAL if _state == State.RESTING else 1.0)
+		wounded = maxf(0.0, wounded - heal * delta)
 	if _mind != null:
 		_mind.tick(delta)
 
@@ -402,6 +425,8 @@ func _physics_process(delta: float) -> void:
 			_process_dead(delta)
 		State.RESTING:
 			_process_resting(delta)
+		State.CLASHING:
+			_process_clash(delta)
 		State.FLEEING:
 			_flee_timer -= delta
 			if _flee_timer <= 0.0:
@@ -489,12 +514,24 @@ func is_bundled() -> bool:
 ## Never quite zero. Something pinned still where it stands but not yet wrapped is
 ## the pin mechanic arriving by the back door, and this is not that: it crawls.
 func current_speed() -> float:
-	return move_speed * maxf(1.0 - clampf(bound, 0.0, 1.0), CRAWL)
+	return move_speed * maxf(1.0 - clampf(bound, 0.0, 1.0), CRAWL) * (1.0 - 0.4 * wounded)
 
 
-## What it can thrash with right now, after the silk already on it.
+## What it can thrash with right now, after the silk already on it and whatever
+## else has hurt it.
 func thrash_power() -> float:
-	return struggle_power * (1.0 - clampf(bound, 0.0, 1.0))
+	return struggle_power * (1.0 - clampf(bound, 0.0, 1.0)) * (1.0 - 0.5 * wounded)
+
+
+## How far gone it is, 0 to 1: bound in silk, or hurt, whichever is worse. Past
+## half, something with a den limps home to get over it.
+func weakness() -> float:
+	return maxf(clampf(bound, 0.0, 1.0), wounded)
+
+
+## Hurts it by [param amount].
+func wound(amount: float) -> void:
+	wounded = clampf(wounded + amount, 0.0, 1.0)
 
 
 ## Everything it will throw at a web before it tires itself out: the number a
@@ -599,7 +636,8 @@ func is_stunned() -> bool:
 ## On its own feet or wings: not caught, not wrapped, not a bundle.
 func is_loose() -> bool:
 	return not eaten and (_state == State.WANDER or _state == State.HUNTING
-		or _state == State.FLEEING or _state == State.FEEDING or _state == State.RESTING)
+		or _state == State.FLEEING or _state == State.FEEDING or _state == State.RESTING
+		or _state == State.CLASHING)
 
 
 # --- living -------------------------------------------------------------
@@ -696,15 +734,16 @@ func hunt(target: Prey) -> void:
 	_state = State.HUNTING
 
 
-## Runs from [param danger]: away from it, for a moment, and then thinks again.
-## Not the scramble out of a web — nothing about running from a fox makes a
-## creature any harder to catch in silk.
-func flee_from(danger: Vector3) -> void:
+## Runs from [param danger]: away from it, for [param time] seconds, and then
+## thinks again. Not the scramble out of a web — nothing about running from a fox
+## makes a creature any harder to catch in silk.
+func flee_from(danger: Vector3, time := 1.5) -> void:
 	if not can_decide():
 		return
 	_meal = null
 	_errand = false
 	_quarry = null
+	_rival = null
 	var away := global_position - danger
 	away.y = 0.0
 	if away.length() < 0.01:
@@ -713,7 +752,92 @@ func flee_from(danger: Vector3) -> void:
 	if flying:
 		_target.y = global_position.y + hit_radius() * 2.0
 	_state = State.FLEEING
-	_flee_timer = 1.5
+	_flee_timer = time
+
+
+## Wanders about [param point] from now on, rather than about wherever it was put
+## down: a haunt it has gone to. See [Haunt].
+func wander_about(point: Vector3) -> void:
+	_home = point
+
+
+# --- turf wars ----------------------------------------------------------
+
+## Squares up to [param rival] for the ground: closes on it and fights it for
+## [constant CLASH_TIME] seconds. The one that started it — [param leads] — settles
+## who won, so that it is settled once.
+func clash(rival: Prey, leads: bool) -> void:
+	if not can_decide() or rival == null:
+		return
+	_meal = null
+	_errand = false
+	_quarry = null
+	_rival = rival
+	_leads_clash = leads
+	_clash_left = CLASH_TIME
+	_state = State.CLASHING
+
+
+func is_clashing() -> bool:
+	return _state == State.CLASHING
+
+
+## Who it is fighting, while it is.
+func rival() -> Prey:
+	return _rival if is_clashing() and is_instance_valid(_rival) else null
+
+
+## A turf war is over: [param won] or lost against [param other]. The loser comes
+## off worse and runs; the winner is a little hurt too, and stays.
+func end_clash(won: bool, other: Prey) -> void:
+	if _state != State.CLASHING:
+		return
+	_rival = null
+	_state = State.WANDER
+	wound(WINNER_WOUND if won else LOSER_WOUND)
+	if won:
+		_pick_target()
+	elif other != null and is_instance_valid(other):
+		flee_from(other.global_position, 4.0)
+
+
+## Fighting: closing on the rival until they meet, and holding there, until the
+## time is up — when the one that started it settles who won. A rival that is
+## caught, killed or carried off in the middle of it ends it with no winner.
+func _process_clash(delta: float) -> void:
+	var other := _rival
+	if other == null or not is_instance_valid(other) or not other.is_clashing() \
+			or other.rival() != self:
+		_rival = null
+		_state = State.WANDER
+		_pick_target()
+		return
+	var gap := other.global_position - global_position
+	var touching := hit_radius() + other.hit_radius()
+	if gap.length() > touching * 1.1:
+		_target = other.global_position
+		_steer(delta, current_speed())
+	else:
+		velocity.x = move_toward(velocity.x, 0.0, delta * 8.0)
+		velocity.z = move_toward(velocity.z, 0.0, delta * 8.0)
+		if not flying:
+			velocity.y -= _gravity * delta
+		move_and_slide()
+	_clash_left -= delta
+	if _clash_left > 0.0 or not _leads_clash:
+		return
+	if _might() >= other._might():
+		end_clash(true, other)
+		other.end_clash(false, self)
+	else:
+		other.end_clash(true, self)
+		end_clash(false, other)
+
+
+## What it brings to a fight: how big it is and how hard it fights, less what has
+## already hurt it, and the luck of the day.
+func _might() -> float:
+	return float(size_class) * struggle_power * (1.0 - 0.5 * wounded) * randf_range(0.75, 1.25)
 
 
 func is_dead() -> bool:

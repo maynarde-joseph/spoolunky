@@ -55,6 +55,21 @@ const FEAR := 0.6
 ## further for than one that has to be chased.
 const CARRION_PULL := 0.7
 
+## Weak enough — hurt, or bound in silk it tore out of — to limp home and rest
+## until it is over it; and over it.
+const LIMP_AT := 0.5
+const RECOVERED := 0.15
+
+## How close a rival has to be to square up to, as the gap between their middles
+## against how wide the two of them are; and how long after a turf war before it
+## will fight another, in seconds.
+const TURF_REACH := 3.0
+const TURF_REST := 45.0
+
+## How long something that roams stays at one haunt before it moves on, in
+## seconds, give or take.
+const ROAM_EVERY := Vector2(45.0, 90.0)
+
 var prey: Prey
 var kind: PreySpecies
 var world: Ecosystem
@@ -81,6 +96,14 @@ var starving := 0.0
 var kills := 0
 var meals := 0
 
+## The haunt it is at, or making for, if it roams.
+var haunt: Haunt = null
+
+## Seconds until it will fight for ground again, and until it moves on to another
+## haunt.
+var turf_rest := 0.0
+var roam_in := 0.0
+
 var _think := 0.0
 
 
@@ -90,6 +113,7 @@ func _init(creature: Prey, species: PreySpecies, ecosystem: Ecosystem) -> void:
 	world = ecosystem
 	hunger = randf_range(0.0, 0.35) if eats_anything() else 0.0
 	_think = randf() * THINK
+	roam_in = randf_range(0.0, ROAM_EVERY.x)
 
 
 ## Whether it eats anything at all. Something that does not is never hungry.
@@ -114,6 +138,8 @@ func tick(delta: float) -> void:
 				return
 		else:
 			starving = 0.0
+	turf_rest = maxf(0.0, turf_rest - delta)
+	roam_in = maxf(0.0, roam_in - delta)
 	_think -= delta
 	if _think <= 0.0:
 		_think = THINK * randf_range(0.8, 1.2)
@@ -170,14 +196,22 @@ func _go_home() -> void:
 		prey.go_to(spot, reach * 0.8)
 
 
+## Whether it is up to getting up: not still getting over a wound or the silk.
+func _mended() -> bool:
+	return prey.weakness() <= RECOVERED
+
+
 ## Looks at where things stand and does the next thing.
 func decide() -> void:
 	if not prey.can_decide():
 		return
+	# A turf war is seen out. The creature ends it, one way or the other.
+	if prey.is_clashing():
+		return
 	# Underground, nothing can get at it and it cannot see out: it only wonders
 	# whether it is time to come up.
 	if prey.is_sheltered():
-		if world.awake(kind.active) or hunger >= RAVENOUS:
+		if (world.awake(kind.active) or hunger >= RAVENOUS) and _mended():
 			prey.wake()
 		return
 	var danger := threat()
@@ -197,10 +231,15 @@ func decide() -> void:
 			prey.stop_feeding()
 		return
 	if prey.is_resting():
-		if world.awake(kind.active) or hunger >= RAVENOUS:
+		if (world.awake(kind.active) or hunger >= RAVENOUS) and _mended():
 			prey.wake()
 		else:
 			return
+	# Hurt, or bound in silk it tore out of, it limps home to get over it — which
+	# is the time to follow it.
+	if den != null and prey.weakness() >= LIMP_AT:
+		_go_home()
+		return
 	# Out of its hours, it goes home, unless it is too hungry to.
 	if den != null and not world.awake(kind.active) and hunger < RAVENOUS:
 		_go_home()
@@ -208,10 +247,18 @@ func decide() -> void:
 	# A chase is seen through, or given up by the creature itself.
 	if prey.is_hunting():
 		return
+	if kind.territorial and turf_rest <= 0.0:
+		var other := find_rival()
+		if other != null:
+			_square_up_to(other)
+			return
 	if eats_anything() and hunger >= HUNGRY:
 		var meal := find_food()
 		if meal != null:
 			_go_for(meal)
+			return
+	if kind.roams and roam_in <= 0.0:
+		roam()
 
 
 # --- danger --------------------------------------------------------------
@@ -244,6 +291,61 @@ func threat() -> Node3D:
 			if gap < keep and gap < closest:
 				danger = spider
 	return danger
+
+
+# --- ground ----------------------------------------------------------------
+
+## The nearest other creature it would fight for the ground: one that fights for
+## ground too, awake and free to, close enough to square up to, and in the same
+## element — or null. Not one from its own den, which it lives with; not one it
+## would sooner eat, or that would sooner eat it, which is hunting, not a turf war.
+func find_rival() -> Prey:
+	var best: Prey = null
+	var best_gap := INF
+	var sight := maxf(kind.senses * 0.5, prey.hit_radius() * TURF_REACH * 4.0)
+	for other in world.creatures_near(prey.global_position, sight):
+		if other == prey or other.is_dead() or not other.can_decide() or other.is_clashing():
+			continue
+		if other.swims != prey.swims or other.is_resting() or other.is_hunting():
+			continue
+		var theirs := other.mind()
+		if theirs == null or not other.kind.territorial or theirs.turf_rest > 0.0:
+			continue
+		if den != null and other.den == den:
+			continue
+		if can_take(other) or theirs.can_take(prey):
+			continue
+		var gap := other.global_position.distance_to(prey.global_position)
+		if gap > (prey.hit_radius() + other.hit_radius()) * TURF_REACH or gap >= best_gap:
+			continue
+		best_gap = gap
+		best = other
+	return best
+
+
+func _square_up_to(other: Prey) -> void:
+	food = null
+	turf_rest = TURF_REST
+	other.mind().turf_rest = TURF_REST
+	other.mind().food = null
+	prey.clash(other, true)
+	other.clash(prey, false)
+
+
+## Off to another of its haunts, to wander about that one once it is there.
+func roam() -> void:
+	roam_in = randf_range(ROAM_EVERY.x, ROAM_EVERY.y)
+	var choices: Array[Haunt] = []
+	for node in prey.get_tree().get_nodes_in_group(Haunt.GROUP):
+		var place := node as Haunt
+		if place != null and place != haunt and place.welcomes(kind):
+			choices.append(place)
+	if choices.is_empty():
+		return
+	haunt = choices.pick_random()
+	var spot := haunt.spot_for(prey)
+	prey.wander_about(spot)
+	prey.go_to(spot, haunt.radius * 0.5)
 
 
 # --- food ----------------------------------------------------------------

@@ -137,6 +137,15 @@ enum Activity {
 ## webs; a hare does not let a spider walk up to it.
 @export var wary := false
 
+## Whether it ranges over the whole hunting ground rather than keeping to the
+## country round its den: every so often it goes off to another of its haunts.
+## See [Haunt].
+@export var roams := false
+
+## Whether it fights others like it for the ground it is on: a turf war, which
+## leaves the loser hurt and running. Two from the same den live together.
+@export var territorial := false
+
 
 @export_group("Body")
 

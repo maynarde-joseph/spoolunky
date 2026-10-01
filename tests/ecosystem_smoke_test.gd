@@ -46,6 +46,11 @@ func _sections() -> Array[Callable]:
 		_test_starving,
 		_test_resting_out_of_hours,
 		_test_resting_in_the_open,
+		_test_wounds,
+		_test_limping_home,
+		_test_turf_war,
+		_test_no_war_at_home,
+		_test_roaming,
 		_test_day_and_night,
 	]
 
@@ -591,6 +596,144 @@ func _test_resting_in_the_open() -> void:
 	_world.sort_now()
 	check(_world.creatures_near(den.global_position, 20.0).has(rat),
 		"and found by anything that looks")
+
+
+# --- big creatures -----------------------------------------------------------
+
+## A wound slows a creature and takes the fight out of it, and heals — faster at
+## rest.
+func _test_wounds() -> void:
+	var wolf := _creature("wolf", Vector3(0, 3, 0), PackedStringArray())
+	await physics_frame
+	var speed := wolf.current_speed()
+	var fight := wolf.thrash_power()
+	wolf.wound(0.5)
+	check(wolf.current_speed() < speed * 0.85 and wolf.thrash_power() < fight * 0.8,
+		"a wounded wolf is slower and fights a web less (%.1f -> %.1f, %.1f -> %.1f)"
+		% [speed, wolf.current_speed(), fight, wolf.thrash_power()])
+	check(is_equal_approx(wolf.weakness(), 0.5), "and is as weak as it is hurt")
+	await run_frames(60)
+	var awake_heal := 0.5 - wolf.wounded
+	check(awake_heal > 0.0, "it heals (%.4f in a second)" % awake_heal)
+	wolf.rest()
+	var was := wolf.wounded
+	await run_frames(60)
+	check(was - wolf.wounded > awake_heal * 3.0, "and heals faster at rest (%.4f)"
+		% (was - wolf.wounded))
+
+
+## Hurt, or bound in silk it tore out of, a creature limps home and rests until it
+## is over it.
+func _test_limping_home() -> void:
+	var den := _den("wolf", Vector3(0, 0, 0), PackedStringArray(), 1, 1)
+	den.species.active = PreySpecies.Activity.ALWAYS
+	den.shelters = false
+	await physics_frame
+	var wolf := den.members[0]
+	wolf.global_position = Vector3(20, 3, 0)
+	await physics_frame
+	wolf.wound(0.8)
+	var home: bool = await wait_until(func() -> bool: return wolf.is_resting(), 900)
+	check(home, "a badly hurt wolf limps home to rest")
+	var off := wolf.global_position - den.global_position
+	off.y = 0.0
+	check(off.length() < wolf.hit_radius() * 3.0 + den.spread,
+		"at its den (%.1f m off, for something %.1f m across)"
+		% [off.length(), wolf.hit_radius() * 2.0])
+	wolf.wounded = 0.3
+	await run_frames(60)
+	check(wolf.is_resting(), "and stays there while it is still getting over it")
+	wolf.wounded = 0.05
+	var up: bool = await wait_until(func() -> bool: return not wolf.is_resting(), 120)
+	check(up, "getting up once it has")
+	wolf.wounded = 0.0
+	wolf.bound = 0.75
+	var again: bool = await wait_until(func() -> bool: return wolf.is_resting(), 900)
+	check(again, "and silk it has torn out of sends it home the same way")
+
+
+## Two creatures that fight for ground square up when they meet: the weaker one
+## comes off badly and runs, and the stronger is a little hurt and stays.
+func _test_turf_war() -> void:
+	var boar := _creature("boar", Vector3(0, 4, 0), PackedStringArray())
+	var wolf := _creature("wolf", Vector3(14, 3, 0), PackedStringArray())
+	boar.kind.territorial = true
+	wolf.kind.territorial = true
+	# Much the weaker, so that luck does not decide it.
+	wolf.size_class = 3
+	boar.move_speed = 0.0
+	await run_frames(2)
+	_world.sort_now()
+	boar.mind().turf_rest = 0.0
+	wolf.mind().turf_rest = 0.0
+	check(boar.mind().find_rival() == wolf, "a boar sees a wolf as a rival for the ground")
+	boar.mind().decide()
+	check(boar.is_clashing() and wolf.is_clashing() and boar.rival() == wolf
+		and wolf.rival() == boar, "and they square up to each other")
+	var over: bool = await wait_until(func() -> bool:
+		return not boar.is_clashing() and not wolf.is_clashing(), 400)
+	check(over, "for a few seconds")
+	check(wolf.wounded > boar.wounded and wolf.wounded > 0.3,
+		"the wolf comes off worse (%.2f hurt, against %.2f)" % [wolf.wounded, boar.wounded])
+	check(wolf._state == Prey.State.FLEEING and boar._state != Prey.State.FLEEING,
+		"and runs, and the boar stays")
+	check(boar.mind().turf_rest > 0.0 and boar.mind().find_rival() == null,
+		"and neither picks another fight for a while")
+
+
+## Two from the same den live together; and nothing squares up to what it would
+## sooner eat.
+func _test_no_war_at_home() -> void:
+	var den := _den("boar", Vector3(0, 0, 0), PackedStringArray(), 2, 2)
+	den.species.territorial = true
+	await run_frames(2)
+	_world.sort_now()
+	var one := den.members[0]
+	one.mind().turf_rest = 0.0
+	den.members[1].mind().turf_rest = 0.0
+	check(one.mind().find_rival() == null, "two boars from one den do not fight")
+	var wolf := _creature("wolf", one.global_position + Vector3(10, 0, 0),
+		PackedStringArray(["boar"]))
+	wolf.kind.territorial = true
+	await run_frames(2)
+	_world.sort_now()
+	wolf.mind().turf_rest = 0.0
+	check(wolf.mind().find_rival() == null, "and a wolf that eats boars hunts them instead")
+
+
+## Something that roams goes from one of its haunts to another, and wanders about
+## whichever it is at.
+func _test_roaming() -> void:
+	var east := Haunt.new()
+	east.species_ids = PackedStringArray(["deer"])
+	east.radius = 6.0
+	_arena.add_child(east)
+	east.global_position = Vector3(30, 0, 0)
+	var west := Haunt.new()
+	west.radius = 6.0
+	_arena.add_child(west)
+	west.global_position = Vector3(-30, 0, 0)
+	var elsewhere := Haunt.new()
+	elsewhere.species_ids = PackedStringArray(["wolf"])
+	_arena.add_child(elsewhere)
+	elsewhere.global_position = Vector3(0, 0, 40)
+	var stag := _creature("deer", Vector3(0, 4.5, 0), PackedStringArray())
+	stag.kind.roams = true
+	await physics_frame
+	var mind := stag.mind()
+	mind.roam_in = 0.0
+	mind.decide()
+	var first := mind.haunt
+	check(first == east or first == west, "a roaming stag goes off to one of its haunts")
+	var there: bool = await wait_until(func() -> bool:
+		return Vector2(stag.global_position.x, stag.global_position.z).distance_to(
+			Vector2(first.global_position.x, first.global_position.z)) < first.radius, 900)
+	check(there, "and gets there")
+	check(stag._home.distance_to(first.global_position) < 0.01, "and wanders about it")
+	mind.roam_in = 0.0
+	mind.decide()
+	check(mind.haunt != first and mind.haunt != elsewhere and mind.haunt != null,
+		"moving on, in time, to another — never one that is not its kind's")
 
 
 # --- day and night ----------------------------------------------------------
