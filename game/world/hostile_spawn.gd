@@ -48,9 +48,13 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if stays_beaten and not beaten and creature != null and is_down():
-		beaten = true
-		beaten_for_good.emit(self)
+		_beat()
 	_walk_the_beat(delta)
+
+
+func _beat() -> void:
+	beaten = true
+	beaten_for_good.emit(self)
 
 
 ## Moves its haunt on to the next point of its beat, every so often, while it is
@@ -103,8 +107,11 @@ func is_down() -> bool:
 ## Put back as it was: a fresh one at the mark, unless this is a boss that has
 ## been beaten for good.
 func reset() -> void:
-	if stays_beaten and (beaten or (creature != null and is_down())):
-		beaten = true
+	# Put down in the same moment as the stir, before anything noticed: it still
+	# counts, and whatever waits on it still hears.
+	if stays_beaten and not beaten and creature != null and is_down():
+		_beat()
+	if stays_beaten and beaten:
 		_clear()
 		return
 	stand_up()

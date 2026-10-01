@@ -495,6 +495,18 @@ func _test_a_shrine_is_where_you_wake() -> void:
 	await physics_frame
 	check(lair.creature == null, "and stays down when the Hollows stir")
 
+	# Put down in the very moment the place stirs, it still counts — and says so.
+	var other := _mark("charger_beetle", Vector3(6.5, 0.4, -6.5))
+	other.stays_beaten = true
+	await run_frames(3)
+	var heard := [0]
+	other.beaten_for_good.connect(func(_mark: HostileSpawn) -> void: heard[0] += 1)
+	other.creature.bundle()
+	keeper.stir()
+	await physics_frame
+	check(other.beaten and other.creature == null and heard[0] == 1,
+		"a boss put down as you rest is beaten all the same, and heard to be (%d)" % heard[0])
+
 
 ## A shortcut gate is a wall from the near side and opens from the far one: touch
 ## its lever and it rises out of the way, and stays out of it.
