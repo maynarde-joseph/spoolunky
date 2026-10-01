@@ -1605,6 +1605,28 @@ that can be played around: close the distance for a web that will hold, or take
 the cheap shot from here and accept a weak one. It never reaches zero, because a
 throw that builds nothing reads as broken rather than as expensive.
 
+### Two grapples, played back to back
+
+The pull is strong, and the strength is the problem: it costs nothing, waits for
+nothing, and is the fastest way anywhere by a long way — fast enough that
+anything chasing you is simply left behind, which makes it an escape you can
+always take. So there is a second grapple, one key (**G**) away from the first,
+to play against it:
+
+* **The line** lays silk from your feet to where you point and stands you on its
+  near end, facing along it. Nothing takes you anywhere. Getting there is walking
+  the line.
+* **Walking a line is fast** — `line_speed`, three and a half times a walk — and
+  the same speed up it as down it and whatever its slope. It is a road you laid,
+  not a hill, and the spider is casting magic, not obeying it.
+* **You stay on until you jump.** Silk is sticky, and the spider sticks to it the
+  way it sticks to a wall, so there is no hanging and no falling off. Fired from
+  the air, the line starts where you are and catches you on it.
+
+What changes is that going somewhere is two things — putting the road down, and
+walking it — and the second is where you can be caught. The line is still one of
+your three (§5), and still a wire a spell can run down.
+
 ### A grapple keeps what it was carrying
 
 Arriving used to zero the velocity, which made every grapple a **full stop** and
@@ -1900,6 +1922,7 @@ hold in their head on the first screen.
 | **Shift** | **Sprint**, out of a pool of a few seconds that fills back up while you walk. It costs more per size class of whatever is on your line, which is what makes hauling something home at a run a decision rather than the obvious move (§2) |
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
 | **Left Mouse** | **Go there, trailing a line.** A surface pulls you over; a line puts you on it; something you already caught comes to you instead. A creature still on its feet is none of those, so the aim reads straight through it to whatever is behind (§2). As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5) |
+| **G** | **Grapple style**: the pull above, or the line — a line from your feet to where you point, with you standing on it; walking it is fast (*Two grapples*, §7) |
 | **Right Mouse** | **Cast what is in hand** — the web, to start with (§3.2). With the web in hand: |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
 | **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |

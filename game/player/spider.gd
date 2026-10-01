@@ -53,6 +53,7 @@ signal skill_tree_toggled()
 @export var input_shoot := "web_shoot"
 @export var input_skill_tree := "skill_tree"
 @export var input_next_spell := "spell_next"
+@export var input_grapple_style := "grapple_style"
 
 ## How much the view opens up at speed. Pure sugar, and most of what makes a
 ## zipline feel fast.
@@ -324,6 +325,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.undo()
 	elif event.is_action_pressed(input_ride):
 		climb.toggle_ride()
+	elif event.is_action_pressed(input_grapple_style):
+		climb.toggle_grapple_style()
 	else:
 		return
 	get_viewport().set_input_as_handled()

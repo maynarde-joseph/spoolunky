@@ -48,6 +48,7 @@ func run_checks() -> void:
 	await _test_grappling_without_a_mode()
 	await _test_grappling_a_long_way()
 	await _test_lines_are_roads()
+	await _test_the_line_grapple()
 	await _test_sloppy_normals()
 	await _test_momentum_survives_a_grapple()
 	await _test_a_steady_view()
@@ -1356,6 +1357,129 @@ func _test_lines_are_roads() -> void:
 	line.queue_free()
 	await physics_frame
 	await process_frame
+
+
+## The other grapple. Left mouse lays a line from your feet to wherever you point
+## and stands you on it, and that is all: getting there is walking the line, which
+## is quick, and as quick up it as down it. The pull is one key away, so the two
+## can be played back to back.
+func _test_the_line_grapple() -> void:
+	var builder := _spider.web_builder
+	var climb := _spider.climb
+	builder.stop()
+	climb.release()
+	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
+		if is_instance_valid(node):
+			node.queue_free()
+	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
+	_spider.velocity = Vector3.ZERO
+	await run_frames(30)
+	check(climb.is_attached() and not climb.on_silk, "standing on the floor to start")
+	var floor_speed := climb._surface_speed(false)
+
+	check(not climb.shoots_lines(), "the pull is the grapple you start with")
+	climb.toggle_grapple_style()
+	check(climb.shoots_lines(), "and G swaps it for the line")
+
+	# High on the far wall, so the line climbs.
+	var target := Vector3(0.0, 0.2, -ROOM_HALF.z)
+	var toward := target - _spider.view.aim_pivot()
+	_spider.view.face(Vector3(toward.x, 0.0, toward.z))
+	_spider.view.pitch = atan2(toward.y, Vector2(toward.x, toward.z).length())
+	await run_frames(2)
+	var started_at := _spider.global_position
+	var before := _silk_count()
+	builder.place()
+	await run_frames(3)
+	check(not climb.is_grappling(), "a click does not haul you anywhere")
+	check(_silk_count() == before + 1,
+		"it lays one line (%d -> %d)" % [before, _silk_count()])
+	var line := climb.holding_line()
+	if not check(line != null and climb.on_silk, "and stands you on it"):
+		return
+	check(_spider.global_position.distance_to(started_at) < 0.3,
+		"right where you were (%.2fm away)" % _spider.global_position.distance_to(started_at))
+	# The far wall is a slab 0.2 either side of the room's edge, so its face is
+	# that far in.
+	check(absf(line.point_b.z - (-ROOM_HALF.z + 0.2)) < 0.05,
+		"out to the wall it was pointed at (%.2f)" % line.point_b.z)
+	check(line.point_a.y < started_at.y,
+		"from your feet (%.2f, the body at %.2f)" % [line.point_a.y, started_at.y])
+	check(builder.lines().has(line), "and it is one of your three lines")
+
+	var on_line := climb._surface_speed(false)
+	check(is_equal_approx(on_line, _spider.speed * climb.line_speed),
+		"walking a line is %.1f times a walk (%.2f, the floor %.2f)"
+		% [climb.line_speed, on_line, floor_speed])
+
+	# Up it, under your own power, and fast.
+	var axis := (line.point_b - line.point_a).normalized()
+	_spider.view.face(Vector3(axis.x, 0.0, axis.z))
+	_spider.view.pitch = 0.0
+	await run_frames(2)
+	var from := _spider.global_position
+	Input.action_press("move_forward")
+	await run_frames(16)
+	var up_speed := climb.tangent_velocity.length()
+	Input.action_release("move_forward")
+	await run_frames(2)
+	var climbed := (_spider.global_position - from).dot(axis)
+	check(climbed > floor_speed * 16.0 / 60.0 * 1.8,
+		"walking it takes you up it fast (%.2fm, a walk would be %.2fm)"
+		% [climbed, floor_speed * 16.0 / 60.0])
+	check(climb.holding_line() == line, "still on the line")
+
+	# Down it, at the same speed: the slope makes no difference.
+	_spider.view.face(Vector3(-axis.x, 0.0, -axis.z))
+	await run_frames(2)
+	Input.action_press("move_forward")
+	await run_frames(10)
+	var down_speed := climb.tangent_velocity.length()
+	Input.action_release("move_forward")
+	await run_frames(2)
+	check(absf(up_speed - down_speed) < on_line * 0.15,
+		"and as quick down it as up it (%.2f up, %.2f down)" % [up_speed, down_speed])
+
+	# A jump steps off it.
+	Input.action_press("move_jump")
+	await run_frames(3)
+	Input.action_release("move_jump")
+	await run_frames(2)
+	check(not climb.on_silk, "and a jump steps off it")
+
+	# Fired from the air, the line starts where you are and you are on it: silk
+	# is sticky, and a line that left you falling would be no line at all.
+	check(not climb.is_attached(), "in the air after the jump")
+	_spider.view.face(Vector3(toward.x, 0.0, toward.z))
+	_spider.view.pitch = atan2(toward.y, Vector2(toward.x, toward.z).length())
+	builder.place()
+	await run_frames(10)
+	var caught := climb.holding_line()
+	check(caught != null and caught != line and climb.on_silk,
+		"a line fired from the air catches you on it")
+	check(builder.lines().size() == 2, "and that is two lines up (%d)" % builder.lines().size())
+
+	climb.toggle_grapple_style()
+	check(not climb.shoots_lines(), "G again gives you the pull back")
+	climb.release()
+	await run_frames(30)
+	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
+	_spider.velocity = Vector3.ZERO
+	await run_frames(20)
+	_spider.view.face(Vector3(toward.x, 0.0, toward.z))
+	_spider.view.pitch = atan2(toward.y, Vector2(toward.x, toward.z).length())
+	await run_frames(2)
+	builder.place()
+	check(climb.is_grappling(), "which hauls you over, as it always did")
+	for i in 120:
+		if not climb.is_grappling():
+			break
+		await physics_frame
+	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
+		if is_instance_valid(node):
+			node.queue_free()
+	climb.release()
+	await run_frames(20)
 
 
 ## The body's up is slerped towards a target every frame, and Vector3.slerp

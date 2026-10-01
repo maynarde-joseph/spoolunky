@@ -23,6 +23,8 @@ silk is sticky         stand on it and it holds you; jump to come off
 
 Left Mouse             grapple there, trailing a line — three at a time,
                        and a fourth takes the oldest down
+G                      grapple style: the pull takes you there; the line
+                       lays a line from your feet to walk, fast
 Right Mouse            cast what is in hand — the web, to start with: it
                        sticks where it lands and wraps what it lands on
 Right Mouse  (hold)    wind it up: a bigger web, a wider whirl, a longer
@@ -185,8 +187,9 @@ func _refresh_limits() -> void:
 	web_bar.max_value = 1.0
 	web_bar.value = builder.cooldown_progress()
 	var web := "Web ready" if not builder.cooling() else "Web  %.1fs" % builder.cooldown_left()
-	lines_label.text = "Lines  %d / %d      %s" % [
-		builder.line_count(), WebBuilder.MAX_LINES, web]
+	var style := "line" if _spider.climb.shoots_lines() else "pull"
+	lines_label.text = "Lines  %d / %d   (%s)      %s" % [
+		builder.line_count(), WebBuilder.MAX_LINES, style, web]
 
 
 func _on_biomass_changed(biomass: float, progress: float) -> void:

@@ -1090,11 +1090,36 @@ func place() -> void:
 		# just get on.
 		aim_point = Geometry3D.get_closest_point_to_segment(aim_point,
 			_pending_ride.point_a, _pending_ride.point_b)
+	if not building and _climb != null and _climb.shoots_lines():
+		_shoot_line()
+		return
 	if _climb != null and _climb.grapple_to(aim_point, aim_normal):
 		_pending_anchor = aim_point
 		_awaiting_grapple = true
 		return
 	_arrive_at(aim_point)
+
+
+## The line grapple's whole move: silk from your feet to the cross, and you
+## standing on its near end facing along it. Nothing takes you anywhere — walking
+## the line is up to you, and a jump steps off it.
+##
+## A line pointed at another line is laid to it, the same as to a wall: with this
+## grapple a line is the only way of getting anywhere, so joining one still takes
+## one. Fired from the air, the near end is where you are, and you are standing on
+## it — silk is sticky, and a line that left you falling would be no line at all.
+func _shoot_line() -> void:
+	_pending_ride = null
+	var from := _climb.feet() if _launch_anchored else _launched_from
+	if from.distance_to(aim_point) < 0.01:
+		return
+	var strand := _lay_line(from, aim_point)
+	if strand == null:
+		return
+	_climb.board(strand, aim_point)
+	_remember_line(strand)
+	_loop_source = -1
+	state_changed.emit()
 
 
 func _on_grappled(_point: Vector3, _normal: Vector3) -> void:

@@ -66,6 +66,7 @@ one kept to what the keys do today.
 | **Ctrl** / **Space** | lower / raise yourself on the line |
 | **Right Mouse** | let go of the line |
 | **Left Mouse** | **go there, trailing silk** — moving and building are the same act |
+| **G** | **grapple style** — the **pull** takes you there; the **line** lays a line from your feet to where you point and stands you on it, and walking a line is fast — the same speed up it as down. Jump to step off |
 | **Left Mouse** *on something you've caught* | put a line on it and drag it instead — same click, read the only way that makes sense |
 | **Right Mouse** | **cast what is in hand** — the web, to start with: tap, or hold to wind it up |
 | **Q** | the next spell you have — growing, and what you eat, opens more |

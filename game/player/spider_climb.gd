@@ -25,6 +25,16 @@ enum Mode {
 	GRAPPLING,
 }
 
+## What left mouse does with a surface it is pointed at.
+enum GrappleStyle {
+	## Hauls the spider over to it, trailing the line behind.
+	PULL,
+	## Lays a line from the spider's feet to it and stands the spider on the near
+	## end. Getting there is walking the line, which is quick — see
+	## [member line_speed].
+	LINE,
+}
+
 signal mode_changed(mode: Mode)
 signal surface_changed(normal: Vector3)
 signal jumped()
@@ -126,6 +136,15 @@ signal notice(text: String)
 ## is the tedium unlimited range was supposed to remove, not add.
 @export var grapple_max_travel := 1.1
 
+## Which grapple the spider has. Two are kept so they can be played back to back:
+## the pull, which takes you there, and the line, which only gives you the road.
+@export var grapple_style := GrappleStyle.PULL
+
+## How fast a single line is walked with the line grapple, in multiples of the
+## walk. The same up a line as down it and whatever the line's slope: it is the
+## road you laid, not a hill. Sprinting on top of it still counts.
+@export var line_speed := 3.5
+
 ## How much quicker silk is underfoot than anything else. A line you spun is a
 ## road, and a road you built should beat walking round.
 @export var silk_speed_bonus := 1.5
@@ -182,6 +201,11 @@ var _view: SpiderCamera
 var _facing := Vector3.FORWARD
 var _current_up := Vector3.UP
 var _grace := 0.0
+## The line [method board] just stood the spider on, held to for
+## [constant BOARD_HOLD] seconds whatever the surface probe says. See
+## [method _boarded_hit].
+var _boarded: WebStrand = null
+var _board_hold := 0.0
 var _previous_up := Vector3.ZERO
 var _swap_cooldown := 0.0
 var _grapple_time := 0.0
@@ -343,6 +367,7 @@ func step(delta: float, input_axis: Vector2, want_jump: bool, want_sprint: bool,
 		return
 	_grace = maxf(0.0, _grace - delta)
 	_swap_cooldown = maxf(0.0, _swap_cooldown - delta)
+	_board_hold = maxf(0.0, _board_hold - delta)
 	_silk_warning = maxf(0.0, _silk_warning - delta)
 	if mode == Mode.GRAPPLING:
 		_step_grappling(delta)
@@ -394,6 +419,8 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	var height := _body_height()
 	var wish := _walk(input_axis)
 	var hit := _find_surface(height, wish)
+	if _board_hold > 0.0:
+		hit = _boarded_hit(hit)
 
 	if hit.is_empty() or _grace > 0.0:
 		on_silk = false
@@ -445,7 +472,12 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 		tangent = tangent.lerp(target, clampf(rate * delta, 0.0, 1.0))
 	tangent = _hold_to_thread(thread, tangent)
 
-	_spider.velocity = tangent - _current_up * stick_force * height
+	var into := _current_up * stick_force * height
+	if _board_hold > 0.0:
+		# The line it was just stood on may not be solid yet. Pressing down onto it
+		# would put the spider through it before it is, so hold the height instead.
+		into = Vector3.ZERO
+	_spider.velocity = tangent - into
 	_spider.up_direction = _current_up
 	_spider.move_and_slide()
 	tangent_velocity = tangent
@@ -695,6 +727,9 @@ func _surface_speed(want_sprint: bool) -> float:
 	var speed := _spider.speed
 	if want_sprint:
 		speed *= _spider.sprint_speed_multiplier
+	if shoots_lines() and standing_on != null and is_instance_valid(standing_on):
+		# A line is the road the grapple laid, and a road is as quick up as down.
+		return speed * line_speed * haul
 	var steepness := clampf(1.0 - maxf(0.0, _current_up.dot(Vector3.UP)), 0.0, 1.0)
 	speed *= lerpf(1.0, steep_speed_factor, steepness)
 	if on_silk:
@@ -800,6 +835,92 @@ func _warn(text: String) -> void:
 
 
 # --- grappling ----------------------------------------------------------
+
+## How far the feet are below the middle of the body, in body heights: where a
+## line the spider lays from where it stands starts, and how high over a line the
+## body rides when standing on one.
+const FEET := 0.4
+
+## How long [method board] holds the spider to the line it stood it on, in
+## seconds: a couple of physics frames, which is how long a line just spun takes
+## to be something the surface probe can find.
+const BOARD_HOLD := 0.1
+
+## Whether left mouse lays a line rather than pulling the spider anywhere.
+func shoots_lines() -> bool:
+	return grapple_style == GrappleStyle.LINE
+
+
+## Swaps between the two grapples, and says which one you have now.
+func toggle_grapple_style() -> void:
+	if shoots_lines():
+		grapple_style = GrappleStyle.PULL
+		notice.emit("Grapple: pull — it takes you there")
+	else:
+		grapple_style = GrappleStyle.LINE
+		notice.emit("Grapple: line — it lays a line to walk; jump to step off")
+
+
+## Where the spider's feet are: under the body, along whatever it calls up.
+func feet() -> Vector3:
+	return _spider.global_position - _current_up * _body_height() * FEET
+
+
+## Stands the spider on [param strand] where it is nearest, facing along it
+## towards [param toward]: what the line grapple does with the line it has just
+## laid, so walking it is one key away. Returns false if there was no line to
+## stand on.
+##
+## The near end of a line laid from your feet is in the floor you are standing
+## on, and the surface probe keeps hold of the surface it already has — so
+## without this you would walk on under your own line rather than onto it.
+func board(strand: WebStrand, toward: Vector3) -> bool:
+	var axis := _thread_axis(strand)
+	if axis == Vector3.ZERO or _spider == null:
+		return false
+	var point := Geometry3D.get_closest_point_to_segment(_spider.global_position,
+		strand.point_a, strand.point_b)
+	var up := _thread_up(strand, _current_up)
+	var along := axis if (toward - point).dot(axis) >= 0.0 else -axis
+	ride_web = null
+	_grace = 0.0
+	_carried.clear()
+	_spider.velocity = Vector3.ZERO
+	tangent_velocity = Vector3.ZERO
+	_spider.global_position = point + up * _body_height() * FEET
+	_previous_up = _current_up
+	_current_up = up
+	surface_normal = up
+	_facing = (along - up * along.dot(up)).normalized()
+	on_silk = true
+	standing_on = strand
+	_boarded = strand
+	_board_hold = BOARD_HOLD
+	_spider.up_direction = up
+	_set_mode(Mode.ATTACHED)
+	surface_changed.emit(up)
+	return true
+
+
+## What the surface probe should have found just after [method board]: the line.
+##
+## A line spun this frame is not in the physics world until the next one, so the
+## first probe after boarding finds nothing under the spider in mid-air — or the
+## floor the line starts from — and the spider falls off a line it was just put
+## on. For [constant BOARD_HOLD] seconds the boarded line is what is underfoot,
+## unless the probe found the line itself already.
+func _boarded_hit(found: Dictionary) -> Dictionary:
+	if not is_instance_valid(_boarded):
+		return found
+	if _strand_under(found.get("collider")) == _boarded:
+		return found
+	var walkway := _boarded.get_node_or_null(NodePath("Walkway"))
+	if walkway == null:
+		return found
+	var point := Geometry3D.get_closest_point_to_segment(_spider.global_position,
+		_boarded.point_a, _boarded.point_b)
+	return {"collider": walkway, "normal": _current_up, "position": point}
+
 
 ## Hauls the spider to a point it is going to anchor silk to. Building a web is
 ## a journey around its frame rather than a thing done at arm's length, so every
