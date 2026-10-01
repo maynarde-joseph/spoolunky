@@ -46,6 +46,7 @@ func _sections() -> Array[Callable]:
 		_test_waking_somewhere,
 		_test_a_shrine_is_where_you_wake,
 		_test_a_gate_opens_from_its_far_side,
+		_test_a_boss_is_named_while_it_fights,
 		_test_the_drill_mosquito,
 		_test_the_blade_rat,
 		_test_the_charger_beetle,
@@ -413,6 +414,33 @@ func _test_waking_somewhere() -> void:
 		"and falling out of the world puts you back there too")
 
 
+## A boss is named across the foot of the screen while it comes for you, with the
+## fight it has left under its name — and gone from there once it is not.
+func _test_a_boss_is_named_while_it_fights() -> void:
+	await _arena()
+	var hud := level.get_node("HUD")
+	var kind := _kind("champion", [_move(CreatureAttack.Kind.BITE, 0.9)])
+	kind.boss = true
+	kind.display_name = "The Champion"
+	var champion := _put(kind, Vector3(4.0, 0.3, 0.0))
+	await run_frames(5)
+	check(hud.boss_on_you() == null, "not yet coming for you, it is not named")
+	champion.attack_spider(spider)
+	await run_frames(5)
+	check(hud.boss_on_you() == champion, "coming for you, it is")
+	var bar := hud.get_node("BossBar") as Control
+	check(bar.visible and (bar.get_node("BossName") as Label).text == "The Champion",
+		"by name, across the foot of the screen")
+	champion.bind(0.4)
+	await run_frames(2)
+	var fight := (bar.get_node("BossFight") as ProgressBar).value
+	check(fight > 0.5 and fight < 0.7,
+		"with the fight it has left under it (%d%%)" % roundi(fight * 100.0))
+	champion.bundle()
+	await run_frames(3)
+	check(not bar.visible, "and gone once it is wrapped")
+
+
 ## A shrine is where you wake. Touching it lights it; resting at it makes you whole
 ## and puts back everything you put down; driven off, you wake at it, whole, and
 ## everything is put back again. A boss is back at its post if it beat you, and
@@ -773,12 +801,13 @@ func _species(id: String) -> PreySpecies:
 
 ## That [param kind] is a hostile as one should be: hostile whatever its size, a
 ## bite of some sort to fall back on, the move it is known for, and a fight an orb
-## web wins in a few shots — not one, and not a siege. Returns whether there is
-## enough of it to go on with.
-func _kit(kind: PreySpecies, signature: String, of_kind: CreatureAttack.Kind) -> bool:
+## web wins in [param shots_to_take] shots — a few for most, more for a boss, and
+## never a siege. Returns whether there is enough of it to go on with.
+func _kit(kind: PreySpecies, signature: String, of_kind: CreatureAttack.Kind,
+		shots_to_take := Vector2i(2, 4)) -> bool:
 	if not check(kind != null, "it is one of the hostiles"):
 		return false
-	check(kind.hostile, "the %s is hostile" % kind.display_name)
+	check(kind.hostile, "it is hostile (%s)" % kind.display_name)
 	var bite: CreatureAttack = null
 	var move: CreatureAttack = null
 	for each in kind.attacks:
@@ -792,8 +821,9 @@ func _kit(kind: PreySpecies, signature: String, of_kind: CreatureAttack.Kind) ->
 		return false
 	var hold := builder.shot_hold(pattern_named("orb_web"), 2.0)
 	var shots := ceili(kind.total_thrash() / maxf(hold * Prey.ESCAPE_MARGIN, 0.001))
-	check(shots >= 2 and shots <= 4,
-		"and an orb web takes it in %d shots: more than one, and not a siege" % shots)
+	check(shots >= shots_to_take.x and shots <= shots_to_take.y,
+		"and an orb web takes it in %d shots: no fewer than %d, and not a siege"
+		% [shots, shots_to_take.x])
 	return true
 
 

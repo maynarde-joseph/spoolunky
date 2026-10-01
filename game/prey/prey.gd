@@ -1284,6 +1284,25 @@ func is_hostile() -> bool:
 	return kind != null and kind.hostile
 
 
+## Whether it is a boss. See [member PreySpecies.boss].
+func is_boss() -> bool:
+	return kind != null and kind.boss
+
+
+## What it is coming for, if it is coming for anything.
+func quarry() -> Node3D:
+	return _quarry if is_hunting() and is_instance_valid(_quarry) else null
+
+
+## How much it still has to resist with, 1 for all of it: what silk and harm have
+## not yet taken, and nothing once it is wrapped or dead. Not [method fight_left],
+## which is how long it can keep thrashing in a web it is already in.
+func resistance() -> float:
+	if eaten or wrapped or is_bundled() or is_dead():
+		return 0.0
+	return 1.0 - weakness()
+
+
 ## Comes for [param spider] now, without waiting to notice it: for something
 ## called up out of the dark by one that already has.
 func attack_spider(spider: Node3D) -> void:

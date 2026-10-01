@@ -84,6 +84,9 @@ var _clock_label: Label
 var _area_label: Label
 var _area_detail: Label
 var _area: Zone = null
+var _boss_box: VBoxContainer
+var _boss_label: Label
+var _boss_bar: ProgressBar
 var _area_left := 0.0
 var _area_look := 0.0
 
@@ -116,6 +119,7 @@ func _ready() -> void:
 	_build_condition()
 	_build_clock()
 	_build_area()
+	_build_boss_bar()
 	_set_sizes()
 	problem_label.text = ""
 	dial_label.text = ""
@@ -130,6 +134,7 @@ func _process(delta: float) -> void:
 	if _spider == null:
 		return
 	_refresh_area(delta)
+	_refresh_boss()
 	_refresh_state()
 	_refresh_limits()
 	_refresh_condition()
@@ -234,6 +239,9 @@ func _set_sizes() -> void:
 	if _area_label != null:
 		_area_label.add_theme_font_size_override("font_size", int(AREA_SIZE))
 		_area_detail.add_theme_font_size_override("font_size", int(BODY_SIZE))
+	if _boss_label != null:
+		_boss_label.add_theme_font_size_override("font_size", int(HEADLINE_SIZE))
+		_boss_bar.custom_minimum_size = Vector2(0.0, 14.0)
 	# The bars grow with the text, or a bar is a hairline under a big number.
 	web_bar.custom_minimum_size = Vector2(0.0, 16.0)
 	biomass_bar.custom_minimum_size = Vector2(0.0, 16.0)
@@ -271,6 +279,62 @@ func _build_condition() -> void:
 	_wind_bar.max_value = 1.0
 	stats.add_child(_wind_bar)
 	stats.move_child(_wind_bar, 3)
+
+
+## A boss's name and what fight it has left, across the foot of the screen above
+## the hotbar, while one is coming for you.
+func _build_boss_bar() -> void:
+	_boss_box = VBoxContainer.new()
+	_boss_box.name = "BossBar"
+	_boss_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_box.anchor_left = 0.5
+	_boss_box.anchor_right = 0.5
+	_boss_box.anchor_top = 1.0
+	_boss_box.anchor_bottom = 1.0
+	_boss_box.offset_left = -320.0
+	_boss_box.offset_right = 320.0
+	_boss_box.offset_top = -(HOTBAR_MARGIN + HOTBAR_SLOT + 84.0)
+	_boss_box.offset_bottom = -(HOTBAR_MARGIN + HOTBAR_SLOT + 24.0)
+	_boss_label = Label.new()
+	_boss_label.name = "BossName"
+	_boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_box.add_child(_boss_label)
+	_boss_bar = ProgressBar.new()
+	_boss_bar.name = "BossFight"
+	_boss_bar.show_percentage = false
+	_boss_bar.max_value = 1.0
+	_boss_bar.modulate = Color(0.95, 0.55, 0.45)
+	_boss_box.add_child(_boss_bar)
+	_boss_box.visible = false
+	add_child(_boss_box)
+
+
+## The boss coming for you, if one is: the nearest, if there are two.
+func boss_on_you() -> Prey:
+	if _spider == null:
+		return null
+	var nearest: Prey = null
+	var best := INF
+	for node in get_tree().get_nodes_in_group("prey"):
+		var creature := node as Prey
+		if creature == null or not creature.is_boss() or creature.quarry() != _spider:
+			continue
+		var span := creature.global_position.distance_to(_spider.global_position)
+		if span < best:
+			best = span
+			nearest = creature
+	return nearest
+
+
+func _refresh_boss() -> void:
+	if _boss_box == null:
+		return
+	var boss := boss_on_you()
+	_boss_box.visible = boss != null
+	if boss == null:
+		return
+	_boss_label.text = boss.species
+	_boss_bar.value = boss.resistance()
 
 
 ## The time of day, in the top right — where there is a day going round at all.

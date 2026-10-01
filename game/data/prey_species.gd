@@ -87,6 +87,11 @@ enum Activity {
 ## the bite among them. See [CreatureAttack] and [CreatureFighter].
 @export var attacks: Array[CreatureAttack] = []
 
+## A boss: named across the foot of the screen, with what fight it has left, while
+## it is coming for you. Whether it stays beaten is its mark's business — see
+## [member HostileSpawn.stays_beaten].
+@export var boss := false
+
 
 @export_group("Movement")
 
