@@ -55,6 +55,12 @@ const TOAST_SIZE := 30
 const HELP_SIZE := 19
 const SLOT_NUMBER_SIZE := 15
 const SLOT_COUNT_SIZE := 19
+const AREA_SIZE := 46
+
+## How long a place's name stays up when the spider walks into it, in seconds,
+## and how often the HUD looks to see where the spider is.
+const AREA_HOLD := 3.5
+const AREA_LOOK := 0.3
 
 
 ## Leave empty to find the spider by its group.
@@ -73,6 +79,11 @@ var _spell_strip: VBoxContainer
 var _spell_chips := {}
 var _chip_styles := {}
 var _clock_label: Label
+var _area_label: Label
+var _area_detail: Label
+var _area: Zone = null
+var _area_left := 0.0
+var _area_look := 0.0
 
 @onready var stage_label: Label = $Stats/StageLabel
 @onready var state_label: Label = $Stats/StateLabel
@@ -102,6 +113,7 @@ func _ready() -> void:
 	_build_tree()
 	_build_condition()
 	_build_clock()
+	_build_area()
 	_set_sizes()
 	problem_label.text = ""
 	dial_label.text = ""
@@ -115,6 +127,7 @@ func _process(delta: float) -> void:
 	_refresh_clock()
 	if _spider == null:
 		return
+	_refresh_area(delta)
 	_refresh_state()
 	_refresh_limits()
 	_refresh_condition()
@@ -213,6 +226,9 @@ func _set_sizes() -> void:
 		_condition_label.add_theme_font_size_override("font_size", int(BODY_SIZE))
 	if _clock_label != null:
 		_clock_label.add_theme_font_size_override("font_size", int(BODY_SIZE))
+	if _area_label != null:
+		_area_label.add_theme_font_size_override("font_size", int(AREA_SIZE))
+		_area_detail.add_theme_font_size_override("font_size", int(BODY_SIZE))
 	# The bars grow with the text, or a bar is a hairline under a big number.
 	web_bar.custom_minimum_size = Vector2(0.0, 16.0)
 	biomass_bar.custom_minimum_size = Vector2(0.0, 16.0)
@@ -266,6 +282,70 @@ func _build_clock() -> void:
 	_clock_label.offset_bottom = 52.0
 	_clock_label.visible = false
 	add_child(_clock_label)
+
+
+## The name of the place the spider has just walked into, large, across the top
+## third of the screen, and the sizes it was built for under it — then gone.
+func _build_area() -> void:
+	_area_label = Label.new()
+	_area_label.name = "AreaLabel"
+	_area_detail = Label.new()
+	_area_detail.name = "AreaDetail"
+	for label in [_area_label, _area_detail]:
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.anchor_left = 0.5
+		label.anchor_right = 0.5
+		label.offset_left = -500.0
+		label.offset_right = 500.0
+		label.modulate.a = 0.0
+		label.add_theme_constant_override("outline_size", 10)
+		label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.7))
+		add_child(label)
+	_area_label.offset_top = 150.0
+	_area_label.offset_bottom = 210.0
+	_area_detail.offset_top = 212.0
+	_area_detail.offset_bottom = 244.0
+
+
+func _refresh_area(delta: float) -> void:
+	if _area_label == null:
+		return
+	_area_look -= delta
+	if _area_look <= 0.0:
+		_area_look = AREA_LOOK
+		var here := Zone.at(get_tree(), _spider.global_position)
+		if here != _area:
+			_area = here
+			if here != null:
+				_area_label.text = here.display_name
+				_area_detail.text = _built_for(here)
+				_area_left = AREA_HOLD
+	if _area_left > 0.0:
+		_area_left -= delta
+		var shown := clampf(minf((AREA_HOLD - _area_left) / 0.4, _area_left / 1.0), 0.0, 1.0)
+		_area_label.modulate.a = shown
+		_area_detail.modulate.a = shown * 0.85
+	else:
+		_area_label.modulate.a = 0.0
+		_area_detail.modulate.a = 0.0
+
+
+## Which of the spider's sizes [param zone] was built for, by name.
+func _built_for(zone: Zone) -> String:
+	var growth := _spider.growth if _spider != null else null
+	if growth == null or growth.stages.is_empty():
+		return ""
+	var first := ""
+	var last := ""
+	for stage in growth.stages:
+		if stage.body_height >= zone.built_for.x - 0.001 and stage.body_height <= zone.built_for.y + 0.001:
+			if first.is_empty():
+				first = stage.display_name
+			last = stage.display_name
+	if first.is_empty():
+		return ""
+	return "for a %s" % first if first == last else "for a %s to a %s" % [first, last]
 
 
 func _refresh_clock() -> void:
