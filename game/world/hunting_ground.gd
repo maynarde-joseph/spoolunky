@@ -91,6 +91,18 @@ const SPAWN_HEIGHT := 1.0
 const PUDDLE := Vector2(-45.0, 205.0)
 const PUDDLE_REACH := 7.5
 
+## The great tree's trunk: how thick at its foot and at the top of what is drawn,
+## and how tall to its crown.
+const TREE_GIRTH := 22.0
+const TREE_TOP_GIRTH := 15.0
+const TREE_HEIGHT := 230.0
+
+## The hollow log on the floor of the rootways, end to end, and how big round.
+const LOG_FROM := Vector2(-146.0, 218.0)
+const LOG_TO := Vector2(-262.0, 244.0)
+const LOG_RADIUS := 10.0
+const LOG_WALL := 1.6
+
 # --- the colours of the ground ---------------------------------------------
 
 const MEADOW := Color(0.4, 0.55, 0.25)
@@ -117,6 +129,7 @@ func build() -> void:
 	_places()
 	_camp()
 	_fern_floor()
+	_rootways()
 	_place_the_spider()
 
 
@@ -382,6 +395,164 @@ func _fern_floor() -> void:
 
 	_haunt(place, "WestHaunt", FERN_FLOOR + Vector2(-70.0, -30.0), ["boar"], 18.0)
 	_haunt(place, "NorthHaunt", FERN_FLOOR + Vector2(40.0, -65.0), ["deer", "boar"], 18.0)
+
+
+# --- the rootways ---------------------------------------------------------------
+
+## The great tree of the west side and what is under it: a trunk three and a half
+## metres through, its roots arching out over the hollow it stands in so that
+## under each is a cave, shelf fungus up the bark to climb by, and a hollow log
+## lying on the floor to walk the length of. Glowcaps light the caves at night.
+## It is built for the middle sizes, and what lives here comes out in the dark —
+## cockroaches, rats, moths, beetles, and bats that hang under the roots by day.
+func _rootways() -> void:
+	var place := WorldKit.group(self, "Rootways")
+	var foot := on_ground(GREAT_TREE.x, GREAT_TREE.y, -3.0)
+	var tree := WorldKit.body(place, "GreatTree", Transform3D(Basis.IDENTITY, foot))
+	WorldKit.cylinder(tree, "Trunk", TREE_GIRTH, TREE_HEIGHT, WorldKit.at(Vector3(0.0,
+		TREE_HEIGHT * 0.5, 0.0)), "bark", true, TREE_TOP_GIRTH, 28)
+	var crown := [
+		[Vector3(0.0, 262.0, 0.0), Vector3(62.0, 30.0, 62.0), "leaf_dark"],
+		[Vector3(46.0, 240.0, 12.0), Vector3(40.0, 22.0, 40.0), "leaf"],
+		[Vector3(-44.0, 244.0, -16.0), Vector3(40.0, 24.0, 40.0), "leaf_dark"],
+		[Vector3(10.0, 246.0, -46.0), Vector3(38.0, 22.0, 38.0), "leaf"],
+		[Vector3(-12.0, 248.0, 44.0), Vector3(40.0, 22.0, 40.0), "leaf_light"],
+	]
+	for blob in crown:
+		WorldKit.ball(tree, "Leaves", blob[1], WorldKit.at(blob[0]), blob[2])
+	for i in 4:
+		var turn := TAU * float(i) / 4.0 + 0.6
+		var out := Vector3(cos(turn), 0.0, sin(turn))
+		WorldKit.rod(tree, "Limb", out * 8.0 + Vector3.UP * 200.0, out * 52.0 + Vector3.UP * 236.0,
+			6.0, "bark", true, 3.0, 12)
+
+	# The roots: out from the trunk and down into the ground, arched high enough
+	# over the hollow to walk under.
+	var dice := _dice(202)
+	var caves: Array[Vector2] = []
+	for i in 10:
+		var turn := TAU * (float(i) + dice.randf_range(-0.25, 0.25)) / 10.0
+		var out := Vector3(cos(turn), 0.0, sin(turn))
+		var reach := dice.randf_range(44.0, 58.0)
+		var land := GREAT_TREE + Vector2(out.x, out.z) * reach
+		var start := out * (TREE_GIRTH - 4.0) + Vector3.UP * 16.0
+		var end := Vector3(out.x * reach, ground_at(land.x, land.y) - foot.y - 3.0, out.z * reach)
+		var bend := out * reach * 0.5 + Vector3.UP * dice.randf_range(20.0, 26.0)
+		_arch(tree, "Root", start, bend, end, dice.randf_range(5.0, 6.5), 2.6, "bark")
+		caves.append(GREAT_TREE + Vector2(out.x, out.z) * reach * 0.55)
+
+	# Shelf fungus up the trunk, to climb by.
+	for i in 7:
+		var turn := dice.randf() * TAU
+		var up := 18.0 + float(i) * 22.0 + dice.randf_range(-4.0, 4.0)
+		var girth := lerpf(TREE_GIRTH, TREE_TOP_GIRTH, up / TREE_HEIGHT)
+		var out := Vector3(cos(turn), 0.0, sin(turn))
+		var size := dice.randf_range(1.0, 1.6)
+		Props.place(place, "bracket_fungus", Transform3D(Basis.looking_at(out, Vector3.UP).scaled(
+			Vector3.ONE * size), foot + out * (girth - 0.6) + Vector3.UP * up))
+
+	_hollow_log(place)
+
+	var keep: Array[Vector2] = [GREAT_TREE, (LOG_FROM + LOG_TO) * 0.5, LOG_FROM, LOG_TO]
+	var half := Vector2(105.0, 110.0)
+	for i in 22:
+		_prop(place, "mushrooms", _scatter(dice, ROOTWAYS, half, keep, 26.0), dice, Vector2(1.0, 2.2))
+	for i in 5:
+		_prop(place, "toadstool", _scatter(dice, ROOTWAYS, half, keep, 26.0), dice, Vector2(1.2, 2.0))
+	for i in 12:
+		_prop(place, "boulder", _scatter(dice, ROOTWAYS, half, keep, 30.0), dice, Vector2(1.0, 2.0),
+			0.6)
+	for i in 30:
+		_prop(place, "fallen_leaf_rust" if i % 2 == 0 else "fallen_leaf",
+			_scatter(dice, ROOTWAYS, half, keep, 24.0), dice, Vector2(1.2, 2.0))
+	for i in 14:
+		_prop(place, "twig", _scatter(dice, ROOTWAYS, half, keep, 24.0), dice, Vector2(1.4, 2.4))
+	for i in 18:
+		_prop(place, "fern", _scatter(dice, ROOTWAYS + Vector2(40.0, 40.0), half * 0.7, keep, 34.0),
+			dice, Vector2(1.2, 1.8))
+
+	# Glowcaps in the caves, and their light.
+	for i in caves.size():
+		_patch(place, "fungus", caves[i], 4.0, 34.0, 0.15, i % 2 == 0)
+		if i % 3 == 0:
+			var lamp := OmniLight3D.new()
+			lamp.name = "Glow"
+			lamp.light_color = Color(0.5, 0.95, 0.8)
+			lamp.light_energy = 0.7
+			lamp.omni_range = 16.0
+			lamp.position = on_ground(caves[i].x, caves[i].y, 4.0)
+			place.add_child(lamp, true)
+	for i in 6:
+		_patch(place, "moss", _scatter(dice, ROOTWAYS, half, keep, 26.0), 5.0, 36.0, 0.2)
+	for i in 3:
+		_patch(place, "fungus", _scatter(dice, ROOTWAYS, half, keep, 26.0), 4.0, 30.0, 0.15)
+	for i in 2:
+		_patch(place, "berries", _scatter(dice, ROOTWAYS + Vector2(50.0, -50.0), half * 0.5, keep,
+			26.0), 6.0, 40.0, 0.1)
+
+	_den(place, "bat", caves[0], 3, 5, false, 6.0)
+	_den(place, "cockroach", caves[2], 3, 6, true, 4.0)
+	_den(place, "cockroach", caves[6], 3, 6, true, 4.0)
+	_den(place, "rat", caves[4], 2, 4, true, 6.0)
+	_den(place, "rat", (LOG_FROM + LOG_TO) * 0.5 + Vector2(0.0, 18.0), 2, 4, true, 6.0)
+	_den(place, "beetle", caves[8], 3, 6, true, 4.0)
+	_den(place, "moth", caves[5], 3, 6, false, 5.0)
+	_den(place, "fly", caves[1], 3, 6, false, 4.0)
+
+	_haunt(place, "TreeHaunt", GREAT_TREE + Vector2(60.0, -55.0), ["boar", "wolf"], 22.0)
+	_haunt(place, "LogHaunt", LOG_TO + Vector2(10.0, -30.0), ["wolf"], 22.0)
+
+
+## A root, or anything else that arches: a thick rod curving from [param from]
+## over [param bend] down to [param to], thinning from [param thick] to
+## [param thin], in lengths with a ball at every joint so it reads as one curve.
+func _arch(on: Node3D, part_name: String, from: Vector3, bend: Vector3, to: Vector3,
+		thick: float, thin: float, paint: String, pieces := 7) -> void:
+	var last := from
+	for k in range(1, pieces + 1):
+		var t := float(k) / float(pieces)
+		var at := from.lerp(bend, t).lerp(bend.lerp(to, t), t)
+		var girth := lerpf(thick, thin, t)
+		WorldKit.rod(on, part_name, last, at, lerpf(thick, thin, float(k - 1) / float(pieces)),
+			paint, true, girth, 12)
+		if k < pieces:
+			WorldKit.ball(on, part_name + "Knot", Vector3.ONE * girth, WorldKit.at(at), paint)
+		last = at
+
+
+## A hollow log lying across the floor of the rootways, open at both ends: bark
+## outside, old dark wood inside, moss along its top. A tunnel the length of it.
+func _hollow_log(place: Node3D) -> void:
+	var run := LOG_TO - LOG_FROM
+	var middle := (LOG_FROM + LOG_TO) * 0.5
+	var low := minf(minf(ground_at(LOG_FROM.x, LOG_FROM.y), ground_at(LOG_TO.x, LOG_TO.y)),
+		ground_at(middle.x, middle.y))
+	var along := Vector3(run.x, 0.0, run.y).normalized()
+	var where := Transform3D(Basis.looking_at(along, Vector3.UP),
+		Vector3(middle.x, low + LOG_RADIUS - 3.0, middle.y))
+	var hollow := WorldKit.body(place, "HollowLog", where)
+	var inside := PackedVector2Array()
+	var outside := PackedVector2Array()
+	var dark := PackedColorArray()
+	var bark := PackedColorArray()
+	var sides := 22
+	for i in sides + 1:
+		var turn := TAU * float(i) / float(sides)
+		inside.append(Vector2(cos(turn), sin(turn)) * (LOG_RADIUS - LOG_WALL))
+		outside.append(Vector2(cos(-turn), sin(-turn)) * LOG_RADIUS)
+		dark.append(Palette.colour("wood_dark"))
+		bark.append(Palette.colour("bark"))
+	var length := run.length()
+	WorldKit.extrude(hollow, "Inside", inside, dark, length, Transform3D.IDENTITY)
+	WorldKit.extrude(hollow, "Outside", outside, bark, length, Transform3D.IDENTITY)
+	for end in [-0.5, 0.5]:
+		WorldKit.ring(hollow, "End", LOG_RADIUS - LOG_WALL * 0.5, LOG_WALL,
+			Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0.0, 0.0, float(end) * length)),
+			"wood_light", true)
+	for i in 9:
+		var t := (float(i) + 0.5) / 9.0 - 0.5
+		WorldKit.ball(hollow, "Moss", Vector3(4.5, 1.2, 6.0), WorldKit.at(Vector3(0.0, LOG_RADIUS - 0.4,
+			t * length * 0.9)), "moss", false)
 
 
 # --- putting things down ---------------------------------------------------------

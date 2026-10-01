@@ -47,6 +47,8 @@ const ALL := [
 	# The hunting ground: the fern floor.
 	"fern", "toadstool", "mushrooms", "pebble", "boulder", "acorn", "fallen_leaf",
 	"fallen_leaf_rust", "twig", "anthill", "forest_tree",
+	# The rootways.
+	"bracket_fungus",
 ]
 
 
@@ -124,6 +126,7 @@ static func build(id: String) -> Node3D:
 		"twig": return _twig()
 		"anthill": return _anthill()
 		"forest_tree": return _forest_tree()
+		"bracket_fungus": return _bracket_fungus()
 	push_error("no such prop: %s" % id)
 	return null
 
@@ -1165,6 +1168,24 @@ static func _anthill() -> Node3D:
 	WorldKit.ball(it, "Top", Vector3(1.4, 1.0, 1.4), WorldKit.at(Vector3(0.3, 1.4, -0.2)), "soil")
 	WorldKit.ball(it, "WayIn", Vector3(0.45, 0.35, 0.2), WorldKit.at(Vector3(0.0, 0.7, -3.0)), "black",
 		false)
+	return it
+
+
+# --- the rootways ------------------------------------------------------
+
+## Shelf fungus, the way it grows out of a trunk: three half-discs one above the
+## other, the biggest at the bottom, sticking out along -Z from a trunk that is
+## behind them. Something to stand on halfway up a tree.
+static func _bracket_fungus() -> Node3D:
+	var it := WorldKit.body(null, "BracketFungus")
+	var shelves := [[0.0, 4.2, 3.2], [2.6, 3.0, 2.3], [4.6, 2.0, 1.6]]
+	for shelf in shelves:
+		var wide: float = shelf[1]
+		var deep: float = shelf[2]
+		WorldKit.ball(it, "Shelf", Vector3(wide, 0.7, deep),
+			WorldKit.at(Vector3(0.0, shelf[0], -deep * 0.45)), "fungus_shelf")
+		WorldKit.ring(it, "Rim", wide * 0.62, 0.3, Transform3D(Basis.IDENTITY.scaled(Vector3(1.0,
+			1.0, deep / wide)), Vector3(0.0, float(shelf[0]) + 0.25, -deep * 0.45)), "wood_light")
 	return it
 
 
