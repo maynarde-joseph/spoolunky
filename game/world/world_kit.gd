@@ -5,26 +5,27 @@ extends RefCounted
 ## to stand on, each painted one flat colour from the [Palette].
 ##
 ## The greybox's idea with the colour put back. A solid is a mesh and, unless it
-## is asked not to be, a collider of the same shape on the same body — so a hammer
-## on a bench is somewhere to walk and somewhere silk sticks, with no second job
-## of fitting colliders to it afterwards. The shapes are the ones the physics
+## is asked not to be, a collider of the same shape on the same body — so a
+## toadstool's cap is somewhere to walk and somewhere silk sticks, with no second
+## job of fitting colliders to it afterwards. The shapes are the ones the physics
 ## engine collides exactly: boxes, cylinders, balls and capsules, and the hull of
-## the points for anything else that is convex. The few that are not — a tunnel's
-## arch, the bowl of the lake — are one mesh, collided as its own triangles.
+## the points for anything else that is convex. The few that are not — the inside
+## of a hollow log — are one mesh, collided as its own triangles; and the ground
+## is one height map.
 ##
 ## A solid goes on a body and is placed by a transform in that body's own space,
 ## so a prop is written once, standing on the origin and facing -Z, and turned and
 ## moved as a whole. Lengths are in metres, like everything else.
 ##
 ## Identical solids share one mesh and one shape. That is what keeps a baked scene
-## small: forty planks of one size are one plank written forty times.
+## small: forty stones of one size are one stone written forty times.
 
 ## How finely a round thing is drawn round its middle, by default.
 const SIDES := 20
 
 ## Two faces whose normals are closer than this, in degrees, meet in a smooth
-## curve; further apart, at a crisp edge. What lets one swept line be both the
-## round of an arch and the square corner of a walkway.
+## curve; further apart, at a crisp edge. What lets one swept line be both a
+## smooth round and a square corner.
 const SMOOTH_UNDER := 35.0
 
 static var _meshes := {}
@@ -76,17 +77,8 @@ static func box(on: Node3D, part_name: String, size: Vector3, where: Transform3D
 	return _place(on, part_name, mesh, shape, where, paint)
 
 
-## A box between two opposite corners, square to its body.
-static func block(on: Node3D, part_name: String, lo: Vector3, hi: Vector3, paint: String,
-		solid := true) -> MeshInstance3D:
-	var low := lo.min(hi)
-	var high := lo.max(hi)
-	return box(on, part_name, high - low, Transform3D(Basis.IDENTITY, (low + high) * 0.5),
-		paint, solid)
-
-
 ## A cylinder standing up [param where]'s own up axis, centred on it. [param top]
-## tapers it — a flowerpot, a trunk, a cone — and a tapered one collides as the
+## tapers it — a trunk, a stalk, a cone — and a tapered one collides as the
 ## hull of its points rather than as a cylinder.
 static func cylinder(on: Node3D, part_name: String, radius: float, height: float,
 		where: Transform3D, paint: String, solid := true, top := -1.0,
@@ -118,7 +110,7 @@ static func cylinder(on: Node3D, part_name: String, radius: float, height: float
 	return _place(on, part_name, mesh, shape, where, paint)
 
 
-## A cylinder from one point to another: a handle, a leg, a rail, a branch.
+## A cylinder from one point to another: a stalk, a twig, a root, a branch.
 static func rod(on: Node3D, part_name: String, from: Vector3, to: Vector3, radius: float,
 		paint: String, solid := true, top := -1.0, sides := 12) -> MeshInstance3D:
 	var along := to - from
@@ -174,7 +166,7 @@ static func ball(on: Node3D, part_name: String, radii: Vector3, where: Transform
 
 
 ## A capsule standing up [param where]'s up axis: a rod with round ends, the whole
-## of it [param height] long. A sack, a handle, the top of a hedge.
+## of it [param height] long. A seed head, the brown head of a bulrush.
 static func capsule(on: Node3D, part_name: String, radius: float, height: float,
 		where: Transform3D, paint: String, solid := true) -> MeshInstance3D:
 	var key := "capsule " + _key(Vector3(radius, height, 0.0))
@@ -195,30 +187,10 @@ static func capsule(on: Node3D, part_name: String, radius: float, height: float,
 	return _place(on, part_name, mesh, shape, where, paint)
 
 
-## A triangular prism [param size] across its foot, up to its ridge and along the
-## ridge, centred on [param where]: a gable, a roof, a wedge.
-static func prism(on: Node3D, part_name: String, size: Vector3, where: Transform3D,
-		paint: String, solid := true) -> MeshInstance3D:
-	var key := "prism " + _key(size)
-	var mesh := _mesh(key, func() -> Mesh:
-		var made := PrismMesh.new()
-		made.size = size
-		made.left_to_right = 0.5
-		return made)
-	var shape: Shape3D = null
-	if solid:
-		shape = _shape(key, func() -> Shape3D:
-			var half := size * 0.5
-			return _hull(PackedVector3Array([
-				Vector3(-half.x, -half.y, -half.z), Vector3(half.x, -half.y, -half.z),
-				Vector3(0.0, half.y, -half.z), Vector3(-half.x, -half.y, half.z),
-				Vector3(half.x, -half.y, half.z), Vector3(0.0, half.y, half.z)])))
-	return _place(on, part_name, mesh, shape, where, paint)
-
-
-## A ring lying flat on [param where]: the rim of a tin, a tyre, a coil of hose, a
-## lifebuoy. [param radius] is to the middle of the band and [param thickness] is
-## the band's. Solid, it collides as the flat round it fills, hole and all.
+## A ring lying flat on [param where]: the skirt on a toadstool's stem, the cut rim
+## of a stump, the end of a hollow log. [param radius] is to the middle of the
+## band and [param thickness] is the band's. Solid, it collides as the flat round
+## it fills, hole and all.
 static func ring(on: Node3D, part_name: String, radius: float, thickness: float,
 		where: Transform3D, paint: String, solid := false) -> MeshInstance3D:
 	var key := "ring " + _key(Vector3(radius, thickness, 0.0))
@@ -241,7 +213,7 @@ static func ring(on: Node3D, part_name: String, radius: float, thickness: float,
 
 ## A flat plate cut to [param outline] — a convex outline of points in one plane,
 ## given in order round it — and [param thickness] thick across that plane: the
-## side of a boat, the blade of a saw. Collides as the hull of its corners.
+## blade of a fallen leaf. Collides as the hull of its corners.
 static func plate(on: Node3D, part_name: String, outline: PackedVector3Array,
 		thickness: float, paint: String, solid := true) -> MeshInstance3D:
 	var face := Vector3.ZERO
@@ -293,100 +265,13 @@ static func plate(on: Node3D, part_name: String, outline: PackedVector3Array,
 	return view
 
 
-## A level slab from [param lo] to [param hi] with [param holes] cut clean through
-## it, each a rectangle in (x, z): built as the fewest boxes that cover what is left,
-## row by row. The ground with the drains and the lake let into it. With no
-## [param paint] it is only something to collide with; not [param solid], only
-## something to see.
-static func slab(on: Node3D, part_name: String, lo: Vector3, hi: Vector3,
-		holes: Array[Rect2], paint := "", solid := true) -> void:
-	var xs: Array[float] = [lo.x, hi.x]
-	var zs: Array[float] = [lo.z, hi.z]
-	for hole in holes:
-		for x in [hole.position.x, hole.end.x]:
-			if x > lo.x and x < hi.x and not xs.has(x):
-				xs.append(x)
-		for z in [hole.position.y, hole.end.y]:
-			if z > lo.z and z < hi.z and not zs.has(z):
-				zs.append(z)
-	xs.sort()
-	zs.sort()
-	for j in zs.size() - 1:
-		var start := -1
-		for i in xs.size():
-			var filled := false
-			if i < xs.size() - 1:
-				filled = true
-				var middle := Vector2((xs[i] + xs[i + 1]) * 0.5, (zs[j] + zs[j + 1]) * 0.5)
-				for hole in holes:
-					if hole.has_point(middle):
-						filled = false
-						break
-			if filled and start < 0:
-				start = i
-			elif not filled and start >= 0:
-				var from := Vector3(xs[start], lo.y, zs[j])
-				var to := Vector3(xs[i], hi.y, zs[j + 1])
-				if not paint.is_empty():
-					block(on, part_name, from, to, paint, solid)
-				elif solid:
-					collider(on, part_name, to - from, Transform3D(Basis.IDENTITY, (from + to) * 0.5))
-				start = -1
-
-
-## Something to collide with and nothing to see: the one flat slab under a floor of
-## planks, so that walking across it is walking across one thing rather than
-## catching on every seam.
-static func collider(on: Node3D, part_name: String, size: Vector3,
-		where: Transform3D) -> CollisionShape3D:
-	var shape := _shape("box " + _key(size), func() -> Shape3D:
-		var made := BoxShape3D.new()
-		made.size = size
-		return made)
-	var solid := CollisionShape3D.new()
-	solid.name = part_name
-	solid.shape = shape
-	solid.transform = where
-	on.add_child(solid, true)
-	return solid
-
-
 # --- shapes built a point at a time ---------------------------------------
-
-## A surface turned about [param where]'s up axis. [param profile] is a line of
-## (out, up) points with a colour each in [param colours], and the surface faces
-## to the left of the way the line runs: run it outward along a floor and it faces
-## up, down the outside of a pot and it faces out. A point given twice with two
-## colours is a crisp change of colour there. Collided as its own triangles.
-static func lathe(on: Node3D, part_name: String, profile: PackedVector2Array,
-		colours: PackedColorArray, sides: int, where: Transform3D,
-		solid := true) -> MeshInstance3D:
-	var normals := _profile_normals(profile)
-	var tool := SurfaceTool.new()
-	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var faces := PackedVector3Array()
-	for k in profile.size() - 1:
-		if profile[k].distance_to(profile[k + 1]) < 0.0001:
-			continue
-		for j in sides:
-			var a0 := TAU * float(j) / float(sides)
-			var a1 := TAU * float(j + 1) / float(sides)
-			var corners: Array[Vector3] = [
-				_turned(profile[k], a0), _turned(profile[k], a1),
-				_turned(profile[k + 1], a1), _turned(profile[k + 1], a0)]
-			var turns: Array[Vector3] = [
-				_turned(normals[k][1], a0, true), _turned(normals[k][1], a1, true),
-				_turned(normals[k][2], a1, true), _turned(normals[k][2], a0, true)]
-			var tints: Array[Color] = [colours[k], colours[k], colours[k + 1], colours[k + 1]]
-			_quad(tool, faces, corners, turns, tints)
-	return _built(on, part_name, tool, faces, where, solid)
-
 
 ## A line of (across, up) points swept [param length] along [param where]'s Z axis,
 ## centred on it, with a colour for each point. The surface faces to the left of
 ## the way the line runs, seen looking down -Z: run it left to right along a floor
-## and it faces up, so a line run anticlockwise round the inside of a tunnel faces
-## into the tunnel.
+## and it faces up, so a line run anticlockwise round the inside of a hollow log
+## faces into the log.
 static func extrude(on: Node3D, part_name: String, profile: PackedVector2Array,
 		colours: PackedColorArray, length: float, where: Transform3D,
 		solid := true) -> MeshInstance3D:
@@ -411,50 +296,6 @@ static func extrude(on: Node3D, part_name: String, profile: PackedVector2Array,
 		var tints: Array[Color] = [colours[k], colours[k], colours[k + 1], colours[k + 1]]
 		_quad(tool, faces, corners, turns, tints)
 	return _built(on, part_name, tool, faces, where, solid)
-
-
-## A flat wall across the end of a tunnel: the rectangle [param lo]–[param hi]
-## (across, up) with the tunnel's own [param profile] left open in it, facing
-## [param where]'s +Z. Where a swept tunnel runs into a square room, this is the
-## room's wall round the arch. [param centre] is a point inside the profile that
-## can see the whole of its edge.
-static func bulkhead(on: Node3D, part_name: String, profile: PackedVector2Array,
-		centre: Vector2, lo: Vector2, hi: Vector2, where: Transform3D, paint: String,
-		solid := true) -> MeshInstance3D:
-	# Round the centre by angle: every point of the opening, and every corner of the
-	# rectangle, each paired with where the same ray meets the other outline. Then
-	# the wall is one strip of quads between the two.
-	var loop := profile.duplicate()
-	if loop.size() > 1 and loop[0].distance_to(loop[loop.size() - 1]) < 0.0001:
-		loop.remove_at(loop.size() - 1)
-	var box := PackedVector2Array([lo, Vector2(hi.x, lo.y), hi, Vector2(lo.x, hi.y)])
-	var angles: Array[float] = []
-	for point in loop:
-		angles.append(fposmod((point - centre).angle(), TAU))
-	for corner in box:
-		angles.append(fposmod((corner - centre).angle(), TAU))
-	angles.sort()
-	var tool := SurfaceTool.new()
-	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var faces := PackedVector3Array()
-	var tint := Color.WHITE
-	var facing := Vector3.BACK
-	for i in angles.size():
-		var a0 := angles[i]
-		var a1 := angles[(i + 1) % angles.size()]
-		if absf(a1 - a0) < 0.00001:
-			continue
-		var in0 := _ray_hit(centre, a0, loop)
-		var in1 := _ray_hit(centre, a1, loop)
-		var out0 := _ray_hit(centre, a0, box)
-		var out1 := _ray_hit(centre, a1, box)
-		var corners: Array[Vector3] = [
-			Vector3(in0.x, in0.y, 0.0), Vector3(in1.x, in1.y, 0.0),
-			Vector3(out1.x, out1.y, 0.0), Vector3(out0.x, out0.y, 0.0)]
-		_quad(tool, faces, corners, [facing, facing, facing, facing], [tint, tint, tint, tint])
-	var view := _built(on, part_name, tool, faces, where, solid)
-	view.material_override = Palette.paint(paint)
-	return view
 
 
 # --- ground --------------------------------------------------------------
@@ -640,9 +481,9 @@ static func _built(on: Node3D, part_name: String, tool: SurfaceTool,
 	if solid and not faces.is_empty():
 		var shape := ConcavePolygonShape3D.new()
 		shape.set_faces(faces)
-		# Either side: a tunnel is walked from the inside of its shape and the bowl of
-		# the lake from above, and which way round the points went is not something a
-		# spider on a wall should have to care about.
+		# Either side: a hollow log is walked inside as well as out, and which way
+		# round the points went is not something a spider on a wall should have to
+		# care about.
 		shape.backface_collision = true
 		var solid_shape := CollisionShape3D.new()
 		solid_shape.name = part_name + "Shape"
@@ -710,32 +551,6 @@ static func _neighbour(own: Array[Vector2], k: int, step: int) -> Vector2:
 			return own[i]
 		i += step
 	return Vector2.ZERO
-
-
-## A profile point, or a profile normal, turned [param angle] about the up axis.
-static func _turned(point: Vector2, angle: float, is_normal := false) -> Vector3:
-	var turned := Vector3(point.x * cos(angle), point.y, point.x * sin(angle))
-	return turned.normalized() if is_normal else turned
-
-
-## Where a ray from [param from] at [param angle] leaves the closed outline
-## [param loop]: its furthest crossing, which for an outline the point can see
-## the whole of is its only one.
-static func _ray_hit(from: Vector2, angle: float, loop: PackedVector2Array) -> Vector2:
-	var way := Vector2(cos(angle), sin(angle))
-	var best := -1.0
-	for i in loop.size():
-		var a := loop[i]
-		var b := loop[(i + 1) % loop.size()]
-		var edge := b - a
-		var cross := way.cross(edge)
-		if absf(cross) < 1e-9:
-			continue
-		var t := (a - from).cross(edge) / cross
-		var u := (a - from).cross(way) / cross
-		if t > 0.0 and u >= -1e-6 and u <= 1.0 + 1e-6:
-			best = maxf(best, t)
-	return from + way * maxf(best, 0.0)
 
 
 static func _circle(radius: float, height: float, count: int) -> PackedVector3Array:

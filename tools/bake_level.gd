@@ -30,14 +30,13 @@ const LEVELS := {
 const RUNTIME_GROUPS := ["prey", "silk_webs"]
 
 ## Where the props live. An instance of one is kept as an instance, like any other,
-## and so is anything the builder hung on it after putting it down — the words on a
-## sign. A prop has no script to make anything for itself, so whatever is on one
-## that its own scene did not bring was put there by the builder, and is this
-## level's to keep.
+## and so is anything the builder hung on it after putting it down. A prop has no
+## script to make anything for itself, so whatever is on one that its own scene
+## did not bring was put there by the builder, and is this level's to keep.
 const PROPS_DIR := "res://game/world/props/"
 
 ## Where the shapes a builder makes a point at a time are kept — the valley's
-## ground, the bowl of the Mere, and what they collide as. They are the bulk of a
+## ground, the hollow log in the Rootways, and what they collide as. They are the bulk of a
 ## level: written into the scene they are most of the file, and as numbers in
 ## text, which is the most room they could take. In files of their own they are
 ## compressed binary, and the scene reads as the nodes it is.

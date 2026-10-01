@@ -5,7 +5,7 @@ extends RefCounted
 ## everything painted with it.
 ##
 ## The look the creatures have — smooth parts in a few flat colours, matte, no
-## detail — put on wood, stone, leaves and water. A colour lives in one place.
+## detail — put on bark, stone, leaves and water. A colour lives in one place.
 ## [constant PAINTS] says what each one is when the world is first built, and
 ## the bake writes each one out to [constant DIR] the first time; from then on
 ## the file is the paint, so changing a colour is changing that one file, and
@@ -14,39 +14,23 @@ extends RefCounted
 const DIR := "res://game/world/materials"
 
 ## Every paint: its colour, and how it takes the light. An alpha under one makes
-## it see-through, for glass, netting and water; [code]glow[/code] makes it give
-## off its own colour, for the glass of a lamp.
+## it see-through, for water; [code]glow[/code] makes it give off its own colour,
+## for the fungus that lights a cave.
 const PAINTS := {
-	# Wood, in the few tones it takes to tell a plank from the one beside it.
-	"wood": {"colour": Color(0.6, 0.43, 0.29)},
-	"wood_warm": {"colour": Color(0.67, 0.49, 0.33)},
+	# Wood: the pale of a cut face, and the dark inside an old log.
 	"wood_light": {"colour": Color(0.79, 0.64, 0.45)},
 	"wood_dark": {"colour": Color(0.42, 0.29, 0.19)},
-	"roof": {"colour": Color(0.27, 0.29, 0.28)},
-	# Metal: the dark of a tool's head and a railing, the light of a blade.
-	"iron": {"colour": Color(0.2, 0.21, 0.23), "rough": 0.7},
-	"steel": {"colour": Color(0.64, 0.66, 0.69), "rough": 0.55},
-	# Paint on things people made.
-	"red": {"colour": Color(0.74, 0.18, 0.14)},
-	"blue": {"colour": Color(0.2, 0.38, 0.66)},
+	# Plain colours: the middle of a flower, a birch's bark and the marks on it, an
+	# egg, dry grass, and the dark of a way in.
 	"yellow": {"colour": Color(0.92, 0.74, 0.2)},
-	"green": {"colour": Color(0.22, 0.48, 0.3)},
 	"white": {"colour": Color(0.9, 0.9, 0.86)},
 	"black": {"colour": Color(0.09, 0.09, 0.1)},
-	"terracotta": {"colour": Color(0.74, 0.4, 0.26)},
 	"straw": {"colour": Color(0.84, 0.72, 0.44)},
-	"canvas": {"colour": Color(0.66, 0.6, 0.47)},
-	"rubber": {"colour": Color(0.13, 0.13, 0.14)},
-	"hose": {"colour": Color(0.3, 0.62, 0.32)},
-	# Stone, for the sewers and the edge of the lake.
-	"stone": {"colour": Color(0.58, 0.59, 0.6)},
+	# Grey, for a tree long dead, and the moss on everything.
 	"stone_dark": {"colour": Color(0.41, 0.42, 0.43)},
 	"moss": {"colour": Color(0.3, 0.38, 0.22)},
-	"concrete": {"colour": Color(0.7, 0.69, 0.66)},
-	"paving": {"colour": Color(0.47, 0.46, 0.44)},
 	# The ground, and what grows in it.
 	"grass": {"colour": Color(0.3, 0.46, 0.21)},
-	"path": {"colour": Color(0.58, 0.51, 0.39)},
 	"soil": {"colour": Color(0.36, 0.26, 0.18)},
 	"bark": {"colour": Color(0.4, 0.3, 0.22)},
 	"leaf": {"colour": Color(0.28, 0.5, 0.22)},
@@ -82,15 +66,11 @@ const PAINTS := {
 	# Wild rock, a shade darker than stone anyone has cut.
 	"rock": {"colour": Color(0.44, 0.43, 0.41)},
 	"rock_dark": {"colour": Color(0.34, 0.33, 0.31)},
-	# See-through.
-	"glass": {"colour": Color(0.8, 0.9, 0.95, 0.2), "rough": 0.1},
-	"netting": {"colour": Color(0.85, 0.85, 0.82, 0.28)},
-	"slime": {"colour": Color(0.3, 0.46, 0.14, 0.82), "rough": 0.25},
+	# Water, see-through.
 	"pond": {"colour": Color(0.2, 0.42, 0.46, 0.8), "rough": 0.2},
-	# The glass of a lamp, lit.
-	"bulb": {"colour": Color(1.0, 0.86, 0.62), "glow": 2.0},
-	# For the shapes built a point at a time — a tunnel, the lake's bowl — whose
-	# colour is carried on the points rather than on the material.
+	# For the shapes built a point at a time — the valley's ground, the inside of a
+	# hollow log — whose colour is carried on the points rather than on the
+	# material.
 	"painted": {"colour": Color(1.0, 1.0, 1.0), "painted": true},
 }
 
@@ -142,8 +122,7 @@ static func mix(paint_name: String) -> StandardMaterial3D:
 	material.metallic = 0.0
 	if colour.a < 1.0:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		# Seen from both sides: water from underneath, glass from the other side
-		# of the room.
+		# Seen from both sides: water from underneath as well as from above.
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	if recipe.has("glow"):
 		material.emission_enabled = true
