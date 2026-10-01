@@ -44,6 +44,7 @@ func _sections() -> Array[Callable]:
 		_test_the_drill_mosquito,
 		_test_the_blade_rat,
 		_test_the_charger_beetle,
+		_test_the_spitter_wasp,
 	]
 
 
@@ -446,6 +447,28 @@ func _test_the_charger_beetle() -> void:
 	check(not other.fighter.is_attacking(), "and that is the end of the charge")
 	check(is_equal_approx(spider.health, health),
 		"which never reaches you (%.1f -> %.1f)" % [health, spider.health])
+
+
+## The Spitter Wasp spits from well off and stays well off: it hits you from across
+## the slab and does not come in after you while it waits to spit again.
+func _test_the_spitter_wasp() -> void:
+	await _arena()
+	var kind := _species("spitter_wasp")
+	if not _kit(kind, "venom_spit", CreatureAttack.Kind.SPIT):
+		return
+	var wasp := _put(kind, Vector3(6.0, 1.2, 0.0))
+	wasp.attack_spider(spider)
+	var health := spider.health
+	var spat: bool = await wait_until(func() -> bool: return _using(wasp, "venom_spit"), 120)
+	if not check(spat, "from six metres off, it spits"):
+		return
+	var hit: bool = await wait_until(func() -> bool: return spider.health < health, 120)
+	check(hit, "and the spit hits you (%.1f -> %.1f)" % [health, spider.health])
+	var nearest := INF
+	for i in 150:
+		await physics_frame
+		nearest = minf(nearest, _span(wasp))
+	check(nearest > 3.0, "and it keeps its distance after (nearest %.1fm)" % nearest)
 
 
 # --- helpers ------------------------------------------------------------
