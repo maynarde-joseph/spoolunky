@@ -275,6 +275,10 @@ var _tow_pull := Vector3.ZERO
 ## to live in. Null anywhere else, and then it wanders as it always did.
 var _mind: CreatureMind = null
 
+## Its moves, for a species that has any: see [CreatureFighter]. Null for the
+## creatures that only bite.
+var fighter: CreatureFighter = null
+
 ## Whether the wander target is somewhere its mind sent it, rather than somewhere
 ## picked at random — and how close to it counts as there.
 var _errand := false
@@ -359,6 +363,12 @@ func apply_species(from: PreySpecies) -> void:
 	hunt_range = from.hunt_range
 	bite_damage = from.bite_damage
 	bite_interval = from.bite_interval
+	if not from.attacks.is_empty():
+		if fighter == null:
+			fighter = CreatureFighter.new()
+			fighter.name = "Fighter"
+			add_child(fighter)
+		fighter.setup(self, from.attacks)
 	_applied = true
 	if is_inside_tree():
 		_build_body()
@@ -1256,14 +1266,39 @@ func _process_stuck(delta: float) -> void:
 ## spider's bite is food, a creature outside it and aggressive is a problem. Grow
 ## and the same wasp changes sides.
 func would_hunt(spider: Node3D) -> bool:
-	if aggression <= 0.0 or eaten or wrapped or _state == State.DEAD:
+	if (aggression <= 0.0 and not is_hostile()) or eaten or wrapped or _state == State.DEAD:
 		return false
 	if spider == null or not is_instance_valid(spider):
 		return false
 	if _state == State.STUCK or _state == State.WRAPPED or _state == State.BUNDLED:
 		return false
+	if is_hostile():
+		return true
 	var bite: int = spider.stage().bite_power if spider.has_method("stage") else 99
 	return size_class > bite
+
+
+## Whether it comes for the spider whatever size either of them is. See
+## [member PreySpecies.hostile].
+func is_hostile() -> bool:
+	return kind != null and kind.hostile
+
+
+## Comes for [param spider] now, without waiting to notice it: for something
+## called up out of the dark by one that already has.
+func attack_spider(spider: Node3D) -> void:
+	if not would_hunt(spider):
+		return
+	_quarry = spider
+	_chase_left = CHASE_STAMINA
+	_state = State.HUNTING
+
+
+## Heads for [param point] at [param speed] for one frame: for whatever steers this
+## creature from outside its own head — a fighter closing on the spider.
+func steer_at(point: Vector3, speed: float, delta: float) -> void:
+	_target = point
+	_steer(delta, speed)
 
 
 ## Whether it is coming for someone right now.
@@ -1293,7 +1328,7 @@ func break_off() -> void:
 ## so often, because there is exactly one spider and no need to check per frame.
 func _look_for_a_spider() -> void:
 	_hunt_timer = 0.9
-	if aggression <= 0.0 or _life < SETTLE_IN or _chase_rest > 0.0:
+	if (aggression <= 0.0 and not is_hostile()) or _life < SETTLE_IN or _chase_rest > 0.0:
 		return
 	var spiders := get_tree().get_nodes_in_group("spider")
 	if spiders.is_empty():
@@ -1303,7 +1338,7 @@ func _look_for_a_spider() -> void:
 		return
 	if global_position.distance_to(spider.global_position) > hunt_range:
 		return
-	if randf() > aggression:
+	if not is_hostile() and randf() > aggression:
 		return
 	_quarry = spider
 	_chase_left = CHASE_STAMINA
@@ -1331,6 +1366,11 @@ func _process_hunt(delta: float) -> void:
 	var span := global_position.distance_to(_quarry.global_position)
 	if span > hunt_range * 1.8:
 		break_off()
+		return
+	# Something with moves fights with them, and does not tire of it: only distance
+	# ends a hostile's hunt.
+	if fighter != null:
+		fighter.hunt(delta, _quarry)
 		return
 
 	# The chase runs out whether or not it gets anywhere. See

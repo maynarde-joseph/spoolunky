@@ -77,6 +77,16 @@ enum Activity {
 ## Seconds between bites, so being caught out is survivable for a moment.
 @export var bite_interval := 1.1
 
+## Comes for the spider whatever the size of either, from as far off as
+## [member hunt_range], and does not tire of the chase: it only gives up when the
+## spider is well out of that range. The size rule above is for the wild; a
+## hostile thing is a thing that wants you dead.
+@export var hostile := false
+
+## What it does when it gets to you, instead of the plain bite: every move it has,
+## the bite among them. See [CreatureAttack] and [CreatureFighter].
+@export var attacks: Array[CreatureAttack] = []
+
 
 @export_group("Movement")
 

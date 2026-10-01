@@ -93,6 +93,14 @@ signal skill_tree_toggled()
 @onready var spells: SpiderSpells = $Spells
 
 var _spawn_transform: Transform3D
+
+## Seconds still dazed for: no moving and no acting. See [method daze].
+var _dazed := 0.0
+
+## Being dragged: where to, how fast, and for how long yet. See [method drag_to].
+var _drag_point := Vector3.ZERO
+var _drag_speed := 0.0
+var _drag_left := 0.0
 var _stage: GrowthStage
 var _tier := -1
 var _pitch := 0.0
@@ -179,6 +187,12 @@ func _physics_process(delta: float) -> void:
 	view.update(stage().body_height, climb.view_up())
 	climb.update_orientation(delta)
 
+	if _dazed > 0.0:
+		_dazed = maxf(0.0, _dazed - delta)
+	if _drag_left > 0.0:
+		_be_dragged(delta)
+		return
+
 	var on_legs := climb.handles_movement()
 	# Asked and paid for in one call, so nothing can run at sprint speed for free.
 	# Outside this call there is no other place wind is spent or recovered, which
@@ -235,6 +249,8 @@ func _device_tool_active() -> bool:
 ## Whether keys should reach the spider at all. Public because the feeding
 ## component has to ask the same question before it drinks.
 func accepts_input() -> bool:
+	if _dazed > 0.0:
+		return false
 	return not require_captured_mouse or Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED
 
 
@@ -492,6 +508,50 @@ func can_sprint() -> bool:
 ## Something bit you.
 func take_bite(amount: float, from: Node3D = null) -> void:
 	vitals.take_bite(amount, from)
+
+
+## Knocked senseless for [param seconds]: no moving, no casting, no grappling, and
+## the look is all you have. The longer of this and whatever daze was already on.
+func daze(seconds: float) -> void:
+	if seconds <= 0.0:
+		return
+	if _dazed <= 0.0:
+		notice.emit("Dazed")
+	_dazed = maxf(_dazed, seconds)
+
+
+func is_dazed() -> bool:
+	return _dazed > 0.0
+
+
+## Thrown, at [param push], off whatever it was standing on.
+func fling(push: Vector3) -> void:
+	climb.fling(push)
+
+
+## Hauled towards [param point] at [param speed] for up to [param seconds], off
+## whatever it was on and with no say in it: a tongue round it. Stops short of
+## the point by its own size.
+func drag_to(point: Vector3, speed: float, seconds: float) -> void:
+	climb.release()
+	_drag_point = point
+	_drag_speed = speed
+	_drag_left = seconds
+
+
+func is_dragged() -> bool:
+	return _drag_left > 0.0
+
+
+func _be_dragged(delta: float) -> void:
+	_drag_left = maxf(0.0, _drag_left - delta)
+	var to := _drag_point - global_position
+	if to.length() <= stage().body_height * 1.2:
+		_drag_left = 0.0
+		velocity = Vector3.ZERO
+		return
+	velocity = to.normalized() * _drag_speed
+	move_and_slide()
 
 
 # --- growth -------------------------------------------------------------

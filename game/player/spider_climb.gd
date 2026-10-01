@@ -866,6 +866,17 @@ func feet() -> Vector3:
 	return _spider.global_position - _current_up * _body_height() * FEET
 
 
+## Throws the spider off whatever it is on, at [param push]: a hit hard enough to
+## knock it loose. It does not stick to anything again for a moment, the way a jump
+## does not, or the first wall it brushed would take it straight back.
+func fling(push: Vector3) -> void:
+	if _spider == null:
+		return
+	release()
+	_grace = release_grace
+	_spider.velocity = push
+
+
 ## Stands the spider on [param strand] where it is nearest, facing along it
 ## towards [param toward]: what the line grapple does with the line it has just
 ## laid, so walking it is one key away. Returns false if there was no line to
