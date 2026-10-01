@@ -1979,12 +1979,16 @@ func _test_spitting_a_web_at_something() -> void:
 	await physics_frame
 	await process_frame
 
-	# A fly sitting still, between the spider and the floor it is aiming at.
+	# A fly sitting still, between the spider and the floor it is aiming at:
+	# halfway down the line of sight. It was put a fixed height over the floor,
+	# which is over the spider's own eye at this size — so whether it was in the
+	# way came down to which way it drifted in two frames, and that came down to
+	# whatever ran before.
 	builder._update_placement()
 	if not check(builder.place_valid, "somewhere to spin one"):
 		return
 	var floor_y := builder.aim_point.y
-	var sitting := spawn_fly(builder.aim_point + Vector3(0, 0.35, 0))
+	var sitting := spawn_fly(builder.aim_point.lerp(spider.view.aim_origin(), 0.5))
 	await physics_frame
 	await physics_frame
 	check(not sitting.is_stuck(), "a fly minding its own business")
