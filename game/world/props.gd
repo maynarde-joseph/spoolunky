@@ -44,6 +44,9 @@ const ALL := [
 	# The lake.
 	"boat_red", "boat_blue", "boat_green", "boat_yellow", "bandstand", "lifebuoy",
 	"reeds", "lily_pad",
+	# The hunting ground: the fern floor.
+	"fern", "toadstool", "mushrooms", "pebble", "boulder", "acorn", "fallen_leaf",
+	"fallen_leaf_rust", "twig", "anthill", "forest_tree",
 ]
 
 
@@ -110,6 +113,17 @@ static func build(id: String) -> Node3D:
 		"lifebuoy": return _lifebuoy()
 		"reeds": return _reeds()
 		"lily_pad": return _lily_pad()
+		"fern": return _fern()
+		"toadstool": return _toadstool()
+		"mushrooms": return _mushrooms()
+		"pebble": return _pebble()
+		"boulder": return _boulder()
+		"acorn": return _acorn()
+		"fallen_leaf": return _fallen_leaf("FallenLeaf", "leaf_fallen")
+		"fallen_leaf_rust": return _fallen_leaf("FallenLeafRust", "leaf_rust")
+		"twig": return _twig()
+		"anthill": return _anthill()
+		"forest_tree": return _forest_tree()
 	push_error("no such prop: %s" % id)
 	return null
 
@@ -983,6 +997,174 @@ static func _lily_pad() -> Node3D:
 	WorldKit.cylinder(it, "Pad", 3.2, 0.2, WorldKit.at(Vector3(0.0, 0.1, 0.0)), "leaf", true, -1.0, 16)
 	WorldKit.ball(it, "Flower", Vector3(0.9, 0.6, 0.9), WorldKit.at(Vector3(1.0, 0.5, -0.6)),
 		"petal_white", false)
+	return it
+
+
+# --- the fern floor ----------------------------------------------------
+
+## A fern: a clump of fronds arching up and out from the middle, each a stalk with
+## leaflets down both sides, shorter toward the tip. Half a metre tall, and the
+## stalks are somewhere to climb.
+static func _fern() -> Node3D:
+	var it := WorldKit.body(null, "Fern")
+	for i in 7:
+		var turn := TAU * float(i) / 7.0 + 0.3 * sin(float(i) * 2.1)
+		var out := Vector3(cos(turn), 0.0, sin(turn))
+		var reach := 5.5 + 1.4 * fposmod(float(i) * 0.53, 1.0)
+		var root := out * 0.3
+		var bend := out * reach * 0.45 + Vector3.UP * (5.0 + 0.8 * fposmod(float(i) * 0.71, 1.0))
+		var tip := out * reach + Vector3.UP * 2.8
+		WorldKit.rod(it, "Stalk", root, bend, 0.13, "leaf_dark", true, 0.1, 6)
+		WorldKit.rod(it, "Stalk", bend, tip, 0.1, "leaf_dark", true, 0.04, 6)
+		for k in 7:
+			var t := 0.12 + float(k) / 7.0 * 0.86
+			var at := root.lerp(bend, t * 2.0) if t < 0.5 else bend.lerp(tip, t * 2.0 - 1.0)
+			var run := (bend - root) if t < 0.5 else (tip - bend)
+			run = run.normalized()
+			var side := run.cross(Vector3.UP).normalized()
+			var face := run.cross(side)
+			if face.y < 0.0:
+				face = -face
+			var long := lerpf(1.3, 0.35, t)
+			for flip: float in [-1.0, 1.0]:
+				var arm := side * flip
+				WorldKit.ball(it, "Leaflet", Vector3(long, 0.06, 0.22),
+					Transform3D(Basis(arm, face, arm.cross(face)), at + arm * long * 0.85),
+					"leaf" if k % 2 == 0 else "leaf_dark", false)
+	return it
+
+
+## A fly agaric: a white stem with a skirt, and a red cap spotted white. Five
+## tall, and the cap is a roof.
+static func _toadstool() -> Node3D:
+	var it := WorldKit.body(null, "Toadstool")
+	WorldKit.cylinder(it, "Stem", 0.6, 3.4, WorldKit.at(Vector3(0.0, 1.7, 0.0)), "stem", true, 0.45,
+		14)
+	WorldKit.ring(it, "Skirt", 0.55, 0.22, WorldKit.at(Vector3(0.0, 2.5, 0.0)), "stem")
+	WorldKit.ball(it, "Cap", Vector3(2.4, 1.15, 2.4), WorldKit.at(Vector3(0.0, 3.5, 0.0)), "cap_red")
+	for i in 11:
+		var turn := float(i) * 2.4
+		var up := 0.25 + 0.55 * fposmod(float(i) * 0.39, 1.0)
+		var normal := Vector3(cos(turn) * sin(up * PI * 0.5), cos(up * PI * 0.5),
+			sin(turn) * sin(up * PI * 0.5))
+		var on := Vector3(normal.x * 2.4, normal.y * 1.15, normal.z * 2.4)
+		WorldKit.ball(it, "Spot", Vector3(0.28, 0.08, 0.28),
+			Transform3D(WorldKit.upright(normal), Vector3(0.0, 3.5, 0.0) + on), "petal_white", false)
+	return it
+
+
+## Three brown mushrooms grown up together, a big one and two smaller.
+static func _mushrooms() -> Node3D:
+	var it := WorldKit.body(null, "Mushrooms")
+	var caps := [[Vector3(0.0, 0.0, 0.0), 2.2, 1.4], [Vector3(1.6, 0.0, 0.7), 1.4, 0.95],
+		[Vector3(-1.1, 0.0, 1.2), 1.0, 0.7]]
+	for cap in caps:
+		var base: Vector3 = cap[0]
+		var tall: float = cap[1]
+		var wide: float = cap[2]
+		WorldKit.cylinder(it, "Stem", wide * 0.25, tall, WorldKit.at(base + Vector3.UP * tall * 0.5),
+			"stem", true, wide * 0.2, 10)
+		WorldKit.ball(it, "Cap", Vector3(wide, wide * 0.5, wide), WorldKit.at(base + Vector3.UP * tall),
+			"cap")
+	return it
+
+
+## A pebble, a few centimetres across: a boulder to a spiderling.
+static func _pebble() -> Node3D:
+	var it := WorldKit.body(null, "Pebble")
+	WorldKit.ball(it, "Stone", Vector3(0.62, 0.36, 0.5), WorldKit.at(Vector3(0.0, 0.22, 0.0)),
+		"rock_dark")
+	return it
+
+
+## A boulder half sunk in the ground, two rounded stones together, with moss on
+## the top.
+static func _boulder() -> Node3D:
+	var it := WorldKit.body(null, "Boulder")
+	WorldKit.ball(it, "Stone", Vector3(3.4, 2.4, 2.8), WorldKit.at(Vector3(0.0, 1.0, 0.0)), "rock")
+	WorldKit.ball(it, "Stone", Vector3(2.0, 1.6, 2.2), WorldKit.at(Vector3(2.4, 0.6, 1.2)),
+		"rock_dark")
+	WorldKit.ball(it, "Moss", Vector3(2.4, 0.5, 2.0), WorldKit.at(Vector3(-0.3, 3.05, 0.1)), "moss",
+		false)
+	return it
+
+
+## An acorn on its side, in its cup.
+static func _acorn() -> Node3D:
+	var it := WorldKit.body(null, "Acorn")
+	var lying := Basis(Vector3.BACK, PI * 0.5)
+	WorldKit.ball(it, "Nut", Vector3(0.3, 0.4, 0.3), Transform3D(lying, Vector3(0.1, 0.3, 0.0)),
+		"acorn")
+	WorldKit.ball(it, "Cup", Vector3(0.33, 0.18, 0.33),
+		Transform3D(lying, Vector3(-0.25, 0.3, 0.0)), "acorn_cup")
+	WorldKit.rod(it, "Stalk", Vector3(-0.42, 0.3, 0.0), Vector3(-0.62, 0.34, 0.0), 0.05, "acorn_cup",
+		false)
+	return it
+
+
+## A leaf come down last autumn, lying flat: a pointed oval with a rib down it.
+static func _fallen_leaf(part_name: String, paint: String) -> Node3D:
+	var it := WorldKit.body(null, part_name)
+	var outline := PackedVector3Array()
+	for i in 14:
+		var t := TAU * float(i) / 14.0
+		# Pointed at both ends: narrow where the cosine is large.
+		var across := sin(t) * 0.75 * (1.0 - 0.35 * absf(cos(t)))
+		outline.append(Vector3(across, 0.06, cos(t) * 1.4))
+	WorldKit.plate(it, "Blade", outline, 0.05, paint)
+	WorldKit.rod(it, "Rib", Vector3(0.0, 0.1, 1.5), Vector3(0.0, 0.1, -1.4), 0.04, "leaf_rust", false)
+	return it
+
+
+## A twig with a fork in it.
+static func _twig() -> Node3D:
+	var it := WorldKit.body(null, "Twig")
+	WorldKit.rod(it, "Stick", Vector3(-3.2, 0.12, 0.0), Vector3(3.2, 0.12, 0.3), 0.13, "bark", true,
+		0.09, 8)
+	WorldKit.rod(it, "Fork", Vector3(0.6, 0.12, 0.05), Vector3(2.6, 0.2, -1.6), 0.08, "bark", true,
+		0.05, 6)
+	return it
+
+
+## A tree of the old forest, ten metres up to its crown: a trunk a spider can climb
+## all day, roots spreading into the ground round its foot, and a crown so far up
+## that the floor under it is in its shade.
+static func _forest_tree() -> Node3D:
+	var it := WorldKit.body(null, "ForestTree")
+	WorldKit.cylinder(it, "Trunk", 6.0, 132.0, WorldKit.at(Vector3(0.0, 66.0, 0.0)), "bark", true,
+		4.2, 16)
+	for i in 5:
+		var turn := TAU * float(i) / 5.0 + 0.4
+		var out := Vector3(cos(turn), 0.0, sin(turn))
+		WorldKit.rod(it, "Root", out * 3.5 + Vector3.UP * 7.0, out * 15.0 + Vector3.DOWN * 1.0, 2.4,
+			"bark", true, 0.9, 10)
+	var limbs := [
+		[Vector3(1.0, 96.0, 0.0), Vector3(26.0, 124.0, 6.0)],
+		[Vector3(-1.0, 102.0, 0.5), Vector3(-24.0, 128.0, -8.0)],
+		[Vector3(0.0, 108.0, -1.0), Vector3(5.0, 132.0, -26.0)],
+		[Vector3(0.0, 112.0, 1.0), Vector3(-6.0, 134.0, 25.0)],
+	]
+	for limb in limbs:
+		WorldKit.rod(it, "Limb", limb[0], limb[1], 2.4, "bark", true, 1.3, 10)
+	var crown := [
+		[Vector3(0.0, 146.0, 0.0), Vector3(30.0, 16.0, 30.0), "leaf_dark"],
+		[Vector3(24.0, 134.0, 6.0), Vector3(19.0, 12.0, 19.0), "leaf"],
+		[Vector3(-22.0, 137.0, -8.0), Vector3(19.0, 12.5, 19.0), "leaf_dark"],
+		[Vector3(5.0, 138.0, -24.0), Vector3(18.0, 12.0, 18.0), "leaf"],
+		[Vector3(-6.0, 139.0, 23.0), Vector3(19.0, 12.0, 19.0), "leaf_light"],
+	]
+	for blob in crown:
+		WorldKit.ball(it, "Leaves", blob[1], WorldKit.at(blob[0]), blob[2])
+	return it
+
+
+## An anthill: a mound of loose earth with the way in on one side.
+static func _anthill() -> Node3D:
+	var it := WorldKit.body(null, "Anthill")
+	WorldKit.ball(it, "Mound", Vector3(3.2, 1.9, 3.2), WorldKit.at(Vector3(0.0, 0.0, 0.0)), "soil")
+	WorldKit.ball(it, "Top", Vector3(1.4, 1.0, 1.4), WorldKit.at(Vector3(0.3, 1.4, -0.2)), "soil")
+	WorldKit.ball(it, "WayIn", Vector3(0.45, 0.35, 0.2), WorldKit.at(Vector3(0.0, 0.7, -3.0)), "black",
+		false)
 	return it
 
 

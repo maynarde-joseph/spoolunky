@@ -87,6 +87,10 @@ const CRAG_TOP := 104.0
 ## Where a new spider starts: inside the stump at the camp.
 const SPAWN_HEIGHT := 1.0
 
+## The puddle on the fern floor, and how far across.
+const PUDDLE := Vector2(-45.0, 205.0)
+const PUDDLE_REACH := 7.5
+
 # --- the colours of the ground ---------------------------------------------
 
 const MEADOW := Color(0.4, 0.55, 0.25)
@@ -112,6 +116,7 @@ func build() -> void:
 	_ground()
 	_places()
 	_camp()
+	_fern_floor()
 	_place_the_spider()
 
 
@@ -130,6 +135,7 @@ func ground_at(x: float, z: float) -> float:
 		* (0.8 + 0.4 * _broad.get_noise_2d(x * 0.5 + 100.0, z * 0.5))
 	height += RUINS_SHELF * smoothstep(RUINS_REACH, RUINS_REACH * 0.62, at.distance_to(RUINS))
 	height -= HOLLOW * smoothstep(HOLLOW_REACH, HOLLOW_REACH * 0.28, at.distance_to(GREAT_TREE))
+	height -= 1.6 * smoothstep(PUDDLE_REACH + 1.5, PUDDLE_REACH * 0.4, at.distance_to(PUDDLE))
 	var lake := at.distance_to(MERE)
 	if lake < MERE_REACH:
 		height = lerpf(MERE_BED, height, smoothstep(MERE_FLOOR, MERE_REACH, lake))
@@ -303,6 +309,161 @@ func _camp() -> void:
 	light.omni_range = 9.0
 	light.position = Vector3(0.0, 2.6, 0.0)
 	lamp.add_child(light)
+
+
+# --- the fern floor -------------------------------------------------------------
+
+## The forest floor south of the glade, where everything starts small: ferns
+## overhead, toadstools, pebbles that are boulders, fallen leaves to cross, and a
+## puddle. It is built for the first sizes, and what lives here is what a
+## spiderling can take — midges and flies, beetles grazing the moss, an anthill,
+## moths and fireflies at night, mosquitoes over the puddle.
+func _fern_floor() -> void:
+	var place := WorldKit.group(self, "FernFloor")
+	var dice := _dice(101)
+	var keep: Array[Vector2] = [CAMP, PUDDLE]
+	var half := Vector2(100.0, 72.0)
+	# The old forest's trees, round the edge of the floor, their crowns far over it.
+	for spot: Vector2 in [Vector2(-82.0, 232.0), Vector2(72.0, 238.0), Vector2(-28.0, 132.0),
+			Vector2(88.0, 150.0), Vector2(-98.0, 158.0)]:
+		_prop(place, "forest_tree", spot, dice, Vector2(0.9, 1.15), 1.0)
+		keep.append(spot)
+	for i in 72:
+		_prop(place, "fern", _scatter(dice, FERN_FLOOR, half, keep, 16.0), dice, Vector2(0.8, 1.4))
+	for i in 7:
+		_prop(place, "toadstool", _scatter(dice, FERN_FLOOR, half, keep, 16.0), dice)
+	for i in 14:
+		_prop(place, "mushrooms", _scatter(dice, FERN_FLOOR, half, keep, 14.0), dice)
+	for i in 36:
+		_prop(place, "pebble", _scatter(dice, FERN_FLOOR, half, keep, 12.0), dice, Vector2(0.6, 1.8))
+	for i in 6:
+		_prop(place, "boulder", _scatter(dice, FERN_FLOOR, half, keep, 20.0), dice, Vector2(0.8, 1.4),
+			0.6)
+	for i in 18:
+		_prop(place, "acorn", _scatter(dice, FERN_FLOOR, half, keep, 12.0), dice)
+	for i in 50:
+		_prop(place, "fallen_leaf" if i % 3 != 0 else "fallen_leaf_rust",
+			_scatter(dice, FERN_FLOOR, half, keep, 12.0), dice, Vector2(0.8, 1.5))
+	for i in 16:
+		_prop(place, "twig", _scatter(dice, FERN_FLOOR, half, keep, 14.0), dice, Vector2(0.7, 1.3))
+
+	# The puddle, in its dip.
+	var rim := ground_at(PUDDLE.x + PUDDLE_REACH, PUDDLE.y)
+	var top := minf(rim, ground_at(PUDDLE.x - PUDDLE_REACH, PUDDLE.y)) - 0.25
+	var bottom := ground_at(PUDDLE.x, PUDDLE.y) - 0.3
+	WorldKit.round_water(place, "Puddle", PUDDLE_REACH, top - bottom,
+		Transform3D(Basis.IDENTITY, Vector3(PUDDLE.x, bottom, PUDDLE.y)), "pond")
+
+	# What grows, and what lives on it.
+	for i in 10:
+		_patch(place, "moss", _scatter(dice, FERN_FLOOR, half * 0.9, keep, 14.0), 3.5, 30.0, 0.2)
+	var fungus: Array[Vector2] = []
+	for i in 6:
+		fungus.append(_scatter(dice, FERN_FLOOR, half * 0.9, keep, 14.0))
+		_patch(place, "fungus", fungus[i], 3.0, 28.0, 0.15)
+	var flowers: Array[Vector2] = []
+	for i in 7:
+		flowers.append(_scatter(dice, FERN_FLOOR, half * 0.9, keep, 14.0))
+		_patch(place, "flowers", flowers[i], 3.2, 25.0, 0.25)
+	for i in 2:
+		_patch(place, "berries", _scatter(dice, FERN_FLOOR, half * 0.8, keep, 16.0), 4.0, 30.0, 0.1)
+
+	var hill := _scatter(dice, FERN_FLOOR, half * 0.7, keep, 20.0)
+	_prop(place, "anthill", hill, dice, Vector2(1.0, 1.0), 0.4)
+	_den(place, "ant", hill, 6, 12, true)
+	_den(place, "midge", flowers[0], 6, 10, false)
+	_den(place, "midge", flowers[3], 6, 10, false)
+	_den(place, "fly", fungus[0], 4, 8, false)
+	_den(place, "beetle", _scatter(dice, FERN_FLOOR, half * 0.8, keep, 14.0), 3, 6, true)
+	_den(place, "beetle", _scatter(dice, FERN_FLOOR, half * 0.8, keep, 14.0), 3, 6, true)
+	_den(place, "firefly", flowers[5], 6, 10, false)
+	_den(place, "moth", flowers[2], 3, 6, false)
+	_den(place, "mosquito", PUDDLE + Vector2(PUDDLE_REACH + 3.0, 0.0), 4, 8, false)
+
+	_haunt(place, "WestHaunt", FERN_FLOOR + Vector2(-70.0, -30.0), ["boar"], 18.0)
+	_haunt(place, "NorthHaunt", FERN_FLOOR + Vector2(40.0, -65.0), ["deer", "boar"], 18.0)
+
+
+# --- putting things down ---------------------------------------------------------
+
+## A die for one part of the level, so that what is scattered there lands in the
+## same places every time it is built.
+func _dice(seed_value: int) -> RandomNumberGenerator:
+	var dice := RandomNumberGenerator.new()
+	dice.seed = seed_value
+	return dice
+
+
+## Somewhere in the oval [param half] about [param middle], at least [param clear]
+## from everything in [param keep] — tried a few times, and then wherever it fell.
+func _scatter(dice: RandomNumberGenerator, middle: Vector2, half: Vector2,
+		keep: Array[Vector2] = [], clear := 0.0) -> Vector2:
+	var at := middle
+	for attempt in 12:
+		var turn := dice.randf() * TAU
+		at = middle + Vector2(cos(turn) * half.x, sin(turn) * half.y) * sqrt(dice.randf())
+		var clean := true
+		for spot in keep:
+			if at.distance_to(spot) < clear:
+				clean = false
+				break
+		if clean:
+			return at
+	return at
+
+
+## One of a prop, on the ground at [param at], turned any way and sized somewhere
+## in [param sizes]; sunk [param sink] into the ground, for something that has sat
+## there a while.
+func _prop(parent: Node3D, id: String, at: Vector2, dice: RandomNumberGenerator,
+		sizes := Vector2(0.85, 1.2), sink := 0.0) -> Node3D:
+	var size := dice.randf_range(sizes.x, sizes.y)
+	var turn := Basis(Vector3.UP, dice.randf() * TAU).scaled(Vector3.ONE * size)
+	return Props.place(parent, id, Transform3D(turn, on_ground(at.x, at.y, -sink * size)))
+
+
+## A patch of [param kind] on the ground at [param at].
+func _patch(parent: Node3D, kind: String, at: Vector2, size: float, capacity: float,
+		regrow: float, glows := false) -> Forage:
+	var patch := Forage.new()
+	patch.name = kind.capitalize()
+	patch.kind = kind
+	patch.size = size
+	patch.capacity = capacity
+	patch.regrow = regrow
+	patch.glows = glows
+	patch.position = on_ground(at.x, at.y)
+	parent.add_child(patch, true)
+	return patch
+
+
+## A den of [param id] on the ground at [param at], opening with [param start] of
+## them and holding [param capacity]. [param shelters]: somewhere to rest out of
+## sight, a burrow or a hole; not, somewhere in the open.
+func _den(parent: Node3D, id: String, at: Vector2, start: int, capacity: int,
+		shelters: bool, spread := 3.0) -> Den:
+	var den := Den.new()
+	den.name = id.capitalize() + "Den"
+	den.species_id = id
+	den.start = start
+	den.capacity = capacity
+	den.shelters = shelters
+	den.spread = spread
+	den.position = on_ground(at.x, at.y, 0.2)
+	parent.add_child(den, true)
+	return den
+
+
+## A haunt for [param kinds] at [param at], [param radius] across.
+func _haunt(parent: Node3D, part_name: String, at: Vector2, kinds: Array[String],
+		radius: float) -> Haunt:
+	var haunt := Haunt.new()
+	haunt.name = part_name
+	haunt.species_ids = PackedStringArray(kinds)
+	haunt.radius = radius
+	haunt.position = on_ground(at.x, at.y)
+	parent.add_child(haunt, true)
+	return haunt
 
 
 # --- the spider -----------------------------------------------------------------

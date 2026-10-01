@@ -62,6 +62,16 @@ const PAINTS := {
 	"stem": {"colour": Color(0.88, 0.84, 0.74)},
 	"berry": {"colour": Color(0.62, 0.12, 0.2)},
 	"glowcap": {"colour": Color(0.46, 0.9, 0.78), "glow": 1.2},
+	# The forest floor: a toadstool's red cap, an acorn in its cup, and the leaves
+	# that came down last autumn.
+	"cap_red": {"colour": Color(0.78, 0.16, 0.12)},
+	"acorn": {"colour": Color(0.58, 0.4, 0.2)},
+	"acorn_cup": {"colour": Color(0.4, 0.31, 0.19)},
+	"leaf_fallen": {"colour": Color(0.64, 0.42, 0.18)},
+	"leaf_rust": {"colour": Color(0.56, 0.27, 0.13)},
+	# Wild rock, a shade darker than stone anyone has cut.
+	"rock": {"colour": Color(0.44, 0.43, 0.41)},
+	"rock_dark": {"colour": Color(0.34, 0.33, 0.31)},
 	# See-through.
 	"glass": {"colour": Color(0.8, 0.9, 0.95, 0.2), "rough": 0.1},
 	"netting": {"colour": Color(0.85, 0.85, 0.82, 0.28)},
