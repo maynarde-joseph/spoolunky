@@ -58,6 +58,9 @@ enum Ears {
 ## How far forward of the body's middle the head is set, against the body's
 ## length: on a neck, or sunk into the shoulders the way a frog's is.
 @export_range(0.2, 1.2) var head_set := 0.78
+## A neck this thick, from the shoulders up to the head, for a head carried high
+## above them: a deer's. Zero for none, the head sitting on the body.
+@export var neck_girth := 0.0
 ## The snout's radii across and up, and its whole length.
 @export var snout := Vector3(0.17, 0.15, 0.36)
 ## How much the snout narrows toward its end: 0 blunt, 1 a point.
@@ -96,6 +99,11 @@ enum Ears {
 ## none.
 @export var tusks := Vector2.ZERO
 @export var tusk_colour := Color(0.9, 0.86, 0.74)
+## Antlers this long and this thick at the root, each a beam sweeping up and
+## forward with [member tines] points branching off it: a stag's. Zero for none.
+@export var antlers := Vector2.ZERO
+@export_range(0, 5) var tines := 3
+@export var antler_colour := Color(0.76, 0.68, 0.54)
 
 
 @export_group("Legs")
@@ -309,6 +317,13 @@ func build_mesh(skeleton: Skeleton3D) -> ArrayMesh:
 
 	if tusks != Vector2.ZERO:
 		_build_tusks(coat, skeleton)
+	if antlers != Vector2.ZERO:
+		_build_antlers(coat, skeleton, face, head_at)
+	if neck_girth > 0.0:
+		# Up from the shoulders, where the head turns, to the middle of the head:
+		# on the head's bone, so it goes where the head goes.
+		RigKit.lathe(coat, skeleton, face, Transform3D(RigKit.along(head_at, Vector3.RIGHT),
+			Vector3.ZERO), RigKit.capsule(head_at.length(), neck_girth, colour), 12)
 
 	for s in 2:
 		var side := -1.0 if s == 0 else 1.0
@@ -360,3 +375,20 @@ func _build_tusks(coat: SurfaceTool, skeleton: Skeleton3D) -> void:
 		RigKit.horn(coat, skeleton, jaw_bone,
 			Vector3(side * snout.x * 0.55, length * 0.72, snout.y * 0.15),
 			Vector3(side * 0.4, 0.45, 0.8), Vector3.RIGHT, tusks.x, tusks.y, 60.0, tusk_colour)
+
+
+## Two antlers on the head: a beam each side sweeping up, out and forward, and the
+## tines off the front of it, shorter toward the top.
+func _build_antlers(coat: SurfaceTool, skeleton: Skeleton3D, face: int, head_at: Vector3) -> void:
+	for side in [-1.0, 1.0]:
+		var root := head_at + Vector3(side * head.x * 0.42, head.y * 0.8, head.z * 0.1)
+		var beam := RigKit.horn(coat, skeleton, face, root, Vector3(side * 0.55, 0.8, 0.25),
+			Vector3.LEFT, antlers.x, antlers.y, 50.0, antler_colour)
+		var points: Array = beam["points"]
+		var radii: Array = beam["radii"]
+		for k in tines:
+			var at := clampi(roundi(lerpf(1.0, float(points.size() - 2), float(k) / maxf(tines - 1, 1))),
+				1, points.size() - 2)
+			RigKit.horn(coat, skeleton, face, points[at], Vector3(side * 0.15, 0.75, -0.65),
+				Vector3.LEFT, antlers.x * 0.38 * (1.0 - 0.18 * float(k)), float(radii[at]) * 0.8,
+				15.0, antler_colour, 3)
