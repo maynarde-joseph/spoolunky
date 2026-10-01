@@ -18,7 +18,7 @@ const WORLD_PATH := "res://game/world/hunting_ground.tscn"
 ## the day: a half is noon, and nought and one are midnight.
 const VIEWS := {
 	"camp": [Vector3(44.0, 9.0, 304.0), Vector3(18.0, 2.0, 262.0), 0.42],
-	"fern_floor": [Vector3(20.0, 4.0, 262.0), Vector3(10.0, 3.0, 200.0), 0.42],
+	"fern_floor": [Vector3(28.0, 4.0, 238.0), Vector3(5.0, 3.0, 190.0), 0.42],
 	"fern_floor_above": [Vector3(0.0, 60.0, 300.0), Vector3(0.0, 0.0, 180.0), 0.42],
 	"rootways": [Vector3(-100.0, 40.0, 240.0), Vector3(-205.0, 30.0, 140.0), 0.42],
 	"rootways_cave": [Vector3(-160.0, 4.0, 130.0), Vector3(-205.0, 6.0, 140.0), 0.42],
@@ -28,15 +28,15 @@ const VIEWS := {
 	"glade_hive": [Vector3(60.0, 10.0, -10.0), Vector3(58.0, 6.0, -30.0), 0.42],
 	"glade_at_night": [Vector3(20.0, 26.0, 80.0), Vector3(0.0, 4.0, 10.0), 0.95],
 	"ruins": [Vector3(-150.0, 70.0, -20.0), Vector3(-215.0, 0.0, -85.0), 0.42],
-	"ruins_gate": [Vector3(-190.0, 14.0, -10.0), Vector3(-212.0, 12.0, -60.0), 0.42],
-	"ruins_tower": [Vector3(-240.0, 10.0, -100.0), Vector3(-268.0, 30.0, -128.0), 0.42],
+	"ruins_gate": [Vector3(-188.0, 26.0, 12.0), Vector3(-210.0, 12.0, -50.0), 0.42],
+	"ruins_tower": [Vector3(-222.0, 24.0, -92.0), Vector3(-268.0, 30.0, -128.0), 0.42],
 	"mere": [Vector3(120.0, 60.0, -10.0), Vector3(235.0, -10.0, -10.0), 0.42],
-	"mere_shore": [Vector3(130.0, 4.0, -12.0), Vector3(200.0, 0.0, -20.0), 0.42],
+	"mere_shore": [Vector3(116.0, 11.0, -14.0), Vector3(200.0, 0.0, -20.0), 0.42],
 	"mere_island": [Vector3(225.0, 8.0, -40.0), Vector3(258.0, 4.0, -28.0), 0.42],
 	"mere_under": [Vector3(200.0, -10.0, 0.0), Vector3(235.0, -20.0, -10.0), 0.42],
-	"mere_at_dusk": [Vector3(120.0, 60.0, -10.0), Vector3(235.0, -10.0, -10.0), 0.76],
+	"mere_at_dusk": [Vector3(300.0, 25.0, 10.0), Vector3(180.0, 5.0, -20.0), 0.745],
 	"crag": [Vector3(40.0, 50.0, -120.0), Vector3(-20.0, 50.0, -275.0), 0.42],
-	"crag_nest": [Vector3(-5.0, 110.0, -258.0), Vector3(-20.0, 100.0, -275.0), 0.42],
+	"crag_nest": [Vector3(-70.0, 150.0, -240.0), Vector3(-20.0, 100.0, -275.0), 0.5],
 	"from_above": [Vector3(0.0, 520.0, 520.0), Vector3(0.0, 0.0, -20.0), 0.42],
 }
 
