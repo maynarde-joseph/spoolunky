@@ -2675,12 +2675,19 @@ func _test_a_meal_takes_time() -> void:
 		"and nothing taken out of it yet")
 
 	# One press is a mouthful, not a meal.
+	#
+	# Drinking happens in the spider's _process, so it is process frames that are
+	# waited for. Two physics frames used to stand in for them, which holds only
+	# while a process frame falls between them — and after a slow frame, building
+	# the moth's body the first time it is drawn, the engine runs physics steps back
+	# to back to catch up, and the meal had not begun.
 	Input.action_press("interact")
 	spider.jaws.handle(meal)
 	check(spider.feeding == meal,
 		"holding the key starts drinking the %s" % meal.species)
-	await physics_frame
-	await physics_frame
+	await process_frame
+	await process_frame
+	await process_frame
 	var sip := meal.biomass
 	check(sip < whole, "a moment of it takes some (%.1f from %.0f)" % [sip, whole])
 	check(sip > whole * 0.25,
