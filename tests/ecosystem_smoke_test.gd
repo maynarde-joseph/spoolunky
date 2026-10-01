@@ -37,6 +37,13 @@ func _sections() -> Array[Callable]:
 		_test_flies_on_carcasses,
 		_test_running_from_a_hunter,
 		_test_wary_of_the_spider,
+		_test_a_den,
+		_test_breeding,
+		_test_a_meal_is_put_by,
+		_test_recolonising,
+		_test_starving,
+		_test_resting_out_of_hours,
+		_test_resting_in_the_open,
 	]
 
 
@@ -102,8 +109,11 @@ func _test_forage() -> void:
 
 ## A hungry grazer goes to the nearest patch of what it eats, eats until it is
 ## full, and goes back to its own business.
+##
+## Near enough for a beetle — which walks under a metre a second — to get there
+## well inside the wait, with its first thought and its getting going counted in.
 func _test_grazing() -> void:
-	var moss := _patch("moss", Vector3(8, 0, 0), 40.0, 2.0)
+	var moss := _patch("moss", Vector3(5, 0, 0), 40.0, 2.0)
 	var beetle := _creature("beetle", Vector3(0, 0.4, 0), PackedStringArray(["moss"]))
 	await physics_frame
 	var mind := beetle.mind()
@@ -339,6 +349,171 @@ class PretendSpider extends Node3D:
 		return tier
 
 
+# --- dens -----------------------------------------------------------------
+
+## A den puts its first creatures out as it opens, and they live there.
+func _test_a_den() -> void:
+	var den := _den("beetle", Vector3(0, 0, 0), PackedStringArray(["moss"]), 3, 5)
+	await physics_frame
+	check(den.count() == 3 and den.born == 3, "a den of beetles opens with three (%d)"
+		% den.count())
+	var home := true
+	for beetle in den.members:
+		home = home and beetle.den == den and beetle.mind() != null \
+			and beetle.mind().den == den and beetle.get_parent() == den \
+			and beetle.global_position.distance_to(den.global_position) < den.spread + 0.5
+	check(home, "each of them living there, and put down near it")
+
+
+## Meals put by are how a den grows: one born for every so many, no faster than
+## it can raise them, and never more than it holds. A den that is not eating does
+## not grow at all.
+func _test_breeding() -> void:
+	var den := _den("beetle", Vector3(0, 0, 0), PackedStringArray(["moss"]), 1, 3)
+	den.meals_per_birth = 2.0
+	den.breed_every = 1.0
+	await run_frames(90)
+	check(den.count() == 1 and den.bred == 0, "a den with nothing put by has no young (%d)"
+		% den.count())
+	den.ate()
+	await run_frames(5)
+	check(den.count() == 1, "nor with one meal put by, when it takes two")
+	den.ate()
+	await run_frames(5)
+	check(den.count() == 2 and den.bred == 1, "two meals, and one is born (%d)" % den.count())
+	den.ate()
+	den.ate()
+	await run_frames(5)
+	check(den.count() == 2, "but not another straight after")
+	await run_frames(70)
+	check(den.count() == 3 and den.bred == 2, "only once it has had time to (%d)" % den.count())
+	for i in 6:
+		den.ate()
+	await run_frames(150)
+	check(den.count() == 3 and den.bred == 2, "and never more than the den holds (%d of %d)"
+		% [den.count(), den.capacity])
+	var young := den.members[den.members.size() - 1]
+	check(young.den == den and young.get_parent() == den, "the young living there like the rest")
+
+
+## A meal one of its creatures finishes is put by at home.
+func _test_a_meal_is_put_by() -> void:
+	var den := _den("beetle", Vector3(0, 0, 0), PackedStringArray(["moss"]), 1, 3)
+	den.meals_per_birth = 5.0
+	var moss := _patch("moss", Vector3(2.5, 0, 0), 40.0, 2.0)
+	await physics_frame
+	var beetle := den.members[0]
+	beetle.mind().hunger = 0.9
+	var ate: bool = await wait_until(func() -> bool: return beetle.mind().meals == 1, 1500)
+	check(ate and moss.amount < moss.capacity, "a beetle from the den eats its fill of moss")
+	check(is_equal_approx(den.larder, 1.0), "and the meal is put by at the den (%.1f)" % den.larder)
+
+
+## A den hunted out is not empty for ever: one of its kind wanders in, in time.
+func _test_recolonising() -> void:
+	var den := _den("beetle", Vector3(0, 0, 0), PackedStringArray(["moss"]), 1, 3)
+	den.recolonise = 1.0
+	await physics_frame
+	var last := den.members[0]
+	last.die()
+	await run_frames(20)
+	check(den.count() == 0, "a den whose last beetle has died is empty")
+	var back: bool = await wait_until(func() -> bool: return den.count() == 1, 120)
+	check(back and den.born == 2, "until another wanders in (%d born)" % den.born)
+	check(back and den.members[0] != last, "a new one, not the dead one back")
+
+
+## Something that can find nothing it eats starves in the end — and is a carcass,
+## like anything else that dies.
+func _test_starving() -> void:
+	var beetle := _creature("beetle", Vector3(0, 0.4, 0), PackedStringArray(["moss"]))
+	beetle.kind.starve_after = 1.0
+	await physics_frame
+	var mind := beetle.mind()
+	mind.hunger = 1.0
+	await run_frames(30)
+	check(not beetle.is_dead(), "a beetle with nothing to eat holds on a while")
+	mind.hunger = 0.5
+	await physics_frame
+	mind.hunger = 1.0
+	await run_frames(40)
+	check(not beetle.is_dead(), "and a mouthful buys it time (%.2f s starving)" % mind.starving)
+	var starved: bool = await wait_until(func() -> bool: return beetle.is_dead(), 90)
+	check(starved, "but in the end it starves")
+	await run_frames(5)
+	check(_world.carcasses().has(beetle), "and lies there, for whatever eats carrion")
+	var full := _creature("beetle", Vector3(4, 0.4, 0), PackedStringArray())
+	full.kind.starve_after = 0.5
+	await run_frames(60)
+	check(not full.is_dead() and full.mind().hunger == 0.0,
+		"something that eats nothing is never hungry, and never starves")
+
+
+## Out of its hours a creature goes home to rest — out of sight underground, for
+## something that lives in a burrow, where nothing can see it or get at it — and
+## comes out again when its time comes round. Hungry enough, it gets up whatever
+## the hour.
+func _test_resting_out_of_hours() -> void:
+	var den := _den("rat", Vector3(0, 0, 0), PackedStringArray(["moss"]), 3, 4)
+	den.species.active = PreySpecies.Activity.DAY
+	await physics_frame
+	for rat in den.members:
+		rat.mind().hunger = 0.2
+	_world.time_of_day = 0.5
+	await run_frames(60)
+	check(den.members.all(func(rat: Prey) -> bool: return not rat.is_resting()),
+		"rats that are out by day are out at noon")
+	_world.time_of_day = 0.0
+	var home: bool = await wait_until(func() -> bool:
+		return den.members.all(func(rat: Prey) -> bool: return rat.is_sheltered()), 600)
+	check(home, "at midnight they go home, and down the burrow")
+	var hidden := true
+	for rat in den.members:
+		hidden = hidden and not rat.visible and rat.collision_layer == 0 \
+			and not rat.is_in_group("prey")
+	check(hidden, "where they cannot be seen, touched, or found")
+	_world.sort_now()
+	check(_world.creatures_near(den.global_position, 20.0).is_empty(),
+		"and nothing looking for something to eat finds them")
+	var hungry := den.members[0]
+	var before := hungry.mind().hunger
+	await run_frames(60)
+	var rate := (hungry.mind().hunger - before) / (hungry.kind.hunger_rate * 1.0)
+	check(rate > 0.05 and rate < 0.5, "resting, they get hungry slowly (%.2f of the waking rate)"
+		% rate)
+	hungry.mind().hunger = 0.95
+	var up: bool = await wait_until(func() -> bool: return not hungry.is_sheltered(), 120)
+	check(up and hungry.visible and hungry.is_in_group("prey"),
+		"one hungry enough comes up whatever the hour")
+	_world.time_of_day = 0.5
+	var out: bool = await wait_until(func() -> bool:
+		return den.members.all(func(rat: Prey) -> bool:
+			return not rat.is_sheltered() and not rat.is_resting()), 120)
+	check(out, "and at noon they are all out again")
+	check(den.members.all(func(rat: Prey) -> bool:
+		return rat.visible and rat.collision_layer == GameLayers.PREY and rat.is_in_group("prey")),
+		"to be seen, and caught, like anything else")
+
+
+## A den that does not shelter — a roost, a nest out in the open — is somewhere to
+## rest, not somewhere to hide.
+func _test_resting_in_the_open() -> void:
+	var den := _den("rat", Vector3(0, 0, 0), PackedStringArray(["moss"]), 1, 2)
+	den.species.active = PreySpecies.Activity.NIGHT
+	den.shelters = false
+	await physics_frame
+	var rat := den.members[0]
+	rat.mind().hunger = 0.2
+	_world.time_of_day = 0.5
+	var resting: bool = await wait_until(func() -> bool: return rat.is_resting(), 600)
+	check(resting, "a rat out by night rests at noon")
+	check(not rat.is_sheltered() and rat.visible and rat.is_in_group("prey"),
+		"where it can still be got at, in a den that does not shelter it")
+	_world.sort_now()
+	check(_world.creatures_near(den.global_position, 20.0).has(rat),
+		"and found by anything that looks")
+
+
 # --- building the arena ----------------------------------------------------
 
 func _fresh_arena(with_world := true) -> void:
@@ -383,3 +558,21 @@ func _creature(id: String, at: Vector3, diet: PackedStringArray) -> Prey:
 	_arena.add_child(creature)
 	creature.global_position = at
 	return creature
+
+
+## A den of one of a species, copied as [method _creature] copies it. What a check
+## wants of it is set before it arrives, because it puts its first creatures out
+## as it does.
+func _den(id: String, at: Vector3, diet: PackedStringArray, start := 2, capacity := 4) -> Den:
+	var kind := PreyLibrary.find(id).duplicate() as PreySpecies
+	kind.diet = diet
+	kind.senses = 30.0
+	var den := Den.new()
+	den.species = kind
+	den.start = start
+	den.capacity = capacity
+	den.spread = 1.5
+	den.position = at
+	_arena.add_child(den)
+	return den
+

@@ -28,6 +28,7 @@ enum State {
 	BUNDLED,   ## wrapped where it stood and dropped, out of any web
 	FEEDING,   ## standing at something it eats, eating it
 	DEAD,      ## killed or starved: a carcass, until it is eaten or rots
+	RESTING,   ## at home, out of its hours — out of sight, in a burrow
 }
 
 ## How long a carcass lasts before it rots away, in seconds.
@@ -277,6 +278,12 @@ var _meal: Node3D = null
 var rot_after := ROT_AFTER
 var _rot := 0.0
 
+## Where it lives, if it lives somewhere. See [Den].
+var den: Den = null
+
+## Whether it is resting out of sight and out of reach, in a burrow.
+var _sheltered := false
+
 ## The top of the water a swimmer is in, as high as its middle may go: its own
 ## body's depth under the surface, so none of it breaks the top. INF for anything
 ## that does not swim, and for a swimmer that was put down out of the water.
@@ -393,6 +400,8 @@ func _physics_process(delta: float) -> void:
 			_process_feeding(delta)
 		State.DEAD:
 			_process_dead(delta)
+		State.RESTING:
+			_process_resting(delta)
 		State.FLEEING:
 			_flee_timer -= delta
 			if _flee_timer <= 0.0:
@@ -590,7 +599,7 @@ func is_stunned() -> bool:
 ## On its own feet or wings: not caught, not wrapped, not a bundle.
 func is_loose() -> bool:
 	return not eaten and (_state == State.WANDER or _state == State.HUNTING
-		or _state == State.FLEEING or _state == State.FEEDING)
+		or _state == State.FLEEING or _state == State.FEEDING or _state == State.RESTING)
 
 
 # --- living -------------------------------------------------------------
@@ -709,6 +718,67 @@ func flee_from(danger: Vector3) -> void:
 
 func is_dead() -> bool:
 	return _state == State.DEAD
+
+
+## Takes [param home] as where it lives.
+func belongs_to(home: Den) -> void:
+	den = home
+	if _mind != null:
+		_mind.den = home
+
+
+func is_resting() -> bool:
+	return _state == State.RESTING
+
+
+## Whether it is resting out of sight, where nothing can get at it.
+func is_sheltered() -> bool:
+	return _sheltered
+
+
+## Settles down to rest where it is. [param out_of_sight] is a burrow: it goes in,
+## and until it comes out nothing can see it, catch it or hunt it.
+func rest(out_of_sight := false) -> void:
+	if not can_decide():
+		return
+	_meal = null
+	_errand = false
+	_quarry = null
+	_state = State.RESTING
+	velocity = Vector3.ZERO
+	if out_of_sight and not _sheltered:
+		_sheltered = true
+		visible = false
+		collision_layer = 0
+		remove_from_group("prey")
+
+
+## Gets up and goes about its business — out of the burrow, if it was in one.
+func wake() -> void:
+	if _sheltered:
+		_sheltered = false
+		visible = true
+		collision_layer = GameLayers.PREY
+		add_to_group("prey")
+	if _state == State.RESTING:
+		_state = State.WANDER
+		_pick_target()
+
+
+## Resting: stays where it is, on its feet or on the wing.
+func _process_resting(delta: float) -> void:
+	if _sheltered:
+		velocity = Vector3.ZERO
+		return
+	velocity.x = move_toward(velocity.x, 0.0, delta * 6.0)
+	velocity.z = move_toward(velocity.z, 0.0, delta * 6.0)
+	if flying:
+		velocity.y = move_toward(velocity.y, 0.0, delta * 6.0)
+	else:
+		velocity.y -= _gravity * delta
+	velocity += _tow_pull
+	_tow_pull = Vector3.ZERO
+	move_and_slide()
 
 
 ## Dead: killed by something that eats it, or starved. A carcass from now on —

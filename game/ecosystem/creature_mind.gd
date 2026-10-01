@@ -41,6 +41,12 @@ const APPETITE := 0.6
 ## creature eats is somewhere to put a web.
 const MEAL_TIME := 8.0
 
+## How much slower it gets hungry while it rests.
+const RESTING_HUNGER := 0.25
+
+## Hungry enough to get up and go and eat out of its hours.
+const RAVENOUS := 0.85
+
 ## How far off danger is noticed, as a share of how far it notices anything. Food
 ## is worth walking to; danger only matters when it is close.
 const FEAR := 0.6
@@ -62,6 +68,14 @@ var food: Node3D = null
 ## What it last ran from, while it is running.
 var fleeing_from: Node3D = null
 
+## Where it lives, if it lives somewhere: where it rests, and where its meals are
+## put by towards the next of its kind. See [Den].
+var den: Den = null
+
+## How long it has been as hungry as it gets, in seconds. At its species'
+## [member PreySpecies.starve_after] it starves.
+var starving := 0.0
+
 ## How many kills it has made, and how many meals it has finished. A den reads
 ## these to know whether its creatures are eating well.
 var kills := 0
@@ -74,7 +88,7 @@ func _init(creature: Prey, species: PreySpecies, ecosystem: Ecosystem) -> void:
 	prey = creature
 	kind = species
 	world = ecosystem
-	hunger = randf_range(0.0, 0.35)
+	hunger = randf_range(0.0, 0.35) if eats_anything() else 0.0
 	_think = randf() * THINK
 
 
@@ -88,7 +102,18 @@ func tick(delta: float) -> void:
 	if prey.is_dead():
 		return
 	if eats_anything() and prey.is_loose():
-		hunger = minf(1.0, hunger + kind.hunger_rate * world.tempo * delta)
+		var rate := kind.hunger_rate * world.tempo
+		if prey.is_resting():
+			rate *= RESTING_HUNGER
+		hunger = minf(1.0, hunger + rate * delta)
+		if hunger >= 1.0:
+			starving += delta
+			if starving >= kind.starve_after:
+				prey.wake()
+				prey.die()
+				return
+		else:
+			starving = 0.0
 	_think -= delta
 	if _think <= 0.0:
 		_think = THINK * randf_range(0.8, 1.2)
@@ -121,23 +146,64 @@ func made_a_kill(victim: Prey) -> void:
 	food = victim
 
 
+## A meal finished: put by at home, towards the next of its kind.
+func _finished_a_meal() -> void:
+	meals += 1
+	if den != null and is_instance_valid(den):
+		den.ate()
+
+
+## Back to its den to rest, or resting there if it has arrived.
+func _go_home() -> void:
+	if den == null or not is_instance_valid(den):
+		return
+	var spot := den.resting_spot(prey)
+	var reach := maxf(prey.hit_radius() * 3.0, den.spread * 0.4)
+	var flat := prey.global_position - spot
+	if not prey.flying:
+		flat.y = 0.0
+	if flat.length() <= reach:
+		prey.rest(den.shelters)
+	elif prey.is_hunting():
+		return
+	else:
+		prey.go_to(spot, reach * 0.8)
+
+
 ## Looks at where things stand and does the next thing.
 func decide() -> void:
 	if not prey.can_decide():
+		return
+	# Underground, nothing can get at it and it cannot see out: it only wonders
+	# whether it is time to come up.
+	if prey.is_sheltered():
+		if world.awake(kind.active) or hunger >= RAVENOUS:
+			prey.wake()
 		return
 	var danger := threat()
 	if danger != null:
 		fleeing_from = danger
 		food = null
+		if prey.is_resting():
+			prey.wake()
 		prey.flee_from(danger.global_position)
 		return
 	fleeing_from = null
 	if prey.is_feeding():
 		if hunger <= SATED or not _worth_eating(food):
 			if hunger <= SATED:
-				meals += 1
+				_finished_a_meal()
 			food = null
 			prey.stop_feeding()
+		return
+	if prey.is_resting():
+		if world.awake(kind.active) or hunger >= RAVENOUS:
+			prey.wake()
+		else:
+			return
+	# Out of its hours, it goes home, unless it is too hungry to.
+	if den != null and not world.awake(kind.active) and hunger < RAVENOUS:
+		_go_home()
 		return
 	# A chase is seen through, or given up by the creature itself.
 	if prey.is_hunting():
