@@ -88,6 +88,7 @@ var _area: Zone = null
 var _boss_box: VBoxContainer
 var _boss_label: Label
 var _boss_bar: ProgressBar
+var _boss_wrap: ProgressBar
 var _area_left := 0.0
 var _area_look := 0.0
 
@@ -243,6 +244,7 @@ func _set_sizes() -> void:
 	if _boss_label != null:
 		_boss_label.add_theme_font_size_override("font_size", int(HEADLINE_SIZE))
 		_boss_bar.custom_minimum_size = Vector2(0.0, 14.0)
+		_boss_wrap.custom_minimum_size = Vector2(0.0, 6.0)
 	# The bars grow with the text, or a bar is a hairline under a big number.
 	web_bar.custom_minimum_size = Vector2(0.0, 16.0)
 	biomass_bar.custom_minimum_size = Vector2(0.0, 16.0)
@@ -282,8 +284,8 @@ func _build_condition() -> void:
 	stats.move_child(_wind_bar, 3)
 
 
-## A boss's name and what fight it has left, across the foot of the screen above
-## the hotbar, while one is coming for you.
+## A boss's name, its health, and under that how much of it is wrapped, across
+## the foot of the screen above the hotbar, while one is coming for you.
 func _build_boss_bar() -> void:
 	_boss_box = VBoxContainer.new()
 	_boss_box.name = "BossBar"
@@ -301,11 +303,16 @@ func _build_boss_bar() -> void:
 	_boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_box.add_child(_boss_label)
 	_boss_bar = ProgressBar.new()
-	_boss_bar.name = "BossFight"
+	_boss_bar.name = "BossHealth"
 	_boss_bar.show_percentage = false
 	_boss_bar.max_value = 1.0
-	_boss_bar.modulate = Color(0.95, 0.55, 0.45)
 	_boss_box.add_child(_boss_bar)
+	_boss_wrap = ProgressBar.new()
+	_boss_wrap.name = "BossWrap"
+	_boss_wrap.show_percentage = false
+	_boss_wrap.max_value = 1.0
+	_boss_wrap.modulate = Color(0.95, 0.95, 1.0)
+	_boss_box.add_child(_boss_wrap)
 	_boss_box.visible = false
 	add_child(_boss_box)
 
@@ -335,7 +342,9 @@ func _refresh_boss() -> void:
 	if boss == null:
 		return
 	_boss_label.text = boss.species
-	_boss_bar.value = boss.resistance()
+	_boss_bar.value = boss.health()
+	_boss_bar.modulate = CreatureBar.colour_for(boss.health())
+	_boss_wrap.value = clampf(boss.bound, 0.0, 1.0)
 
 
 ## The time of day, in the top right — where there is a day going round at all.

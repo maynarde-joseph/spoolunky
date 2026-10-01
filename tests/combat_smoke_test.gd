@@ -46,6 +46,7 @@ func _sections() -> Array[Callable]:
 		_test_waking_somewhere,
 		_test_a_shrine_is_where_you_wake,
 		_test_a_gate_opens_from_its_far_side,
+		_test_a_hurt_thing_is_an_easier_catch,
 		_test_a_boss_is_named_while_it_fights,
 		_test_the_drill_mosquito,
 		_test_the_blade_rat,
@@ -417,8 +418,42 @@ func _test_waking_somewhere() -> void:
 		"and falling out of the world puts you back there too")
 
 
-## A boss is named across the foot of the screen while it comes for you, with the
-## fight it has left under its name — and gone from there once it is not.
+## Hurt, a thing is an easier catch: the lower its health, the more of the way one
+## hit of silk gets you, until with nothing left one hit takes it outright. And a
+## hostile wears both numbers over its head while there is anything to say.
+func _test_a_hurt_thing_is_an_easier_catch() -> void:
+	await _arena()
+	var rat := _put(_species("blade_rat"), Vector3(5.0, 0.3, 0.0))
+	await run_frames(3)
+	var hold := builder.shot_hold(pattern_named("orb_web"), 2.0)
+	var whole := rat.bind_share(hold)
+	check(is_equal_approx(rat.health(), 1.0) and not rat.taken_cleanly_by(hold),
+		"whole, one orb shot does not take it (%d%% of the way)" % roundi(whole * 100.0))
+	rat.wound(0.6)
+	var hurt := rat.bind_share(hold)
+	check(hurt > whole * 1.8, "at %d%% health one shot does twice as much (%d%%)"
+		% [roundi(rat.health() * 100.0), roundi(hurt * 100.0)])
+	rat.wound(1.0)
+	check(rat.health() <= 0.0 and rat.taken_cleanly_by(hold),
+		"and with nothing left, one shot takes it outright")
+	rat.wounded = 0.0
+
+	var bar := rat.get_node_or_null("Bar") as CreatureBar
+	if not check(bar != null, "it wears a bar over its head"):
+		return
+	await run_frames(2)
+	check(not bar.visible, "which says nothing while it is whole and minding its own business")
+	rat.attack_spider(spider)
+	await run_frames(2)
+	check(bar.visible, "and shows once it comes for you")
+	rat.bundle()
+	await run_frames(2)
+	check(not bar.visible, "and is gone once it is wrapped")
+
+
+## A boss is named across the foot of the screen while it comes for you, with its
+## health and how much of it is wrapped under its name — and gone from there once
+## it is not.
 func _test_a_boss_is_named_while_it_fights() -> void:
 	await _arena()
 	var hud := level.get_node("HUD")
@@ -435,10 +470,14 @@ func _test_a_boss_is_named_while_it_fights() -> void:
 	check(bar.visible and (bar.get_node("BossName") as Label).text == "The Champion",
 		"by name, across the foot of the screen")
 	champion.bind(0.4)
+	champion.wound(0.3)
 	await run_frames(2)
-	var fight := (bar.get_node("BossFight") as ProgressBar).value
-	check(fight > 0.5 and fight < 0.7,
-		"with the fight it has left under it (%d%%)" % roundi(fight * 100.0))
+	var health := (bar.get_node("BossHealth") as ProgressBar).value
+	var wrapped := (bar.get_node("BossWrap") as ProgressBar).value
+	check(health > 0.65 and health < 0.75,
+		"with its health under its name (%d%%)" % roundi(health * 100.0))
+	check(wrapped > 0.3 and wrapped < 0.45,
+		"and how much of it is wrapped under that (%d%%)" % roundi(wrapped * 100.0))
 	champion.bundle()
 	await run_frames(3)
 	check(not bar.visible, "and gone once it is wrapped")

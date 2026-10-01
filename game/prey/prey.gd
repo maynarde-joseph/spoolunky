@@ -39,6 +39,10 @@ const ROT_AFTER := 120.0
 const WOUND_HEAL := 0.004
 const RESTING_HEAL := 4.0
 
+## How much of its fight a creature with no health left still has. Lower health is
+## an easier catch, all the way down to this: hurt something before you wrap it.
+const SPENT_VIGOUR := 0.15
+
 ## How long a turf war lasts, in seconds, and what it leaves on the loser and on
 ## the winner.
 const CLASH_TIME := 3.5
@@ -369,6 +373,10 @@ func apply_species(from: PreySpecies) -> void:
 			fighter.name = "Fighter"
 			add_child(fighter)
 		fighter.setup(self, from.attacks)
+	# Something that fights you wears what it has left over its head; a boss wears
+	# it across the foot of the screen instead.
+	if from.hostile and not from.boss:
+		CreatureBar.attach(self)
 	_applied = true
 	if is_inside_tree():
 		_build_body()
@@ -536,7 +544,23 @@ func current_speed() -> float:
 ## What it can thrash with right now, after the silk already on it and whatever
 ## else has hurt it.
 func thrash_power() -> float:
-	return struggle_power * (1.0 - clampf(bound, 0.0, 1.0)) * (1.0 - 0.5 * wounded)
+	return struggle_power * (1.0 - clampf(bound, 0.0, 1.0)) * vigour()
+
+
+## How much of itself it has left, 1 for all of it: what harm has not taken. The
+## other side of [member wounded].
+func health() -> float:
+	return 1.0 - clampf(wounded, 0.0, 1.0)
+
+
+## How much of its fight its health leaves it: all of it whole, down to
+## [constant SPENT_VIGOUR] of it with nothing left. It is what makes a hurt thing an
+## easier catch — the bargain a monster-catching game makes, where the throw that
+## fails at full health lands at a sliver — and it is the same number for a bolt, a
+## web left standing and a web thrown over it, because all three ask
+## [method total_thrash] or [method bind_share].
+func vigour() -> float:
+	return lerpf(SPENT_VIGOUR, 1.0, health())
 
 
 ## How far gone it is, 0 to 1: bound in silk, or hurt, whichever is worse. Past
@@ -573,9 +597,10 @@ func taken_cleanly_by(hold: float) -> bool:
 ## Deliberately derived rather than tuned: it is the same two numbers that decide
 ## a clean take, so "how many shots does this need" answers itself and there is no
 ## third figure to keep in step. A wasp needs two softening hits before an orb web
-## can take it, and five before a sheet web can.
+## can take it, and five before a sheet web can. Hurt, it needs fewer: its fight
+## is worth only its [method vigour].
 func bind_share(hold: float) -> float:
-	var whole := struggle_power * struggle_stamina
+	var whole := struggle_power * struggle_stamina * vigour()
 	if whole <= 0.0:
 		return 1.0
 	return clampf(hold * ESCAPE_MARGIN / whole, 0.0, 1.0)
@@ -1295,15 +1320,6 @@ func is_boss() -> bool:
 ## What it is coming for, if it is coming for anything.
 func quarry() -> Node3D:
 	return _quarry if is_hunting() and is_instance_valid(_quarry) else null
-
-
-## How much it still has to resist with, 1 for all of it: what silk and harm have
-## not yet taken, and nothing once it is wrapped or dead. Not [method fight_left],
-## which is how long it can keep thrashing in a web it is already in.
-func resistance() -> float:
-	if eaten or wrapped or is_bundled() or is_dead():
-		return 0.0
-	return 1.0 - weakness()
 
 
 ## Comes for [param spider] now, without waiting to notice it: for something
