@@ -54,6 +54,7 @@ func _sections() -> Array[Callable]:
 		_test_the_tongue_frog,
 		_test_the_screech_bat,
 		_test_the_rat_king,
+		_test_a_lair_seals_until_its_keeper_is_beaten,
 	]
 
 
@@ -749,6 +750,39 @@ func _test_the_rat_king() -> void:
 	var rallied: bool = await wait_until(func() -> bool:
 		return _named("Blade Rat").size() >= 2, 360)
 	check(rallied, "then it calls its blade rats (%d)" % _named("Blade Rat").size())
+
+
+## A lair seals behind you while its keeper lives. Lifted when you are driven off,
+## it seals again when you come back; beat the keeper and it is open for good, and
+## what it kept is yours.
+func _test_a_lair_seals_until_its_keeper_is_beaten() -> void:
+	await _arena()
+	var lair := BossLair.make(_slab, "The Test Hall", _centre() + Vector3(1.5, -0.5, -8.0),
+		_centre() + Vector3(8.0, 4.0, 8.0), "rat_king", _centre() + Vector3(6.0, 0.4, 0.0),
+		"wing_buds")
+	lair.add_veil(_centre() + Vector3(0.8, 0.0, -8.0), _centre() + Vector3(1.2, 4.0, 8.0))
+	await run_frames(5)
+	check(lair.keeper.creature != null, "its keeper is at its post")
+	var veiled := func() -> bool:
+		var query := PhysicsRayQueryParameters3D.create(_centre() + Vector3(0.0, 1.0, 0.0),
+			_centre() + Vector3(3.0, 1.0, 0.0), GameLayers.WORLD)
+		return not level.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+	check(not lair.is_sealed() and not veiled.call(), "open while you are outside it")
+	place(_centre() + Vector3(3.0, 0.6, 0.0))
+	var shut: bool = await wait_until(func() -> bool: return lair.is_sealed(), 30)
+	check(shut and veiled.call(), "step in and it seals behind you")
+	check(lair.keeper.creature.is_hunting(), "and the keeper comes for you")
+	lair.reset()
+	check(not lair.is_sealed() and not veiled.call(), "driven off, it is open again")
+	var sealed_again: bool = await wait_until(func() -> bool: return lair.is_sealed(), 30)
+	check(sealed_again, "and seals when you are back in it")
+	lair.keeper.creature.bundle()
+	await run_frames(3)
+	check(lair.beaten and not lair.is_sealed() and not veiled.call(),
+		"beat the keeper and it is open for good")
+	check(spider.traits.has("wing_buds"), "and what it kept is yours")
+	await run_frames(10)
+	check(not lair.is_sealed(), "and it never seals again")
 
 
 # --- helpers ------------------------------------------------------------
