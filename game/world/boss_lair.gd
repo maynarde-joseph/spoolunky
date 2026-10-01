@@ -31,6 +31,7 @@ const VEIL := Color(0.86, 0.86, 0.9, 0.45)
 
 var keeper: HostileSpawn = null
 var _veils: Array[StaticBody3D] = []
+var _doors: Array[StaticBody3D] = []
 var _sealed := false
 
 
@@ -56,12 +57,14 @@ static func make(parent: Node3D, lair_name: String, lo: Vector3, hi: Vector3,
 
 
 ## A veil across a way in, filling [param lo] to [param hi] in world space. Up only
-## while the lair is sealed.
-func add_veil(lo: Vector3, hi: Vector3) -> StaticBody3D:
+## while the lair is sealed — or, [param until_won], up from the start and gone only
+## once the keeper is beaten: the way on, which no amount of running gets you
+## through.
+func add_veil(lo: Vector3, hi: Vector3, until_won := false) -> StaticBody3D:
 	var low := Vector3(minf(lo.x, hi.x), minf(lo.y, hi.y), minf(lo.z, hi.z))
 	var high := Vector3(maxf(lo.x, hi.x), maxf(lo.y, hi.y), maxf(lo.z, hi.z))
 	var veil := StaticBody3D.new()
-	veil.name = "Veil%d" % _veils.size()
+	veil.name = ("Door%d" % _doors.size()) if until_won else ("Veil%d" % _veils.size())
 	add_child(veil)
 	veil.global_position = (low + high) * 0.5
 	var shape := BoxShape3D.new()
@@ -83,8 +86,11 @@ func add_veil(lo: Vector3, hi: Vector3) -> StaticBody3D:
 	paint.cull_mode = BaseMaterial3D.CULL_DISABLED
 	view.material_override = paint
 	veil.add_child(view)
-	_veils.append(veil)
-	_show_veil(veil, false)
+	if until_won:
+		_doors.append(veil)
+	else:
+		_veils.append(veil)
+	_show_veil(veil, until_won and not beaten)
 	return veil
 
 
@@ -100,9 +106,12 @@ func _adopt() -> void:
 	if keeper != null and not keeper.beaten_for_good.is_connected(_on_keeper_beaten):
 		keeper.beaten_for_good.connect(_on_keeper_beaten)
 	_veils.clear()
+	_doors.clear()
 	for child in get_children():
 		if child is StaticBody3D and String(child.name).begins_with("Veil"):
 			_veils.append(child)
+		elif child is StaticBody3D and String(child.name).begins_with("Door"):
+			_doors.append(child)
 
 
 func _physics_process(_delta: float) -> void:
@@ -161,6 +170,14 @@ func _set_sealed(on: bool) -> void:
 	for veil in _veils:
 		if is_instance_valid(veil):
 			_show_veil(veil, on)
+	for door in _doors:
+		if is_instance_valid(door):
+			_show_veil(door, not beaten)
+
+
+## Whether the way on is open: there is none, or the keeper is beaten.
+func way_on_open() -> bool:
+	return beaten or _doors.is_empty()
 
 
 func _show_veil(veil: StaticBody3D, on: bool) -> void:

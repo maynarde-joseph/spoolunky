@@ -762,8 +762,14 @@ func _test_a_lair_seals_until_its_keeper_is_beaten() -> void:
 		_centre() + Vector3(8.0, 4.0, 8.0), "rat_king", _centre() + Vector3(6.0, 0.4, 0.0),
 		"wing_buds")
 	lair.add_veil(_centre() + Vector3(0.8, 0.0, -8.0), _centre() + Vector3(1.2, 4.0, 8.0))
+	lair.add_veil(_centre() + Vector3(7.6, 0.0, -2.0), _centre() + Vector3(8.0, 4.0, 2.0), true)
 	await run_frames(5)
 	check(lair.keeper.creature != null, "its keeper is at its post")
+	var way_on := func() -> bool:
+		var query := PhysicsRayQueryParameters3D.create(_centre() + Vector3(6.0, 1.0, 0.0),
+			_centre() + Vector3(9.0, 1.0, 0.0), GameLayers.WORLD)
+		return level.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+	check(not lair.way_on_open() and not way_on.call(), "and the way on is shut")
 	var veiled := func() -> bool:
 		var query := PhysicsRayQueryParameters3D.create(_centre() + Vector3(0.0, 1.0, 0.0),
 			_centre() + Vector3(3.0, 1.0, 0.0), GameLayers.WORLD)
@@ -781,6 +787,7 @@ func _test_a_lair_seals_until_its_keeper_is_beaten() -> void:
 	await run_frames(3)
 	check(lair.beaten and not lair.is_sealed() and not veiled.call(),
 		"beat the keeper and it is open for good")
+	check(lair.way_on_open() and way_on.call(), "and so is the way on")
 	check(spider.traits.has("wing_buds"), "and what it kept is yours")
 	await run_frames(10)
 	check(not lair.is_sealed(), "and it never seals again")

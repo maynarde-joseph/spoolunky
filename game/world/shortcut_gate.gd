@@ -22,7 +22,11 @@ signal opened(gate: ShortcutGate)
 @export var lever_at := Vector3.ZERO
 @export var reach := 1.4
 
-## How far the gate rises when it opens: its own height, so it is all the way up.
+## Which way it goes when it opens: up into the roof for a gate across a passage,
+## aside into the floor for a hatch over a shaft.
+@export var slide := Vector3.UP
+
+## How far it goes when it opens: its own size that way, so it is all the way out.
 @export var lift := 4.0
 
 ## Seconds it takes to rise.
@@ -31,16 +35,17 @@ const RISE := 1.6
 var _door: StaticBody3D
 var _handle: Node3D
 var _rising := -1.0
-var _shut_y := 0.0
+var _shut_at := Vector3.ZERO
 
 
 ## One filling the hole between [param lo] and [param hi], with its lever at
-## [param lever], all in world space.
+## [param lever], all in world space; opening along [param way].
 static func make(parent: Node3D, gate_name: String, lo: Vector3, hi: Vector3,
-		lever: Vector3) -> ShortcutGate:
+		lever: Vector3, way := Vector3.UP) -> ShortcutGate:
 	var gate := ShortcutGate.new()
 	gate.name = gate_name.replace(" ", "")
 	gate.display_name = gate_name
+	gate.slide = way.normalized()
 	parent.add_child(gate)
 	# Its own space is the world's, so the corners and the lever are where they say.
 	gate.global_transform = Transform3D.IDENTITY
@@ -52,8 +57,9 @@ func _build(lo: Vector3, hi: Vector3, lever: Vector3) -> void:
 	var low := Vector3(minf(lo.x, hi.x), minf(lo.y, hi.y), minf(lo.z, hi.z))
 	var high := Vector3(maxf(lo.x, hi.x), maxf(lo.y, hi.y), maxf(lo.z, hi.z))
 	var size := high - low
-	lift = size.y
+	lift = absf(size.dot(slide)) + 0.1
 	_door = WorldKit.body(self, "Door", Transform3D(Basis.IDENTITY, (low + high) * 0.5))
+	_shut_at = _door.position
 	WorldKit.box(_door, "Slab", size, Transform3D.IDENTITY, "rock_dark")
 	# Bars down both faces, so it reads as a gate and not a wall.
 	var across := 0 if size.x >= size.z else 2
@@ -84,7 +90,7 @@ func _ready() -> void:
 		_door = get_node_or_null("Door") as StaticBody3D
 		_handle = get_node_or_null("Lever/Handle") as Node3D
 	if _door != null:
-		_shut_y = _door.position.y
+		_shut_at = _door.position
 	if open and _door != null:
 		_door.queue_free()
 		_door = null
@@ -126,7 +132,7 @@ func _rise(delta: float) -> void:
 		_rising = -1.0
 		return
 	var t := clampf(_rising / RISE, 0.0, 1.0)
-	_door.position.y = _shut_y + lift * t * t * (3.0 - 2.0 * t)
+	_door.position = _shut_at + slide * lift * t * t * (3.0 - 2.0 * t)
 	if t >= 1.0:
 		_door.queue_free()
 		_door = null
