@@ -39,6 +39,7 @@ func _sections() -> Array[Callable]:
 		_test_lightning_runs_through_silk,
 		_test_lightning_and_water,
 		_test_storm_and_paralysis,
+		_test_firebolt,
 	]
 
 
@@ -728,6 +729,90 @@ func _test_storm_and_paralysis() -> void:
 	var strike := _last_strike()
 	check(strike != null and strike.shocked.has(near) and strike.shocked.has(far),
 		"and it jumps on to both beetles near it, dry as they are")
+
+
+# --- fire ---------------------------------------------------------------------
+
+## Silk burns. Fire takes a little of something bare, more of something half
+## wrapped and all it is worth of something a web holds; a firebolt thrown at a
+## creature bursts on it and burns it; and what it burns low is an easy catch.
+func _test_firebolt() -> void:
+	var fire := spells.by_id("fire")
+	if not check(fire != null and fire.form == SpiderSpell.Form.FIRE,
+			"there is fire in the book"):
+		return
+	check(not spells.is_open(fire), "shut to a spiderling")
+	grow_to_tier(fire.unlock_stage)
+	check(spells.is_open(fire), "a %s can throw it"
+		% spider.growth.stages[fire.unlock_stage].display_name)
+	var slab := add_slab(Vector3(60, 0.0, -120), Vector3(40, 0.5, 40))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 8.0))
+	await physics_frame
+	var centre := slab.global_position + Vector3(0, 0.25, 0)
+	clear_prey_near(centre, 20.0, null)
+
+	# The rule, on three of a kind: one bare, one half wrapped, one in a web.
+	var height := spider.stage().body_height
+	var half := height * 1.2
+	var web := _spin(centre + Vector3(-height * 6.0, half + height * 0.3, 0.0), half)
+	if not check(web != null, "a web to hold one"):
+		return
+	var bare := spawn("wasp", centre + Vector3(height * 6.0, height, 0.0))
+	var halfway := spawn("wasp", centre + Vector3(0.0, height, -height * 6.0))
+	var held := spawn("wasp", (web as WebNet).to_global((web as WebNet).centre_local))
+	if not check(bare != null and halfway != null and held != null, "three wasps"):
+		return
+	for wasp in [bare, halfway, held]:
+		wasp.move_speed = 0.0
+		wasp.aggression = 0.0
+		wasp.struggle_stamina = 30.0
+	halfway.bind(0.5)
+	await physics_frame
+	await physics_frame
+	if not check(held.is_stuck(), "one of them held by the web"):
+		return
+	var power := 0.5
+	var from_bare := bare.burn(power)
+	var from_half := halfway.burn(power)
+	var from_held := held.burn(power)
+	check(is_equal_approx(from_bare, power * Prey.BARE_BURN),
+		"bare, it takes a little (%d%%)" % roundi(from_bare * 100.0))
+	check(from_half > from_bare * 2.0 and from_half < from_held,
+		"half wrapped, a good deal more (%d%%)" % roundi(from_half * 100.0))
+	check(is_equal_approx(from_held, power),
+		"and held in a web, all it is worth (%d%%)" % roundi(from_held * 100.0))
+
+	# Thrown, the way a player does it.
+	clear_prey_near(centre, 20.0, null)
+	var target := spawn("wasp", spider.global_position + Vector3(0.0, 0.1, -3.0))
+	if not check(target != null, "a wasp to throw it at"):
+		return
+	target.move_speed = 0.0
+	target.aggression = 0.0
+	# A tough one, so that one shot is not already the whole catch.
+	target.struggle_power = 12.0
+	target.struggle_stamina = 30.0
+	target.bind(0.6)
+	await physics_frame
+	var hold := builder.shot_hold(pattern_named("orb_web"), 3.0)
+	var share := target.bind_share(hold)
+	aim_at(target.global_position)
+	check(spells.select("fire") and spells.cast_now(fire, 1.0), "thrown")
+	var burned: bool = await wait_until(func() -> bool: return target.health() < 0.999, 120)
+	if not check(burned, "it lands on the wasp and burns it"):
+		return
+	var expected := fire.power_at(1.0) * lerpf(Prey.BARE_BURN, 1.0, target.bound)
+	check(target.health() < 1.0 - expected * 0.8,
+		"for about what its silk says (%d%% of it left)" % roundi(target.health() * 100.0))
+	check(target.bind_share(hold) > share * 1.3,
+		"and burned low, it is an easier catch (%d%% a shot -> %d%%)"
+		% [roundi(share * 100.0), roundi(target.bind_share(hold) * 100.0)])
+	check(spells.cooling(fire), "and fire has its own wait (%.1fs)" % spells.cooldown_left(fire))
+
+	var wrapped := spawn("fly", centre + Vector3(height * 3.0, height, height * 6.0))
+	if check(wrapped != null and wrapped.bundle(), "something already caught"):
+		check(is_zero_approx(wrapped.burn(power)), "is left be: it is caught")
 
 
 func _last_strike() -> LightningStrike:

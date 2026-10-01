@@ -43,6 +43,10 @@ const RESTING_HEAL := 4.0
 ## an easier catch, all the way down to this: hurt something before you wrap it.
 const SPENT_VIGOUR := 0.15
 
+## How much of a fire's harm reaches something with no silk on it. The rest comes
+## with the silk: silk burns.
+const BARE_BURN := 0.2
+
 ## How long a turf war lasts, in seconds, and what it leaves on the loser and on
 ## the winner.
 const CLASH_TIME := 3.5
@@ -572,6 +576,25 @@ func weakness() -> float:
 ## Hurts it by [param amount].
 func wound(amount: float) -> void:
 	wounded = clampf(wounded + amount, 0.0, 1.0)
+
+
+## How much silk is on it, as far as fire is concerned: what is bound on, or all of
+## it when a web is holding it.
+func silk_on() -> float:
+	if is_stuck():
+		return 1.0
+	return clampf(bound, 0.0, 1.0)
+
+
+## Set alight by fire worth [param power] of a creature's health. Silk burns: bare,
+## it takes [constant BARE_BURN] of that; wrapped all the way, all of it. Returns
+## the health it lost. Something already a bundle is caught, and fire leaves it be.
+func burn(power: float) -> float:
+	if eaten or is_bundled() or _state == State.DEAD or power <= 0.0:
+		return 0.0
+	var before := wounded
+	wound(power * lerpf(BARE_BURN, 1.0, silk_on()))
+	return wounded - before
 
 
 ## Everything it will throw at a web before it tires itself out: the number a

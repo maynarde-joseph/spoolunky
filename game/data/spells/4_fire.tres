@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="SpiderSpell" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_spell.gd" id="1_spell"]
+
+[resource]
+script = ExtResource("1_spell")
+id = "fire"
+display_name = "Firebolt"
+description = "A bolt of fire, thrown like silk, that bursts where it lands. Silk burns: the more of a thing is wrapped, the harder it burns — and the lower it burns, the easier it is to catch."
+form = 4
+order = 4
+unlock_stage = 4
+cooldown = 5.0
+size = Vector2(1, 1.8)
+duration = Vector2(0.5, 0.5)
+power = Vector2(0.3, 0.55)
+colour = Color(1, 0.45, 0.12, 1)

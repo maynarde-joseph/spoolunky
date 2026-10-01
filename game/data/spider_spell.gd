@@ -30,6 +30,9 @@ enum Form {
 	SPIRAL,
 	## Lightning, called down where you point.
 	LIGHTNING,
+	## A bolt of fire thrown like silk, that burns what it lands among: harder the
+	## more silk is on it.
+	FIRE,
 }
 
 @export var id := "silk"
@@ -66,6 +69,11 @@ enum Form {
 ## a dose, a whirl, a stun.
 @export var duration := Vector2(2.5, 4.0)
 
+## How much of a creature's health it takes, from a tap to a full wind-up, when
+## the creature is wrapped all the way: what a spell that harms does. Nought for
+## one that does not.
+@export var power := Vector2.ZERO
+
 ## Its colour, on the strip and in the world.
 @export var colour := Color(0.85, 0.88, 0.95, 1.0)
 
@@ -79,3 +87,8 @@ func size_at(wound: float) -> float:
 ## How long, at [param wound], in seconds.
 func duration_at(wound: float) -> float:
 	return lerpf(duration.x, duration.y, clampf(wound, 0.0, 1.0))
+
+
+## How much harm, at [param wound], as a share of a creature's health.
+func power_at(wound: float) -> float:
+	return lerpf(power.x, power.y, clampf(wound, 0.0, 1.0))

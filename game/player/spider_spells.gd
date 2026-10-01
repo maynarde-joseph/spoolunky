@@ -338,6 +338,8 @@ func _cast_form(spell: SpiderSpell, wound: float) -> Dictionary:
 			return _whirl(spell, wound)
 		SpiderSpell.Form.LIGHTNING:
 			return _strike(spell, wound)
+		SpiderSpell.Form.FIRE:
+			return _hurl(spell, wound)
 	push_warning("%s has a form nothing casts yet" % spell.display_name)
 	return {"cast": false}
 
@@ -416,6 +418,60 @@ func _whirl(spell: SpiderSpell, wound: float) -> Dictionary:
 	if whirl == null:
 		return {"cast": false}
 	return {"cast": true, "at": at}
+
+
+# --- fire -----------------------------------------------------------------
+
+## A bolt of fire, thrown the way silk is — at the creature under the cross, led if
+## it is moving — that bursts where it lands and burns everything in the burst.
+## Silk burns, so what it does to each is worth the silk on it (see
+## [method Prey.burn]): little to something bare, all of it to something wrapped
+## or held in a web. And a creature burned low is an easy catch.
+func _hurl(spell: SpiderSpell, wound: float) -> Dictionary:
+	var from := _view.aim_origin()
+	var heading := _view.aim_forward()
+	var quarry := _builder.shot_target() if _builder != null else null
+	if quarry != null:
+		var lead := _builder.shot_lead(quarry) - from
+		if lead.length_squared() > 0.000001:
+			heading = lead.normalized()
+	var bolt := SilkShot.fire(from, heading, body_height(), exclusions())
+	bolt.name = "FireBolt"
+	bolt.catch_radius = 0.16 * body_height()
+	bolt.colour = spell.colour
+	bolt.glow = 1.6
+	bolt.glows_own = true
+	bolt.limit_to(cast_reach())
+	bolt.landed.connect(_on_fire_landed.bind(spell, spell.power_at(wound),
+		spell.size_at(wound) * body_height()))
+	bolt.add_to_group("spell_effects")
+	bolt.launch_from(_host(), from)
+	return {"cast": true, "at": from + heading * cast_reach()}
+
+
+func _on_fire_landed(at: Vector3, _normal: Vector3, struck: Node3D, _heading: Vector3,
+		spell: SpiderSpell, power: float, reach: float) -> void:
+	SpellFlash.burst(_host(), at, spell.colour, reach, 0.45)
+	var burned: Array[Prey] = []
+	var worst := 0.0
+	for node in get_tree().get_nodes_in_group("prey"):
+		var prey := node as Prey
+		if prey == null or not is_instance_valid(prey):
+			continue
+		if prey != struck and prey.global_position.distance_to(at) > reach + prey.hit_radius():
+			continue
+		var lost := prey.burn(power)
+		if lost <= 0.0:
+			continue
+		burned.append(prey)
+		SpellFlash.burst(_host(), prey.global_position, spell.colour, prey.hit_radius() * 2.5,
+			0.6)
+		worst = maxf(worst, lost)
+	if burned.size() == 1:
+		notice.emit("The %s burns — %d%% of it left" % [burned[0].species,
+			roundi(burned[0].health() * 100.0)])
+	elif burned.size() > 1:
+		notice.emit("Fire — %d burned" % burned.size())
 
 
 ## How hard a dose works: fanged, with fangs.
