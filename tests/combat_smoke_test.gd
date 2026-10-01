@@ -53,6 +53,7 @@ func _sections() -> Array[Callable]:
 		_test_the_spitter_wasp,
 		_test_the_tongue_frog,
 		_test_the_screech_bat,
+		_test_the_rat_king,
 	]
 
 
@@ -707,6 +708,47 @@ func _test_the_screech_bat() -> void:
 	await run_frames(2)
 	check(is_equal_approx(spider.health, health) and not spider.is_dazed(),
 		"and outside the ring it does nothing to you (%.1f -> %.1f)" % [health, spider.health])
+
+
+## The Rat King spins where it stands and cuts every thread round it, in front and
+## behind; and calls its blade rats out of the walls.
+func _test_the_rat_king() -> void:
+	await _arena()
+	var kind := _species("rat_king")
+	if not _kit(kind, "whirl", CreatureAttack.Kind.SWEEP, Vector2i(4, 9)):
+		return
+	var moves := {}
+	for each in kind.attacks:
+		moves[each.id] = each
+	check(kind.boss and moves.has("rally") and moves.has("pounce"),
+		"a boss, with a rally and a pounce besides")
+	var at := _centre() + Vector3(2.4, 0.0, 0.0)
+	var floor_y := spider.global_position.y - 0.2
+	var line := pattern_named("frame_line")
+	var ahead := WebStrand.spin(line, Vector3(at.x - 1.2, floor_y, at.z - 1.2),
+		Vector3(at.x - 1.2, floor_y, at.z + 1.2), 1.0)
+	var behind := WebStrand.spin(line, Vector3(at.x + 1.6, floor_y, at.z - 1.2),
+		Vector3(at.x + 1.6, floor_y, at.z + 1.2), 1.0)
+	ahead.place_in(webs)
+	behind.place_in(webs)
+	await physics_frame
+	var king := _put(kind, Vector3(2.4, 0.4, 0.0))
+	# One thing at a time: the rally waits while the whirl is looked at.
+	king.fighter._cooling[moves["rally"]] = 60.0
+	king.attack_spider(spider)
+	var whirled: bool = await wait_until(func() -> bool:
+		return _using(king, "whirl") and king.fighter.beat == CreatureFighter.Beat.RECOVER, 180)
+	if not check(whirled, "close by, it whirls"):
+		return
+	await run_frames(2)
+	var gone := func(strand: Variant) -> bool:
+		return not is_instance_valid(strand) or (strand as Node).is_queued_for_deletion()
+	check(gone.call(ahead) and gone.call(behind), "and every thread round it is cut, before and behind")
+
+	king.fighter._cooling[moves["rally"]] = 0.0
+	var rallied: bool = await wait_until(func() -> bool:
+		return _named("Blade Rat").size() >= 2, 360)
+	check(rallied, "then it calls its blade rats (%d)" % _named("Blade Rat").size())
 
 
 # --- helpers ------------------------------------------------------------
