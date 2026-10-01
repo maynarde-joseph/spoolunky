@@ -245,5 +245,8 @@ func _part(mesh: Mesh, paint: String, parent: Node3D = null) -> MeshInstance3D:
 	part.mesh = mesh
 	part.material_override = Palette.paint(paint)
 	part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	part.visibility_range_end = maxf(120.0, size * 40.0)
+	part.visibility_range_end_margin = part.visibility_range_end * 0.1
+	part.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	(parent if parent != null else _view).add_child(part)
 	return part

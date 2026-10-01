@@ -38,6 +38,15 @@ func _ready() -> void:
 	shell.skeleton = NodePath("..")
 	shell.mesh = body.mesh_for(skeleton)
 	shell.skin = body.skin_for(skeleton)
+	# Drawn as far off as its size is worth: a midge is gone a few metres away, a
+	# stag can be seen across the valley. Something an insect's size casts no
+	# shadow worth the drawing.
+	var radius := scale.x
+	shell.visibility_range_end = maxf(60.0, radius * 140.0)
+	shell.visibility_range_end_margin = shell.visibility_range_end * 0.1
+	shell.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	if radius < 0.2:
+		shell.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	motion = body.make_motion()
 	motion.name = "Motion"
 	skeleton.add_child(motion)

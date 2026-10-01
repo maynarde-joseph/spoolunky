@@ -2,7 +2,7 @@
 
 [ext_resource type="Material" path="res://game/world/materials/fungus_shelf.tres" id="1_s3krl"]
 
-[sub_resource type="SphereMesh" id="SphereMesh_855nu"]
+[sub_resource type="SphereMesh" id="SphereMesh_33emw"]
 radius = 1.0
 height = 2.0
 radial_segments = 24
@@ -17,32 +17,41 @@ points = PackedVector3Array(1.5, 0.60621774, 0, 1.2135255, 0.60621774, 0.6759530
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_ojy2u"]
 points = PackedVector3Array(1, 0.60621774, 0, 0.809017, 0.60621774, 0.4702282, 0.309017, 0.60621774, 0.76084524, -0.309017, 0.60621774, 0.76084524, -0.809017, 0.60621774, 0.4702282, -1, 0.60621774, 9.797175e-17, -0.809017, 0.60621774, -0.4702282, -0.309017, 0.60621774, -0.76084524, 0.309017, 0.60621774, -0.76084524, 0.809017, 0.60621774, -0.4702282, 1.7320508, 0.35, 0, 1.4012586, 0.35, 0.81445915, 0.53523314, 0.35, 1.3178226, -0.53523314, 0.35, 1.3178226, -1.4012586, 0.35, 0.81445915, -1.7320508, 0.35, 1.6969204e-16, -1.4012586, 0.35, -0.81445915, -0.53523314, 0.35, -1.3178226, 0.53523314, 0.35, -1.3178226, 1.4012586, 0.35, -0.81445915, 2, 4.286264e-17, 0, 1.618034, 4.286264e-17, 0.9404564, 0.618034, 4.286264e-17, 1.5216905, -0.618034, 4.286264e-17, 1.5216905, -1.618034, 4.286264e-17, 0.9404564, -2, 4.286264e-17, 1.959435e-16, -1.618034, 4.286264e-17, -0.9404564, -0.618034, 4.286264e-17, -1.5216905, 0.618034, 4.286264e-17, -1.5216905, 1.618034, 4.286264e-17, -0.9404564, 1.7320508, -0.35, 0, 1.4012586, -0.35, 0.81445915, 0.53523314, -0.35, 1.3178226, -0.53523314, -0.35, 1.3178226, -1.4012586, -0.35, 0.81445915, -1.7320508, -0.35, 1.6969204e-16, -1.4012586, -0.35, -0.81445915, -0.53523314, -0.35, -1.3178226, 0.53523314, -0.35, -1.3178226, 1.4012586, -0.35, -0.81445915, 1, -0.60621774, 0, 0.809017, -0.60621774, 0.4702282, 0.309017, -0.60621774, 0.76084524, -0.309017, -0.60621774, 0.76084524, -0.809017, -0.60621774, 0.4702282, -1, -0.60621774, 9.797175e-17, -0.809017, -0.60621774, -0.4702282, -0.309017, -0.60621774, -0.76084524, 0.309017, -0.60621774, -0.76084524, 0.809017, -0.60621774, -0.4702282, 0, 0.7, 0, 0, -0.7, 0)
 
-[node name="BracketFungus" type="StaticBody3D" unique_id=376473741]
+[node name="BracketFungus" type="StaticBody3D" unique_id=1072496952]
 collision_mask = 0
 
-[node name="Shelf" type="MeshInstance3D" parent="." unique_id=1537703787]
+[node name="Shelf" type="MeshInstance3D" parent="." unique_id=873278801]
 transform = Transform3D(4.2, 0, 0, 0, 0.7, 0, 0, 0, 3.2, 0, 0, -1.44)
 material_override = ExtResource("1_s3krl")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 260.0
+visibility_range_end_margin = 26.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="ShelfShape" type="CollisionShape3D" parent="." unique_id=1238901063]
+[node name="ShelfShape" type="CollisionShape3D" parent="." unique_id=1319842756]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.44)
 shape = SubResource("ConvexPolygonShape3D_6mane")
 
-[node name="Shelf2" type="MeshInstance3D" parent="." unique_id=1553366673]
+[node name="Shelf2" type="MeshInstance3D" parent="." unique_id=815249032]
 transform = Transform3D(3, 0, 0, 0, 0.7, 0, 0, 0, 2.3, 0, 2.6, -1.035)
 material_override = ExtResource("1_s3krl")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 260.0
+visibility_range_end_margin = 26.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="ShelfShape2" type="CollisionShape3D" parent="." unique_id=134964087]
+[node name="ShelfShape2" type="CollisionShape3D" parent="." unique_id=1292654614]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, -1.035)
 shape = SubResource("ConvexPolygonShape3D_urxfb")
 
-[node name="Shelf3" type="MeshInstance3D" parent="." unique_id=2145078830]
+[node name="Shelf3" type="MeshInstance3D" parent="." unique_id=950520073]
 transform = Transform3D(2, 0, 0, 0, 0.7, 0, 0, 0, 1.6, 0, 4.6, -0.72)
 material_override = ExtResource("1_s3krl")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 260.0
+visibility_range_end_margin = 26.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="ShelfShape3" type="CollisionShape3D" parent="." unique_id=579497536]
+[node name="ShelfShape3" type="CollisionShape3D" parent="." unique_id=1936475979]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.6, -0.72)
 shape = SubResource("ConvexPolygonShape3D_ojy2u")

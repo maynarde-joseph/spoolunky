@@ -4,7 +4,7 @@
 [ext_resource type="Material" path="res://game/world/materials/rock_dark.tres" id="2_g7vqh"]
 [ext_resource type="Material" path="res://game/world/materials/moss.tres" id="3_t16wp"]
 
-[sub_resource type="SphereMesh" id="SphereMesh_855nu"]
+[sub_resource type="SphereMesh" id="SphereMesh_33emw"]
 radius = 1.0
 height = 2.0
 radial_segments = 24
@@ -16,28 +16,37 @@ points = PackedVector3Array(1.7, 2.078461, 0, 1.3753289, 2.078461, 0.82289934, 0
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_moni0"]
 points = PackedVector3Array(1, 1.3856406, 0, 0.809017, 1.3856406, 0.64656377, 0.309017, 1.3856406, 1.0461622, -0.309017, 1.3856406, 1.0461622, -0.809017, 1.3856406, 0.64656377, -1, 1.3856406, 1.3471115e-16, -0.809017, 1.3856406, -0.64656377, -0.309017, 1.3856406, -1.0461622, 0.309017, 1.3856406, -1.0461622, 0.809017, 1.3856406, -0.64656377, 1.7320508, 0.8, 0, 1.4012586, 0.8, 1.1198814, 0.53523314, 0.8, 1.812006, -0.53523314, 0.8, 1.812006, -1.4012586, 0.8, 1.1198814, -1.7320508, 0.8, 2.3332655e-16, -1.4012586, 0.8, -1.1198814, -0.53523314, 0.8, -1.812006, 0.53523314, 0.8, -1.812006, 1.4012586, 0.8, -1.1198814, 2, 9.797175e-17, 0, 1.618034, 9.797175e-17, 1.2931275, 0.618034, 9.797175e-17, 2.0923245, -0.618034, 9.797175e-17, 2.0923245, -1.618034, 9.797175e-17, 1.2931275, -2, 9.797175e-17, 2.694223e-16, -1.618034, 9.797175e-17, -1.2931275, -0.618034, 9.797175e-17, -2.0923245, 0.618034, 9.797175e-17, -2.0923245, 1.618034, 9.797175e-17, -1.2931275, 1.7320508, -0.8, 0, 1.4012586, -0.8, 1.1198814, 0.53523314, -0.8, 1.812006, -0.53523314, -0.8, 1.812006, -1.4012586, -0.8, 1.1198814, -1.7320508, -0.8, 2.3332655e-16, -1.4012586, -0.8, -1.1198814, -0.53523314, -0.8, -1.812006, 0.53523314, -0.8, -1.812006, 1.4012586, -0.8, -1.1198814, 1, -1.3856406, 0, 0.809017, -1.3856406, 0.64656377, 0.309017, -1.3856406, 1.0461622, -0.309017, -1.3856406, 1.0461622, -0.809017, -1.3856406, 0.64656377, -1, -1.3856406, 1.3471115e-16, -0.809017, -1.3856406, -0.64656377, -0.309017, -1.3856406, -1.0461622, 0.309017, -1.3856406, -1.0461622, 0.809017, -1.3856406, -0.64656377, 0, 1.6, 0, 0, -1.6, 0)
 
-[node name="Boulder" type="StaticBody3D" unique_id=1828314716]
+[node name="Boulder" type="StaticBody3D" unique_id=2119162131]
 collision_mask = 0
 
-[node name="Stone" type="MeshInstance3D" parent="." unique_id=189279295]
+[node name="Stone" type="MeshInstance3D" parent="." unique_id=1725152741]
 transform = Transform3D(3.4, 0, 0, 0, 2.4, 0, 0, 0, 2.8, 0, 1, 0)
 material_override = ExtResource("1_0aehv")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="StoneShape" type="CollisionShape3D" parent="." unique_id=92321825]
+[node name="StoneShape" type="CollisionShape3D" parent="." unique_id=1181352835]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("ConvexPolygonShape3D_w1h4b")
 
-[node name="Stone2" type="MeshInstance3D" parent="." unique_id=658601157]
+[node name="Stone2" type="MeshInstance3D" parent="." unique_id=1444188722]
 transform = Transform3D(2, 0, 0, 0, 1.6, 0, 0, 0, 2.2, 2.4, 0.6, 1.2)
 material_override = ExtResource("2_g7vqh")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="StoneShape2" type="CollisionShape3D" parent="." unique_id=1827637909]
+[node name="StoneShape2" type="CollisionShape3D" parent="." unique_id=207074804]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.4, 0.6, 1.2)
 shape = SubResource("ConvexPolygonShape3D_moni0")
 
-[node name="Moss" type="MeshInstance3D" parent="." unique_id=1202989140]
+[node name="Moss" type="MeshInstance3D" parent="." unique_id=109024902]
 transform = Transform3D(2.4, 0, 0, 0, 0.5, 0, 0, 0, 2, -0.3, 3.05, 0.1)
 material_override = ExtResource("3_t16wp")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")

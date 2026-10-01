@@ -60,8 +60,40 @@ const ALL := [
 ]
 
 
-## Builds [param id] from scratch: a body with its solids on it, named for it.
+## How far off the small props are still drawn. Past this a pebble is a speck, and
+## a valley strewn with them is mostly specks to draw; anything not here is drawn
+## as far as the camera sees.
+const DRAWN_TO := {
+	"pebble": 90.0, "acorn": 90.0, "fallen_leaf": 90.0, "fallen_leaf_rust": 90.0, "twig": 100.0,
+	"mushrooms": 140.0, "wildflowers": 150.0, "tall_grass": 150.0, "fern": 180.0, "anthill": 180.0,
+	"toadstool": 200.0, "lily_pad": 200.0, "reeds": 240.0, "bracket_fungus": 260.0,
+	"driftwood": 260.0, "flagstones": 260.0, "boulder": 320.0, "berry_bush": 320.0,
+	"ruin_block": 320.0,
+}
+
+
+## Builds [param id] from scratch: a body with its solids on it, named for it,
+## drawn as far off as [constant DRAWN_TO] says.
 static func build(id: String) -> Node3D:
+	var made := _make(id)
+	if made != null and DRAWN_TO.has(id):
+		draw_to(made, DRAWN_TO[id])
+	return made
+
+
+## Stops everything drawn in [param node] being drawn past [param distance], fading
+## it out over the last tenth rather than popping.
+static func draw_to(node: Node, distance: float) -> void:
+	var view := node as GeometryInstance3D
+	if view != null:
+		view.visibility_range_end = distance
+		view.visibility_range_end_margin = distance * 0.1
+		view.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	for child in node.get_children():
+		draw_to(child, distance)
+
+
+static func _make(id: String) -> Node3D:
 	match id:
 		"shelves": return _shelves()
 		"workbench": return _workbench()

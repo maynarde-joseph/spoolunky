@@ -4,7 +4,7 @@
 [ext_resource type="Material" path="res://game/world/materials/leaf.tres" id="2_f5ijx"]
 [ext_resource type="Material" path="res://game/world/materials/berry.tres" id="3_eypc4"]
 
-[sub_resource type="SphereMesh" id="SphereMesh_855nu"]
+[sub_resource type="SphereMesh" id="SphereMesh_33emw"]
 radius = 1.0
 height = 2.0
 radial_segments = 24
@@ -25,152 +25,233 @@ height = 1.3
 radial_segments = 24
 rings = 12
 
-[node name="BerryBush" type="StaticBody3D" unique_id=1388243279]
+[node name="BerryBush" type="StaticBody3D" unique_id=39569832]
 collision_mask = 0
 
-[node name="Leaves" type="MeshInstance3D" parent="." unique_id=2091566730]
+[node name="Leaves" type="MeshInstance3D" parent="." unique_id=1331181605]
 transform = Transform3D(7, 0, 0, 0, 6, 0, 0, 0, 7, 0, 5, 0)
 material_override = ExtResource("1_8cm3x")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="LeavesShape" type="CollisionShape3D" parent="." unique_id=1444272132]
+[node name="LeavesShape" type="CollisionShape3D" parent="." unique_id=155501322]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
 shape = SubResource("ConvexPolygonShape3D_a07hj")
 
-[node name="Leaves2" type="MeshInstance3D" parent="." unique_id=1002349353]
+[node name="Leaves2" type="MeshInstance3D" parent="." unique_id=618431284]
 transform = Transform3D(4.6, 0, 0, 0, 4.2, 0, 0, 0, 4.6, 5, 3.6, 2.4)
 material_override = ExtResource("2_f5ijx")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="LeavesShape2" type="CollisionShape3D" parent="." unique_id=1837691746]
+[node name="LeavesShape2" type="CollisionShape3D" parent="." unique_id=1363350978]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 3.6, 2.4)
 shape = SubResource("ConvexPolygonShape3D_sqaro")
 
-[node name="Leaves3" type="MeshInstance3D" parent="." unique_id=349775383]
+[node name="Leaves3" type="MeshInstance3D" parent="." unique_id=942358835]
 transform = Transform3D(4.8, 0, 0, 0, 4, 0, 0, 0, 4.6, -4.4, 3.4, -1.8)
 material_override = ExtResource("1_8cm3x")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="LeavesShape3" type="CollisionShape3D" parent="." unique_id=1670921173]
+[node name="LeavesShape3" type="CollisionShape3D" parent="." unique_id=1720437763]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.4, 3.4, -1.8)
 shape = SubResource("ConvexPolygonShape3D_1y6rf")
 
-[node name="Berry" type="MeshInstance3D" parent="." unique_id=2089703511]
+[node name="Berry" type="MeshInstance3D" parent="." unique_id=1149502396]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5768719, 10.578659, 0)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry2" type="MeshInstance3D" parent="." unique_id=2140695153]
+[node name="Berry2" type="MeshInstance3D" parent="." unique_id=830075581]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.0435553, 8.729348, 3.7039542)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry3" type="MeshInstance3D" parent="." unique_id=1361249703]
+[node name="Berry3" type="MeshInstance3D" parent="." unique_id=269793139]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6058282, 5.8827133, -6.897276)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry4" type="MeshInstance3D" parent="." unique_id=1413529531]
+[node name="Berry4" type="MeshInstance3D" parent="." unique_id=497772548]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1619718, 10.169244, 2.8205535)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry5" type="MeshInstance3D" parent="." unique_id=408763037]
+[node name="Berry5" type="MeshInstance3D" parent="." unique_id=180061489]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.9980154, 7.956364, -1.0618744)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry6" type="MeshInstance3D" parent="." unique_id=1075141942]
+[node name="Berry6" type="MeshInstance3D" parent="." unique_id=1142233729]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.9067955, 4.9528766, -3.7558947)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry7" type="MeshInstance3D" parent="." unique_id=1610362106]
+[node name="Berry7" type="MeshInstance3D" parent="." unique_id=2091602614]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1548885, 9.635072, 4.2923503)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry8" type="MeshInstance3D" parent="." unique_id=356343117]
+[node name="Berry8" type="MeshInstance3D" parent="." unique_id=1307684608]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0183601, 7.11203, -5.8153276)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry9" type="MeshInstance3D" parent="." unique_id=824332501]
+[node name="Berry9" type="MeshInstance3D" parent="." unique_id=1907265438]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.4870086, 4.024177, 2.3712082)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry10" type="MeshInstance3D" parent="." unique_id=1808741602]
+[node name="Berry10" type="MeshInstance3D" parent="." unique_id=967934049]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.833975, 8.989036, 1.9935225)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry11" type="MeshInstance3D" parent="." unique_id=145542630]
+[node name="Berry11" type="MeshInstance3D" parent="." unique_id=1041551862]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9075603, 6.216724, -6.2073407)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry12" type="MeshInstance3D" parent="." unique_id=359955149]
+[node name="Berry12" type="MeshInstance3D" parent="." unique_id=1018893025]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.95865214, 10.333143, 3.0606685)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry13" type="MeshInstance3D" parent="." unique_id=1610741229]
+[node name="Berry13" type="MeshInstance3D" parent="." unique_id=1057470550]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.09186, 8.246728, -2.953839)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry14" type="MeshInstance3D" parent="." unique_id=409575194]
+[node name="Berry14" type="MeshInstance3D" parent="." unique_id=529320215]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.8293433, 5.2920527, -1.49799)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry15" type="MeshInstance3D" parent="." unique_id=2042210995]
+[node name="Berry15" type="MeshInstance3D" parent="." unique_id=509224851]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.3783286, 9.8429985, 3.379229)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry16" type="MeshInstance3D" parent="." unique_id=1368257884]
+[node name="Berry16" type="MeshInstance3D" parent="." unique_id=668007298]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.81925553, 7.4260616, -6.349616)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry17" type="MeshInstance3D" parent="." unique_id=904910652]
+[node name="Berry17" type="MeshInstance3D" parent="." unique_id=1826951138]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.319398, 4.360333, 4.488549)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry18" type="MeshInstance3D" parent="." unique_id=1187939701]
+[node name="Berry18" type="MeshInstance3D" parent="." unique_id=1235952174]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.95341, 9.235971, 0.2017375)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry19" type="MeshInstance3D" parent="." unique_id=1632368823]
+[node name="Berry19" type="MeshInstance3D" parent="." unique_id=1916692977]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.797235, 6.5468445, -4.7675743)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry20" type="MeshInstance3D" parent="." unique_id=1431466080]
+[node name="Berry20" type="MeshInstance3D" parent="." unique_id=1209330598]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.13365823, 10.479994, 2.8473692)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry21" type="MeshInstance3D" parent="." unique_id=1430318628]
+[node name="Berry21" type="MeshInstance3D" parent="." unique_id=753019443]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.6252136, 8.526711, -4.3507175)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry22" type="MeshInstance3D" parent="." unique_id=1065851009]
+[node name="Berry22" type="MeshInstance3D" parent="." unique_id=2025927575]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.898382, 5.6302953, 0.9335913)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry23" type="MeshInstance3D" parent="." unique_id=178116985]
+[node name="Berry23" type="MeshInstance3D" parent="." unique_id=284428690]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.1262097, 10.035442, 2.1713843)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")
 
-[node name="Berry24" type="MeshInstance3D" parent="." unique_id=1961068215]
+[node name="Berry24" type="MeshInstance3D" parent="." unique_id=1263978665]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3729595, 7.732337, -6.0789294)
 material_override = ExtResource("3_eypc4")
+visibility_range_end = 320.0
+visibility_range_end_margin = 32.0
+visibility_range_fade_mode = 1
 mesh = SubResource("SphereMesh_1maen")

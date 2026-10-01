@@ -120,119 +120,161 @@ rings = 1
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_iw6mi"]
 points = PackedVector3Array(0.22, -4.0387406, 0, 0.19052559, -4.0387406, 0.11, 0.11, -4.0387406, 0.19052559, 1.3471114e-17, -4.0387406, 0.22, -0.11, -4.0387406, 0.19052559, -0.19052559, -4.0387406, 0.11, -0.22, -4.0387406, 2.6942229e-17, -0.19052559, -4.0387406, -0.11, -0.11, -4.0387406, -0.19052559, -4.0413345e-17, -4.0387406, -0.22, 0.11, -4.0387406, -0.19052559, 0.19052559, -4.0387406, -0.11, 0.04, 4.0387406, 0, 0.034641016, 4.0387406, 0.02, 0.02, 4.0387406, 0.034641016, 2.4492936e-18, 4.0387406, 0.04, -0.02, 4.0387406, 0.034641016, -0.034641016, 4.0387406, 0.02, -0.04, 4.0387406, 4.898587e-18, -0.034641016, 4.0387406, -0.02, -0.02, 4.0387406, -0.034641016, -7.347881e-18, 4.0387406, -0.04, 0.02, 4.0387406, -0.034641016, 0.034641016, 4.0387406, -0.02)
 
-[node name="TallGrass" type="StaticBody3D" unique_id=509952687]
+[node name="TallGrass" type="StaticBody3D" unique_id=280851724]
 collision_mask = 0
 
-[node name="Blade" type="MeshInstance3D" parent="." unique_id=51822880]
+[node name="Blade" type="MeshInstance3D" parent="." unique_id=1196116689]
 transform = Transform3D(0, 0.14834045, 0.98893636, 0, 0.98893636, -0.14834045, -1, 0, 0, 0.8249999, 3.5, 0)
 material_override = ExtResource("1_nn8hq")
+visibility_range_end = 150.0
+visibility_range_end_margin = 15.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_k5vq6")
 
-[node name="BladeShape" type="CollisionShape3D" parent="." unique_id=832025700]
+[node name="BladeShape" type="CollisionShape3D" parent="." unique_id=1580875669]
 transform = Transform3D(0, 0.14834045, 0.98893636, 0, 0.98893636, -0.14834045, -1, 0, 0, 0.8249999, 3.5, 0)
 shape = SubResource("ConvexPolygonShape3D_x2mdy")
 
-[node name="Seed" type="MeshInstance3D" parent="." unique_id=1439898346]
+[node name="Seed" type="MeshInstance3D" parent="." unique_id=2099974449]
 transform = Transform3D(0, 0.14834045, 0.98893636, 0, 0.98893636, -0.14834045, -1, 0, 0, 1.3499999, 7, 0)
 material_override = ExtResource("2_gia2k")
+visibility_range_end = 150.0
+visibility_range_end_margin = 15.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CapsuleMesh_k8vra")
 
-[node name="Blade2" type="MeshInstance3D" parent="." unique_id=605290247]
+[node name="Blade2" type="MeshInstance3D" parent="." unique_id=2066155683]
 transform = Transform3D(0.6828032, -0.20413761, -0.7015038, 0, 0.9601719, -0.27941003, 0.73060226, 0.19078207, 0.6556085, -1.5430539, 5.33, 1.4421009)
 material_override = ExtResource("3_lcvvh")
+visibility_range_end = 150.0
+visibility_range_end_margin = 15.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_5vrtu")
 
-[node name="BladeShape2" type="CollisionShape3D" parent="." unique_id=1488412029]
+[node name="BladeShape2" type="CollisionShape3D" parent="." unique_id=665024294]
 transform = Transform3D(0.6828032, -0.20413761, -0.7015038, 0, 0.9601719, -0.27941003, 0.73060226, 0.19078207, 0.6556085, -1.5430539, 5.33, 1.4421009)
 shape = SubResource("ConvexPolygonShape3D_benku")
 
-[node name="Blade3" type="MeshInstance3D" parent="." unique_id=1829080022]
+[node name="Blade3" type="MeshInstance3D" parent="." unique_id=97110452]
 transform = Transform3D(-0.99771523, 0.026792532, 0.062019754, 0, 0.9180016, -0.3965767, -0.067559525, -0.3956706, -0.9159042, 0.17694649, 4.16, -2.6131358)
 material_override = ExtResource("3_lcvvh")
+visibility_range_end = 150.0
+visibility_range_end_margin = 15.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_5io5n")
 
-[node name="BladeShape3" type="CollisionShape3D" parent="." unique_id=256120105]
+[node name="BladeShape3" type="CollisionShape3D" parent="." unique_id=1760485871]
 transform = Transform3D(-0.99771523, 0.026792532, 0.062019754, 0, 0.9180016, -0.3965767, -0.067559525, -0.3956706, -0.9159042, 0.17694649, 4.16, -2.6131358)
 shape = SubResource("ConvexPolygonShape3D_5xs6o")
 
-[node name="Blade4" type="MeshInstance3D" parent="." unique_id=2134433553]
+[node name="Blade4" type="MeshInstance3D" parent="." unique_id=1798706554]
 transform = Transform3D(0.7750629, 0.16641442, 0.60957664, 0, 0.964697, -0.26336232, -0.631884, 0.20412236, 0.7477009, 1.7176315, 5.99, 2.1068304)
 material_override = ExtResource("1_nn8hq")
+visibility_range_end = 150.0
+visibility_range_end_margin = 15.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_66yy2")
 
-[node name="BladeShape4" type="CollisionShape3D" parent="." unique_id=796088403]
+[node name="BladeShape4" type="CollisionShape3D" parent="." unique_id=1638697860]
 transform = Transform3D(0.7750629, 0.16641442, 0.60957664, 0, 0.964697, -0.26336232, -0.631884, 0.20412236, 0.7477009, 1.7176315, 5.99, 2.1068304)
 shape = SubResource("ConvexPolygonShape3D_k3jt7")
 
-[node name="Blade5" type="MeshInstance3D" parent="." unique_id=1136441356]
+[node name="Blade5" type="MeshInstance3D" parent="." unique_id=115055274]
 transform = Transform3D(-0.13481033, -0.3790232, -0.915515, 0, 0.92394936, -0.382515, 0.9908714, -0.051566977, -0.12455792, -2.417211, 4.82, -0.32886708)
 material_override = ExtResource("3_lcvvh")
+visibility_range_end = 150.0
+visibility_range_end_margin = 15.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_6ckyo")
 
-[node name="BladeShape5" type="CollisionShape3D" parent="." unique_id=837169751]
+[node name="BladeShape5" type="CollisionShape3D" parent="." unique_id=652909431]
 transform = Transform3D(-0.13481033, -0.3790232, -0.915515, 0, 0.92394936, -0.382515, 0.9908714, -0.051566977, -0.12455792, -2.417211, 4.82, -0.32886708)
 shape = SubResource("ConvexPolygonShape3D_s8dae")
 
-[node name="Seed2" type="MeshInstance3D" parent="." unique_id=1365579115]
+[node name="Seed2" type="MeshInstance3D" parent="." unique_id=1053387235]
 transform = Transform3D(-0.13481033, -0.3790232, -0.915515, 0, 0.92394936, -0.382515, 0.9908714, -0.051566977, -0.12455792, -4.394475, 9.64, -0.5978784)
 material_override = ExtResource("2_gia2k")
+visibility_range_end = 150.0
+visibility_range_end_margin = 15.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CapsuleMesh_k8vra")
 
-[node name="Blade6" type="MeshInstance3D" parent="." unique_id=476282314]
+[node name="Blade6" type="MeshInstance3D" parent="." unique_id=362545352]
 transform = Transform3D(-0.57807744, 0.20162335, 0.7906798, 0, 0.9689919, -0.2470929, -0.81598186, -0.14283885, -0.56015235, 1.3347423, 3.65, -0.9455902)
 material_override = ExtResource("3_lcvvh")
+visibility_range_end = 150.0
+visibility_range_end_margin = 15.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_7goik")
 
-[node name="BladeShape6" type="CollisionShape3D" parent="." unique_id=1807125342]
+[node name="BladeShape6" type="CollisionShape3D" parent="." unique_id=521574901]
 transform = Transform3D(-0.57807744, 0.20162335, 0.7906798, 0, 0.9689919, -0.2470929, -0.81598186, -0.14283885, -0.56015235, 1.3347423, 3.65, -0.9455902)
 shape = SubResource("ConvexPolygonShape3D_4qhtt")
 
-[node name="Blade7" type="MeshInstance3D" parent="." unique_id=371142680]
+[node name="Blade7" type="MeshInstance3D" parent="." unique_id=38763521]
 transform = Transform3D(0.9794998, -0.074168555, -0.18729435, 0, 0.9297536, -0.36818242, 0.20144515, 0.3606346, 0.91069347, -0.6317481, 5.48, 3.07179)
 material_override = ExtResource("1_nn8hq")
+visibility_range_end = 150.0
+visibility_range_end_margin = 15.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_q02at")
 
-[node name="BladeShape7" type="CollisionShape3D" parent="." unique_id=1052185271]
+[node name="BladeShape7" type="CollisionShape3D" parent="." unique_id=963160859]
 transform = Transform3D(0.9794998, -0.074168555, -0.18729435, 0, 0.9297536, -0.36818242, 0.20144515, 0.3606346, 0.91069347, -0.6317481, 5.48, 3.07179)
 shape = SubResource("ConvexPolygonShape3D_eieaf")
 
-[node name="Blade8" type="MeshInstance3D" parent="." unique_id=229625062]
+[node name="Blade8" type="MeshInstance3D" parent="." unique_id=1778177131]
 transform = Transform3D(-0.8531722, -0.12029392, -0.5075693, 0, 0.9730458, -0.23061188, 0.52162933, -0.19675164, -0.8301757, -0.7034015, 4.31, -1.1504772)
 material_override = ExtResource("3_lcvvh")
+visibility_range_end = 150.0
+visibility_range_end_margin = 15.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_6njhm")
 
-[node name="BladeShape8" type="CollisionShape3D" parent="." unique_id=160217050]
+[node name="BladeShape8" type="CollisionShape3D" parent="." unique_id=1549691232]
 transform = Transform3D(-0.8531722, -0.12029392, -0.5075693, 0, 0.9730458, -0.23061188, 0.52162933, -0.19675164, -0.8301757, -0.7034015, 4.31, -1.1504772)
 shape = SubResource("ConvexPolygonShape3D_ynn5g")
 
-[node name="Blade9" type="MeshInstance3D" parent="." unique_id=1615529654]
+[node name="Blade9" type="MeshInstance3D" parent="." unique_id=1401031948]
 transform = Transform3D(0.2671594, 0.3407306, 0.90140367, 0, 0.93540335, -0.3535825, -0.9636524, 0.09446289, 0.2499018, 2.8031876, 6.14, 0.7771453)
 material_override = ExtResource("3_lcvvh")
+visibility_range_end = 150.0
+visibility_range_end_margin = 15.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_socbd")
 
-[node name="BladeShape9" type="CollisionShape3D" parent="." unique_id=189177925]
+[node name="BladeShape9" type="CollisionShape3D" parent="." unique_id=1370088686]
 transform = Transform3D(0.2671594, 0.3407306, 0.90140367, 0, 0.93540335, -0.3535825, -0.9636524, 0.09446289, 0.2499018, 2.8031876, 6.14, 0.7771453)
 shape = SubResource("ConvexPolygonShape3D_nmppq")
 
-[node name="Seed3" type="MeshInstance3D" parent="." unique_id=1426009468]
+[node name="Seed3" type="MeshInstance3D" parent="." unique_id=1585508238]
 transform = Transform3D(0.2671594, 0.3407306, 0.90140367, 0, 0.93540335, -0.3535825, -0.9636524, 0.09446289, 0.2499018, 5.0397477, 12.28, 1.397201)
 material_override = ExtResource("2_gia2k")
+visibility_range_end = 150.0
+visibility_range_end_margin = 15.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CapsuleMesh_k8vra")
 
-[node name="Blade10" type="MeshInstance3D" parent="." unique_id=366493912]
+[node name="Blade10" type="MeshInstance3D" parent="." unique_id=944012787]
 transform = Transform3D(0.46279758, -0.1896412, -0.86594146, 0, 0.976849, -0.21392995, 0.88646394, 0.099006265, 0.4520834, -1.7174618, 4.97, 0.89663804)
 material_override = ExtResource("1_nn8hq")
+visibility_range_end = 150.0
+visibility_range_end_margin = 15.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_hmpk3")
 
-[node name="BladeShape10" type="CollisionShape3D" parent="." unique_id=1007781941]
+[node name="BladeShape10" type="CollisionShape3D" parent="." unique_id=201676537]
 transform = Transform3D(0.46279758, -0.1896412, -0.86594146, 0, 0.976849, -0.21392995, 0.88646394, 0.099006265, 0.4520834, -1.7174618, 4.97, 0.89663804)
 shape = SubResource("ConvexPolygonShape3D_5elvm")
 
-[node name="Blade11" type="MeshInstance3D" parent="." unique_id=825631485]
+[node name="Blade11" type="MeshInstance3D" parent="." unique_id=1542857454]
 transform = Transform3D(-0.94340146, 0.112337284, 0.31204805, 0, 0.94088733, -0.3387195, -0.33165288, -0.31954843, -0.88763463, 0.8218359, 3.8, -2.337749)
 material_override = ExtResource("3_lcvvh")
+visibility_range_end = 150.0
+visibility_range_end_margin = 15.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_pwhum")
 
-[node name="BladeShape11" type="CollisionShape3D" parent="." unique_id=1174614094]
+[node name="BladeShape11" type="CollisionShape3D" parent="." unique_id=1852199520]
 transform = Transform3D(-0.94340146, 0.112337284, 0.31204805, 0, 0.94088733, -0.3387195, -0.33165288, -0.31954843, -0.88763463, 0.8218359, 3.8, -2.337749)
 shape = SubResource("ConvexPolygonShape3D_iw6mi")

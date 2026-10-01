@@ -23,17 +23,23 @@ height = 2.9
 radial_segments = 12
 rings = 1
 
-[node name="FallenLeafRust" type="StaticBody3D" unique_id=1471858472]
+[node name="FallenLeafRust" type="StaticBody3D" unique_id=713892851]
 collision_mask = 0
 
-[node name="Blade" type="MeshInstance3D" parent="." unique_id=644652302]
+[node name="Blade" type="MeshInstance3D" parent="." unique_id=123326958]
 material_override = ExtResource("1_u3gvq")
+visibility_range_end = 90.0
+visibility_range_end_margin = 9.0
+visibility_range_fade_mode = 1
 mesh = SubResource("ArrayMesh_4u12y")
 
-[node name="BladeShape" type="CollisionShape3D" parent="." unique_id=655269100]
+[node name="BladeShape" type="CollisionShape3D" parent="." unique_id=1343928868]
 shape = SubResource("ConvexPolygonShape3D_y6cio")
 
-[node name="Rib" type="MeshInstance3D" parent="." unique_id=1302876065]
+[node name="Rib" type="MeshInstance3D" parent="." unique_id=494381184]
 transform = Transform3D(-1, 0, 0, 0, 0, -1, 0, -1, 0, 0, 0.1, 0.050000012)
 material_override = ExtResource("1_u3gvq")
+visibility_range_end = 90.0
+visibility_range_end_margin = 9.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_khjqh")

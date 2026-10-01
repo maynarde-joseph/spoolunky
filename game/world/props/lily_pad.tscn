@@ -14,25 +14,31 @@ rings = 1
 height = 0.2
 radius = 3.2
 
-[sub_resource type="SphereMesh" id="SphereMesh_r7i8p"]
+[sub_resource type="SphereMesh" id="SphereMesh_33emw"]
 radius = 1.0
 height = 2.0
 radial_segments = 24
 rings = 12
 
-[node name="LilyPad" type="StaticBody3D" unique_id=866893838]
+[node name="LilyPad" type="StaticBody3D" unique_id=848370046]
 collision_mask = 0
 
-[node name="Pad" type="MeshInstance3D" parent="." unique_id=158365591]
+[node name="Pad" type="MeshInstance3D" parent="." unique_id=192529217]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
 material_override = ExtResource("1_qi5c1")
+visibility_range_end = 200.0
+visibility_range_end_margin = 20.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_aoxvn")
 
-[node name="PadShape" type="CollisionShape3D" parent="." unique_id=675411854]
+[node name="PadShape" type="CollisionShape3D" parent="." unique_id=882734750]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
 shape = SubResource("CylinderShape3D_k6d3t")
 
-[node name="Flower" type="MeshInstance3D" parent="." unique_id=1784127252]
+[node name="Flower" type="MeshInstance3D" parent="." unique_id=1091387688]
 transform = Transform3D(0.9, 0, 0, 0, 0.6, 0, 0, 0, 0.9, 1, 0.5, -0.6)
 material_override = ExtResource("2_g6y1k")
-mesh = SubResource("SphereMesh_r7i8p")
+visibility_range_end = 200.0
+visibility_range_end_margin = 20.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")

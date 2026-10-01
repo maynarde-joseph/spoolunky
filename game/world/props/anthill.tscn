@@ -3,7 +3,7 @@
 [ext_resource type="Material" path="res://game/world/materials/soil.tres" id="1_2wr80"]
 [ext_resource type="Material" path="res://game/world/materials/black.tres" id="2_y173v"]
 
-[sub_resource type="SphereMesh" id="SphereMesh_855nu"]
+[sub_resource type="SphereMesh" id="SphereMesh_33emw"]
 radius = 1.0
 height = 2.0
 radial_segments = 24
@@ -15,27 +15,36 @@ points = PackedVector3Array(1.6, 1.6454482, 0, 1.2944273, 1.6454482, 0.9404564, 
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_td5dd"]
 points = PackedVector3Array(0.7, 0.8660254, 0, 0.5663119, 0.8660254, 0.41144967, 0.2163119, 0.8660254, 0.6657396, -0.2163119, 0.8660254, 0.6657396, -0.5663119, 0.8660254, 0.41144967, -0.7, 0.8660254, 8.572528e-17, -0.5663119, 0.8660254, -0.41144967, -0.2163119, 0.8660254, -0.6657396, 0.2163119, 0.8660254, -0.6657396, 0.5663119, 0.8660254, -0.41144967, 1.2124355, 0.5, 0, 0.980881, 0.5, 0.7126517, 0.3746632, 0.5, 1.1530948, -0.3746632, 0.5, 1.1530948, -0.980881, 0.5, 0.7126517, -1.2124355, 0.5, 1.4848053e-16, -0.980881, 0.5, -0.7126517, -0.3746632, 0.5, -1.1530948, 0.3746632, 0.5, -1.1530948, 0.980881, 0.5, -0.7126517, 1.4, 6.123234e-17, 0, 1.1326238, 6.123234e-17, 0.82289934, 0.4326238, 6.123234e-17, 1.3314792, -0.4326238, 6.123234e-17, 1.3314792, -1.1326238, 6.123234e-17, 0.82289934, -1.4, 6.123234e-17, 1.7145056e-16, -1.1326238, 6.123234e-17, -0.82289934, -0.4326238, 6.123234e-17, -1.3314792, 0.4326238, 6.123234e-17, -1.3314792, 1.1326238, 6.123234e-17, -0.82289934, 1.2124355, -0.5, 0, 0.980881, -0.5, 0.7126517, 0.3746632, -0.5, 1.1530948, -0.3746632, -0.5, 1.1530948, -0.980881, -0.5, 0.7126517, -1.2124355, -0.5, 1.4848053e-16, -0.980881, -0.5, -0.7126517, -0.3746632, -0.5, -1.1530948, 0.3746632, -0.5, -1.1530948, 0.980881, -0.5, -0.7126517, 0.7, -0.8660254, 0, 0.5663119, -0.8660254, 0.41144967, 0.2163119, -0.8660254, 0.6657396, -0.2163119, -0.8660254, 0.6657396, -0.5663119, -0.8660254, 0.41144967, -0.7, -0.8660254, 8.572528e-17, -0.5663119, -0.8660254, -0.41144967, -0.2163119, -0.8660254, -0.6657396, 0.2163119, -0.8660254, -0.6657396, 0.5663119, -0.8660254, -0.41144967, 0, 1, 0, 0, -1, 0)
 
-[node name="Anthill" type="StaticBody3D" unique_id=1961864546]
+[node name="Anthill" type="StaticBody3D" unique_id=1056935338]
 collision_mask = 0
 
-[node name="Mound" type="MeshInstance3D" parent="." unique_id=50055251]
+[node name="Mound" type="MeshInstance3D" parent="." unique_id=398991606]
 transform = Transform3D(3.2, 0, 0, 0, 1.9, 0, 0, 0, 3.2, 0, 0, 0)
 material_override = ExtResource("1_2wr80")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 180.0
+visibility_range_end_margin = 18.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="MoundShape" type="CollisionShape3D" parent="." unique_id=2107631264]
+[node name="MoundShape" type="CollisionShape3D" parent="." unique_id=1616037198]
 shape = SubResource("ConvexPolygonShape3D_g1ruj")
 
-[node name="Top" type="MeshInstance3D" parent="." unique_id=1436792058]
+[node name="Top" type="MeshInstance3D" parent="." unique_id=1361333632]
 transform = Transform3D(1.4, 0, 0, 0, 1, 0, 0, 0, 1.4, 0.3, 1.4, -0.2)
 material_override = ExtResource("1_2wr80")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 180.0
+visibility_range_end_margin = 18.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="TopShape" type="CollisionShape3D" parent="." unique_id=2064207087]
+[node name="TopShape" type="CollisionShape3D" parent="." unique_id=147540729]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 1.4, -0.2)
 shape = SubResource("ConvexPolygonShape3D_td5dd")
 
-[node name="WayIn" type="MeshInstance3D" parent="." unique_id=868532377]
+[node name="WayIn" type="MeshInstance3D" parent="." unique_id=1693909845]
 transform = Transform3D(0.45, 0, 0, 0, 0.35, 0, 0, 0, 0.2, 0, 0.7, -3)
 material_override = ExtResource("2_y173v")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 180.0
+visibility_range_end_margin = 18.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")

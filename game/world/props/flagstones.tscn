@@ -57,86 +57,113 @@ size = Vector3(6.993615, 0.6, 6.4800854)
 [sub_resource type="BoxShape3D" id="BoxShape3D_x6ebu"]
 size = Vector3(6.993615, 0.6, 6.4800854)
 
-[node name="Flagstones" type="StaticBody3D" unique_id=1638528733]
+[node name="Flagstones" type="StaticBody3D" unique_id=2044533375]
 collision_mask = 0
 
-[node name="Stone" type="MeshInstance3D" parent="." unique_id=1459082541]
+[node name="Stone" type="MeshInstance3D" parent="." unique_id=954989870]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.3, -6.6)
 material_override = ExtResource("1_i1adc")
+visibility_range_end = 260.0
+visibility_range_end_margin = 26.0
+visibility_range_fade_mode = 1
 mesh = SubResource("BoxMesh_ftcxf")
 
-[node name="StoneShape" type="CollisionShape3D" parent="." unique_id=1032051833]
+[node name="StoneShape" type="CollisionShape3D" parent="." unique_id=763046067]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.3, -6.6)
 shape = SubResource("BoxShape3D_niob2")
 
-[node name="Stone2" type="MeshInstance3D" parent="." unique_id=111429137]
+[node name="Stone2" type="MeshInstance3D" parent="." unique_id=1084921761]
 transform = Transform3D(0.99911505, 0, 0.042061135, 0, 1, 0, -0.042061135, 0, 0.99911505, -7, 0.3841471, 0)
 material_override = ExtResource("2_ht302")
+visibility_range_end = 260.0
+visibility_range_end_margin = 26.0
+visibility_range_fade_mode = 1
 mesh = SubResource("BoxMesh_313yw")
 
-[node name="StoneShape2" type="CollisionShape3D" parent="." unique_id=399522741]
+[node name="StoneShape2" type="CollisionShape3D" parent="." unique_id=1748332847]
 transform = Transform3D(0.99911505, 0, 0.042061135, 0, 1, 0, -0.042061135, 0, 0.99911505, -7, 0.3841471, 0)
 shape = SubResource("BoxShape3D_twbft")
 
-[node name="Stone3" type="MeshInstance3D" parent="." unique_id=1468707594]
+[node name="Stone3" type="MeshInstance3D" parent="." unique_id=1075236643]
 transform = Transform3D(0.99896663, 0, 0.04544921, 0, 1, 0, -0.04544921, 0, 0.99896663, -7, 0.39092973, 6.6)
 material_override = ExtResource("1_i1adc")
+visibility_range_end = 260.0
+visibility_range_end_margin = 26.0
+visibility_range_fade_mode = 1
 mesh = SubResource("BoxMesh_lmeja")
 
-[node name="StoneShape3" type="CollisionShape3D" parent="." unique_id=1456674463]
+[node name="StoneShape3" type="CollisionShape3D" parent="." unique_id=1026784824]
 transform = Transform3D(0.99896663, 0, 0.04544921, 0, 1, 0, -0.04544921, 0, 0.99896663, -7, 0.39092973, 6.6)
 shape = SubResource("BoxShape3D_vpnxa")
 
-[node name="Stone4" type="MeshInstance3D" parent="." unique_id=195624092]
+[node name="Stone4" type="MeshInstance3D" parent="." unique_id=127535142]
 transform = Transform3D(0.99911505, 0, 0.042061135, 0, 1, 0, -0.042061135, 0, 0.99911505, 0, 0.20410757, -6.6)
 material_override = ExtResource("2_ht302")
+visibility_range_end = 260.0
+visibility_range_end_margin = 26.0
+visibility_range_fade_mode = 1
 mesh = SubResource("BoxMesh_awgcr")
 
-[node name="StoneShape4" type="CollisionShape3D" parent="." unique_id=1079061887]
+[node name="StoneShape4" type="CollisionShape3D" parent="." unique_id=1877144652]
 transform = Transform3D(0.99911505, 0, 0.042061135, 0, 1, 0, -0.042061135, 0, 0.99911505, 0, 0.20410757, -6.6)
 shape = SubResource("BoxShape3D_wp2md")
 
-[node name="Stone5" type="MeshInstance3D" parent="." unique_id=1690160317]
+[node name="Stone5" type="MeshInstance3D" parent="." unique_id=403961415]
 transform = Transform3D(0.99896663, 0, 0.04544921, 0, 1, 0, -0.04544921, 0, 0.99896663, 0, 0.27205846, 0)
 material_override = ExtResource("1_i1adc")
+visibility_range_end = 260.0
+visibility_range_end_margin = 26.0
+visibility_range_fade_mode = 1
 mesh = SubResource("BoxMesh_h5c0n")
 
-[node name="StoneShape5" type="CollisionShape3D" parent="." unique_id=1621006462]
+[node name="StoneShape5" type="CollisionShape3D" parent="." unique_id=2129713250]
 transform = Transform3D(0.99896663, 0, 0.04544921, 0, 1, 0, -0.04544921, 0, 0.99896663, 0, 0.27205846, 0)
 shape = SubResource("BoxShape3D_abgf3")
 
-[node name="Stone6" type="MeshInstance3D" parent="." unique_id=1064724122]
+[node name="Stone6" type="MeshInstance3D" parent="." unique_id=326496547]
 transform = Transform3D(0.9999751, 0, 0.0070559415, 0, 1, 0, -0.0070559415, 0, 0.9999751, 0, 0.36569867, 6.6)
 material_override = ExtResource("2_ht302")
+visibility_range_end = 260.0
+visibility_range_end_margin = 26.0
+visibility_range_fade_mode = 1
 mesh = SubResource("BoxMesh_a14gg")
 
-[node name="StoneShape6" type="CollisionShape3D" parent="." unique_id=17683591]
+[node name="StoneShape6" type="CollisionShape3D" parent="." unique_id=2107818256]
 transform = Transform3D(0.9999751, 0, 0.0070559415, 0, 1, 0, -0.0070559415, 0, 0.9999751, 0, 0.36569867, 6.6)
 shape = SubResource("BoxShape3D_tw461")
 
-[node name="Stone7" type="MeshInstance3D" parent="." unique_id=328762101]
+[node name="Stone7" type="MeshInstance3D" parent="." unique_id=1196336299]
 transform = Transform3D(0.99896663, 0, 0.04544921, 0, 1, 0, -0.04544921, 0, 0.99896663, 7, 0.24559788, -6.6)
 material_override = ExtResource("1_i1adc")
+visibility_range_end = 260.0
+visibility_range_end_margin = 26.0
+visibility_range_fade_mode = 1
 mesh = SubResource("BoxMesh_l21cj")
 
-[node name="StoneShape7" type="CollisionShape3D" parent="." unique_id=1033849964]
+[node name="StoneShape7" type="CollisionShape3D" parent="." unique_id=2081485716]
 transform = Transform3D(0.99896663, 0, 0.04544921, 0, 1, 0, -0.04544921, 0, 0.99896663, 7, 0.24559788, -6.6)
 shape = SubResource("BoxShape3D_xs8xc")
 
-[node name="Stone8" type="MeshInstance3D" parent="." unique_id=1232970823]
+[node name="Stone8" type="MeshInstance3D" parent="." unique_id=787956096]
 transform = Transform3D(0.9999751, 0, 0.0070559415, 0, 1, 0, -0.0070559415, 0, 0.9999751, 7, 0.20000099, 0)
 material_override = ExtResource("2_ht302")
+visibility_range_end = 260.0
+visibility_range_end_margin = 26.0
+visibility_range_fade_mode = 1
 mesh = SubResource("BoxMesh_ti34x")
 
-[node name="StoneShape8" type="CollisionShape3D" parent="." unique_id=764754016]
+[node name="StoneShape8" type="CollisionShape3D" parent="." unique_id=1817806169]
 transform = Transform3D(0.9999751, 0, 0.0070559415, 0, 1, 0, -0.0070559415, 0, 0.9999751, 7, 0.20000099, 0)
 shape = SubResource("BoxShape3D_kkks8")
 
-[node name="Stone9" type="MeshInstance3D" parent="." unique_id=31112089]
+[node name="Stone9" type="MeshInstance3D" parent="." unique_id=1157949950]
 transform = Transform3D(0.99928415, 0, -0.037831094, 0, 1, 0, 0.037831094, 0, 0.99928415, 7, 0.2463427, 6.6)
 material_override = ExtResource("1_i1adc")
+visibility_range_end = 260.0
+visibility_range_end_margin = 26.0
+visibility_range_fade_mode = 1
 mesh = SubResource("BoxMesh_5nehd")
 
-[node name="StoneShape9" type="CollisionShape3D" parent="." unique_id=1265621789]
+[node name="StoneShape9" type="CollisionShape3D" parent="." unique_id=325050503]
 transform = Transform3D(0.99928415, 0, -0.037831094, 0, 1, 0, 0.037831094, 0, 0.99928415, 7, 0.2463427, 6.6)
 shape = SubResource("BoxShape3D_x6ebu")

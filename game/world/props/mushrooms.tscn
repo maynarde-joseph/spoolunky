@@ -13,7 +13,7 @@ rings = 1
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_pt18h"]
 points = PackedVector3Array(0.35, -1.1, 0, 0.3031089, -1.1, 0.175, 0.175, -1.1, 0.3031089, 2.1431318e-17, -1.1, 0.35, -0.175, -1.1, 0.3031089, -0.3031089, -1.1, 0.175, -0.35, -1.1, 4.2862637e-17, -0.3031089, -1.1, -0.175, -0.175, -1.1, -0.3031089, -6.4293956e-17, -1.1, -0.35, 0.175, -1.1, -0.3031089, 0.3031089, -1.1, -0.175, 0.28, 1.1, 0, 0.24248712, 1.1, 0.14, 0.14, 1.1, 0.24248712, 1.7145055e-17, 1.1, 0.28, -0.14, 1.1, 0.24248712, -0.24248712, 1.1, 0.14, -0.28, 1.1, 3.429011e-17, -0.24248712, 1.1, -0.14, -0.14, 1.1, -0.24248712, -5.1435166e-17, 1.1, -0.28, 0.14, 1.1, -0.24248712, 0.24248712, 1.1, -0.14)
 
-[sub_resource type="SphereMesh" id="SphereMesh_855nu"]
+[sub_resource type="SphereMesh" id="SphereMesh_33emw"]
 radius = 1.0
 height = 2.0
 radial_segments = 24
@@ -48,59 +48,77 @@ points = PackedVector3Array(0.175, -0.5, 0, 0.15155445, -0.5, 0.0875, 0.0875, -0
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_m2h0e"]
 points = PackedVector3Array(0.35, 0.30310887, 0, 0.28315595, 0.30310887, 0.20572484, 0.10815595, 0.30310887, 0.3328698, -0.10815595, 0.30310887, 0.3328698, -0.28315595, 0.30310887, 0.20572484, -0.35, 0.30310887, 4.286264e-17, -0.28315595, 0.30310887, -0.20572484, -0.10815595, 0.30310887, -0.3328698, 0.10815595, 0.30310887, -0.3328698, 0.28315595, 0.30310887, -0.20572484, 0.60621774, 0.175, 0, 0.4904405, 0.175, 0.35632586, 0.1873316, 0.175, 0.5765474, -0.1873316, 0.175, 0.5765474, -0.4904405, 0.175, 0.35632586, -0.60621774, 0.175, 7.424027e-17, -0.4904405, 0.175, -0.35632586, -0.1873316, 0.175, -0.5765474, 0.1873316, 0.175, -0.5765474, 0.4904405, 0.175, -0.35632586, 0.7, 2.143132e-17, 0, 0.5663119, 2.143132e-17, 0.41144967, 0.2163119, 2.143132e-17, 0.6657396, -0.2163119, 2.143132e-17, 0.6657396, -0.5663119, 2.143132e-17, 0.41144967, -0.7, 2.143132e-17, 8.572528e-17, -0.5663119, 2.143132e-17, -0.41144967, -0.2163119, 2.143132e-17, -0.6657396, 0.2163119, 2.143132e-17, -0.6657396, 0.5663119, 2.143132e-17, -0.41144967, 0.60621774, -0.175, 0, 0.4904405, -0.175, 0.35632586, 0.1873316, -0.175, 0.5765474, -0.1873316, -0.175, 0.5765474, -0.4904405, -0.175, 0.35632586, -0.60621774, -0.175, 7.424027e-17, -0.4904405, -0.175, -0.35632586, -0.1873316, -0.175, -0.5765474, 0.1873316, -0.175, -0.5765474, 0.4904405, -0.175, -0.35632586, 0.35, -0.30310887, 0, 0.28315595, -0.30310887, 0.20572484, 0.10815595, -0.30310887, 0.3328698, -0.10815595, -0.30310887, 0.3328698, -0.28315595, -0.30310887, 0.20572484, -0.35, -0.30310887, 4.286264e-17, -0.28315595, -0.30310887, -0.20572484, -0.10815595, -0.30310887, -0.3328698, 0.10815595, -0.30310887, -0.3328698, 0.28315595, -0.30310887, -0.20572484, 0, 0.35, 0, 0, -0.35, 0)
 
-[node name="Mushrooms" type="StaticBody3D" unique_id=742151515]
+[node name="Mushrooms" type="StaticBody3D" unique_id=889450424]
 collision_mask = 0
 
-[node name="Stem" type="MeshInstance3D" parent="." unique_id=1847816824]
+[node name="Stem" type="MeshInstance3D" parent="." unique_id=570655638]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
 material_override = ExtResource("1_spjds")
+visibility_range_end = 140.0
+visibility_range_end_margin = 14.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_idwqe")
 
-[node name="StemShape" type="CollisionShape3D" parent="." unique_id=1754083715]
+[node name="StemShape" type="CollisionShape3D" parent="." unique_id=1659376190]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
 shape = SubResource("ConvexPolygonShape3D_pt18h")
 
-[node name="Cap" type="MeshInstance3D" parent="." unique_id=2079939239]
+[node name="Cap" type="MeshInstance3D" parent="." unique_id=586617616]
 transform = Transform3D(1.4, 0, 0, 0, 0.7, 0, 0, 0, 1.4, 0, 2.2, 0)
 material_override = ExtResource("2_2wmi8")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 140.0
+visibility_range_end_margin = 14.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="CapShape" type="CollisionShape3D" parent="." unique_id=124045804]
+[node name="CapShape" type="CollisionShape3D" parent="." unique_id=1318466851]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
 shape = SubResource("ConvexPolygonShape3D_ixlk1")
 
-[node name="Stem2" type="MeshInstance3D" parent="." unique_id=55791603]
+[node name="Stem2" type="MeshInstance3D" parent="." unique_id=445147609]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 0.7, 0.7)
 material_override = ExtResource("1_spjds")
+visibility_range_end = 140.0
+visibility_range_end_margin = 14.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_t8r6o")
 
-[node name="StemShape2" type="CollisionShape3D" parent="." unique_id=793665286]
+[node name="StemShape2" type="CollisionShape3D" parent="." unique_id=1470341505]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 0.7, 0.7)
 shape = SubResource("ConvexPolygonShape3D_qntvg")
 
-[node name="Cap2" type="MeshInstance3D" parent="." unique_id=861469393]
+[node name="Cap2" type="MeshInstance3D" parent="." unique_id=488327769]
 transform = Transform3D(0.95, 0, 0, 0, 0.475, 0, 0, 0, 0.95, 1.6, 1.4, 0.7)
 material_override = ExtResource("2_2wmi8")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 140.0
+visibility_range_end_margin = 14.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="CapShape2" type="CollisionShape3D" parent="." unique_id=2113277769]
+[node name="CapShape2" type="CollisionShape3D" parent="." unique_id=82708903]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 1.4, 0.7)
 shape = SubResource("ConvexPolygonShape3D_ar53j")
 
-[node name="Stem3" type="MeshInstance3D" parent="." unique_id=1255191689]
+[node name="Stem3" type="MeshInstance3D" parent="." unique_id=2127444856]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1, 0.5, 1.2)
 material_override = ExtResource("1_spjds")
+visibility_range_end = 140.0
+visibility_range_end_margin = 14.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_a72yw")
 
-[node name="StemShape3" type="CollisionShape3D" parent="." unique_id=957289164]
+[node name="StemShape3" type="CollisionShape3D" parent="." unique_id=1226571964]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1, 0.5, 1.2)
 shape = SubResource("ConvexPolygonShape3D_gdecl")
 
-[node name="Cap3" type="MeshInstance3D" parent="." unique_id=1401752776]
+[node name="Cap3" type="MeshInstance3D" parent="." unique_id=1773083377]
 transform = Transform3D(0.7, 0, 0, 0, 0.35, 0, 0, 0, 0.7, -1.1, 1, 1.2)
 material_override = ExtResource("2_2wmi8")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 140.0
+visibility_range_end_margin = 14.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="CapShape3" type="CollisionShape3D" parent="." unique_id=572713409]
+[node name="CapShape3" type="CollisionShape3D" parent="." unique_id=1411632812]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1, 1, 1.2)
 shape = SubResource("ConvexPolygonShape3D_m2h0e")

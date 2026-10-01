@@ -3,7 +3,7 @@
 [ext_resource type="Material" path="res://game/world/materials/acorn.tres" id="1_fpnde"]
 [ext_resource type="Material" path="res://game/world/materials/acorn_cup.tres" id="2_kv6q1"]
 
-[sub_resource type="SphereMesh" id="SphereMesh_855nu"]
+[sub_resource type="SphereMesh" id="SphereMesh_33emw"]
 radius = 1.0
 height = 2.0
 radial_segments = 24
@@ -22,28 +22,37 @@ height = 0.2039608
 radial_segments = 12
 rings = 1
 
-[node name="Acorn" type="StaticBody3D" unique_id=1865230829]
+[node name="Acorn" type="StaticBody3D" unique_id=280047835]
 collision_mask = 0
 
-[node name="Nut" type="MeshInstance3D" parent="." unique_id=1686627442]
+[node name="Nut" type="MeshInstance3D" parent="." unique_id=689171243]
 transform = Transform3D(-1.3113417e-08, -0.4, 0, 0.3, -1.7484556e-08, 0, 0, 0, 0.3, 0.1, 0.3, 0)
 material_override = ExtResource("1_fpnde")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 90.0
+visibility_range_end_margin = 9.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="NutShape" type="CollisionShape3D" parent="." unique_id=638876098]
+[node name="NutShape" type="CollisionShape3D" parent="." unique_id=931941917]
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0.1, 0.3, 0)
 shape = SubResource("ConvexPolygonShape3D_hpptk")
 
-[node name="Cup" type="MeshInstance3D" parent="." unique_id=1182394008]
+[node name="Cup" type="MeshInstance3D" parent="." unique_id=1241702308]
 transform = Transform3D(-1.4424758e-08, -0.18, 0, 0.33, -7.86805e-09, 0, 0, 0, 0.33, -0.25, 0.3, 0)
 material_override = ExtResource("2_kv6q1")
-mesh = SubResource("SphereMesh_855nu")
+visibility_range_end = 90.0
+visibility_range_end_margin = 9.0
+visibility_range_fade_mode = 1
+mesh = SubResource("SphereMesh_33emw")
 
-[node name="CupShape" type="CollisionShape3D" parent="." unique_id=1979212757]
+[node name="CupShape" type="CollisionShape3D" parent="." unique_id=2003907714]
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, -0.25, 0.3, 0)
 shape = SubResource("ConvexPolygonShape3D_hnsi1")
 
-[node name="Stalk" type="MeshInstance3D" parent="." unique_id=1132273065]
+[node name="Stalk" type="MeshInstance3D" parent="." unique_id=1459133667]
 transform = Transform3D(0, -0.9805806, -0.19611609, 0, 0.19611607, -0.9805807, 1, 0, 0, -0.52, 0.32, 0)
 material_override = ExtResource("2_kv6q1")
+visibility_range_end = 90.0
+visibility_range_end_margin = 9.0
+visibility_range_fade_mode = 1
 mesh = SubResource("CylinderMesh_vgdoo")
