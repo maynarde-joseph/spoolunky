@@ -46,6 +46,7 @@ func _sections() -> Array[Callable]:
 		_test_the_charger_beetle,
 		_test_the_spitter_wasp,
 		_test_the_tongue_frog,
+		_test_the_screech_bat,
 	]
 
 
@@ -506,6 +507,41 @@ func _test_the_tongue_frog() -> void:
 	var bitten: bool = await wait_until(func() -> bool: return spider.health < health, 120)
 	check(bitten, "and reels you in to be bitten (%.1f -> %.1f)" % [health, spider.health])
 	check(_span(frog) < 2.0, "right up to its mouth (%.1fm)" % _span(frog))
+
+
+## The Screech Bat's screech takes in everything round it: inside the ring you are
+## thrown and dazed. The ring is shown first, and outside it when it comes you are
+## not touched.
+func _test_the_screech_bat() -> void:
+	await _arena()
+	var kind := _species("screech_bat")
+	if not _kit(kind, "screech", CreatureAttack.Kind.BURST):
+		return
+	var bat := _put(kind, Vector3(1.8, 1.0, 0.0))
+	bat.attack_spider(spider)
+	var health := spider.health
+	var screeching: bool = await wait_until(func() -> bool: return _using(bat, "screech"), 120)
+	if not check(screeching, "close over you, it screeches"):
+		return
+	check(_tells(bat) > 0, "its ring shown first")
+	var hit: bool = await wait_until(func() -> bool: return spider.health < health, 120)
+	check(hit, "and inside the ring you are caught (%.1f -> %.1f)" % [health, spider.health])
+	check(spider.is_dazed() and not spider.climb.is_attached(), "thrown and dazed")
+
+	# The next one, stepped out of while the ring shows.
+	var again: bool = await wait_until(func() -> bool:
+		return _using(bat, "screech") and bat.fighter.beat == CreatureFighter.Beat.WIND_UP, 480)
+	if not check(again, "it screeches again"):
+		return
+	var away := spider.global_position - bat.global_position
+	away.y = 0.0
+	var out := bat.global_position + away.normalized() * (bat.fighter.attack.radius + 1.0)
+	place(Vector3(out.x, spider.global_position.y, out.z))
+	health = spider.health
+	await wait_until(func() -> bool: return bat.fighter.beat != CreatureFighter.Beat.WIND_UP, 120)
+	await run_frames(2)
+	check(is_equal_approx(spider.health, health) and not spider.is_dazed(),
+		"and outside the ring it does nothing to you (%.1f -> %.1f)" % [health, spider.health])
 
 
 # --- helpers ------------------------------------------------------------
