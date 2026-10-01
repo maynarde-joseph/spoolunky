@@ -26,7 +26,18 @@ signal beaten_for_good(spawn: HostileSpawn)
 ## Whether the one here has been beaten for good.
 @export var beaten := false
 
+## A beat to walk, for one that roams rather than keeps to a room: points in world
+## space it goes between in turn while it is not after you. Empty, and it keeps
+## to its mark.
+@export var route := PackedVector3Array()
+
+## Seconds it spends about each point of its beat before it moves on.
+@export var dwell := 14.0
+
 var creature: Prey = null
+
+var _leg := 0
+var _dwelt := 0.0
 
 
 func _ready() -> void:
@@ -35,10 +46,29 @@ func _ready() -> void:
 		stand_up.call_deferred()
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if stays_beaten and not beaten and creature != null and is_down():
 		beaten = true
 		beaten_for_good.emit(self)
+	_walk_the_beat(delta)
+
+
+## Moves its haunt on to the next point of its beat, every so often, while it is
+## not busy with you.
+func _walk_the_beat(delta: float) -> void:
+	if route.is_empty() or is_down() or creature.is_hunting():
+		return
+	_dwelt += delta
+	if _dwelt < dwell:
+		return
+	_dwelt = 0.0
+	_leg = (_leg + 1) % route.size()
+	creature.wander_about(route[_leg], true)
+
+
+## Where on its beat it is making for, or its mark if it has none.
+func beat_point() -> Vector3:
+	return route[_leg] if not route.is_empty() else global_position
 
 
 ## The species, as it ships.
@@ -56,6 +86,10 @@ func stand_up() -> Prey:
 	creature = Prey.of(kind)
 	add_child(creature)
 	creature.global_position = global_position
+	_leg = 0
+	_dwelt = 0.0
+	if not route.is_empty():
+		creature.wander_about(route[0])
 	return creature
 
 

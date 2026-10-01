@@ -55,6 +55,7 @@ func _sections() -> Array[Callable]:
 		_test_the_screech_bat,
 		_test_the_rat_king,
 		_test_a_lair_seals_until_its_keeper_is_beaten,
+		_test_the_hollow_wyrm,
 	]
 
 
@@ -783,6 +784,48 @@ func _test_a_lair_seals_until_its_keeper_is_beaten() -> void:
 	check(spider.traits.has("wing_buds"), "and what it kept is yours")
 	await run_frames(10)
 	check(not lair.is_sealed(), "and it never seals again")
+
+
+## The Hollow Wyrm keeps to no room: it goes the rounds of its beat, moving on from
+## each point after a while there.
+func _test_the_hollow_wyrm() -> void:
+	await _arena()
+	var kind := _species("hollow_wyrm")
+	if not _kit(kind, "dive", CreatureAttack.Kind.LUNGE, Vector2i(4, 9)):
+		return
+	var moves := {}
+	for each in kind.attacks:
+		moves[each.id] = each
+	check(kind.boss and kind.flying, "a boss, and a flier")
+	check(moves.has("gust") and moves.has("fire") and moves.has("tail"),
+		"with a gust, fire and a tail besides")
+	check(moves.has("gust") and (moves["gust"] as CreatureAttack).cuts_silk,
+		"and its gust tears silk down")
+	# Somewhere it will not see you, so it keeps to its rounds.
+	var far := add_slab(ARENA + Vector3(0.0, 0.0, 60.0), Vector3(6, 0.5, 6), _slab)
+	await physics_frame
+	stand_on(far.global_position + Vector3(0.0, 0.25, 0.0))
+	var mark := HostileSpawn.new()
+	mark.species_id = "hollow_wyrm"
+	mark.route = PackedVector3Array([_centre() + Vector3(-5.0, 2.0, -5.0),
+		_centre() + Vector3(5.0, 2.0, 5.0)])
+	mark.dwell = 1.0
+	_slab.add_child(mark)
+	mark.global_position = mark.route[0]
+	await run_frames(5)
+	check(mark.creature != null and mark.creature.home().distance_to(mark.route[0]) < 0.1,
+		"it starts about the first point of its beat")
+	var moved: bool = await wait_until(func() -> bool:
+		return mark.creature.home().distance_to(mark.route[1]) < 0.1, 180)
+	check(moved, "and after a while there, moves on to the next")
+	mark.dwell = 60.0
+	var flat := func(a: Vector3, b: Vector3) -> float:
+		return Vector2(a.x, a.z).distance_to(Vector2(b.x, b.z))
+	var flew: bool = await wait_until(func() -> bool:
+		var at: Vector3 = mark.creature.global_position
+		return flat.call(at, mark.route[1]) < flat.call(at, mark.route[0]) - 4.0, 300)
+	check(flew, "and goes there (%.1fm across from it)"
+		% flat.call(mark.creature.global_position, mark.route[1]))
 
 
 # --- helpers ------------------------------------------------------------

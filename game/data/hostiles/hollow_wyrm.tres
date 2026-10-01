@@ -1,0 +1,112 @@
+[gd_resource type="Resource" script_class="PreySpecies" format=3]
+
+[ext_resource type="Script" path="res://game/data/creature_attack.gd" id="1_gil7q"]
+[ext_resource type="Resource" path="res://game/data/bodies/wyvern.tres" id="2_xcv5o"]
+[ext_resource type="Script" path="res://game/data/prey_species.gd" id="3_qpuxa"]
+
+[sub_resource type="Resource" id="Resource_vggx6"]
+script = ExtResource("1_gil7q")
+id = "bite"
+display_name = "Bite"
+reach = 2.6
+cooldown = 1.8
+wind_up = 0.45
+damage = 7.0
+knockback = 3.0
+tell_colour = Color(1, 0.85, 0.4, 1)
+
+[sub_resource type="Resource" id="Resource_mfy7f"]
+script = ExtResource("1_gil7q")
+id = "gust"
+display_name = "Gust"
+kind = 4
+reach = 3.6
+weight = 1.5
+cooldown = 7.0
+wind_up = 1.0
+recover = 1.0
+damage = 4.0
+knockback = 9.0
+daze = 1.0
+radius = 4.6
+cuts_silk = true
+tell_colour = Color(0.75, 0.9, 1, 1)
+
+[sub_resource type="Resource" id="Resource_08wcc"]
+script = ExtResource("1_gil7q")
+id = "dive"
+display_name = "Dive"
+kind = 1
+reach = 14.0
+min_reach = 4.5
+weight = 2.0
+cooldown = 6.5
+wind_up = 1.0
+strike_time = 1.2
+recover = 1.2
+damage = 10.0
+knockback = 8.0
+speed = 15.0
+stuck_on_miss = 2.0
+tell_colour = Color(1, 0.45, 0.15, 1)
+
+[sub_resource type="Resource" id="Resource_ico8p"]
+script = ExtResource("1_gil7q")
+id = "fire"
+display_name = "Fire"
+kind = 2
+reach = 16.0
+min_reach = 4.0
+weight = 1.5
+cooldown = 3.2
+wind_up = 0.7
+recover = 0.5
+damage = 6.0
+knockback = 2.0
+speed = 14.0
+tell_colour = Color(1, 0.55, 0.1, 1)
+
+[sub_resource type="Resource" id="Resource_x2ub7"]
+script = ExtResource("1_gil7q")
+id = "tail"
+display_name = "Tail Sweep"
+kind = 5
+reach = 3.0
+cooldown = 5.0
+wind_up = 0.7
+recover = 0.8
+damage = 6.0
+knockback = 6.0
+radius = 3.4
+arc = 200.0
+tell_colour = Color(0.9, 0.8, 0.6, 1)
+
+[resource]
+script = ExtResource("3_qpuxa")
+id = "hollow_wyrm"
+display_name = "The Hollow Wyrm"
+description = "The thing the Hollows are named for. It does not keep to a lair: it goes the rounds of the courtyard and the graveyard, and wherever you are on its beat is where it fights you. It dives, it spits fire from across a room, its wings throw a gust that tears silk down, and its tail sweeps whatever is beside it."
+sort_order = 310
+biomass = 220.0
+size_class = 10
+struggle_power = 6.0
+struggle_stamina = 25.0
+settled_drain = 0.02
+aggression = 1.0
+hunt_range = 22.0
+hostile = true
+attacks = Array[ExtResource("1_gil7q")]([SubResource("Resource_vggx6"), SubResource("Resource_mfy7f"), SubResource("Resource_08wcc"), SubResource("Resource_ico8p"), SubResource("Resource_x2ub7")])
+boss = true
+move_speed = 4.5
+wander_radius = 5.0
+wander_height = Vector2(3, 7)
+wander_interval = 3.0
+lure_susceptibility = 0.0
+diet = PackedStringArray()
+tags = PackedStringArray()
+body = ExtResource("2_xcv5o")
+colour = Color(0.3, 0.35, 0.25, 1)
+sheen = Color(0.2, 0.24, 0.15, 1)
+body_radius = 1.8
+winged = false
+habitat = "hollows"

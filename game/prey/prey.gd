@@ -773,9 +773,12 @@ func flee_from(danger: Vector3, time := 1.5) -> void:
 
 
 ## Wanders about [param point] from now on, rather than about wherever it was put
-## down: a haunt it has gone to. See [Haunt].
-func wander_about(point: Vector3) -> void:
+## down: a haunt it has gone to. See [Haunt]. [param at_once] sends it off there
+## now rather than once it is done with wherever it was going.
+func wander_about(point: Vector3, at_once := false) -> void:
 	_home = point
+	if at_once and _state == State.WANDER:
+		_pick_target()
 
 
 ## Where it wanders about.
