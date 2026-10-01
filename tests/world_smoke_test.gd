@@ -1,6 +1,6 @@
 extends TestSuite
 
-## Headless check on the hunting ground, and on the gym.
+## Headless check on the hunting ground, on the gym, and on the Hollows.
 ##
 ##     godot --headless --script res://tests/world_smoke_test.gd
 ##
@@ -13,9 +13,44 @@ extends TestSuite
 ## place and the Mere is water; the spider starts in the camp and the HUD says
 ## so; and every prop it is furnished with is something to stand on. None of this
 ## looks at how it plays — that is what opening it is for.
+##
+## The Hollows are checked for the shape a souls-like world needs: every place
+## named, the hall safe and every other place with something hostile in it, a
+## shrine lit at the start and the rest cold, the open ways open and the two
+## shortcuts shut until their levers are touched from the far side, the Rat King
+## sealed in its hall with the way on shut behind it, the wyrm's beat flyable
+## end to end, and being driven off waking you back at the shrine.
 
 const GROUND_PATH := "res://game/world/hunting_ground.tscn"
 const TESTBED_PATH := "res://game/world/testbed.tscn"
+const HOLLOWS_PATH := "res://game/world/hollows.tscn"
+
+## The Hollows' places, and whether each is meant to have nothing hostile in it.
+const HOLLOWS_PLACES := [
+	["The Shrine Hall", true],
+	["The Ruined Courtyard", false],
+	["The Graveyard", false],
+	["The Library", false],
+	["The Tower", false],
+	["The Belfry", true],
+	["The Ossuary Stair", false],
+	["The Crypt Way", false],
+	["The Sunken Cells", false],
+	["The Rat King's Hall", false],
+	["The Undergate", true],
+]
+
+## Ways that are open from the start, as two points in sight of each other through
+## the doors between: hall to courtyard, hall to graveyard, courtyard to graveyard,
+## courtyard to library, courtyard to tower, and down the undercroft.
+const HOLLOWS_WAYS := [
+	[Vector3(0.0, 2.5, 2.0), Vector3(0.0, 2.5, -66.0)],
+	[Vector3(15.0, 1.5, -12.0), Vector3(56.0, 1.5, -12.0)],
+	[Vector3(30.0, 1.5, -60.0), Vector3(60.0, 1.5, -60.0)],
+	[Vector3(-30.0, 1.5, -76.0), Vector3(-58.0, 1.5, -76.0)],
+	[Vector3(0.0, 1.5, -100.0), Vector3(0.0, 1.5, -128.0)],
+	[Vector3(-90.0, -20.5, -12.0), Vector3(-20.0, -20.5, -12.0)],
+]
 
 ## The places: what each is called, and the stretch of the tier table it is built
 ## for, in body heights.
@@ -53,6 +88,7 @@ func run_checks() -> void:
 	# Opening the gym drops the hunting ground: two full levels in the tree at once
 	# is more than a headless run needs to hold.
 	await _test_the_testbed()
+	await _test_the_hollows()
 
 
 ## The gym. Not the game, so what is checked is that it holds together: it
@@ -112,6 +148,168 @@ func _test_the_testbed() -> void:
 	var across := SpiderTestbed.FLOOR_HI - SpiderTestbed.FLOOR_LO
 	check(across.x < 60.0 and across.z < 50.0,
 		"the whole gym is %.0f by %.0f, which is the point of it" % [across.x, across.z])
+
+
+## The Hollows. See the top of this file for what is being asked of it.
+func _test_the_hollows() -> void:
+	var hollows := await open(HOLLOWS_PATH)
+	if hollows == null:
+		return
+	var spider := root.get_tree().get_first_node_in_group("spider") as SpiderPlayer
+	if not check(spider != null, "the Hollows have a spider in them"):
+		return
+	spider.require_captured_mouse = false
+	await run_frames(60)
+
+	# One size the whole way through, and no mending but a shrine and a meal.
+	check(spider.growth.stage_index == 2 and not spider.growth.grows,
+		"the spider is a Huntsman and stays one (%s)" % spider.stage().display_name)
+	check(not spider.mends_on_its_own and spider.drink_heals > 0.0,
+		"and nothing mends it but a shrine and a meal")
+
+	# The places.
+	var zones := _zones()
+	check(zones.size() == HOLLOWS_PLACES.size(),
+		"every place is here (%d of %d)" % [zones.size(), HOLLOWS_PLACES.size()])
+	var overlaps := 0
+	for i in zones.size():
+		for j in range(i + 1, zones.size()):
+			if zones[i].bounds.intersection(zones[j].bounds).get_volume() > 0.001:
+				overlaps += 1
+	check(overlaps == 0, "and none is inside another (%d overlaps)" % overlaps)
+	var here := Zone.at(root.get_tree(), spider.global_position)
+	check(here != null and here.display_name == "The Shrine Hall",
+		"you start in the Shrine Hall (%s)" % (here.display_name if here != null else "nowhere"))
+
+	# What lives where.
+	var marks: Array[HostileSpawn] = []
+	for node in root.get_tree().get_nodes_in_group("hostile_spawns"):
+		marks.append(node as HostileSpawn)
+	var nowhere := 0
+	var unknown := 0
+	for mark in marks:
+		if Zone.at(root.get_tree(), mark.global_position) == null and mark.route.is_empty():
+			nowhere += 1
+		if mark.species() == null or not mark.species().hostile:
+			unknown += 1
+	check(marks.size() >= 20, "something hostile at %d marks" % marks.size())
+	check(nowhere == 0, "every one of them in a place (%d are not)" % nowhere)
+	check(unknown == 0, "and every one a hostile species (%d are not)" % unknown)
+	for place in HOLLOWS_PLACES:
+		var zone := _zone_named(place[0])
+		if zone == null:
+			check(false, "%s is here" % place[0])
+			continue
+		var count := 0
+		for mark in marks:
+			if zone.contains(mark.global_position):
+				count += 1
+		if place[1]:
+			check(count == 0, "%s is safe (%d marks)" % [place[0], count])
+		else:
+			check(count > 0, "%s has something hostile in it (%d)" % [place[0], count])
+
+	# Shrines: one lit, the hall's; each somewhere to stand.
+	var shrines: Array[Shrine] = []
+	for node in root.get_tree().get_nodes_in_group("shrines"):
+		shrines.append(node as Shrine)
+	var lit: Array[String] = []
+	var unfloored := 0
+	for shrine in shrines:
+		if shrine.lit:
+			lit.append(shrine.display_name)
+		var wake := shrine.wake_transform().origin
+		var down := _ray(wake, wake + Vector3.DOWN * 2.0)
+		if down.is_empty():
+			unfloored += 1
+	check(shrines.size() == 5, "five shrines (%d)" % shrines.size())
+	check(lit == ["Shrine of the Hall"], "and only the hall's lit at the start (%s)" % [lit])
+	check(unfloored == 0, "each with a floor in front of it to wake on (%d without)" % unfloored)
+
+	# The open ways, and the shut ones.
+	var blocked := 0
+	for way in HOLLOWS_WAYS:
+		if not _ray(way[0], way[1]).is_empty():
+			blocked += 1
+			note("blocked: %s -> %s at %s" % [way[0], way[1], _ray(way[0], way[1])["position"]])
+	check(blocked == 0, "the ways between the places are open (%d blocked)" % blocked)
+	var library_way := [Vector3(-15.0, 1.5, -12.0), Vector3(-58.0, 1.5, -12.0)]
+	var shaft_way := [Vector3(4.0, 3.0, 11.0), Vector3(4.0, -16.0, 11.0)]
+	check(not _ray(library_way[0], library_way[1]).is_empty(),
+		"the way west to the library is shut")
+	check(not _ray(shaft_way[0], shaft_way[1]).is_empty(),
+		"and so is the shaft down out of the hall")
+	var gates: Array[ShortcutGate] = []
+	for node in root.get_tree().get_nodes_in_group("shortcut_gates"):
+		gates.append(node as ShortcutGate)
+	check(gates.size() == 2, "two shortcuts (%d)" % gates.size())
+	var far_sides := {"Library Gate": "The Library", "Hall Hatch": "The Undergate"}
+	for gate in gates:
+		var side := Zone.at(root.get_tree(), gate.lever_at + Vector3.UP * 0.5)
+		check(side != null and side.display_name == far_sides.get(gate.display_name, ""),
+			"the %s's lever is on its far side, in %s"
+			% [gate.display_name, side.display_name if side != null else "nowhere"])
+		gate.pull()
+	await wait_until(func() -> bool:
+		for gate in gates:
+			if not gate.is_clear():
+				return false
+		return true, 240)
+	check(_ray(library_way[0], library_way[1]).is_empty() \
+		and _ray(shaft_way[0], shaft_way[1]).is_empty(),
+		"and both open once their levers are touched")
+
+	# The Rat King, sealed in its hall, the way on shut behind it.
+	var lairs := root.get_tree().get_nodes_in_group("boss_lairs")
+	if check(lairs.size() == 1, "one lair"):
+		var lair := lairs[0] as BossLair
+		check(lair.keeper != null and lair.keeper.species_id == "rat_king"
+			and lair.keeper.creature != null, "the Rat King keeps it")
+		check(not lair.way_on_open(), "and the way on is shut until it is beaten")
+		check(lair.reward_trait == "wing_buds", "with something kept there for whoever beats it")
+		check(lair.contains(lair.keeper.global_position), "and it keeps to its hall")
+
+	# The wyrm's beat, flyable from end to end.
+	var wyrm: HostileSpawn = null
+	for mark in marks:
+		if mark.species_id == "hollow_wyrm":
+			wyrm = mark
+	if check(wyrm != null and wyrm.stays_beaten, "the Hollow Wyrm is here, and a boss"):
+		check(wyrm.route.size() >= 4, "walking a beat (%d points)" % wyrm.route.size())
+		var walled := 0
+		for i in wyrm.route.size():
+			var a := wyrm.route[i]
+			var b := wyrm.route[(i + 1) % wyrm.route.size()]
+			if not _ray(a, b).is_empty():
+				walled += 1
+		check(walled == 0, "each point of it in sight of the next (%d not)" % walled)
+		var places := {}
+		for point in wyrm.route:
+			var zone := Zone.at(root.get_tree(), point)
+			if zone != null:
+				places[zone.display_name] = true
+		check(places.has("The Ruined Courtyard") and places.has("The Graveyard"),
+			"through the courtyard and the graveyard (%s)" % ", ".join(places.keys()))
+
+	# Driven off anywhere, you wake at the shrine you lit.
+	var keeper := Checkpoints.of(hollows)
+	if check(keeper != null and keeper.shrine != null, "something keeps track of where you wake"):
+		spider.global_position = Vector3(0.0, 1.0, -60.0)
+		await run_frames(5)
+		spider.take_bite(spider.max_stamina() + 1.0)
+		await wait_until(func() -> bool: return not keeper.is_waking(), 240)
+		await run_frames(10)
+		var woke := Zone.at(root.get_tree(), spider.global_position)
+		check(woke != null and woke.display_name == "The Shrine Hall"
+			and is_equal_approx(spider.health, spider.max_stamina()),
+			"driven off in the courtyard, you wake whole in the hall (%s)"
+			% (woke.display_name if woke != null else "nowhere"))
+
+
+func _ray(from: Vector3, to: Vector3) -> Dictionary:
+	var query := PhysicsRayQueryParameters3D.create(from, to, GameLayers.WORLD)
+	var world := (current_scene as Node3D).get_world_3d()
+	return world.direct_space_state.intersect_ray(query)
 
 
 ## The places, none of them inside another. Overlapping bounds would make "which

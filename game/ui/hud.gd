@@ -34,7 +34,8 @@ Q                      the next spell you have — growing opens more
 1-9 / wheel            pick a pocket on the bar
 X                      pick up the item you are looking at
 E                      evolution — what eating has made you, and might
-F                      wrap prey, then drain it
+F                      wrap prey, then drain it — in the Hollows a
+                       meal mends you; at a shrine, rest
 X                      pull down the web you're looking at
 O                      the spider's look: detailed, low poly or minimal
 

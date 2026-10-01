@@ -10,9 +10,29 @@ extends SceneTree
 ##         --path . --script res://tests/screenshot_world.gd
 ##
 ## Name views after `--` to render only those. The shots land in the user data
-## folder as `world_<view>.png`; the paths are printed on the way out.
+## folder as `world_<view>.png`; the paths are printed on the way out. Put
+## `hollows` first to photograph the Hollows instead, from [constant HOLLOWS_VIEWS],
+## as `hollows_<view>.png`.
 
 const WORLD_PATH := "res://game/world/hunting_ground.tscn"
+const HOLLOWS_PATH := "res://game/world/hollows.tscn"
+
+## The Hollows, the same way. No hour: it is underground.
+const HOLLOWS_VIEWS := {
+	"hall": [Vector3(0.0, 12.0, 17.0), Vector3(0.0, 2.0, -12.0)],
+	"courtyard": [Vector3(30.0, 26.0, -48.0), Vector3(-8.0, 2.0, -88.0)],
+	"courtyard_low": [Vector3(-2.0, 3.0, -48.0), Vector3(0.0, 3.0, -90.0)],
+	"graveyard": [Vector3(96.0, 14.0, -8.0), Vector3(66.0, 0.0, -50.0)],
+	"library": [Vector3(-55.0, 20.0, -12.0), Vector3(-82.0, 4.0, -60.0)],
+	"library_aisle": [Vector3(-68.0, 3.0, -16.0), Vector3(-68.0, 4.0, -60.0)],
+	"tower": [Vector3(8.0, 4.0, -121.0), Vector3(-6.0, 40.0, -136.0)],
+	"belfry": [Vector3(8.0, 60.0, -121.0), Vector3(-4.0, 48.0, -135.0)],
+	"ossuary": [Vector3(-86.0, -14.0, -5.0), Vector3(-92.0, -22.0, -16.0)],
+	"crypt_way": [Vector3(-82.0, -18.0, -12.0), Vector3(-42.0, -19.0, -12.0)],
+	"sunken_cells": [Vector3(-17.0, -14.0, -1.0), Vector3(-36.0, -22.0, -20.0)],
+	"rat_kings_hall": [Vector3(-2.0, -11.0, 2.0), Vector3(14.0, -21.0, -18.0)],
+	"undergate": [Vector3(15.0, -13.0, 16.0), Vector3(4.0, -18.0, 7.0)],
+}
 
 ## Where each picture is taken from, what it looks at, and the hour, as a share of
 ## the day: a half is noon, and nought and one are midnight.
@@ -49,9 +69,17 @@ func _run() -> void:
 	var wanted: Array[String] = []
 	for arg in OS.get_cmdline_user_args():
 		wanted.append(arg)
+	var views := VIEWS
+	var level_path := WORLD_PATH
+	var prefix := "world"
+	if not wanted.is_empty() and wanted[0] == "hollows":
+		wanted.remove_at(0)
+		views = HOLLOWS_VIEWS
+		level_path = HOLLOWS_PATH
+		prefix = "hollows"
 	if wanted.is_empty():
-		wanted.assign(VIEWS.keys())
-	var packed := load(WORLD_PATH) as PackedScene
+		wanted.assign(views.keys())
+	var packed := load(level_path) as PackedScene
 	var world := packed.instantiate()
 	root.add_child(world)
 	current_scene = world
@@ -74,11 +102,11 @@ func _run() -> void:
 		clock.running = false
 	var day := world.find_child("DayNight", true, false) as DayNight
 	for view in wanted:
-		if not VIEWS.has(view):
-			printerr("no such view: %s (try %s)" % [view, ", ".join(VIEWS.keys())])
+		if not views.has(view):
+			printerr("no such view: %s (try %s)" % [view, ", ".join(views.keys())])
 			continue
-		var pose: Array = VIEWS[view]
-		if clock != null:
+		var pose: Array = views[view]
+		if clock != null and pose.size() > 2:
 			clock.time_of_day = pose[2]
 		if day != null:
 			day.show_hour()
@@ -87,7 +115,7 @@ func _run() -> void:
 		eye.make_current()
 		await _frames(8)
 		var image := root.get_viewport().get_texture().get_image()
-		var path := "user://world_%s.png" % view
+		var path := "user://%s_%s.png" % [prefix, view]
 		image.save_png(path)
 		print("saved ", ProjectSettings.globalize_path(path))
 	quit()
