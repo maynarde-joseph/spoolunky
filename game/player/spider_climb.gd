@@ -43,6 +43,12 @@ signal line_dropped(anchor: Vector3)
 signal line_cut()
 signal notice(text: String)
 
+## How far up a surface has to face to be walked as a floor, and how far down to
+## be walked as a ceiling, as the y of its up. Anything between is climbed: see
+## [method _climbing_axes].
+const FLOOR_UP := 0.98
+const CEILING_UP := -0.6
+
 
 @export_group("Climbing")
 
@@ -315,12 +321,11 @@ func face(direction: Vector3) -> void:
 		_facing = flat.normalized()
 
 
-## Which way "forward" is on the surface underfoot: the way the camera is
-## looking, flattened onto it.
+## Which way "forward" is on a floor or a ceiling: the way the camera is looking,
+## flattened onto it. Walls are read another way; see [method _climbing_axes].
 ##
-## Looking straight into a wall leaves nothing to flatten, so it falls back to
-## the camera's own up — which means walking at a wall climbs it rather than
-## jamming, and looking out from a wall walks you back down it.
+## Looking straight down at a floor, or straight up at a ceiling, leaves nothing to
+## flatten, so it falls back to the camera's own up: the top of the screen.
 func _surface_forward(up: Vector3) -> Vector3:
 	if _view == null:
 		return _facing
@@ -342,8 +347,11 @@ func _surface_forward(up: Vector3) -> Vector3:
 func update_orientation(delta: float) -> void:
 	if _spider == null:
 		return
-	# The body turns to follow the camera; the camera never follows the body.
-	_facing = _surface_forward(_current_up)
+	# The body turns to follow the camera — to face where W would walk it — and
+	# the camera never follows the body.
+	var axes := _key_axes(_current_up)
+	if not axes.is_empty():
+		_facing = axes[1]
 	if mode == Mode.GRAPPLING:
 		# Roll onto the surface on the way in, so arrival is not a snap.
 		_blend_up(grapple_normal, delta)
@@ -1144,13 +1152,14 @@ func _walk(input_axis: Vector2) -> Vector3:
 
 ## Keeps the walk going the way it was going when the surface underfoot turns.
 ##
-## The walk is the camera's screen axes fitted to the surface, and across an edge
-## that reading jumps. Walk into a wall with the camera tipped down even a little
-## and W on the wall means *down* — straight back into the floor you came from, so
-## the spider took the floor again, then the wall, then the floor, a swap every
-## three tenths of a second and the camera thrown half a metre each time. It never
-## climbed. A ceiling did the same from the wall, and a line did it against
-## whatever it was tied to, which read as being unable to get off the rope.
+## The walk is read off the camera, and across an edge that reading can jump.
+## Climb a wall to the ceiling still facing the wall and W on the ceiling means
+## *back towards the wall* — straight back onto the surface you came from, so the
+## spider took the wall again, then the ceiling, then the wall, a swap every three
+## tenths of a second and the camera thrown half a metre each time. A line did it
+## against whatever it was tied to, which read as being unable to get off the rope,
+## and a wall did it against the floor for as long as walls read the keys off the
+## camera's tilt.
 ##
 ## So the keys' own two directions are carried over the edge, turned by exactly the
 ## turn the surface made: forward on the floor becomes up the wall, up the wall
@@ -1164,8 +1173,6 @@ func _carry_over(before: Vector3, input_axis: Vector2) -> void:
 		return
 	var from := before.normalized()
 	var turn := rad_to_deg(from.angle_to(_current_up))
-	if turn < 20.0:
-		return
 	if turn > 150.0:
 		_carried.clear()
 		return
@@ -1177,10 +1184,9 @@ func _carry_over(before: Vector3, input_axis: Vector2) -> void:
 		old_right = _flat(_carried[0], from)
 		old_ahead = _flat(_carried[1], from)
 	if old_right == Vector3.ZERO or old_ahead == Vector3.ZERO:
-		var lead := _surface_forward(from)
-		if lead.length_squared() < 0.000001:
+		var axes := _key_axes(from)
+		if axes.is_empty():
 			return
-		var axes := _surface_axes(from, lead.normalized())
 		old_right = axes[0]
 		old_ahead = axes[1]
 	var bend := Quaternion(from, _current_up)
@@ -1190,15 +1196,28 @@ func _carry_over(before: Vector3, input_axis: Vector2) -> void:
 		_carried.clear()
 		return
 	# If the camera already reads the keys this way there is nothing to carry, and
-	# carrying anyway would only stop the mouse steering for no reason.
-	var lead_now := _surface_forward(_current_up)
-	if lead_now.length_squared() > 0.000001:
-		var fresh := _surface_axes(_current_up, lead_now.normalized())
+	# carrying anyway would only stop the mouse steering for no reason. Nor across a
+	# gentle turn that moves the reading only a little — a curve, not an edge.
+	#
+	# But a gentle turn can still flip the reading, where a surface stops being an
+	# overhang to climb and starts being a ceiling to walk: the two read W opposite
+	# ways and no turn between them keeps D where it is. Held keys are carried over
+	# that the same as over an edge, so crawling round the underside of a boulder
+	# does not turn you back halfway.
+	var fresh := _key_axes(_current_up)
+	if not fresh.is_empty():
 		if right.dot(fresh[0]) > 0.9 and ahead.dot(fresh[1]) > 0.9:
 			_carried.clear()
 			return
+		if turn < 20.0 and right.dot(fresh[0]) > 0.0 and ahead.dot(fresh[1]) > 0.0:
+			return
+	elif turn < 20.0:
+		return
+	# The camera's swing is measured from the edge, or from where a carry began —
+	# not from every frame of walking on with one, or no swing would ever be enough.
+	if _carried.is_empty() or turn >= 20.0:
+		_carried_look = _view.forward() if _view != null else Vector3.ZERO
 	_carried = [right, ahead]
-	_carried_look = _view.forward() if _view != null else Vector3.ZERO
 
 
 ## [param direction] laid flat on a surface facing [param up], or zero if it
@@ -1225,33 +1244,102 @@ func _flat(direction: Vector3, up: Vector3) -> Vector3:
 func _wish_direction(input_axis: Vector2, up: Vector3) -> Vector3:
 	if input_axis.length_squared() < 0.01:
 		return Vector3.ZERO
-	var lead := _surface_forward(up)
-	if lead.length_squared() < 0.000001:
+	var axes := _key_axes(up)
+	if axes.is_empty():
 		return Vector3.ZERO
-	lead = lead.normalized()
-	var axes := _surface_axes(up, lead)
 	return (axes[1] * input_axis.y + axes[0] * input_axis.x).normalized()
 
 
-## The two directions the keys move you in, as [right, ahead].
+## The two directions the keys move you in on a surface facing [param up], as
+## [right, ahead], or empty if there is nothing to read them by.
+##
+## A floor and a ceiling read the keys off where the camera looks: W goes away
+## from you, D goes the way the camera calls right — see [method _surface_axes].
+## Anything steeper is climbed rather than walked, and reads them off how you face
+## it instead — see [method _climbing_axes].
+func _key_axes(up: Vector3) -> Array:
+	if up.y < FLOOR_UP and up.y > CEILING_UP:
+		var climbing := _climbing_axes(up)
+		if not climbing.is_empty():
+			return climbing
+	var lead := _surface_forward(up)
+	if lead.length_squared() < 0.000001:
+		return []
+	return _surface_axes(up, lead.normalized())
+
+
+## The keys on a wall, a slope or an overhang, as [right, ahead]: read off which
+## way the camera faces the surface across the ground, and never off how far the
+## camera is tipped up or down.
+##
+## Reading them off the look flattened onto the surface, as floors do, was wrong
+## here twice over. On a wall in front of you the look flattened is all tip: W
+## climbed with the camera level or raised and went *down* the moment it dipped
+## past eight degrees — and a third-person camera looks a little down at the spider
+## most of the time. And on a wall beside you a few degrees of turn swapped the
+## keys outright: W from along the wall to up it, D from up it to along it, or to
+## back towards the camera.
+##
+## So a wall has three readings, and the turn between them is smooth. Facing it, W
+## climbs and D goes along it the way the camera calls right. Looking along it, W
+## goes along it the way you are looking and the key towards the wall climbs it —
+## D on a wall to your right, A on one to your left. Looking away from it, W comes
+## back down. A gentle slope is not snapped at all: the same frame turned through
+## exactly the angle you face it at is "go where you look", which is what a floor
+## does, and steepness eases from one to the other.
+func _climbing_axes(up: Vector3) -> Array:
+	if _view == null:
+		return []
+	var along := Vector3.UP.cross(up)
+	var uphill := Vector3.UP - up * Vector3.UP.dot(up)
+	var into := Vector3(-up.x, 0.0, -up.z)
+	if along.length_squared() < 0.000001 or uphill.length_squared() < 0.000001 \
+			or into.length_squared() < 0.000001:
+		return []
+	along = along.normalized()
+	uphill = uphill.normalized()
+	into = into.normalized()
+	# Which way the camera faces across the ground: its yaw, whatever its pitch.
+	var facing := Vector3(-sin(_view.yaw), 0.0, -cos(_view.yaw))
+	# 0 facing the surface, a quarter turn with it on your right, a half turn with
+	# your back to it; negative with it on your left.
+	var turned := atan2(-facing.dot(along), facing.dot(into))
+	var steep := smoothstep(0.5, 0.85, 1.0 - absf(up.y))
+	var turn := lerpf(turned, _wall_turn(turned), steep)
+	var ahead := uphill * cos(turn) - along * sin(turn)
+	var right := uphill * sin(turn) + along * cos(turn)
+	return [right.normalized(), ahead.normalized()]
+
+
+## [param turned] eased onto the three readings a wall has — facing it, along it,
+## and away from it — and turned smoothly between them rather than at a seam.
+static func _wall_turn(turned: float) -> float:
+	var off := absf(rad_to_deg(turned))
+	var snapped := 0.0
+	if off >= 140.0:
+		snapped = 180.0
+	elif off > 100.0:
+		snapped = 90.0 + 90.0 * smoothstep(100.0, 140.0, off)
+	elif off >= 80.0:
+		snapped = 90.0
+	elif off > 40.0:
+		snapped = 90.0 * smoothstep(40.0, 80.0, off)
+	return deg_to_rad(snapped) * signf(turned)
+
+
+## The two directions the keys move you in on a floor or a ceiling, as
+## [right, ahead]. Anything steeper is [method _climbing_axes]'s.
 ##
 ## Right comes first, because a mirrored strafe is the thing you feel: it is the
 ## camera's own right, flattened onto the surface. Ahead is then squared off
 ## against it inside the surface, pointed whichever way the camera is looking.
+## Upside down that keeps D screen-right, where `lead.cross(up)` mirrored it.
 ##
-## Taking *both* from the screen and flattening them separately does not work,
-## and it is worth saying why. The camera's right is always horizontal, so on a
-## vertical wall — whose only horizontal tangent is the one direction along its
-## face — every horizontal vector flattens onto that same direction. Forward
-## would flatten onto it too, and W and D would move you the same way. Squaring
-## ahead off against right instead gives the wall its other tangent, the vertical
-## one, which is the reading a wall wants anyway: **W and S climb, A and D
-## traverse.**
-##
-## The sign of ahead comes from where the camera is looking, as far as the
-## surface allows. A level camera on a vertical wall cannot say — its look is all
-## horizontal and ahead is all vertical — and then the answer is to climb, which
-## is the behaviour walking at a wall always had.
+## It is also what walls used, and why they could not: the camera's right is
+## always horizontal and its look is mostly tilt, so on a wall the sign of ahead
+## came down to how far the camera was tipped, and a few degrees of turn beside one
+## swapped the keys. Walls are [method _climbing_axes]'s now; this is the fallback
+## for one when there is no camera to read them by.
 func _surface_axes(up: Vector3, lead: Vector3) -> Array:
 	var across := _view.right() if _view != null else lead.cross(up)
 	var right := across - up * across.dot(up)

@@ -33,12 +33,15 @@ func run_checks() -> void:
 	await _test_floor()
 	await _test_strafing()
 	await _test_the_walk_fits_the_surface()
+	await _test_walls_read_how_you_face_them()
+	await _test_round_an_overhang()
 	await _test_wall()
 	await _test_ceiling()
 	await _test_dragline()
 	await _test_letting_go()
 	await _test_leaping_off_a_wall()
 	await _test_corners_do_not_bounce()
+	await _test_climbing_with_the_camera_tipped_down()
 	await _test_off_a_line_onto_a_wall()
 	await _test_the_body_is_a_skeleton()
 	await _test_three_looks_on_one_skeleton()
@@ -107,56 +110,80 @@ func _strafe(action: String) -> Vector3:
 ## rather than by walking about — so every surface is covered and the numbers are
 ## exact.
 ##
-## Two of these were wrong for a long time and nothing said so. On a ceiling D
+## Floors and ceilings read the keys off where the camera looks. Walls read them
+## off which way you face the wall — see [method SpiderClimb._climbing_axes]:
+## facing it W climbs, looking along it W goes the way you look and the key on the
+## wall's side climbs, and looking away from it W comes back down.
+##
+## Three of these were wrong for a long time and nothing said so. On a ceiling D
 ## came out **fully mirrored**: the camera never turns over, so screen-right stays
 ## screen-right, but the walk was built from `forward.cross(up)` and with the
-## ceiling's up pointing down that flips. And on a wall seen at an angle, D ran
-## **down the wall** rather than along its face.
+## ceiling's up pointing down that flips. On a wall seen at an angle, D ran **down
+## the wall** rather than along its face. And on a wall in front of you W went
+## **down** it as soon as the camera dipped eight degrees, which a camera behind the
+## spider does most of the time.
 func _test_the_walk_fits_the_surface() -> void:
 	var climb := _spider.climb
 	var rig := _spider.view
-	# name, surface up, camera pitch, where the camera looks
+	var slope := Vector3(0.5, 0.866, 0.0).normalized()
+	var up_slope := (Vector3.UP - slope * slope.y).normalized()
+	var aslant := Vector3(-1, 0, -1).normalized()
+	var across_slope := (aslant - slope * aslant.dot(slope)).normalized()
+	# name, surface up, camera pitch, where the camera looks, where W goes, where D goes
 	var probes := [
-		["a floor", Vector3.UP, 0.0, Vector3(0, 0, -1)],
-		["a floor, looking down", Vector3.UP, -0.785, Vector3(0, 0, -1)],
-		["a ceiling", Vector3.DOWN, 0.0, Vector3(0, 0, -1)],
-		["a ceiling, turned round", Vector3.DOWN, 0.0, Vector3(1, 0, 0)],
-		["a wall, facing it", Vector3.RIGHT, 0.0, Vector3(-1, 0, 0)],
-		["a wall, at an angle", Vector3.RIGHT, 0.0, Vector3(-1, 0, -1)],
-		["a wall, facing it, looking down", Vector3.RIGHT, -0.785, Vector3(-1, 0, 0)],
-		["the far wall", Vector3.FORWARD, 0.0, Vector3(0, 0, 1)],
+		["a floor", Vector3.UP, 0.0, Vector3.FORWARD, Vector3.FORWARD, Vector3.RIGHT],
+		["a floor, looking down", Vector3.UP, -0.785, Vector3.FORWARD,
+			Vector3.FORWARD, Vector3.RIGHT],
+		["a ceiling", Vector3.DOWN, 0.0, Vector3.FORWARD, Vector3.FORWARD, Vector3.RIGHT],
+		["a ceiling, looking up at it", Vector3.DOWN, 0.6, Vector3.FORWARD,
+			Vector3.FORWARD, Vector3.RIGHT],
+		["a ceiling, turned round", Vector3.DOWN, 0.0, Vector3.RIGHT, Vector3.RIGHT,
+			Vector3.BACK],
+		["a gentle slope, across it", slope, 0.0, aslant, across_slope,
+			across_slope.cross(slope).normalized()],
+		["a gentle slope, facing up it and looking well down", slope, -1.2,
+			Vector3.LEFT, up_slope, Vector3.FORWARD],
+		["a wall, facing it", Vector3.RIGHT, 0.0, Vector3.LEFT, Vector3.UP,
+			Vector3.FORWARD],
+		["a wall, facing it, looking down", Vector3.RIGHT, -0.785, Vector3.LEFT,
+			Vector3.UP, Vector3.FORWARD],
+		["a wall, facing it, looking up", Vector3.RIGHT, 0.6, Vector3.LEFT,
+			Vector3.UP, Vector3.FORWARD],
+		["a wall, at an angle", Vector3.RIGHT, 0.0, aslant, Vector3.UP, Vector3.FORWARD],
+		["a wall on your left, looking along it", Vector3.RIGHT, -0.3,
+			Vector3.FORWARD, Vector3.FORWARD, Vector3.DOWN],
+		["a wall on your right, looking along it", Vector3.RIGHT, -0.3,
+			Vector3.BACK, Vector3.BACK, Vector3.UP],
+		["a wall behind you", Vector3.RIGHT, -0.3, Vector3.RIGHT, Vector3.DOWN,
+			Vector3.BACK],
+		["the far wall", Vector3.FORWARD, 0.0, Vector3.BACK, Vector3.UP, Vector3.LEFT],
 	]
 	for probe in probes:
 		var what: String = probe[0]
 		var up: Vector3 = probe[1]
+		var w: Vector3 = probe[4]
+		var d: Vector3 = probe[5]
 		rig.pitch = probe[2]
 		rig.face(probe[3])
-		var lead := climb._surface_forward(up)
-		var axes := climb._surface_axes(up, lead)
+		var axes: Array = climb._key_axes(up)
+		if not check(axes.size() == 2, "the keys can be read on %s" % what):
+			continue
 		var right: Vector3 = axes[0]
 		var ahead: Vector3 = axes[1]
 		check(absf(right.dot(ahead)) < 0.01,
 			"on %s the two keys are square to each other" % what)
 		check(absf(right.dot(up)) < 0.01 and absf(ahead.dot(up)) < 0.01,
 			"and both lie on the surface")
-		# D against the camera's own right. On a wall seen edge-on there is no
-		# right on that surface to agree with, which is the one case left out.
-		check(right.dot(rig.right()) > 0.5,
-			"D goes the way the camera calls right on %s (%+.2f)"
-			% [what, right.dot(rig.right())])
-		# W against where the camera is looking, as far as the surface allows —
-		# which on a wall facing you is up it, because that is all that is left.
-		check(ahead.dot(lead) > 0.5 or absf(ahead.dot(lead)) < 0.06,
-			"and W goes the way you are looking (%+.2f against the flattened look)"
-			% ahead.dot(lead))
+		check(ahead.dot(w) > 0.95, "W goes %.2v (%.2v)" % [w, ahead])
+		check(right.dot(d) > 0.95, "and D goes %.2v (%.2v)" % [d, right])
 
-	# The two that were wrong, named and nailed. Both compared against the old
+	# The three that were wrong, named and nailed. Each compared against the old
 	# construction, so a regression has to show up as the old number.
 	rig.pitch = 0.0
-	rig.face(Vector3(0, 0, -1))
+	rig.face(Vector3.FORWARD)
 	var ceiling := Vector3.DOWN
 	var lead_up := climb._surface_forward(ceiling)
-	var on_ceiling: Vector3 = climb._surface_axes(ceiling, lead_up)[0]
+	var on_ceiling: Vector3 = climb._key_axes(ceiling)[0]
 	var was_ceiling := lead_up.cross(ceiling).normalized()
 	check(on_ceiling.dot(rig.right()) > 0.99,
 		"upside down, D is still screen-right (%+.2f)" % on_ceiling.dot(rig.right()))
@@ -164,19 +191,161 @@ func _test_the_walk_fits_the_surface() -> void:
 		"where the old construction had it exactly backwards (%+.2f)"
 		% was_ceiling.dot(rig.right()))
 
-	rig.face(Vector3(-1, 0, -1))
+	rig.face(aslant)
 	var wall := Vector3.RIGHT
-	var lead_wall := climb._surface_forward(wall)
-	var axes_wall := climb._surface_axes(wall, lead_wall)
-	var on_wall: Vector3 = axes_wall[0]
-	var up_wall: Vector3 = axes_wall[1]
-	var was_wall := lead_wall.cross(wall).normalized()
-	check(absf(on_wall.dot(Vector3.UP)) < 0.01,
+	var on_wall: Vector3 = climb._key_axes(wall)[0]
+	var was_wall := climb._surface_forward(wall).cross(wall).normalized()
+	check(absf(on_wall.dot(Vector3.UP)) < 0.1,
 		"on a wall seen at an angle, D runs along the face (%.2v)" % on_wall)
 	check(absf(was_wall.dot(Vector3.UP)) > 0.99,
 		"where the old construction sent you down it (%.2v)" % was_wall)
-	check(up_wall.dot(Vector3.UP) > 0.99,
-		"and W climbs, which is the only thing left for it to mean (%.2v)" % up_wall)
+
+	rig.face(Vector3.LEFT)
+	rig.pitch = -0.3
+	var climbs: Vector3 = climb._key_axes(wall)[1]
+	var was_climbing: Vector3 = climb._surface_axes(wall, climb._surface_forward(wall))[1]
+	check(climbs.dot(Vector3.UP) > 0.99,
+		"facing a wall with the camera tipped down, W climbs it (%.2v)" % climbs)
+	check(was_climbing.dot(Vector3.UP) < -0.99,
+		"where reading the look laid flat sent you back down it (%.2v)" % was_climbing)
+	rig.pitch = 0.0
+
+
+## A wall reads the keys off which way you face it, and nothing else.
+##
+## How far the camera is tipped does not come into it at all, and turning past a
+## wall turns the keys smoothly: a few degrees either side of looking along one
+## used to swap W and D outright. Nor does anything else jump as the camera goes
+## round, on any slope from a floor to a ceiling.
+func _test_walls_read_how_you_face_them() -> void:
+	var climb := _spider.climb
+	var rig := _spider.view
+	var wall := Vector3.RIGHT
+	var tipped := 0.0
+	for look in [Vector3.LEFT, Vector3(-1, 0, -1), Vector3.FORWARD, Vector3(1, 0, -1),
+			Vector3.RIGHT]:
+		rig.face(look)
+		rig.pitch = 0.0
+		var level: Array = climb._key_axes(wall)
+		for step in range(-13, 14):
+			rig.pitch = float(step) * 0.1
+			tipped = maxf(tipped, _turned_by(climb._key_axes(wall), level))
+	check(tipped < 0.5,
+		"on a wall, tipping the camera from well down to well up never moves the keys (%.1f°)"
+		% tipped)
+
+	# Looking along a wall on your left, a few degrees either way.
+	rig.pitch = -0.3
+	var now := 0.0
+	var was := 0.0
+	var last_now: Array = []
+	var last_was: Array = []
+	for degrees in range(-12, 13, 2):
+		rig.yaw = deg_to_rad(float(degrees))
+		var reading: Array = climb._key_axes(wall)
+		var flat: Array = climb._surface_axes(wall, climb._surface_forward(wall))
+		if not last_now.is_empty():
+			now = maxf(now, _turned_by(reading, last_now))
+			was = maxf(was, _turned_by(flat, last_was))
+		last_now = reading
+		last_was = flat
+	check(now < 10.0,
+		"looking along a wall, turning a little either way turns the keys a little (%.0f° in a 2° turn)"
+		% now)
+	check(was > 80.0,
+		"where reading the look laid flat swung them %.0f° in one" % was)
+
+	# All the way round, on everything from a floor to a ceiling, at a few tips of
+	# the camera.
+	var worst := 0.0
+	var where := ""
+	for tilt in [0.0, 30.0, 60.0, 75.0, 90.0, 110.0, 125.0, 150.0, 180.0]:
+		var up := Vector3(0.0, cos(deg_to_rad(tilt)), sin(deg_to_rad(tilt)))
+		for pitch in [-0.7, 0.0, 0.5]:
+			rig.pitch = pitch
+			var last: Array = []
+			for step in 181:
+				rig.yaw = deg_to_rad(float(step) * 2.0)
+				var axes: Array = climb._key_axes(up)
+				if not last.is_empty() and _turned_by(axes, last) > worst:
+					worst = _turned_by(axes, last)
+					where = "%d° from flat, camera tipped %+.1f" % [tilt, pitch]
+				last = axes
+	check(worst < 10.0,
+		"on any slope, two degrees of turn never turns the keys more than ten (%.1f°, %s)"
+		% [worst, where])
+
+	# Nor where a slope starts being climbed rather than walked.
+	var seam := 0.0
+	rig.pitch = -0.4
+	var flatter := _tilted(SpiderClimb.FLOOR_UP + 0.001)
+	var steeper := _tilted(SpiderClimb.FLOOR_UP - 0.001)
+	for step in 36:
+		rig.yaw = deg_to_rad(float(step) * 10.0)
+		seam = maxf(seam, _turned_by(climb._key_axes(flatter), climb._key_axes(steeper)))
+	check(seam < 3.0,
+		"where a slope gets steep enough to climb, the keys hardly move (%.1f°)" % seam)
+	rig.pitch = 0.0
+
+
+## Crawling from an overhang round onto a ceiling keeps going the way it was going.
+##
+## An overhang is climbed — facing it, W goes up it, which is out towards you — and
+## a ceiling is walked, W going where you look, which facing the same way is back
+## in towards the wall. Nothing in between keeps both, so the reading has to flip
+## somewhere, and where it does is a gentle bend rather than an edge. The keys held
+## across it are carried over it all the same.
+func _test_round_an_overhang() -> void:
+	var climb := _spider.climb
+	var rig := _spider.view
+	var keep_up := climb._current_up
+	var w := Vector2(0.0, 1.0)
+	var overhang := Vector3(0.83, -0.55, 0.0).normalized()
+	var ceiling := Vector3(0.76, -0.65, 0.0).normalized()
+	rig.face(Vector3.LEFT)
+	rig.pitch = 0.3
+	climb._carried.clear()
+	climb._current_up = overhang
+	var climbing := climb._walk(w)
+	climb._current_up = ceiling
+	var fresh := climb._wish_direction(w, ceiling)
+	check(rad_to_deg(fresh.angle_to(climbing)) > 90.0,
+		"the camera reads W one way on an overhang and the other on a ceiling (%.0f° apart)"
+		% rad_to_deg(fresh.angle_to(climbing)))
+	climb._carry_over(overhang, w)
+	var held := climb._walk(w)
+	check(rad_to_deg(held.angle_to(climbing)) < 15.0,
+		"but W held from one onto the other keeps going the way it was (%.0f° off)"
+		% rad_to_deg(held.angle_to(climbing)))
+	for i in 5:
+		climb._carry_over(ceiling, w)
+	check(climb._walk(w).angle_to(held) < deg_to_rad(1.0),
+		"and on across the ceiling while it stays down")
+	rig.yaw += deg_to_rad(climb.carry_release_angle + 15.0)
+	var swung := climb._walk(w)
+	check(swung.angle_to(climb._wish_direction(w, ceiling)) < deg_to_rad(1.0),
+		"until the camera swings well away, which hands it back to the camera")
+	rig.face(Vector3.LEFT)
+	climb._carry_over(overhang, w)
+	climb._walk(Vector2.ZERO)
+	check(climb._walk(w).angle_to(fresh) < deg_to_rad(1.0),
+		"as letting go and pressing again does")
+	climb._carried.clear()
+	climb._current_up = keep_up
+	rig.pitch = 0.0
+
+
+## The largest angle, in degrees, between two readings of the keys.
+func _turned_by(a: Array, b: Array) -> float:
+	if a.size() != 2 or b.size() != 2:
+		return 180.0
+	return rad_to_deg(maxf((a[0] as Vector3).angle_to(b[0]),
+		(a[1] as Vector3).angle_to(b[1])))
+
+
+## The up of a surface tipped over from a floor until its up is [param height] high.
+func _tilted(height: float) -> Vector3:
+	return Vector3(0.0, height, sqrt(1.0 - height * height))
 
 
 func _test_wall() -> void:
@@ -376,6 +545,41 @@ func _test_corners_do_not_bounce() -> void:
 		"and on across it, away from the wall (%.2fm)" % (_spider.global_position.x - from_x))
 	check(over["returns"] == 0,
 		"without dropping back onto the wall (%d times)" % over["returns"])
+
+
+## Standing on a wall and pressing a key fresh, with the camera looking down at the
+## spider the way a camera behind it does: W climbs. Looking along the wall, W goes
+## the way you look and the key on the wall's side climbs; looking away from it, W
+## comes back down.
+##
+## [method _test_corners_do_not_bounce] walks onto the wall with the key already
+## down, which the edge carries. This is the press that starts on the wall, where
+## the camera's reading is all there is — and where it used to send you down.
+func _test_climbing_with_the_camera_tipped_down() -> void:
+	release_all()
+	await _set_down(Vector3(-ROOM_HALF.x + 0.35, -0.3, 0.3), Vector3.LEFT, -0.6)
+	if not check(_spider.climb.surface_normal.dot(Vector3.RIGHT) > 0.9,
+			"set down on a wall (normal %.2v)" % _spider.climb.surface_normal):
+		return
+	var moved := await _strafe("move_forward")
+	check(moved.y > 0.1,
+		"facing a wall with the camera tipped well down, W climbs it (%.2fm)" % moved.y)
+	_spider.view.face(Vector3.FORWARD)
+	_spider.view.pitch = -0.4
+	moved = await _strafe("move_forward")
+	check(moved.dot(Vector3.FORWARD) > 0.1 and absf(moved.y) < moved.length() * 0.3,
+		"looking along it, W goes the way you are looking (%.2v)" % moved)
+	moved = await _strafe("move_left")
+	check(moved.y > 0.1, "and A, on the wall's side, climbs (%.2v)" % moved)
+	moved = await _strafe("move_right")
+	check(moved.y < -0.1, "while D comes back down (%.2v)" % moved)
+	_spider.view.face(Vector3.RIGHT)
+	_spider.view.pitch = -0.2
+	moved = await _strafe("move_forward")
+	check(moved.y < -0.1, "and with your back to it, W comes down (%.2v)" % moved)
+	check(_spider.climb.surface_normal.dot(Vector3.RIGHT) > 0.9,
+		"all of it on the wall (normal %.2v)" % _spider.climb.surface_normal)
+	_spider.view.pitch = 0.0
 
 
 ## Walking along a line to the wall it is tied to takes you off the line and onto

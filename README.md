@@ -205,13 +205,16 @@ and stick, and you can walk over it.
 
 The spider has no floor — it sticks to whatever it touches, and the body's up
 axis becomes the surface normal. Walk into a wall to climb it, keep going to
-end up on the ceiling. While you are already on a surface you only transfer to
-a new one by pushing into it, so walking beside a wall doesn't throw you up it;
-in mid-air the spider grabs the first thing it touches. Keep the key down across
-an edge and it keeps meaning the way you were going — into a wall becomes up it,
-up a wall becomes on across the ceiling — until you let go or swing the camera
-well round. Put a collider in the
-`no_climb` group to make it unclimbable.
+end up on the ceiling. On a floor or a ceiling W goes where the camera looks. On a
+wall it goes by which way you face the wall, never by how far the camera is tipped:
+facing it W climbs, looking along it W goes along and the key on the wall's side
+climbs, and facing away W comes back down. While you are already on a surface
+you only transfer to a new one by pushing into it, so walking beside a wall
+doesn't throw you up it; in mid-air the spider grabs the first thing it touches.
+Keep the key down across an edge and it keeps meaning the way you were going —
+into a wall becomes up it, up a wall becomes on across the ceiling — until you let
+go or swing the camera well round. Put a collider in the `no_climb` group to make
+it unclimbable.
 
 The body you see is a skeleton posed in code, not a set of animations. Its feet
 look for footholds on whatever is underfoot, stay put in the world once planted,

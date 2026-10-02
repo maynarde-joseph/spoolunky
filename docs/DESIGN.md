@@ -1560,55 +1560,105 @@ is gone and it was a real one. It cost less than a camera that rolls.
 
 ### Walking on a wall
 
-**Decided: the walk is the camera's own screen axes, flattened onto whatever is
-underfoot.**
+**Decided: floors and ceilings read the keys off where the camera looks. Walls read
+them off which way you face the wall, and never off how far the camera is
+tipped.**
 
 This is where a wall or a ceiling is actually dealt with. The rig keeps a level
 horizon and never rolls, so on a wall "screen-right" and "along the wall" are two
 different directions and *something* has to reconcile them.
 
-The old answer took forward from the camera, flattened it onto the surface, and
-then built right as `forward × up`. Flattening forward is right — it is what makes
-walking at a wall climb it, since looking into a surface leaves nothing to flatten
-and it falls back to the camera's own up. Deriving right from it is not. On a wall
-with its face toward you that gave **down the wall** for D, and on a ceiling it
-came out **mirrored**, so D walked you left while the world was still drawn the
-right way up. Neither was written down anywhere. They were just how it felt, which
-is the worst kind of bug to have in a control scheme.
+**Floors and ceilings** flatten the camera's own screen axes onto the surface. D
+is the camera's right laid on it, and W is squared off against D, pointed the way
+the camera looks. Upside down, D is still the way the camera calls right, because
+the camera never turned over. The first answer here built right as `forward × up`
+instead, and on a ceiling that came out **mirrored**, so D walked you left while
+the world was still drawn the right way up. Nobody wrote it down; it was just how
+it felt, which is the worst kind of bug to have in a control scheme.
 
-Flattening the screen axes *themselves* gets all three surfaces right:
+**Walls** used to read the keys the same way, and could not:
 
-* **Floor** — identical to the old construction, so nothing about walking on the
-  flat moved.
-* **Wall** — D runs along the face the way the screen says it should, and W, with
-  nothing left of forward once the wall's normal is taken out of it, climbs.
-* **Ceiling** — D is still the way the camera calls right, because the camera
-  never turned over.
+* On a wall in front of you, the camera's look flattened onto the wall is nothing
+  but tilt. W climbed with the camera level or raised, and went *down* the moment
+  it dipped past eight degrees. A camera behind the spider looks down at it most
+  of the time.
+* On a wall beside you, a few degrees of turn swapped the keys outright. W went
+  from along the wall to up it, and D from up it to along it, or back towards the
+  camera.
 
-The one degenerate case is looking *along* a wall's face, where screen-right
-points into it and there is honestly no right to go to. That falls back to the old
-cross product, which is always square to the walk and always somewhere. The view
-is a sliver of wall at that angle and the player is about to turn it.
+That is the "sometimes the direction I press is wrong" report, and it was right.
 
-**Across an edge, the keys keep going the way they were going.** The screen-axis
-walk is right on any one surface and wrong *between* two, because at the edge the
-reading jumps. Walk into a wall with the camera tipped down even a little — which
-in third person is most of the time — and W on the wall means *down* it: straight
-back into the floor. So the spider took the floor, then the wall, then the floor,
-a swap every three tenths of a second for as long as the key was held, and never
-climbed. Nothing said so, because the one check that walked into a wall did it
-with the camera dead level, where the two readings happen to agree. A ceiling did
-the same from the wall, and a silk line did it against whatever it was tied to,
-which is what "I cannot get off the rope" was.
+So a wall reads the keys off the camera's *turn* against the wall (its yaw), and
+has three readings:
+
+| You are | W | D |
+| --- | --- | --- |
+| Facing the wall | Climbs | Along it, the way the camera calls right |
+| Looking along it | Along it, the way you look | Climbs if the wall is on your right; on your left, A climbs |
+| Facing away | Comes back down | Along it, the way the camera calls right |
+
+The readings blend smoothly, by how far you are turned from facing the wall:
+
+| Turned from facing the wall | Reading |
+| --- | --- |
+| Up to 40° | Holds at "facing" |
+| 40° to 80° | Turns smoothly to "along" |
+| 80° to 100° | Holds at "along" |
+| 100° to 140° | Turns smoothly to "away" |
+| Past 140° | Holds at "away" |
+
+So no small turn of the camera makes a large turn of the keys: at most 6.7° in a
+2° turn, mid-blend. How far the camera is tipped does not come into it at all.
+
+**Slopes and the seams:**
+
+* A slope eases between the two kinds of reading. Up to sixty degrees from flat it
+  is "go where you look", the same frame turned through exactly the angle you face
+  it at, which is what a floor does. From there to about eighty degrees it settles
+  onto the three wall readings.
+* A surface counts as a floor while its up is within about eleven degrees of
+  straight up (`SpiderClimb.FLOOR_UP`). The seam where a slope starts being climbed
+  moves the keys by less than a degree.
+* A surface counts as a ceiling once it is within about fifty-three degrees of
+  level overhead (`CEILING_UP`). This seam cannot be smooth. Facing an overhang, W
+  climbs it, which is out towards you. On a ceiling, facing the same way, W goes
+  where you look, back in towards the wall. No turn between those two keeps both W
+  and D. Keys held across it are carried over, as below.
+
+**Across an edge, the keys keep going the way they were going.** Each surface's
+reading is right on that surface and can be wrong *between* two, because at the
+edge it jumps.
+
+Climb a wall to the ceiling still facing the wall, and W on the ceiling means
+*back towards the wall*: straight back onto the surface you came from. So the
+spider took the wall, then the ceiling, then the wall, a swap every three tenths
+of a second for as long as the key was held.
+
+Two other places did the same:
+
+* **Walls against the floor**, while walls read the keys off the camera's tilt.
+  Nothing said so, because the one check that walked into a wall did it with the
+  camera dead level, where the two readings happen to agree.
+* **A silk line against whatever it was tied to.** That is what "I cannot get off
+  the rope" was.
 
 `SpiderClimb._carry_over` turns the keys' own two directions by exactly the turn
-the surface made — forward on the floor becomes up the wall, up the wall becomes
-on across the ceiling, forward over a ledge becomes down its face — and keeps them
-while the keys that were down stay down. It hands back to the camera the moment
-they are let go or the camera swings well away (`carry_release_angle`), because
-both of those are the player asking again. On the gym's climbing station the
-wall-to-overhang run went from eleven bounces and forty-six camera reversals to
-none.
+the surface made:
+
+* Forward on the floor becomes up the wall.
+* Up the wall becomes on across the ceiling.
+* Forward over a ledge becomes down its face.
+
+It keeps them while the keys that were down stay down. It hands back to the camera
+the moment they are let go or the camera swings well away (`carry_release_angle`),
+because both of those are the player asking again. The camera's swing is measured
+from where the carry began.
+
+The same carry covers the bend from an overhang onto a ceiling. There the reading
+flips over a turn of a few degrees rather than at an edge.
+
+On the gym's climbing station, the wall-to-overhang run went from eleven bounces
+and forty-six camera reversals to none.
 
 ### Framing a throw
 
@@ -1970,7 +2020,7 @@ hold in their head on the first screen.
 
 | Input | Action |
 |-------|--------|
-| **WASD** | Move — on whatever surface you are stuck to |
+| **WASD** | Move — on whatever surface you are stuck to. On a wall the keys go by which way you face it, not by the camera's tilt: facing it W climbs, looking along it the key on the wall's side climbs, facing away W comes down (*Walking on a wall*, §7) |
 | **Mouse** | Look |
 | **Space** | Jump. Also the only way off silk, which is sticky |
 | **Shift** | **Sprint**, out of a pool of a few seconds that fills back up while you walk. It costs more per size class of whatever is on your line, which is what makes hauling something home at a run a decision rather than the obvious move (§2) |
