@@ -49,6 +49,30 @@ signal notice(text: String)
 const FLOOR_UP := 0.98
 const CEILING_UP := -0.6
 
+## How far, in degrees, the walk can come apart from the camera's reading of the
+## keys before it stops taking the camera's turns, and how close the two have to come
+## again before it hands back. See [method _carry_over].
+const CARRY_APART := 30.0
+const CARRY_TOGETHER := 15.0
+
+## Below this many degrees a change of surface is a curve — the side of a trunk, the
+## next facet of a stone — and the body rolls round it over a few frames; at or above
+## it the change is an edge, and is taken at once. See [method _adopt_surface].
+const CURVE := 40.0
+
+## How much of the way round a curve the body's up goes each physics frame.
+const CURVE_FOLLOW := 0.35
+
+## How steep both surfaces have to be — as the y of their ups, either way — for a
+## walk carried between them to keep its angle to the way up rather than be carried
+## the shortest way round. See [method _uphill_carry].
+const STEEP_KEEP := 0.85
+
+## How far from a wall a surface has to be — as the y of its up, either way — for the
+## camera's reading of the keys on it to be a steady one the walk can always settle
+## back onto: a floor, a ceiling, a gentle slope. See [method _carry_over].
+const SETTLE_UP := 0.5
+
 
 @export_group("Climbing")
 
@@ -216,14 +240,23 @@ var _previous_up := Vector3.ZERO
 var _swap_cooldown := 0.0
 var _grapple_time := 0.0
 
-## The keys' two directions, [right, ahead], carried over the last edge while the
-## keys that were down for it stay down. Empty while the camera's reading is in
-## charge. See [method _carry_over].
-var _carried: Array[Vector3] = []
+## The keys' two directions as last walked, [right, ahead], for as long as a key is
+## down: carried round with the surface underfoot as it turns, and steered with the
+## camera as it turns. Empty while nothing is held. See [method _carry_over].
+var _walked: Array[Vector3] = []
+
+## Whether [member _walked] has stopped taking the camera's turns: the surface has
+## brought it apart from the camera's reading of the keys — over an edge, round a
+## curve — and it keeps going the way it was going until the two agree again.
+var _carrying := false
 
 ## Where the camera was looking when the carry began, so swinging it well away
 ## hands the walk back to the camera.
 var _carried_look := Vector3.ZERO
+
+## The camera's yaw and pitch when [member _walked] last took its turn.
+var _walked_yaw := 0.0
+var _walked_pitch := 0.0
 
 ## How far this grapple has to go, measured when it started.
 var _grapple_span := 0.0
@@ -329,13 +362,18 @@ func face(direction: Vector3) -> void:
 func _surface_forward(up: Vector3) -> Vector3:
 	if _view == null:
 		return _facing
-	var look := _view.forward()
+	return _surface_forward_for(up, _view.forward(), _view.up())
+
+
+## [method _surface_forward] for a camera looking along [param look] with the top of
+## the screen along [param top].
+func _surface_forward_for(up: Vector3, look: Vector3, top: Vector3) -> Vector3:
 	var flat := look - up * look.dot(up)
 	if flat.length_squared() < 0.02:
 		var sideways: float = -signf(look.dot(up))
 		if sideways == 0.0:
 			sideways = 1.0
-		var fallback := _view.up() * sideways
+		var fallback := top * sideways
 		flat = fallback - up * fallback.dot(up)
 	if flat.length_squared() < 0.000001:
 		return _facing
@@ -347,11 +385,16 @@ func _surface_forward(up: Vector3) -> Vector3:
 func update_orientation(delta: float) -> void:
 	if _spider == null:
 		return
-	# The body turns to follow the camera — to face where W would walk it — and
-	# the camera never follows the body.
-	var axes := _key_axes(_current_up)
-	if not axes.is_empty():
-		_facing = axes[1]
+	# The body turns to face where W walks it — the walk as it is being carried while
+	# a key is down, the camera's reading otherwise — and the camera never follows
+	# the body.
+	var walking := _flat(_walked[1], _current_up) if _walked.size() == 2 else Vector3.ZERO
+	if walking != Vector3.ZERO:
+		_facing = walking
+	else:
+		var axes := _key_axes(_current_up)
+		if not axes.is_empty():
+			_facing = axes[1]
 	if mode == Mode.GRAPPLING:
 		# Roll onto the surface on the way in, so arrival is not a snap.
 		_blend_up(grapple_normal, delta)
@@ -414,7 +457,7 @@ func release() -> void:
 	standing_on = null
 	ride_speed = 0.0
 	line_length = 0.0
-	_carried.clear()
+	_forget_walk()
 	if _spider != null:
 		_spider.up_direction = Vector3.UP
 	_draw_line()
@@ -433,7 +476,7 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	if hit.is_empty() or _grace > 0.0:
 		on_silk = false
 		standing_on = null
-		_carried.clear()
+		_forget_walk()
 		_set_mode(Mode.AIRBORNE)
 		_move_airborne(delta, input_axis)
 		return
@@ -473,7 +516,12 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	# it still brakes hard — that is what deceleration is for — but coasting on
 	# what a grapple or a jump gave you is a skid, and a skid is the only place
 	# carried momentum can actually live.
-	if tangent.length() > speed and wish.dot(tangent) >= 0.0:
+	#
+	# Only while the keys go along with it, though, or nothing is held. Steering
+	# across a skid turns as sharply as steering at a walk: a landing that would not
+	# take a turn for half a second read as the keys going the wrong way.
+	var with_skid := wish == Vector3.ZERO or wish.dot(tangent.normalized()) > 0.7
+	if tangent.length() > speed and with_skid:
 		tangent = tangent.lerp(target, clampf(skid_damping * delta, 0.0, 1.0))
 	else:
 		var rate: float = acceleration if target.dot(tangent) > 0.0 else deceleration
@@ -514,7 +562,7 @@ func _move_airborne(delta: float, input_axis: Vector2) -> void:
 
 func _leap(input_axis: Vector2) -> void:
 	var wish := _walk(input_axis)
-	_carried.clear()
+	_forget_walk()
 	# Whatever you were already carrying comes with you. Jumping out of a skid is
 	# what turns a grapple's landing into the next hop, rather than a full stop
 	# followed by a standing jump — and it is the half of chaining that a launch
@@ -553,6 +601,8 @@ func _find_surface(height: float, wish: Vector3) -> Dictionary:
 	var best_score := INF
 	var same := {}
 	var same_score := INF
+	var other := {}
+	var other_score := INF
 	var exclude: Array[RID] = [_spider.get_rid()]
 
 	for direction in directions:
@@ -572,35 +622,42 @@ func _find_surface(height: float, wish: Vector3) -> Dictionary:
 		if distance < best_score:
 			best_score = distance
 			best = hit
-		if normal.dot(up) > 0.85 and distance < same_score:
-			same_score = distance
-			same = hit
+		if normal.dot(up) > 0.85:
+			if distance < same_score:
+				same_score = distance
+				same = hit
+		elif distance < other_score:
+			other_score = distance
+			other = hit
 
 	if best.is_empty():
 		return best
 	if mode != Mode.ATTACHED or same.is_empty():
 		return best
 
+	# Still on the old surface. Only change allegiance if the player is actively
+	# pushing into another, and it is near enough to be the next thing underfoot.
+	#
+	# The nearest other surface, not the nearest surface: in a crevice — round the
+	# side of a log lying on the ground, into the floor under it — the surface you
+	# are on stays nearer than the floor you are walking into, and asking only the
+	# nearest left the spider pressed into the gap for as long as the key was down.
+	if other.is_empty() or other_score > height * 0.75:
+		return same
+	var candidate: Vector3 = other.get("normal", Vector3.UP)
 	# Fresh off another surface and the candidate is the one we just left? Stay
 	# put for a moment, or an inside corner ping-pongs between wall and ceiling.
-	var candidate_normal: Vector3 = best.get("normal", Vector3.UP)
-	if _swap_cooldown > 0.0 and candidate_normal.dot(_previous_up) > 0.85:
-		return same
-
-	# Still on the old surface. Only change allegiance if the player is
-	# actively pushing into the new one.
-	var candidate: Vector3 = best.get("normal", Vector3.UP)
-	if candidate.dot(up) > 0.85:
+	if _swap_cooldown > 0.0 and candidate.dot(_previous_up) > 0.85:
 		return same
 	# And only onto a surface standing on this side of the one underfoot: an
 	# inside corner, which is the only kind there is to push into. The far face
 	# of an edge you have just come over is *behind* the face you are on now, and
 	# walking away from the edge points into it just as squarely — counted as a
 	# push, it pulled the spider back over the edge it was walking off.
-	var rise: float = (best.get("position", origin) - same.get("position", origin)).dot(up)
+	var rise: float = (other.get("position", origin) - same.get("position", origin)).dot(up)
 	if rise > height * 0.05 and wish.length_squared() > 0.01 \
 			and wish.normalized().dot(-candidate) > 0.2:
-		return best
+		return other
 	return same
 
 
@@ -612,13 +669,25 @@ func _find_surface(height: float, wish: Vector3) -> Dictionary:
 ## and this value becomes the body's up, which is then slerped every frame.
 ## Vector3.slerp needs both ends exactly unit, so one sloppy normal from the
 ## world is an error every frame until the spider next touches something else.
-func _adopt_surface(raw_normal: Vector3) -> void:
+func _adopt_surface(raw_normal: Vector3, roll := true) -> void:
 	if raw_normal.length_squared() < 0.000001:
 		return
 	var normal := raw_normal.normalized()
 	if normal.dot(_current_up) > 0.999:
 		surface_normal = normal
 		_current_up = normal
+		return
+	if roll and normal.dot(_current_up) > cos(deg_to_rad(CURVE)):
+		# Round a curve, or onto the next facet of something round: the body rolls
+		# round it over a few frames rather than snapping. A trunk built of twelve
+		# flat sides turned the body thirty degrees at every side, and rocked it
+		# between two of them at each seam.
+		surface_normal = normal
+		var rolled := _current_up.slerp(normal, CURVE_FOLLOW).normalized()
+		var facing := _flat(Quaternion(_current_up, rolled) * _facing, rolled)
+		if facing != Vector3.ZERO:
+			_facing = facing
+		_current_up = rolled
 		return
 	var along := _facing.dot(normal)
 	var new_facing: Vector3
@@ -797,7 +866,7 @@ func _step_hanging(delta: float, input_axis: Vector2, want_out: bool, want_in: b
 			var wish_up := _wish_direction(input_axis, Vector3.UP)
 			var hit := _find_surface(height, wish_up)
 			if not hit.is_empty():
-				_adopt_surface(hit["normal"])
+				_adopt_surface(hit["normal"], false)
 				_set_mode(Mode.ATTACHED)
 				return
 
@@ -830,7 +899,7 @@ func _step_hanging(delta: float, input_axis: Vector2, want_out: bool, want_in: b
 		if not reach_hit.is_empty():
 			var normal: Vector3 = reach_hit.get("normal", Vector3.UP)
 			if wish.normalized().dot(-normal) > 0.2:
-				_adopt_surface(normal)
+				_adopt_surface(normal, false)
 				_set_mode(Mode.ATTACHED)
 				line_cut.emit()
 
@@ -903,7 +972,7 @@ func board(strand: WebStrand, toward: Vector3) -> bool:
 	var along := axis if (toward - point).dot(axis) >= 0.0 else -axis
 	ride_web = null
 	_grace = 0.0
-	_carried.clear()
+	_forget_walk()
 	_spider.velocity = Vector3.ZERO
 	tangent_velocity = Vector3.ZERO
 	_spider.global_position = point + up * _body_height() * FEET
@@ -1003,7 +1072,9 @@ func _arrive() -> void:
 	var travel := _spider.velocity
 	var along := travel - normal * travel.dot(normal)
 	_spider.velocity = along * grapple_carry
-	_adopt_surface(normal)
+	# Taken outright: the body rolled towards it all the way in, and the grapple
+	# knows exactly which surface it is.
+	_adopt_surface(normal, false)
 	_set_mode(Mode.ATTACHED)
 	grappled.emit(point, normal)
 
@@ -1130,94 +1201,159 @@ func _ride_axis() -> Vector3:
 
 # --- helpers ------------------------------------------------------------
 
-## Where the keys want to go on the surface underfoot: the camera's reading of
-## them — see [method _wish_direction] — unless an edge is still carrying the
-## walk that brought you over it. See [method _carry_over].
+## Where the keys want to go on the surface underfoot: the walk as it has been
+## carried and steered while a key has been down — see [method _carry_over] — or the
+## camera's reading of the keys for the first step.
 func _walk(input_axis: Vector2) -> Vector3:
 	if input_axis.length_squared() < 0.01:
 		# Let go, and the next press is read fresh.
-		_carried.clear()
+		_forget_walk()
 		return Vector3.ZERO
-	if _carried.size() == 2 and _view != null \
-			and _view.forward().angle_to(_carried_look) > deg_to_rad(carry_release_angle):
-		_carried.clear()
-	if _carried.size() == 2:
-		var right := _flat(_carried[0], _current_up)
-		var ahead := _flat(_carried[1], _current_up)
+	if _walked.size() == 2:
+		var right := _flat(_walked[0], _current_up)
+		var ahead := _flat(_walked[1], _current_up)
 		if right != Vector3.ZERO and ahead != Vector3.ZERO:
 			return (ahead * input_axis.y + right * input_axis.x).normalized()
-		_carried.clear()
 	return _wish_direction(input_axis, _current_up)
 
 
-## Keeps the walk going the way it was going when the surface underfoot turns.
+## Drops the walk, so the next press reads the keys afresh off the camera.
+func _forget_walk() -> void:
+	_walked.clear()
+	_carrying = false
+
+
+## Keeps the walk going the way it was going while the surface underfoot turns, and
+## lets the camera steer it while it does.
 ##
-## The walk is read off the camera, and across an edge that reading can jump.
-## Climb a wall to the ceiling still facing the wall and W on the ceiling means
-## *back towards the wall* — straight back onto the surface you came from, so the
-## spider took the wall again, then the ceiling, then the wall, a swap every three
-## tenths of a second and the camera thrown half a metre each time. A line did it
-## against whatever it was tied to, which read as being unable to get off the rope,
-## and a wall did it against the floor for as long as walls read the keys off the
-## camera's tilt.
+## The keys are read off the camera, and the reading depends on the surface as well
+## as on the camera, so as the surface turns the reading can turn with it. Across an
+## edge it jumps: climb a wall to the ceiling still facing the wall and W on the
+## ceiling means *back towards the wall* — straight back onto the surface you came
+## from, so the spider took the wall again, then the ceiling, then the wall, a swap
+## every three tenths of a second and the camera thrown half a metre each time. Round
+## a curve it drifts: hold D on the side of a trunk with the camera still, and as the
+## trunk turns under the spider the reading turns from along it to down it, and the
+## spider slid off the bottom instead of going round.
 ##
-## So the keys' own two directions are carried over the edge, turned by exactly the
-## turn the surface made: forward on the floor becomes up the wall, up the wall
-## becomes on across the ceiling, forward over a ledge becomes down its face. That
-## holds while the keys stay down, and hands back to the camera the moment they are
-## let go or the camera swings well away — both of which are the player asking
-## again. A turn near a half circle, like dropping onto a ceiling from below, has no
-## one way to carry anything, so it is read fresh.
+## So for as long as a key is down the walk is kept rather than read again. Each step
+## it is turned by exactly the turn the surface made — forward on the floor becomes up
+## the wall, up the wall becomes on across the ceiling, along a trunk stays along it
+## all the way round — and by whatever the camera's turn did to the camera's own
+## reading of the keys, so the mouse steers it as it always did. Where the surface has
+## brought the two [constant CARRY_APART] degrees apart, the walk stops taking the
+## camera's turns and keeps going the way it was going, until the camera's reading
+## comes back within [constant CARRY_TOGETHER] of it, the keys are let go, or the
+## camera swings [member carry_release_angle] away — each of which is the player
+## asking again. A turn near a half circle, like dropping onto a ceiling from below,
+## has no one way to carry anything, so it is read fresh.
 func _carry_over(before: Vector3, input_axis: Vector2) -> void:
-	if input_axis.length_squared() < 0.01 or before.length_squared() < 0.000001:
+	if input_axis.length_squared() < 0.01 or before.length_squared() < 0.000001 \
+			or _view == null:
+		_forget_walk()
 		return
 	var from := before.normalized()
-	var turn := rad_to_deg(from.angle_to(_current_up))
-	if turn > 150.0:
-		_carried.clear()
+	if rad_to_deg(from.angle_to(_current_up)) > 150.0:
+		_forget_walk()
 		return
-	# The frame the keys were being read in on the way in: still carried from the
-	# edge before this one, or the camera's.
-	var old_right := Vector3.ZERO
-	var old_ahead := Vector3.ZERO
-	if _carried.size() == 2:
-		old_right = _flat(_carried[0], from)
-		old_ahead = _flat(_carried[1], from)
-	if old_right == Vector3.ZERO or old_ahead == Vector3.ZERO:
-		var axes := _key_axes(from)
-		if axes.is_empty():
-			return
-		old_right = axes[0]
-		old_ahead = axes[1]
-	var bend := Quaternion(from, _current_up)
-	var right := _flat(bend * old_right, _current_up)
-	var ahead := _flat(bend * old_ahead, _current_up)
-	if right == Vector3.ZERO or ahead == Vector3.ZERO:
-		_carried.clear()
-		return
-	# If the camera already reads the keys this way there is nothing to carry, and
-	# carrying anyway would only stop the mouse steering for no reason. Nor across a
-	# gentle turn that moves the reading only a little — a curve, not an edge.
-	#
-	# But a gentle turn can still flip the reading, where a surface stops being an
-	# overhang to climb and starts being a ceiling to walk: the two read W opposite
-	# ways and no turn between them keeps D where it is. Held keys are carried over
-	# that the same as over an edge, so crawling round the underside of a boulder
-	# does not turn you back halfway.
 	var fresh := _key_axes(_current_up)
-	if not fresh.is_empty():
-		if right.dot(fresh[0]) > 0.9 and ahead.dot(fresh[1]) > 0.9:
-			_carried.clear()
-			return
-		if turn < 20.0 and right.dot(fresh[0]) > 0.0 and ahead.dot(fresh[1]) > 0.0:
-			return
-	elif turn < 20.0:
+	if fresh.is_empty():
 		return
-	# The camera's swing is measured from the edge, or from where a carry began —
-	# not from every frame of walking on with one, or no swing would ever be enough.
-	if _carried.is_empty() or turn >= 20.0:
-		_carried_look = _view.forward() if _view != null else Vector3.ZERO
-	_carried = [right, ahead]
+	if _walked.size() != 2:
+		# The first step with a key down starts from the camera's reading, on the
+		# surface it was read on.
+		var start := _key_axes(from)
+		if start.is_empty():
+			return
+		_walked = [start[0], start[1]]
+		_carrying = false
+		_note_steer()
+	var carried := _uphill_carry(from, _current_up)
+	if carried.is_empty():
+		var bend := Quaternion(from, _current_up)
+		carried = [bend * _walked[0], bend * _walked[1]]
+	var right := _flat(carried[0], _current_up)
+	var ahead := _flat(carried[1], _current_up)
+	if right == Vector3.ZERO or ahead == Vector3.ZERO:
+		_walked = [fresh[0], fresh[1]]
+		_carrying = false
+		_note_steer()
+		return
+	if not _carrying:
+		# The camera's turn since the last step, as it turned its own reading of this
+		# surface.
+		var was := _key_axes_for(_current_up, _walked_yaw, _walked_pitch)
+		if not was.is_empty():
+			var steer := _turn_about(was[1], fresh[1], _current_up)
+			right = right.rotated(_current_up, steer)
+			ahead = ahead.rotated(_current_up, steer)
+	_note_steer()
+	var apart := rad_to_deg(maxf(right.angle_to(fresh[0]), ahead.angle_to(fresh[1])))
+	var steady := absf(_current_up.y) >= SETTLE_UP
+	if _carrying:
+		var swung := _view.forward().angle_to(_carried_look) > deg_to_rad(carry_release_angle)
+		if swung or apart < CARRY_TOGETHER:
+			_carrying = false
+			# Handed back. Where the camera's reading is a steady one, onto it; on a
+			# wall, whose reading turns smoothly between facing it and looking along it,
+			# the walk keeps its own way and takes the camera's turns from here — or
+			# handing back mid-turn would set the walk a few degrees up the wall, and it
+			# would climb that way round a trunk for as long as the key stayed down.
+			if swung or steady:
+				_walked = [fresh[0], fresh[1]]
+				return
+	elif apart > CARRY_APART:
+		_carrying = true
+		_carried_look = _view.forward()
+	elif steady:
+		# On a floor, a ceiling or a gentle slope the walk is the camera's, exactly:
+		# whatever a bump or an edge left it a few degrees off is let go of, not
+		# walked on with.
+		_walked = [fresh[0], fresh[1]]
+		return
+	_walked = [right, ahead]
+
+
+## The walk carried from a steep surface facing [param from] onto another facing
+## [param to], keeping its angle to the way up each one: level round a trunk stays
+## level all the way round, tapered or not. Carried the shortest way round instead,
+## it is a straight line on the surface, and a straight line round a narrowing trunk
+## spirals — eighteen degrees a lap on an ordinary one, down to the ground in two.
+## Empty unless both surfaces are steep enough to have a way up worth keeping to.
+func _uphill_carry(from: Vector3, to: Vector3) -> Array:
+	if absf(from.y) > STEEP_KEEP or absf(to.y) > STEEP_KEEP:
+		return []
+	var was := _slope_frame(from)
+	var now := _slope_frame(to)
+	if was.is_empty() or now.is_empty():
+		return []
+	var carried := []
+	for direction in _walked:
+		carried.append(now[0] * direction.dot(was[0]) + now[1] * direction.dot(was[1]))
+	return carried
+
+
+## The way up a slope facing [param up] and the level way across it, as
+## [uphill, along]; empty for a floor or a ceiling, which have neither.
+static func _slope_frame(up: Vector3) -> Array:
+	var along := Vector3.UP.cross(up)
+	var uphill := Vector3.UP - up * up.y
+	if along.length_squared() < 0.000001 or uphill.length_squared() < 0.000001:
+		return []
+	return [uphill.normalized(), along.normalized()]
+
+
+## Remembers where the camera is pointing, for the next step's turn.
+func _note_steer() -> void:
+	if _view != null:
+		_walked_yaw = _view.yaw
+		_walked_pitch = _view.pitch
+
+
+## The angle from [param from] to [param to] around [param axis], signed the way
+## [method Vector3.rotated] turns.
+static func _turn_about(from: Vector3, to: Vector3, axis: Vector3) -> float:
+	return atan2(axis.dot(from.cross(to)), from.dot(to))
 
 
 ## [param direction] laid flat on a surface facing [param up], or zero if it
@@ -1258,14 +1394,27 @@ func _wish_direction(input_axis: Vector2, up: Vector3) -> Vector3:
 ## Anything steeper is climbed rather than walked, and reads them off how you face
 ## it instead — see [method _climbing_axes].
 func _key_axes(up: Vector3) -> Array:
+	if _view == null:
+		var lead := _surface_forward(up)
+		if lead.length_squared() < 0.000001:
+			return []
+		return _surface_axes(up, lead.normalized())
+	return _key_axes_for(up, _view.yaw, _view.pitch)
+
+
+## [method _key_axes] for a camera turned to [param yaw] and tipped to [param pitch]
+## — the reading a camera pointed somewhere else would give, which is how the walk
+## tells the camera's own turns from the surface's. See [method _carry_over].
+func _key_axes_for(up: Vector3, yaw: float, pitch: float) -> Array:
 	if up.y < FLOOR_UP and up.y > CEILING_UP:
-		var climbing := _climbing_axes(up)
+		var climbing := _climbing_axes_for(up, yaw)
 		if not climbing.is_empty():
 			return climbing
-	var lead := _surface_forward(up)
+	var look := Basis.from_euler(Vector3(pitch, yaw, 0.0))
+	var lead := _surface_forward_for(up, -look.z, look.y)
 	if lead.length_squared() < 0.000001:
 		return []
-	return _surface_axes(up, lead.normalized())
+	return _surface_axes_for(up, lead.normalized(), look.x)
 
 
 ## The keys on a wall, a slope or an overhang, as [right, ahead]: read off which
@@ -1290,6 +1439,11 @@ func _key_axes(up: Vector3) -> Array:
 func _climbing_axes(up: Vector3) -> Array:
 	if _view == null:
 		return []
+	return _climbing_axes_for(up, _view.yaw)
+
+
+## [method _climbing_axes] for a camera turned to [param yaw].
+func _climbing_axes_for(up: Vector3, yaw: float) -> Array:
 	var along := Vector3.UP.cross(up)
 	var uphill := Vector3.UP - up * Vector3.UP.dot(up)
 	var into := Vector3(-up.x, 0.0, -up.z)
@@ -1300,7 +1454,7 @@ func _climbing_axes(up: Vector3) -> Array:
 	uphill = uphill.normalized()
 	into = into.normalized()
 	# Which way the camera faces across the ground: its yaw, whatever its pitch.
-	var facing := Vector3(-sin(_view.yaw), 0.0, -cos(_view.yaw))
+	var facing := Vector3(-sin(yaw), 0.0, -cos(yaw))
 	# 0 facing the surface, a quarter turn with it on your right, a half turn with
 	# your back to it; negative with it on your left.
 	var turned := atan2(-facing.dot(along), facing.dot(into))
@@ -1341,7 +1495,11 @@ static func _wall_turn(turned: float) -> float:
 ## swapped the keys. Walls are [method _climbing_axes]'s now; this is the fallback
 ## for one when there is no camera to read them by.
 func _surface_axes(up: Vector3, lead: Vector3) -> Array:
-	var across := _view.right() if _view != null else lead.cross(up)
+	return _surface_axes_for(up, lead, _view.right() if _view != null else lead.cross(up))
+
+
+## [method _surface_axes] for a camera whose right is [param across].
+func _surface_axes_for(up: Vector3, lead: Vector3, across: Vector3) -> Array:
 	var right := across - up * across.dot(up)
 	if right.length_squared() < 0.02:
 		# Looking along a wall's face edge-on: the camera's right points into the

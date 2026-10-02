@@ -1625,40 +1625,70 @@ So no small turn of the camera makes a large turn of the keys: at most 6.7° in 
   where you look, back in towards the wall. No turn between those two keeps both W
   and D. Keys held across it are carried over, as below.
 
-**Across an edge, the keys keep going the way they were going.** Each surface's
-reading is right on that surface and can be wrong *between* two, because at the
-edge it jumps.
+**While a key is down, the walk keeps going the way it was going.** Each surface's
+reading is right on that surface, but it depends on the surface as well as on the
+camera, so as the surface turns under the spider the reading can turn with it.
 
-Climb a wall to the ceiling still facing the wall, and W on the ceiling means
-*back towards the wall*: straight back onto the surface you came from. So the
-spider took the wall, then the ceiling, then the wall, a swap every three tenths
-of a second for as long as the key was held.
+* **Across an edge it jumps.** Climb a wall to the ceiling still facing the wall,
+  and W on the ceiling means *back towards the wall*: straight back onto the
+  surface you came from. The spider took the wall, then the ceiling, then the wall,
+  a swap every three tenths of a second for as long as the key was held. Walls did
+  the same against the floor while they read the keys off the camera's tilt, and a
+  silk line did it against whatever it was tied to — "I cannot get off the rope".
+* **Round a curve it drifts.** Hold D on the side of a trunk with the camera still:
+  as the trunk turns under the spider, the reading of D turns from along the trunk
+  to down it, and the spider slid off the bottom instead of going round.
 
-Two other places did the same:
-
-* **Walls against the floor**, while walls read the keys off the camera's tilt.
-  Nothing said so, because the one check that walked into a wall did it with the
-  camera dead level, where the two readings happen to agree.
-* **A silk line against whatever it was tied to.** That is what "I cannot get off
-  the rope" was.
-
-`SpiderClimb._carry_over` turns the keys' own two directions by exactly the turn
-the surface made:
+So from the moment a key goes down, `SpiderClimb._carry_over` keeps the walk rather
+than reading it again each step. Each step it is turned by exactly the turn the
+surface made, and by whatever the camera's own turn did to the camera's reading of
+the keys — so the mouse steers it as it always did, and only the surface's turns are
+carried:
 
 * Forward on the floor becomes up the wall.
 * Up the wall becomes on across the ceiling.
 * Forward over a ledge becomes down its face.
+* Along a trunk stays along it, all the way round. On steep surfaces the walk keeps
+  its angle to the way up rather than being carried the shortest way round, which
+  on a narrowing trunk is a spiral — eighteen degrees a lap on an ordinary one.
 
-It keeps them while the keys that were down stay down. It hands back to the camera
-the moment they are let go or the camera swings well away (`carry_release_angle`),
-because both of those are the player asking again. The camera's swing is measured
-from where the carry began.
+Where the surface has carried the walk 30° away from the camera's reading, the walk
+stops taking the camera's turns and keeps going. It hands back when the camera's
+reading comes within 15° of it, when the keys are let go, or when the camera swings
+well away (`carry_release_angle`, measured from where the carry began) — each of
+those is the player asking again. On a floor, a ceiling or a gentle slope the walk
+then settles exactly onto the camera's reading, so W is where you look; on a wall,
+whose reading turns smoothly between facing it and looking along it, it keeps its
+own way, or handing back mid-turn would set it a few degrees up the wall and it
+would climb that way round a trunk for as long as the key stayed down.
 
-The same carry covers the bend from an overhang onto a ceiling. There the reading
-flips over a turn of a few degrees rather than at an edge.
+The same carry covers the bend from an overhang onto a ceiling, where the reading
+flips over a turn of a few degrees rather than at an edge. On the gym's climbing
+station, the wall-to-overhang run went from eleven bounces and forty-six camera
+reversals to none.
 
-On the gym's climbing station, the wall-to-overhang run went from eleven bounces
-and forty-six camera reversals to none.
+**Round things roll, and gaps let you out.** Three smaller fixes came from walking
+a test room of round things — a trunk, a trunk of twelve flat sides, a ball, an egg
+and a log lying on the floor:
+
+* **Curves roll rather than snap.** A change of surface under 40° is a curve or the
+  next facet of something round, and the body rolls round it over a few frames
+  (`CURVE`, `CURVE_FOLLOW`). The twelve-sided trunk had turned the body thirty
+  degrees at every side, and rocked it between two sides at every seam: 53 jumps of
+  over ten degrees in four seconds, now none bigger than a single roll step.
+  Anything 40° or more is an edge and is taken at once, and so is the surface a
+  grapple lands on: the body rolled towards it all the way in.
+* **A gap lets you out.** Round the side of the log, D ran the spider into the gap
+  between the log and the floor and held it there. The surface probe only ever
+  offered the nearest surface, and in a crevice that is still the one you are on.
+  It now offers the nearest *other* surface too, on the same terms as an inside
+  corner: near enough to be the next thing underfoot, standing on this side of the
+  one you are on, and pushed into.
+* **A skid turns when you steer across it.** Speed above a walk — what a grapple's
+  landing leaves you with — bleeds away slowly, so arriving is not a dead stop. But
+  it ignored steering across it too, so for half a second after every grapple the
+  keys seemed to go the wrong way. A skid now only coasts while the keys go along
+  with it or nothing is held.
 
 ### Framing a throw
 

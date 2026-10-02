@@ -42,6 +42,8 @@ func run_checks() -> void:
 	await _test_leaping_off_a_wall()
 	await _test_corners_do_not_bounce()
 	await _test_climbing_with_the_camera_tipped_down()
+	await _test_round_things()
+	await _test_turning_out_of_a_skid()
 	await _test_off_a_line_onto_a_wall()
 	await _test_the_body_is_a_skeleton()
 	await _test_three_looks_on_one_skeleton()
@@ -304,7 +306,7 @@ func _test_round_an_overhang() -> void:
 	var ceiling := Vector3(0.76, -0.65, 0.0).normalized()
 	rig.face(Vector3.LEFT)
 	rig.pitch = 0.3
-	climb._carried.clear()
+	climb._forget_walk()
 	climb._current_up = overhang
 	var climbing := climb._walk(w)
 	climb._current_up = ceiling
@@ -322,6 +324,7 @@ func _test_round_an_overhang() -> void:
 	check(climb._walk(w).angle_to(held) < deg_to_rad(1.0),
 		"and on across the ceiling while it stays down")
 	rig.yaw += deg_to_rad(climb.carry_release_angle + 15.0)
+	climb._carry_over(ceiling, w)
 	var swung := climb._walk(w)
 	check(swung.angle_to(climb._wish_direction(w, ceiling)) < deg_to_rad(1.0),
 		"until the camera swings well away, which hands it back to the camera")
@@ -330,7 +333,7 @@ func _test_round_an_overhang() -> void:
 	climb._walk(Vector2.ZERO)
 	check(climb._walk(w).angle_to(fresh) < deg_to_rad(1.0),
 		"as letting go and pressing again does")
-	climb._carried.clear()
+	climb._forget_walk()
 	climb._current_up = keep_up
 	rig.pitch = 0.0
 
@@ -580,6 +583,132 @@ func _test_climbing_with_the_camera_tipped_down() -> void:
 	check(_spider.climb.surface_normal.dot(Vector3.RIGHT) > 0.9,
 		"all of it on the wall (normal %.2v)" % _spider.climb.surface_normal)
 	_spider.view.pitch = 0.0
+
+
+## Round things keep the walk going the way it was going.
+##
+## Holding D on the side of a trunk with the camera still, the trunk turns under the
+## spider and the camera's reading of D turns with it, from along the trunk to down
+## it: the spider slid off the bottom instead of going round. On a trunk built of
+## flat sides it went round, but rocked the body thirty degrees at every side. And
+## round the side of a log lying on the ground it ran into the gap underneath and
+## stayed there, pressed in, for as long as the key was down.
+func _test_round_things() -> void:
+	release_all()
+	var things := Node3D.new()
+	things.name = "RoundThings"
+	_room.add_child(things)
+	var floor_y := -ROOM_HALF.y + 0.2
+	var smooth := CylinderShape3D.new()
+	smooth.radius = 0.5
+	smooth.height = 2.6
+	_shape_at(things, smooth, Vector3(-1.5, 0.0, 0.0), Basis.IDENTITY)
+	var sides := PackedVector3Array()
+	for i in 12:
+		var around := TAU * float(i) / 12.0
+		sides.append(Vector3(cos(around) * 0.55, -1.3, sin(around) * 0.55))
+		sides.append(Vector3(cos(around) * 0.4, 1.3, sin(around) * 0.4))
+	var tapered := ConvexPolygonShape3D.new()
+	tapered.points = sides
+	_shape_at(things, tapered, Vector3(1.5, 0.0, 0.0), Basis.IDENTITY)
+	await physics_frame
+
+	for trunk in [["a round trunk", Vector3(-1.5, 0.0, 0.0), 0.5, 0.15],
+			["a trunk of twelve flat sides, narrowing", Vector3(1.5, 0.0, 0.0), 0.5, 0.25]]:
+		var what: String = trunk[0]
+		var axis: Vector3 = trunk[1]
+		await _set_down(axis + Vector3(0.0, -0.2, float(trunk[2]) + 0.15), Vector3.FORWARD, -0.25)
+		if not check(absf(_spider.climb.surface_normal.y) < 0.3,
+				"set down on the side of %s (normal %.2v)" % [what, _spider.climb.surface_normal]):
+			continue
+		var low := _spider.global_position.y
+		var high := low
+		var swept := 0.0
+		var on_it := true
+		var rock := 0.0
+		var last := _spider.global_position - axis
+		var last_up := _spider.climb.body_up()
+		Input.action_press("move_right")
+		for i in 150:
+			await physics_frame
+			var at := _spider.global_position
+			low = minf(low, at.y)
+			high = maxf(high, at.y)
+			var off := at - axis
+			swept += absf(Vector2(last.x, last.z).angle_to(Vector2(off.x, off.z)))
+			last = off
+			on_it = on_it and absf(_spider.climb.surface_normal.y) < 0.3
+			rock = maxf(rock, rad_to_deg(_spider.climb.body_up().angle_to(last_up)))
+			last_up = _spider.climb.body_up()
+		Input.action_release("move_right")
+		await run_frames(2)
+		check(on_it and rad_to_deg(swept) > 300.0,
+			"holding D with the camera still takes you right round %s (%.0f°)"
+			% [what, rad_to_deg(swept)])
+		check(high - low < float(trunk[3]),
+			"level as you go (%.2fm between highest and lowest)" % (high - low))
+		check(rock < 12.0, "and the body rolls round it rather than rocking (%.1f° in a frame)"
+			% rock)
+
+	# A log lying on the floor: round its side, into the gap under it, and out onto
+	# the floor rather than stuck there.
+	things.free()
+	things = Node3D.new()
+	things.name = "Log"
+	_room.add_child(things)
+	var log_shape := CylinderShape3D.new()
+	log_shape.radius = 0.4
+	log_shape.height = 2.4
+	var log_at := Vector3(0.0, floor_y + 0.4, 0.0)
+	_shape_at(things, log_shape, log_at, Basis(Vector3(0, 0, 1), PI * 0.5))
+	await physics_frame
+	await _set_down(log_at + Vector3(0.0, 0.55, 0.0), Vector3.RIGHT, -0.3)
+	if check(_spider.climb.surface_normal.y > 0.9, "on top of a log lying on the floor"):
+		var out := false
+		Input.action_press("move_right")
+		for i in 120:
+			await physics_frame
+			out = out or (_spider.climb.surface_normal.y > 0.9
+				and _spider.global_position.z > log_at.z + 0.8)
+		Input.action_release("move_right")
+		await run_frames(2)
+		check(out, "D takes you down its side and out onto the floor beyond")
+	things.free()
+	await physics_frame
+
+
+## A skid turns when you steer across it.
+##
+## Speed above a walk — what a grapple's landing leaves you with — bleeds away slowly,
+## so arriving somewhere is not a dead stop. But steering across it was slow too: the
+## keys took half a second to win against it, which read as the keys going the wrong
+## way after every grapple.
+func _test_turning_out_of_a_skid() -> void:
+	release_all()
+	await _set_down(Vector3(0.0, -ROOM_HALF.y + 0.5, 1.5), Vector3.FORWARD, -0.2)
+	var fast := Vector3.RIGHT * _spider.speed * 3.0
+	_spider.velocity = fast
+	await run_frames(10)
+	check(_spider.velocity.dot(Vector3.RIGHT) > _spider.speed * 1.5,
+		"left alone, a skid keeps going (%.2f m/s)" % _spider.velocity.dot(Vector3.RIGHT))
+	_spider.velocity = fast
+	Input.action_press("move_forward")
+	await run_frames(10)
+	Input.action_release("move_forward")
+	var heading := Vector3(_spider.velocity.x, 0.0, _spider.velocity.z).normalized()
+	check(heading.dot(Vector3.FORWARD) > 0.7,
+		"but W across it turns you within a sixth of a second (%.2v)" % heading)
+	await run_frames(10)
+
+
+func _shape_at(parent: Node3D, shape: Shape3D, at: Vector3, basis: Basis) -> void:
+	var body := StaticBody3D.new()
+	body.collision_layer = GameLayers.WORLD
+	var collider := CollisionShape3D.new()
+	collider.shape = shape
+	body.add_child(collider)
+	body.transform = Transform3D(basis, at)
+	parent.add_child(body)
 
 
 ## Walking along a line to the wall it is tied to takes you off the line and onto
