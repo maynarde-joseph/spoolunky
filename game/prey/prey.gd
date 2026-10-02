@@ -97,6 +97,9 @@ const SHOCK_FIGHT := 0.35
 ## its fight gone.
 const WET_SHOCK := 2.0
 
+## How much of its pace something slowed keeps. See [method slow].
+const SLOWED := 0.4
+
 ## Slowest a creature gets from silk alone, as a share of its own speed. Wrapped
 ## all the way it is a bundle and not going anywhere regardless; short of that it
 ## always has something left.
@@ -255,10 +258,8 @@ var wet := 0.0
 ## [method stun].
 var stunned := 0.0
 
-## What a current is carrying it at this frame, and whether one is. See
-## [method sweep].
-var _current := Vector3.ZERO
-var _current_fresh := false
+## Seconds it is slowed: water dragging at its legs and wings. See [method slow].
+var slowed := 0.0
 
 var _struggle := 0.0
 var _fight_left := 0.0
@@ -428,15 +429,16 @@ func _physics_process(delta: float) -> void:
 		wet = maxf(0.0, wet - delta)
 	if stunned > 0.0:
 		stunned = maxf(0.0, stunned - delta)
+	if slowed > 0.0:
+		slowed = maxf(0.0, slowed - delta)
 	if wounded > 0.0 and _state != State.DEAD:
 		var heal := WOUND_HEAL * (RESTING_HEAL if _state == State.RESTING else 1.0)
 		wounded = maxf(0.0, wounded - heal * delta)
 	if _mind != null:
 		_mind.tick(delta)
 
-	# Carried by something stronger than it, or out of it altogether: either way
-	# it is not steering.
-	if is_loose() and (_current_fresh or is_stunned()):
+	# Out of it altogether: it is not steering.
+	if is_loose() and is_stunned():
 		_drift(delta)
 		return
 
@@ -541,8 +543,11 @@ func is_bundled() -> bool:
 ##
 ## Never quite zero. Something pinned still where it stands but not yet wrapped is
 ## the pin mechanic arriving by the back door, and this is not that: it crawls.
+##
+## And slowed, all of it comes down to [constant SLOWED] of itself.
 func current_speed() -> float:
-	return move_speed * maxf(1.0 - clampf(bound, 0.0, 1.0), CRAWL) * (1.0 - 0.4 * wounded)
+	return move_speed * maxf(1.0 - clampf(bound, 0.0, 1.0), CRAWL) * (1.0 - 0.4 * wounded) \
+		* pace()
 
 
 ## What it can thrash with right now, after the silk already on it and whatever
@@ -695,6 +700,26 @@ func is_stunned() -> bool:
 	return stunned > 0.0
 
 
+## Slowed for [param seconds]: water drags at it, and everything it does on its feet
+## or wings goes at [constant SLOWED] of its pace — walking, running, a charge or a
+## dive. It still does it all; it just does it where you can see it coming. Does not
+## stack; the longer of the two.
+func slow(seconds: float) -> void:
+	if eaten or seconds <= 0.0:
+		return
+	slowed = maxf(slowed, seconds)
+
+
+func is_slowed() -> bool:
+	return slowed > 0.0
+
+
+## How much of its own pace it moves at: all of it, or [constant SLOWED] of it while
+## it is slowed.
+func pace() -> float:
+	return SLOWED if is_slowed() else 1.0
+
+
 ## On its own feet or wings: not caught, not wrapped, not a bundle.
 func is_loose() -> bool:
 	return not eaten and (_state == State.WANDER or _state == State.HUNTING
@@ -710,10 +735,9 @@ func mind() -> CreatureMind:
 	return _mind
 
 
-## Whether it is free to act on what it wants: loose, awake to the world, and not
-## being carried off by anything.
+## Whether it is free to act on what it wants: loose, and awake to the world.
 func can_decide() -> bool:
-	return is_loose() and not is_stunned() and not _current_fresh
+	return is_loose() and not is_stunned()
 
 
 func is_feeding() -> bool:
@@ -1062,30 +1086,14 @@ func _process_chase(delta: float, target: Prey) -> void:
 		start_feeding(target)
 
 
-## Carried this frame at [param velocity] by something stronger than it — a whirl
-## of water. It does not steer while it is carried; it goes where it is taken.
-## Asked for again every frame by whatever is doing the carrying, and over the
-## moment that stops.
-func sweep(velocity: Vector3) -> void:
-	if not is_loose():
-		return
-	_current = velocity
-	_current_fresh = true
-
-
-## Not steering: carried by a current, or stunned. Carried, it goes where it is
-## taken; stunned, it drops — a flier as well, its wings having stopped. Whatever
-## has a line on it still pulls, the same as when it is steering itself.
+## Not steering: stunned, it drops — a flier as well, its wings having stopped.
+## Whatever has a line on it still pulls, the same as when it is steering itself.
 func _drift(delta: float) -> void:
 	var pull := _tow_pull
 	_tow_pull = Vector3.ZERO
-	if _current_fresh:
-		velocity = velocity.lerp(_current, clampf(8.0 * delta, 0.0, 1.0))
-		_current_fresh = false
-	else:
-		velocity.x = move_toward(velocity.x, 0.0, delta * 6.0)
-		velocity.z = move_toward(velocity.z, 0.0, delta * 6.0)
-		velocity.y -= _gravity * delta
+	velocity.x = move_toward(velocity.x, 0.0, delta * 6.0)
+	velocity.z = move_toward(velocity.z, 0.0, delta * 6.0)
+	velocity.y -= _gravity * delta
 	velocity += pull
 	move_and_slide()
 	var ceiling := _water_ceiling()

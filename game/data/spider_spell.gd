@@ -72,6 +72,11 @@ enum Form {
 ## one that does not.
 @export var power := Vector2.ZERO
 
+## How far it goes out along the ground, as a share of how far silk reaches, from
+## a tap to a full wind-up: what a spell sent out from the spider has instead of a
+## place it lands. Nought for one that lands where you point.
+@export var travel := Vector2.ZERO
+
 ## Its colour, on the strip and in the world.
 @export var colour := Color(0.85, 0.88, 0.95, 1.0)
 
@@ -90,3 +95,8 @@ func duration_at(wound: float) -> float:
 ## How much harm, at [param wound], as a share of a creature's health.
 func power_at(wound: float) -> float:
 	return lerpf(power.x, power.y, clampf(wound, 0.0, 1.0))
+
+
+## How far, at [param wound], as a share of silk's reach.
+func travel_at(wound: float) -> float:
+	return lerpf(travel.x, travel.y, clampf(wound, 0.0, 1.0))

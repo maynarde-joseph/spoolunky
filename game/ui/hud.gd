@@ -498,7 +498,8 @@ func _refresh_spell_aim(spells: SpiderSpells) -> void:
 	if spell == null:
 		return
 	pattern_label.text = "%s     %s" % [spell.display_name, _charge_bar(spells.charge)]
-	hint_label.text = "Let go to cast it — the longer you hold, the bigger"
+	hint_label.text = "Let go to cast it — the longer you hold, the %s" \
+		% ("further" if spell.travel != Vector2.ZERO else "bigger")
 	var target := spells.area_target(spell) if spells.is_area(spell) \
 		else spells.aim_target()
 	var prey := target.get("prey") as Prey

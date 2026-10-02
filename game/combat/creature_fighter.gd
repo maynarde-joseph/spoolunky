@@ -277,15 +277,17 @@ func _stand(delta: float) -> void:
 
 # --- strikes ------------------------------------------------------------
 
-## A straight dash at where you were. It lands once if it reaches you; a drill
-## that goes into the world instead is stuck there for a while.
+## A straight dash at where you were — at its slowed pace, if water has it. It lands
+## once if it reaches you; a drill that goes into the world instead is stuck there
+## for a while.
 func _lunge(delta: float) -> void:
-	var dash := _heading * attack.speed
+	var speed := attack.speed * creature.pace()
+	var dash := _heading * speed
 	if not creature.flying:
 		dash.y = creature.velocity.y - _gravity() * delta
 	creature.velocity = dash
 	creature.move_and_slide()
-	_gone += attack.speed * delta
+	_gone += speed * delta
 	if attack.cuts_silk:
 		_cut_silk(creature.hit_radius() * 1.5, Vector3.ZERO, 360.0)
 	if not _landed and _touching():

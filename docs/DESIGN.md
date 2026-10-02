@@ -460,15 +460,16 @@ rest are the same verb with other things behind it, so they share the web's
 keys, its reach, its wind-up and its kind of limit.
 
 **Right mouse casts whatever is in hand, and Q takes the next one in hand.** A
-tap casts at once; holding winds it up — a bigger web, a hotter bolt, a wider
-whirl, a longer stun — over the same second the web always took. While it winds
-up it glows over the spider's back in its own colour, and a spell that lands on
-an area puts a ring where it will land, as wide as it will be.
+tap casts at once; holding winds it up — a bigger web, a hotter bolt, a whirl
+that goes further, a longer stun — over the same second the web always took.
+While it winds up it glows over the spider's back in its own colour; a spell that
+lands on an area puts a ring where it will land, as wide as it will be, and a
+whirl lays out the strip it will run along, as long and as wide as it will be.
 
 | Spell | Opens at | Or with | What it does | Wait |
 |---|---|---|---|---|
 | **Silk** | the start | — | the thrown web: it sticks where it lands and wraps what it lands on | 3.5 s |
-| **Water Spiral** | Huntsman | Digestive Flood | a whirl on the floor where you point, for 5–8 s: it carries anything loose round and in, soaks it and holds it turning. Wet wings do not lift | 9 s |
+| **Water Spiral** | Huntsman | Digestive Flood | a whirl sent out from under the spider along the ground the way you aim, and the longer you hold, the further — a quarter of silk's reach on a tap, three fifths wound up. Everything it passes over is soaked, and slowed to two fifths of its pace for 2.5–4 s after: walking, running, a charge or a dive. It rides kerbs and slopes and breaks on the first wall. Wet wings do not lift | 7 s |
 | **Summon Lightning** | Root Weaver | Wing Buds | strikes where you point, and stuns what it reaches for 2.5–4 s: going nowhere, biting nothing, fighting nothing. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight | 7 s |
 | **Firebolt** | Glade Widow | — | a bolt thrown like silk — at a creature, or at a line under the cross — that bursts where it lands and burns every creature in the burst. Silk burns: a fifth of its harm to something bare, all of it to something wrapped all the way or held in a web. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line in the burst burns away | 5 s |
 
@@ -494,11 +495,14 @@ four buttons:
   everything they hold. Silk was already the road network (§6); it is the wiring
   too. Strike the web you are standing next to and the wasp fighting a web across
   the room stops fighting.
-* **Water carries lightning.** A strike on a whirl reaches everything the whirl
-  holds, and anything wet takes it twice as hard — twice as long stunned, twice
-  the fight gone — and passes it on to anything wet near it.
-* **A whirl fills a web.** It carries what it holds round and in, and anything it
-  carries through a web is caught by the web the ordinary way.
+* **Water carries lightning.** A strike on a whirl reaches everything in it, and
+  anything wet — everything a whirl has been over, for six seconds after — takes
+  it twice as hard, twice as long stunned and twice the fight gone, and passes it
+  on to anything wet near it. Send the water down a corridor, then the strike.
+* **Water slows what silk has to catch.** Something slowed is something a thrown
+  web hardly has to lead, and a charge at two fifths of its pace falls short of
+  you. It is a slow, not a hold: the whirl goes on by, and what it caught is still
+  yours to deal with — sooner.
 
 **And off what you have become.** A trait is a change to the animal (§3.1), and
 some of those changes reach the spells:
@@ -507,7 +511,7 @@ some of those changes reach the spells:
 |---|---|
 | Hollow Frame | every wait a fifth shorter, silk's included |
 | Paralytic Bite | every stun lasts half as long again |
-| Digestive Flood | acid water: a whirl doses what it holds |
+| Digestive Flood | acid water: a whirl doses what it passes over |
 | Storm Rider | a strike jumps on twice more, to whatever is nearest, wet or dry |
 | Hunting Fangs | acid water's dose is fanged, over twice as strong |
 
@@ -1788,14 +1792,15 @@ edge of its body, not from a wasp's margin scaled up to a leviathan's. Something
 that swims keeps all of itself under the top of the water it is in: steering at
 a spider on the bank, it follows along underneath.
 
-**What spells do to them.** Three things a creature can be besides caught, each
+**What spells do to them.** Four things a creature can be besides caught, each
 read by the rest of the game rather than counted against a number (§3.2).
 *Dosed*: venom works silk into it from the inside while the dose lasts.
 *Wet*: it carries a charge to anything wet near it, and a wet flier cannot climb
-until it dries. *Stunned*: it steers nowhere and bites nothing, a flier falls,
-a hunter gives up the chase, and in a web it stops pulling on the silk while its
-fight runs down — it hangs limp, the pose of something that has fought itself
-out. And while a whirl has hold of it, the whirl decides where it goes.
+until it dries. *Slowed*: everything it does on its feet or wings goes at two
+fifths of its pace — a walk, a chase, a charge or a dive — until it wears off.
+*Stunned*: it steers nowhere and bites nothing, a flier falls, a hunter gives up
+the chase, and in a web it stops pulling on the silk while its fight runs down —
+it hangs limp, the pose of something that has fought itself out.
 
 ### 8.1 The valley is alive
 

@@ -836,8 +836,8 @@ godot --headless --script res://tests/creature_smoke_test.gd
 A fifth casts every spell in the sandbox: the web as the first of them, what
 opens the rest, the strip that shows them, and what each does — to what it lands
 on, and to the other spells and the silk it meets. Lightning run down a wire to a
-wasp across the room, a whirl filling a web, acid water, fire that burns harder
-the more silk is on what it hits, and the whole book opened at once:
+wasp across the room, a whirl slowing what it runs over, acid water, fire that
+burns harder the more silk is on what it hits, and the whole book opened at once:
 
 ```sh
 godot --headless --script res://tests/spell_smoke_test.gd

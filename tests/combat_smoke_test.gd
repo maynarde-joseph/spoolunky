@@ -34,6 +34,7 @@ func _sections() -> Array[Callable]:
 		_test_a_hostile_must_see_you,
 		_test_a_bite_is_told_first,
 		_test_a_lunge_goes_where_you_were,
+		_test_a_slowed_lunge_falls_short,
 		_test_a_drill_sticks_in_the_wall,
 		_test_a_spit_flies_and_a_web_stops_it,
 		_test_a_spitter_keeps_its_distance,
@@ -149,6 +150,33 @@ func _test_a_lunge_goes_where_you_were() -> void:
 		"having crossed the gap (%.1fm)" % diver.global_position.distance_to(from))
 	check(not spider.climb.is_attached() and spider.velocity.length() > 2.0,
 		"and it throws you (%.1f m/s)" % spider.velocity.length())
+
+
+## Water slows a lunge the way it slows a walk: slowed, the same dash covers well
+## under half the ground in the time it has, and falls short of you.
+func _test_a_slowed_lunge_falls_short() -> void:
+	await _arena()
+	var lunge := _move(CreatureAttack.Kind.LUNGE, 5.0, 0.3)
+	lunge.speed = 12.0
+	lunge.strike_time = 0.5
+	var diver := _put(_kind("diver", [lunge]), Vector3(4.0, 0.3, 0.0))
+	diver.slow(30.0)
+	check(is_equal_approx(diver.pace(), Prey.SLOWED),
+		"slowed, it goes at %d%% of its pace" % roundi(diver.pace() * 100.0))
+	diver.attack_spider(spider)
+	var striking: bool = await wait_until(func() -> bool:
+		return diver.fighter.beat == CreatureFighter.Beat.STRIKE, 120)
+	if not check(striking, "and it lunges all the same"):
+		return
+	var from := diver.global_position
+	var health := spider.health
+	await wait_until(func() -> bool:
+		return diver.fighter.beat != CreatureFighter.Beat.STRIKE, 120)
+	var gone := diver.global_position.distance_to(from)
+	var whole := lunge.speed * lunge.strike_time
+	check(gone < whole * Prey.SLOWED * 1.2,
+		"but covers %.1f m of the %.1f m it would have" % [gone, whole])
+	check(is_equal_approx(spider.health, health), "and falls short of you")
 
 
 ## A drill that goes into a wall instead of into you is stuck there for a while,

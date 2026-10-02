@@ -1,25 +1,32 @@
 class_name WaterSpiral
 extends Node3D
 
-## A whirl of water, where the spider pointed.
+## A whirl of water, sent out from under the spider along the ground.
 ##
-## For as long as it spins it takes hold of anything loose that comes inside it —
-## walking, flying or swimming — and carries it round and in towards the middle,
-## where it is held turning. What it holds is soaked, and stays wet for a while
-## after it gets out, and wet wings do not lift: a flier that has been through it
-## comes down and cannot climb again until it dries.
+## It leaves from the spider's feet and runs straight out the way you aimed, as far
+## as the wind-up sends it, riding whatever the ground does on the way, and breaks
+## on the first wall it meets. Everything it passes over is soaked, and slowed for
+## a few seconds after it has gone by: a hunter coming at you comes on at a crawl,
+## and a charge is half a charge. Wet wings do not lift, so a flier it catches comes
+## down and cannot climb again until it dries.
 ##
-## On its own it is a way to hold things still, and to bring fliers down to where
-## silk is easy. It is better with the rest of what the spider has:
+## It is a slow, not a hold — what it catches is still yours to deal with, sooner —
+## and it is better with the rest of what the spider has:
 ##
-## * **Silk.** It carries things round and in, and whatever it carries through a
-##   web is caught by the web the ordinary way — so a whirl beside a web fills it.
-## * **Lightning.** Everything in it is wet, and water carries a strike to all of
-##   it — see [LightningStrike].
-## * **Digestive Flood.** The spider's water eats what it holds: everything in it
-##   is dosed from the moment it goes in.
+## * **Silk.** Something slowed is something a thrown web hardly has to lead.
+## * **Lightning.** Everything it has been over is wet, and water carries a strike
+##   twice as hard and on to anything wet near it; a strike on the whirl itself
+##   reaches everything in it — see [LightningStrike].
+## * **Digestive Flood.** The spider's water eats what it passes over: everything
+##   it touches is dosed.
+
+## Said when it is spent, with everything it slowed on the way.
+signal spent(whirl: WaterSpiral, slowed: Array[Prey])
 
 const GROUP := "water_spirals"
+
+## How fast it goes, in the caster's body heights a second.
+const PACE := 10.0
 
 ## How far up from its floor it reaches, and how far down, as shares of its
 ## radius. Tall rather than flat, so it has fliers too.
@@ -29,61 +36,79 @@ const REACH_DOWN := 0.4
 ## How long something stays wet once it is out, in seconds.
 const SOAK := 6.0
 
-## How fast it carries what it holds, in radii a second: round, and in. Round is
-## faster near the middle, the way water goes down a drain.
-const SWIRL := 2.4
-const DRAW := 1.1
+## How high off its floor a wall has to stand to stop it, as a share of its radius:
+## a kerb it rides up, a wall it breaks on.
+const WALL_AT := 0.5
 
-## The eye, as a share of the radius: nearer the middle than this, nothing is
-## drawn in any further and it only turns.
-const EYE := 0.18
-
-## The height it holds things at, as a share of its radius above its floor.
-const HOLD_AT := 0.25
+## How fast it turns, in radians a second. Looks only.
+const SWIRL := 9.0
 
 ## How long it takes to rise, and to sink away once it is spent, in seconds.
-const RISE := 0.25
-const FADE := 0.4
+const RISE := 0.15
+const FADE := 0.35
 
 ## How much of the spray round it shows. Enough to read which way it turns, and
 ## no more: it is the water that matters, not the streaks on it.
 const STREAK_ALPHA := 0.6
 
-## How wide it is and how long it spins, in metres and seconds.
+## How wide it is, from the middle to the rim, in metres.
 var radius := 1.0
-var life := 5.0
 
-## Whether its water eats what it holds, and how hard. The spider's, from
+## How far it goes, and how fast, in metres and metres a second.
+var distance := 6.0
+var speed := 6.0
+
+## How long what it passes over stays slowed once it has gone by, in seconds.
+var slow_for := 3.0
+
+## Whether its water eats what it touches, and how hard. The spider's, from
 ## Digestive Flood.
 var acid := false
 var venom_strength := 1.0
 
 var colour := Color(0.36, 0.74, 0.9, 1.0)
 
+## Which way it is going, flat across the ground.
+var heading := Vector3.FORWARD
+
+## How far it has come.
+var travelled := 0.0
+
+## Everything it has slowed, in the order it reached them.
+var slowed: Array[Prey] = []
+
 var _age := 0.0
+var _spent_at := -1.0
 var _view: Node3D
 var _water: StandardMaterial3D
 var _streaks: StandardMaterial3D
 
 
-## Raises one at [param at] under [param host], [param wide] metres from the
-## middle to the rim, for [param lasts] seconds. [param eats] is whether its water
-## doses what it holds, at [param strength]; [param tint] is the colour of it.
-static func summon(host: Node, at: Vector3, wide: float, lasts: float, eats := false,
-		strength := 1.0, tint := Color(0.36, 0.74, 0.9, 1.0)) -> WaterSpiral:
+## Sends one out from [param from] under [param host], along [param toward] laid
+## flat, [param wide] metres from the middle to the rim, [param far] metres at
+## [param pace] metres a second; what it passes over is slowed for [param slows]
+## seconds. [param eats] is whether its water doses what it touches, at
+## [param strength]; [param tint] is the colour of it.
+static func send(host: Node, from: Vector3, toward: Vector3, wide: float, far: float,
+		pace: float, slows: float, eats := false, strength := 1.0,
+		tint := Color(0.36, 0.74, 0.9, 1.0)) -> WaterSpiral:
 	if host == null:
 		return null
+	var flat := Vector3(toward.x, 0.0, toward.z)
 	var whirl := WaterSpiral.new()
 	whirl.name = "WaterSpiral"
 	whirl.radius = maxf(wide, 0.05)
-	whirl.life = maxf(lasts, 0.1)
+	whirl.distance = maxf(far, 0.0)
+	whirl.speed = maxf(pace, 0.01)
+	whirl.slow_for = slows
 	whirl.acid = eats
 	whirl.venom_strength = strength
 	whirl.colour = tint
+	whirl.heading = flat.normalized() if flat.length_squared() > 0.000001 else Vector3.FORWARD
 	whirl.add_to_group(GROUP)
 	whirl.add_to_group("spell_effects")
 	host.add_child(whirl)
-	whirl.global_position = at
+	whirl.global_position = whirl._floor_under(from)
 	return whirl
 
 
@@ -93,21 +118,18 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_age += delta
-	if _age >= life + FADE:
+	if spinning():
+		_travel(delta)
+		_soak_what_it_holds()
+	elif _age >= _spent_at + FADE:
 		queue_free()
 		return
-	if spinning():
-		for creature in held():
-			creature.soak(SOAK)
-			creature.sweep(carry_at(creature.global_position))
-			if acid:
-				creature.poison(1.5, venom_strength)
 	_update_view(delta)
 
 
-## Whether it is still turning. Spent, it sinks away and holds nothing.
+## Whether it is still going. Spent, it sinks away and touches nothing.
 func spinning() -> bool:
-	return _age < life
+	return _spent_at < 0.0
 
 
 ## Whether [param point] is inside it.
@@ -118,7 +140,7 @@ func holds(point: Vector3) -> bool:
 	return Vector2(offset.x, offset.z).length() <= radius
 
 
-## Everything loose that it has hold of now.
+## Everything loose that is inside it now.
 func held() -> Array[Prey]:
 	var found: Array[Prey] = []
 	if not spinning():
@@ -132,20 +154,69 @@ func held() -> Array[Prey]:
 	return found
 
 
-## How fast, and which way, it carries something at [param point]: round, in
-## towards the eye, and up or down to the height it holds things at.
-func carry_at(point: Vector3) -> Vector3:
-	var offset := point - global_position
-	var flat := Vector3(offset.x, 0.0, offset.z)
-	var across := flat.length()
-	var out := flat / across if across > 0.0001 else Vector3.RIGHT
-	var near := clampf(1.0 - across / radius, 0.0, 1.0)
-	var velocity := Vector3.UP.cross(out) * SWIRL * radius * (0.35 + 0.65 * near)
-	if across > radius * EYE:
-		velocity -= out * DRAW * radius
-	var level := global_position.y + radius * HOLD_AT
-	velocity.y = clampf((level - point.y) * 3.0, -DRAW * radius, DRAW * radius)
-	return velocity
+## The middle of it, a little off its floor: where a charge goes in.
+func eye() -> Vector3:
+	return global_position + Vector3.UP * radius * 0.25
+
+
+## Where it will be spent if nothing stops it: the rest of its run, laid straight
+## out from where it is.
+func end_point() -> Vector3:
+	return global_position + heading * (distance - travelled)
+
+
+## On along the ground by one frame's worth, over a kerb and up a slope, and spent
+## where its run ends or a wall stands in the way.
+func _travel(delta: float) -> void:
+	var step := minf(speed * delta, distance - travelled)
+	if step <= 0.0:
+		_spend()
+		return
+	var from := global_position
+	var to := from + heading * step
+	var lift := Vector3.UP * radius * WALL_AT
+	var query := PhysicsRayQueryParameters3D.create(from + lift, to + lift, GameLayers.WORLD)
+	var wall := get_world_3d().direct_space_state.intersect_ray(query)
+	if not wall.is_empty():
+		var at: Vector3 = wall.get("position", to)
+		global_position = Vector3(at.x, from.y, at.z) - heading * minf(radius * 0.25, step)
+		_spend()
+		return
+	global_position = _floor_under(to)
+	travelled += step
+	if travelled >= distance - 0.0001:
+		_spend()
+
+
+## The floor under [param point], if there is one within its reach; over a drop it
+## carries on at the height it was. Looked for from no higher than a kerb it could
+## ride up, so a branch or a ledge overhead is not a floor it jumps on to.
+func _floor_under(point: Vector3) -> Vector3:
+	if not is_inside_tree():
+		return point
+	var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * radius * WALL_AT,
+		point + Vector3.DOWN * radius * (WALL_AT + 1.5), GameLayers.WORLD)
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return point
+	return hit.get("position", point)
+
+
+func _soak_what_it_holds() -> void:
+	for creature in held():
+		creature.soak(SOAK)
+		creature.slow(slow_for)
+		if acid:
+			creature.poison(1.5, venom_strength)
+		if not slowed.has(creature):
+			slowed.append(creature)
+
+
+func _spend() -> void:
+	if not spinning():
+		return
+	_spent_at = _age
+	spent.emit(self, slowed)
 
 
 # --- what you can see ----------------------------------------------------
@@ -209,7 +280,7 @@ func _update_view(delta: float) -> void:
 		return
 	_view.rotate_y(-SWIRL * delta)
 	var rising := clampf(_age / RISE, 0.0, 1.0)
-	var sinking := clampf((_age - life) / FADE, 0.0, 1.0)
+	var sinking := clampf((_age - _spent_at) / FADE, 0.0, 1.0) if not spinning() else 0.0
 	var height := rising * (1.0 - sinking)
 	_view.scale = Vector3(radius, radius * maxf(height, 0.02), radius)
 	if _water != null:

@@ -122,7 +122,7 @@ func discharge() -> void:
 		var offset := at - whirl.global_position
 		if not whirl.holds(at) and Vector2(offset.x, offset.z).length() > whirl.radius + radius:
 			continue
-		var eye := whirl.global_position + Vector3.UP * whirl.radius * WaterSpiral.HOLD_AT
+		var eye := whirl.eye()
 		_paths.append([at, eye])
 		for creature in whirl.held():
 			_shock(creature, eye)

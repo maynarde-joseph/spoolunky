@@ -32,7 +32,6 @@ func _sections() -> Array[Callable]:
 		_test_the_strip,
 		_test_a_lean_spider_casts_sooner,
 		_test_water_spiral,
-		_test_a_whirl_fills_a_web,
 		_test_acid_water,
 		_test_summon_lightning,
 		_test_lightning_runs_through_silk,
@@ -226,8 +225,10 @@ func _test_a_lean_spider_casts_sooner() -> void:
 
 # --- water ----------------------------------------------------------------
 
-## A whirl of water on the floor where the cross is: it draws in what is loose,
-## soaks it, and brings fliers down.
+## Sent out from under the spider along the ground, the way the cross looks and as
+## far as the wind-up sends it: everything it passes over is soaked and slowed, a
+## wet flier cannot climb, and what is off its path or past its end is left alone.
+## Wound up, it goes further; a wall in the way, it breaks there.
 func _test_water_spiral() -> void:
 	var spiral := spells.by_id("spiral")
 	if not check(spiral != null and spiral.form == SpiderSpell.Form.SPIRAL,
@@ -236,109 +237,109 @@ func _test_water_spiral() -> void:
 	check(spells.opens_with(spiral).contains("Digestive Flood"),
 		"a digestive flood would open it sooner (%s)" % spells.opens_with(spiral))
 	grow_to_tier(spiral.unlock_stage)
-	check(spells.select("spiral"), "a %s can raise one"
+	check(spells.select("spiral"), "a %s can send one out"
 		% spider.growth.stages[spiral.unlock_stage].display_name)
+	check(not spells.is_area(spiral), "it is sent out, not called down where you point")
 
-	var slab := add_slab(Vector3(90, 0.0, -90), Vector3(30, 0.5, 30))
+	var slab := add_slab(Vector3(90, 0.0, -90), Vector3(60, 0.5, 60))
 	await physics_frame
-	stand_on(slab.global_position + Vector3(0, 0.25, 3.5))
+	var start := slab.global_position + Vector3(0, 0.25, 22.0)
+	stand_on(start)
 	await physics_frame
-	var centre := slab.global_position + Vector3(0, 0.25, 0)
-	var radius := spiral.size_at(0.0) * spider.stage().body_height
-	clear_prey_near(centre, radius * 4.0, null)
-	var walker := spawn("beetle", centre + Vector3(radius * 0.7, 0.2, 0.0))
-	var flier := spawn("moth", centre + Vector3(-radius * 0.6, radius * 0.9, 0.0))
-	var clear := spawn("fly", centre + Vector3(0.0, 0.3, radius * 2.5))
-	if not check(walker != null and flier != null and clear != null,
-			"a beetle, a moth and a fly"):
+	var height := spider.stage().body_height
+	var radius := spiral.size_at(0.0) * height
+	var far := spells.spiral_reach(spiral, 0.0)
+	var full := spells.spiral_reach(spiral, 1.0)
+	check(far > height * 4.0 and full > far * 2.0,
+		"a tap sends it %.1f m, a full wind-up %.1f m" % [far, full])
+	var ahead := Vector3.FORWARD
+	clear_prey_near(start + ahead * full * 0.5, full, null)
+	var walker := spawn("beetle", start + ahead * far * 0.5 + Vector3(radius * 0.3, 0.2, 0.0))
+	var flier := spawn("moth", start + ahead * far * 0.75
+		+ Vector3(-radius * 0.2, radius * 0.8, 0.0))
+	var aside := spawn("fly", start + ahead * far * 0.5 + Vector3(radius * 3.0, 0.3, 0.0))
+	var beyond := spawn("beetle", start + ahead * (far + radius * 3.0) + Vector3(0.0, 0.2, 0.0))
+	if not check(walker != null and flier != null and aside != null and beyond != null,
+			"two beetles, a moth and a fly"):
 		return
-	for creature in [walker, flier, clear]:
+	for creature in [walker, flier, aside, beyond]:
 		creature.aggression = 0.0
+	for creature in [walker, aside, beyond]:
+		creature.move_speed = 0.0
 	await physics_frame
-	aim_at(centre)
-	check(spells.cast_now(spiral), "raised on the floor")
+	aim_at(start + ahead * full * 2.0 + Vector3.DOWN * 0.25)
+	var ends := {}
+	check(spells.cast_now(spiral), "sent out")
 	var whirl := _first_whirl()
-	if not check(whirl != null, "and there it is"):
+	if not check(whirl != null, "and there it goes"):
 		return
-	check(whirl.global_position.distance_to(centre) < radius * 0.3,
-		"turning where the cross was (%.2f m off)" % whirl.global_position.distance_to(centre))
+	whirl.spent.connect(func(gone: WaterSpiral, slowed: Array[Prey]) -> void:
+		ends["travelled"] = gone.travelled
+		ends["slowed"] = slowed.duplicate())
+	var off := whirl.global_position - start
+	check(Vector2(off.x, off.z).length() < radius * 0.5,
+		"from under the spider (%.2f m off)" % Vector2(off.x, off.z).length())
+	check(whirl.heading.dot(ahead) > 0.99, "the way the cross looks")
 	check(spells.cooling(spiral), "and it waits its own wait (%.1fs)"
 		% spells.cooldown_left(spiral))
-	var walker_was := _across(walker, whirl)
-	var flier_was := flier.global_position.y
-	await run_frames(45)
-	check(_across(walker, whirl) < walker_was,
-		"it draws a beetle in (%.2f -> %.2f m from the middle)"
-		% [walker_was, _across(walker, whirl)])
-	check(flier.global_position.y < flier_was,
-		"and brings a moth down (%.2f -> %.2f m)" % [flier_was, flier.global_position.y])
-	check(walker.is_wet() and flier.is_wet(), "soaking both")
-	check(whirl.held().has(walker) and whirl.held().has(flier), "and holding them turning")
-	check(not clear.is_wet() and not whirl.held().has(clear),
-		"and leaving alone what is outside it")
-
-	var gone: bool = await wait_until(func() -> bool: return _first_whirl() == null, 900)
-	check(gone, "spent, it sinks away")
-	if not is_instance_valid(flier):
+	var done: bool = await wait_until(func() -> bool: return ends.has("travelled"), 300)
+	if not check(done, "it runs its course"):
 		return
-	await run_frames(10)
-	var low := flier.global_position.y
-	await run_frames(30)
-	check(flier.is_wet() and flier.global_position.y <= low + 0.01,
-		"and a wet moth cannot climb (%.2f -> %.2f m)" % [low, flier.global_position.y])
+	check(absf(float(ends["travelled"]) - far) < 0.05,
+		"as far as a tap sends it (%.1f of %.1f m)" % [ends["travelled"], far])
+	var slowed: Array = ends["slowed"]
+	check(walker.is_wet() and walker.is_slowed() and slowed.has(walker),
+		"the beetle on its path is soaked and slowed")
+	check(is_instance_valid(flier) and flier.is_wet() and slowed.has(flier),
+		"and so is the moth over it")
+	check(not aside.is_wet() and not aside.is_slowed(), "the fly off to one side is not")
+	check(not beyond.is_wet() and not beyond.is_slowed(), "nor the beetle past its end")
+	walker.move_speed = 1.0
+	check(is_equal_approx(walker.current_speed(), Prey.SLOWED),
+		"slowed, the beetle goes at %d%% of its pace" % roundi(walker.current_speed() * 100.0))
+	if is_instance_valid(flier) and flier.is_wet():
+		await run_frames(10)
+		var low := flier.global_position.y
+		await run_frames(30)
+		check(flier.global_position.y <= low + 0.01,
+			"and the wet moth cannot climb (%.2f -> %.2f m)" % [low, flier.global_position.y])
+	var dry: bool = await wait_until(func() -> bool: return not walker.is_slowed(), 400)
+	check(dry and is_equal_approx(walker.current_speed(), 1.0),
+		"and once it wears off, it has its pace back")
 
-
-## A whirl beside a web fills it: what it carries round is carried through the
-## silk, and the silk catches it the ordinary way.
-func _test_a_whirl_fills_a_web() -> void:
-	var spiral := spells.by_id("spiral")
-	if spiral == null:
+	# Wound up, it goes further; with a wall in its way, it breaks on the wall.
+	spells.forget_waits()
+	aim_at(start + ahead * full * 2.0 + Vector3.DOWN * 0.25)
+	ends.clear()
+	check(spells.cast_now(spiral, 1.0), "sent out again, wound up")
+	whirl = _first_whirl()
+	if whirl == null:
 		return
-	grow_to_tier(spiral.unlock_stage)
-	spells.select("spiral")
-	var slab := add_slab(Vector3(-90, 0.0, 90), Vector3(30, 0.5, 30))
+	whirl.spent.connect(func(gone: WaterSpiral, _slowed: Array[Prey]) -> void:
+		ends["travelled"] = gone.travelled)
+	await wait_until(func() -> bool: return ends.has("travelled"), 400)
+	check(ends.has("travelled") and absf(float(ends["travelled"]) - full) < 0.05,
+		"and it goes all of %.1f m" % full)
+	await wait_until(func() -> bool: return _first_whirl() == null, 120)
+	spells.forget_waits()
+	var wall_at := full * 0.5
+	add_slab(start + ahead * wall_at + Vector3(0.0, 1.5, 0.0), Vector3(8.0, 3.0, 0.4))
 	await physics_frame
-	stand_on(slab.global_position + Vector3(0, 0.25, 3.5))
-	await physics_frame
-	var centre := slab.global_position + Vector3(0, 0.25, 0)
-	var radius := spiral.size_at(0.0) * spider.stage().body_height
-	clear_prey_near(centre, radius * 4.0, null)
-	# A web standing up across the middle of where the whirl will turn.
-	select_pattern("sheet_web")
-	builder.start()
-	for point in _square(centre + Vector3.UP * radius * 0.3, radius * 0.45):
-		builder.add_anchor(point)
-	builder.finish()
-	builder.stop()
-	await physics_frame
-	var net := newest_web("sheet_web")
-	if not check(net != null, "a web across the middle"):
+	aim_at(start + ahead * wall_at * 0.5 + Vector3.DOWN * 0.25)
+	ends.clear()
+	check(spells.cast_now(spiral, 1.0), "and once more, at a wall")
+	whirl = _first_whirl()
+	if whirl == null:
 		return
-	var catch: Array[Prey] = []
-	for i in 4:
-		var turn := TAU * float(i) / 4.0 + 0.4
-		var fly := spawn("fly", centre + Vector3(cos(turn), 0.0, sin(turn)) * radius * 0.8
-			+ Vector3.UP * 0.2)
-		if fly != null:
-			catch.append(fly)
-	await physics_frame
-	aim_at(centre)
-	check(spells.cast_now(spiral), "a whirl raised round it")
-	var caught: bool = await wait_until(func() -> bool:
-		for fly in catch:
-			if is_instance_valid(fly) and fly.is_stuck():
-				return true
-		return false, 240)
-	var stuck := 0
-	for fly in catch:
-		if is_instance_valid(fly) and fly.is_stuck():
-			stuck += 1
-	check(caught, "and the whirl carries flies into the web (%d of %d caught)"
-		% [stuck, catch.size()])
+	whirl.spent.connect(func(gone: WaterSpiral, _slowed: Array[Prey]) -> void:
+		ends["travelled"] = gone.travelled)
+	await wait_until(func() -> bool: return ends.has("travelled"), 400)
+	check(ends.has("travelled") and float(ends["travelled"]) < wall_at,
+		"which it breaks on, %.1f m out of a %.1f m run" % [ends.get("travelled", -1.0), full])
 
 
-## A spider with Digestive Flood has acid water: everything its whirl has hold
-## of is dosed.
+## A spider with Digestive Flood has acid water: everything its whirl passes over
+## is dosed.
 func _test_acid_water() -> void:
 	var spiral := spells.by_id("spiral")
 	if spiral == null:
@@ -360,12 +361,13 @@ func _test_acid_water() -> void:
 	if not check(ant != null, "an ant"):
 		return
 	ant.aggression = 0.0
+	ant.move_speed = 0.0
 	await physics_frame
 	spells.select("spiral")
 	aim_at(centre)
-	check(spells.cast_now(spiral), "a whirl")
-	var eaten: bool = await wait_until(func() -> bool: return ant.is_poisoned(), 60)
-	check(eaten, "and its water doses what it holds")
+	check(spells.cast_now(spiral), "a whirl sent over it")
+	var eaten: bool = await wait_until(func() -> bool: return ant.is_poisoned(), 120)
+	check(eaten, "and its water doses what it passes over")
 
 
 func _first_whirl() -> WaterSpiral:
@@ -374,12 +376,6 @@ func _first_whirl() -> WaterSpiral:
 		if whirl != null and not whirl.is_queued_for_deletion():
 			return whirl
 	return null
-
-
-## How far from the middle of [param whirl] across the floor.
-func _across(creature: Prey, whirl: WaterSpiral) -> float:
-	var offset := creature.global_position - whirl.global_position
-	return Vector2(offset.x, offset.z).length()
 
 
 func _square(centre: Vector3, half: float) -> Array[Vector3]:
@@ -503,8 +499,8 @@ func _test_lightning_runs_through_silk() -> void:
 		"stunned in the silk, it is not fighting its way out")
 
 
-## Water carries a strike: everything a whirl holds, twice as hard, and on from
-## one wet thing to the next.
+## Water carries a strike: everything a whirl has hold of, twice as hard, and on
+## from one wet thing to the next.
 func _test_lightning_and_water() -> void:
 	var lightning := spells.by_id("lightning")
 	var spiral := spells.by_id("spiral")
@@ -519,31 +515,45 @@ func _test_lightning_and_water() -> void:
 	clear_prey_near(centre, 20.0, null)
 	var height := spider.stage().body_height
 	var strike_radius := lightning.size_at(0.0) * height
+	# Two beetles one behind the other on the whirl's road, close enough that it
+	# has both at once on its way past.
+	var whirl_radius := spiral.size_at(0.0) * height
 	var beetles: Array[Prey] = []
 	for i in 2:
-		var beetle := spawn("beetle", centre + Vector3(0.4 - 0.8 * float(i), 0.2, 0.3) * height)
+		var beetle := spawn("beetle", centre + Vector3(0.0, 0.2, whirl_radius * (0.3 - 0.6 * i)))
 		if beetle != null:
 			beetle.aggression = 0.0
+			beetle.move_speed = 0.0
 			beetles.append(beetle)
 	await physics_frame
+	if not check(beetles.size() == 2, "two beetles in a row"):
+		return
 	spells.select("spiral")
 	aim_at(centre)
-	check(spells.cast_now(spiral), "a whirl")
+	check(spells.cast_now(spiral), "a whirl sent at them")
 	var whirl := _first_whirl()
-	await run_frames(40)
-	if not check(whirl != null and beetles.size() == 2 and whirl.held().has(beetles[0])
-			and whirl.held().has(beetles[1]), "holding two beetles, wet"):
+	if whirl == null:
 		return
-	var rim := whirl.global_position + Vector3(whirl.radius * 0.95, whirl.radius * 0.2, 0.0)
+	var whirl_id := whirl.get_instance_id()
+	var over_both: bool = await wait_until(func() -> bool:
+		var going := instance_from_id(whirl_id) as WaterSpiral
+		return going != null and going.held().has(beetles[0]) and going.held().has(beetles[1]),
+		120)
+	if not check(over_both, "and it has both at once, wet"):
+		return
+	# Struck at its rim, from the side, with a strike too small to reach either.
+	var small := whirl.radius * 0.15
+	var side := whirl.heading.cross(Vector3.UP).normalized()
+	var rim := whirl.global_position + side * whirl.radius * 0.95 + Vector3.UP * whirl.radius * 0.2
 	var out_of_reach := true
 	for beetle in beetles:
 		out_of_reach = out_of_reach and \
-			beetle.global_position.distance_to(rim) > strike_radius + beetle.hit_radius()
+			beetle.global_position.distance_to(rim) > small + beetle.hit_radius()
 	check(out_of_reach, "the rim of the whirl is out of the strike's own reach of both")
-	var strike := LightningStrike.call_down(level, rim, strike_radius, lightning.duration.x, 0,
+	var strike := LightningStrike.call_down(level, rim, small, lightning.duration.x, 0,
 		height * 0.6)
 	check(strike.shocked.has(beetles[0]) and strike.shocked.has(beetles[1]),
-		"a strike on the whirl reaches everything it holds")
+		"a strike on the whirl reaches everything in it")
 	check(is_equal_approx(beetles[0].stunned, lightning.duration.x * Prey.WET_SHOCK),
 		"and wet, twice as hard (%.1fs stunned)" % beetles[0].stunned)
 

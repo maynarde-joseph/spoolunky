@@ -69,6 +69,8 @@ var _held: MeshInstance3D
 var _held_material: StandardMaterial3D
 var _marker: MeshInstance3D
 var _marker_material: StandardMaterial3D
+var _path: MeshInstance3D
+var _path_material: StandardMaterial3D
 
 
 ## Every spell open, whatever the rung or the traits. See
@@ -118,6 +120,7 @@ func _process(delta: float) -> void:
 		_builder.framing_held = charging
 	_update_held()
 	_update_marker()
+	_update_path()
 
 
 # --- the book -----------------------------------------------------------
@@ -373,7 +376,7 @@ func _ground(target: Dictionary) -> Dictionary:
 
 ## Lightning, called down where you point. See [LightningStrike].
 func _strike(spell: SpiderSpell, wound: float) -> Dictionary:
-	var target := area_target(spell, wound)
+	var target := area_target(spell)
 	var at: Vector3 = target.get("point", _spider.global_position)
 	var stun := spell.duration_at(wound) * (_traits.stun_scale() if _traits != null else 1.0)
 	var jumps := _traits.arc_bonus() if _traits != null else 0
@@ -390,16 +393,51 @@ func _strike(spell: SpiderSpell, wound: float) -> Dictionary:
 	return {"cast": true, "at": at}
 
 
-## A whirl of water on the floor under where you point. See [WaterSpiral].
+## A whirl of water, sent out from under the spider along the ground the way you
+## aim, as far as the wind-up sends it: what it passes over is soaked and slowed.
+## See [WaterSpiral].
 func _whirl(spell: SpiderSpell, wound: float) -> Dictionary:
-	var target := area_target(spell, wound)
-	var at: Vector3 = target.get("point", _spider.global_position)
 	var eats := _traits != null and _traits.acid_water()
-	var whirl := WaterSpiral.summon(_host(), at, spell.size_at(wound) * body_height(),
-		spell.duration_at(wound), eats, venom_strength(), spell.colour)
+	var whirl := WaterSpiral.send(_host(), _spider.global_position, spiral_heading(),
+		spell.size_at(wound) * body_height(), spiral_reach(spell, wound),
+		WaterSpiral.PACE * body_height(), spell.duration_at(wound), eats, venom_strength(),
+		spell.colour)
 	if whirl == null:
 		return {"cast": false}
-	return {"cast": true, "at": at}
+	whirl.spent.connect(_on_whirl_spent)
+	return {"cast": true, "at": whirl.end_point()}
+
+
+## Which way a whirl goes: flat along the ground, from the spider to what the cross
+## is on — or the way the cross looks, if it is on the sky or at the spider's feet.
+func spiral_heading() -> Vector3:
+	var target := aim_target(GameLayers.WORLD)
+	var toward: Vector3 = target.get("point", Vector3.ZERO) - _spider.global_position
+	toward.y = 0.0
+	if not target.get("hit", false) or toward.length() < body_height():
+		toward = _view.aim_forward()
+		toward.y = 0.0
+	if toward.length_squared() < 0.000001:
+		toward = -_spider.global_basis.z
+		toward.y = 0.0
+	return toward.normalized() if toward.length_squared() > 0.000001 else Vector3.FORWARD
+
+
+## How far a whirl wound up to [param wound] goes, in metres: its share of silk's
+## reach.
+func spiral_reach(spell: SpiderSpell, wound: float) -> float:
+	return spell.travel_at(wound) * cast_reach()
+
+
+func _on_whirl_spent(_whirl: WaterSpiral, slowed: Array[Prey]) -> void:
+	var caught: Array[Prey] = []
+	for creature in slowed:
+		if is_instance_valid(creature) and not creature.eaten:
+			caught.append(creature)
+	if caught.size() == 1:
+		notice.emit("The %s is soaked and slowed" % caught[0].species)
+	elif caught.size() > 1:
+		notice.emit("Water — %d soaked and slowed" % caught.size())
 
 
 # --- fire -----------------------------------------------------------------
@@ -612,37 +650,43 @@ func _update_marker() -> void:
 	_marker_material.albedo_color = Color(spell.colour.r, spell.colour.g, spell.colour.b, 0.75)
 
 
-## Where an area spell lands, and which way is up there, wound up to
-## [param wound] — or to however far the wind-up has got, if not given.
-##
-## A whirl turns on the floor under where you point, as long as that floor is near
-## enough for it to reach back up to the point; aimed at a wall, it turns in front
-## of the wall rather than in it; over a drop, it turns in the air where you
-## pointed.
-func area_target(spell: SpiderSpell, wound := -1.0) -> Dictionary:
+## Where an area spell lands, and which way is up there: lightning comes down on
+## what the cross is on, and through open air to whatever is under it.
+func area_target(spell: SpiderSpell) -> Dictionary:
 	if spell != null and spell.form == SpiderSpell.Form.LIGHTNING:
 		return _ground(aim_target())
-	if spell == null or spell.form != SpiderSpell.Form.SPIRAL:
-		return aim_target()
-	var target := aim_target(GameLayers.WORLD)
-	var radius := spell.size_at(charge if wound < 0.0 else wound) * body_height()
-	var point: Vector3 = target.get("point", Vector3.ZERO)
-	var normal: Vector3 = target.get("normal", Vector3.UP)
-	if target.get("prey") == null and normal.y < 0.5:
-		point += normal * radius
-	var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * body_height() * 0.1,
-		point + Vector3.DOWN * radius * WaterSpiral.REACH_UP, GameLayers.WORLD, exclusions())
-	var hit := get_world_3d().direct_space_state.intersect_ray(query)
-	if hit.is_empty():
-		normal = Vector3.UP
-	else:
-		point = hit.get("position", point)
-		normal = hit.get("normal", Vector3.UP)
-	return {"point": point, "normal": normal, "prey": target.get("prey")}
+	return aim_target()
 
 
+## Whether [param spell] lands on an area where you point, rather than being thrown
+## at something or sent out along the ground.
 func is_area(spell: SpiderSpell) -> bool:
-	return spell.form == SpiderSpell.Form.SPIRAL or spell.form == SpiderSpell.Form.LIGHTNING
+	return spell.form == SpiderSpell.Form.LIGHTNING
+
+
+## The strip a whirl will run along, as long and as wide as it will be, while it
+## winds up: which way it goes, and how far. Laid flat from the floor under the
+## spider, so on rough ground it is a guide rather than a promise.
+func _update_path() -> void:
+	var spell := current()
+	var shown := charging and spell != null and spell.form == SpiderSpell.Form.SPIRAL \
+		and _view != null and _spider != null
+	if shown and _path == null:
+		_build_path()
+	if _path == null:
+		return
+	_path.visible = shown
+	if not shown:
+		return
+	var heading := spiral_heading()
+	var far := maxf(spiral_reach(spell, charge), 0.01)
+	var wide := spell.size_at(charge) * body_height() * 2.0
+	var floor_at: Vector3 = _ground({"point": _spider.global_position, "hit": false}) \
+		.get("point", _spider.global_position)
+	_path.global_transform = Transform3D(Basis.looking_at(heading, Vector3.UP),
+		floor_at + heading * far * 0.5 + Vector3.UP * body_height() * 0.05)
+	_path.scale = Vector3(wide, 1.0, far)
+	_path_material.albedo_color = Color(spell.colour.r, spell.colour.g, spell.colour.b, 0.3)
 
 
 func _build_held() -> void:
@@ -662,6 +706,23 @@ func _build_held() -> void:
 	_held.top_level = true
 	_held.visible = false
 	add_child(_held)
+
+
+func _build_path() -> void:
+	var mesh := PlaneMesh.new()
+	mesh.size = Vector2.ONE
+	_path_material = StandardMaterial3D.new()
+	_path_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_path_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_path_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_path = MeshInstance3D.new()
+	_path.name = "SpellPath"
+	_path.mesh = mesh
+	_path.material_override = _path_material
+	_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_path.top_level = true
+	_path.visible = false
+	add_child(_path)
 
 
 func _build_marker() -> void:
