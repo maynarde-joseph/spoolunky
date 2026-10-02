@@ -79,6 +79,7 @@ func _sections() -> Array[Callable]:
 		_test_the_bar,
 		_test_the_larder,
 		_test_three_lines,
+		_test_the_cross_on_a_line,
 		_test_webs_do_not_pile_up,
 		_test_a_web_ends_with_its_catch,
 		_test_the_bag,
@@ -1127,6 +1128,80 @@ func _test_three_lines() -> void:
 	builder._lines.clear()
 	await physics_frame
 	await process_frame
+
+
+## The crosshair picks a line out along its own ray. Nothing stops on a line, so
+## in third person the aim runs on through it to whatever is behind — a floor a
+## long way back, or nothing at all — and the spider sees that from under the
+## camera. The line the cross is on is still the one picked, and left mouse takes
+## you onto it, hanging, with open sky behind it as much as a floor.
+func _test_the_cross_on_a_line() -> void:
+	var slab := add_slab(Vector3(-120.0, 0.0, 60.0), Vector3(60.0, 0.5, 60.0))
+	await physics_frame
+	var start := slab.global_position + Vector3(0.0, 0.25, 20.0)
+	stand_on(start)
+	await physics_frame
+	clear_prey_near(start, 30.0, null)
+	if not spider.view.third_person:
+		spider.view.toggle_mode()
+	# Big enough that the camera sits well up over it.
+	grow_to_tier(3)
+	stand_on(start)
+	await physics_frame
+	var height := spider.stage().body_height
+	var reach := builder.silk_reach()
+
+	# Low across the way ahead, where the cross through it comes down on the floor
+	# nearly as far off as silk goes — the spider's own sight to that floor passes
+	# under the line, the further the bigger it is.
+	aim_at(start + Vector3.FORWARD * reach)
+	var pivot := spider.view.aim_pivot()
+	var near := reach * 0.2
+	var floor_at := reach * 0.95
+	var ahead := Vector3(pivot.x, start.y, pivot.z) + Vector3.FORWARD * near \
+		+ Vector3.UP * (pivot.y - start.y) * (1.0 - near / floor_at)
+	var low := WebStrand.spin(pattern_named("frame_line"), ahead + Vector3.LEFT * height * 4.0,
+		ahead + Vector3.RIGHT * height * 4.0, 1.0)
+	if not check(low != null, "a line low across the way ahead"):
+		return
+	low.place_in(webs)
+	await physics_frame
+	aim_at(ahead)
+	await physics_frame
+	await process_frame
+	builder._update_aim()
+	var from := spider.view.aim_origin()
+	var pair := Geometry3D.get_closest_points_between_segments(from,
+		from + spider.view.aim_forward() * reach * 4.0, low.point_a, low.point_b)
+	check(builder.aimed_line() == low,
+		"the cross on it picks it, though the spider's own sight passes it by %.2f m"
+		% pair[0].distance_to(pair[1]))
+	check(builder.aimed_line_point(low).distance_to(ahead) < height * 0.2,
+		"at the point the cross is on")
+	low.queue_free()
+	await physics_frame
+
+	# High overhead, with nothing behind it but sky.
+	var over := start + Vector3.FORWARD * reach * 0.4 + Vector3.UP * reach * 0.5
+	var high := WebStrand.spin(pattern_named("frame_line"), over + Vector3.LEFT * height * 4.0,
+		over + Vector3.RIGHT * height * 4.0, 1.0)
+	if not check(high != null, "a line high overhead"):
+		return
+	high.place_in(webs)
+	await physics_frame
+	aim_at(over)
+	await physics_frame
+	await process_frame
+	builder._update_aim()
+	check(not builder.aim_valid, "with nothing behind it for the cross to land on")
+	check(builder.aimed_line() == high, "the cross on it picks it all the same")
+	builder.place()
+	var on: bool = await wait_until(func() -> bool: return spider.climb.is_riding(), 240)
+	check(on and spider.climb.holding_line() == high,
+		"and left mouse takes you up onto it, hanging")
+	spider.climb.release()
+	high.queue_free()
+	await physics_frame
 
 
 ## A web is a larder while it holds something, and nothing once it does not.

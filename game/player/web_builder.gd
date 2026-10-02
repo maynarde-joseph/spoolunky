@@ -1077,18 +1077,21 @@ func place() -> void:
 	if current_pattern() == null:
 		return
 	_update_aim()
-
-	if problem != Problem.NONE:
+	# A line under the cross is taken whatever is behind it, or with nothing behind
+	# it at all — strung across open air, there is no surface for the cross to find,
+	# and none is needed to take hold of silk that is already there.
+	_pending_ride = aimed_line()
+	if problem != Problem.NONE and (_pending_ride == null or problem == Problem.LOCKED):
+		_pending_ride = null
 		notice.emit(problem_text())
 		return
 
 	_launched_from = _line_start()
 	_launch_anchored = _anchored()
-	_pending_ride = aimed_line()
 	if _pending_ride != null:
 		# Joining a line rather than laying one: no new silk, you just take hold.
-		aim_point = Geometry3D.get_closest_point_to_segment(aim_point,
-			_pending_ride.point_a, _pending_ride.point_b)
+		aim_point = aimed_line_point(_pending_ride)
+		aim_normal = Vector3.UP
 	if not building and _climb != null and _climb.shoots_lines():
 		_shoot_line()
 		return
@@ -1843,41 +1846,75 @@ func is_linking() -> bool:
 
 ## A line under the crosshair, close enough to grapple onto and ride. Silk is
 ## thin, so this is a proximity-to-the-ray pick like every other one.
+##
+## Measured along the crosshair's own ray — the one through the pivot, see
+## [method SpiderCamera.aim_pivot] — because that is the ray you see the line
+## under. Nothing stops on a line, so the aim runs on through it to whatever is
+## behind, and in third person the spider sees that from below the camera:
+## measured from the spider, a line with the floor a long way behind it sat a body
+## height or more over the aim, and the cross on it picked nothing. Held, still,
+## to lines in front of the surface the cross is on, and in silk's reach of the
+## spider.
 func aimed_line() -> WebStrand:
 	if _view == null or building:
 		# A scripted anchor run is placing anchors, not looking for a lift.
 		return null
-	var from := _view.aim_origin()
-	var direction := _view.aim_forward()
-	var reach: float = from.distance_to(aim_point) + _stage().body_height
-	# Silk is a couple of centimetres across, so a fixed tolerance is either
-	# impossible to aim at or steals every grapple. Scale it with distance
-	# instead: a fixed slice of the screen, roughly a crosshair's width, which
-	# is how wide the line actually looks when you are pointing at it.
-	# Capped, though, or a fixed slice of the screen turns into metres of world
-	# space at range: at forty metres 5.5% is over two metres, and a click meant
-	# for the wall behind a line would be quietly stolen by the line.
-	var span := from.distance_to(aim_point)
+	var eye := _view.aim_pivot()
+	var look := _view.forward()
 	var height := _stage().body_height
-	var tolerance: float = clampf(span * 0.055, height * 0.5, height * 2.0)
+	var reach := silk_reach()
+	var span := _crosshair_span(eye, look, reach)
+	var spider_at := _view.aim_origin()
 
 	var best: WebStrand = null
 	var best_score := INF
 	for node in get_tree().get_nodes_in_group("silk_webs"):
 		var strand := node as WebStrand
-		if strand == null or not is_instance_valid(strand):
+		if strand == null or not is_instance_valid(strand) or strand.is_queued_for_deletion():
 			continue
 		var pair := Geometry3D.get_closest_points_between_segments(
-			from, from + direction * reach, strand.point_a, strand.point_b)
-		var along := (pair[0] - from).dot(direction)
-		if along <= _stage().body_height or along > reach:
+			eye, eye + look * span, strand.point_a, strand.point_b)
+		var along := (pair[0] - eye).dot(look)
+		if along <= height or spider_at.distance_to(pair[1]) > reach:
 			continue
+		# Silk is a couple of centimetres across, so a fixed tolerance is either
+		# impossible to aim at or steals every grapple. Scale it with distance
+		# instead: a fixed slice of the screen, roughly a crosshair's width, which
+		# is how wide the line actually looks when you are pointing at it.
+		# Capped, though, or a fixed slice of the screen turns into metres of world
+		# space at range: at forty metres 5.5% is over two metres, and a click meant
+		# for the wall behind a line would be quietly stolen by the line.
+		var tolerance: float = clampf(along * 0.055, height * 0.5, height * 2.0)
 		var gap := pair[0].distance_to(pair[1])
 		if gap > tolerance or gap >= best_score:
 			continue
 		best_score = gap
 		best = strand
 	return best
+
+
+## Where on [param line] the cross is: the point of it nearest the crosshair's ray.
+func aimed_line_point(line: WebStrand) -> Vector3:
+	if _view == null or line == null:
+		return aim_point
+	var eye := _view.aim_pivot()
+	var look := _view.forward()
+	var pair := Geometry3D.get_closest_points_between_segments(eye,
+		eye + look * _crosshair_span(eye, look, silk_reach()), line.point_a, line.point_b)
+	return pair[1]
+
+
+## How far down the crosshair's ray from [param eye] a line can be and still be
+## what the cross is on: up to the first surface on it — a body height past, for a
+## line tied to that surface — and no further than [param reach] past the spider.
+func _crosshair_span(eye: Vector3, look: Vector3, reach: float) -> float:
+	var longest := eye.distance_to(_view.aim_origin()) + reach
+	var query := PhysicsRayQueryParameters3D.create(eye, eye + look * longest,
+		GameLayers.WORLD | GameLayers.WEB_WALK, _exclusions())
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return longest
+	return minf(eye.distance_to(hit["position"]) + _stage().body_height, longest)
 
 
 ## The wireable thing under the crosshair — a device if one is right there,

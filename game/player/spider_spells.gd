@@ -727,26 +727,20 @@ func aim_target(mask := GameLayers.WORLD | GameLayers.WEB_WALK) -> Dictionary:
 	if quarry != null:
 		return {"point": quarry.global_position, "normal": Vector3.UP, "prey": quarry,
 			"hit": true}
-	var query := PhysicsRayQueryParameters3D.create(from, from + forward * span, mask,
-		exclusions())
-	var hit := get_world_3d().direct_space_state.intersect_ray(query)
-	var found := {"point": from + forward * span, "normal": Vector3.UP, "prey": null,
-		"hit": false}
-	if not hit.is_empty():
-		found = {"point": hit.get("position", from), "normal": hit.get("normal", Vector3.UP),
-			"prey": hit.get("collider") as Prey, "hit": true}
 	if (mask & GameLayers.WEB_WALK) != 0 and _builder != null:
 		# A line is a hair across the view, and nothing to stand on, so no ray stops
 		# on one: the same pick the grapple makes decides whether the cross is on one.
 		var line := _builder.aimed_line()
 		if line != null:
-			var pair := Geometry3D.get_closest_points_between_segments(from,
-				from + forward * span, line.point_a, line.point_b)
-			var on_line: Vector3 = pair[1]
-			if from.distance_to(on_line) < from.distance_to(found["point"]):
-				return {"point": on_line, "normal": Vector3.UP, "prey": null, "hit": true,
-					"line": line}
-	return found
+			return {"point": _builder.aimed_line_point(line), "normal": Vector3.UP,
+				"prey": null, "hit": true, "line": line}
+	var query := PhysicsRayQueryParameters3D.create(from, from + forward * span, mask,
+		exclusions())
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit.is_empty():
+		return {"point": hit.get("position", from), "normal": hit.get("normal", Vector3.UP),
+			"prey": hit.get("collider") as Prey, "hit": true}
+	return {"point": from + forward * span, "normal": Vector3.UP, "prey": null, "hit": false}
 
 
 ## How far a spell goes: as far as silk does. One reach for everything the spider

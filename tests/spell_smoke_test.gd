@@ -1186,6 +1186,8 @@ func _test_fire_burns_silk() -> void:
 	line.place_in(webs)
 	await physics_frame
 	aim_at((a + b) * 0.5 + Vector3.UP * height * 0.15)
+	# The builder finds where the cross lands on its physics frame.
+	await physics_frame
 	await process_frame
 	check(builder.aimed_line() == line, "the cross is on the line")
 	var under: Vector3 = spells.area_target(fire).get("point", Vector3.ZERO)

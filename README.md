@@ -153,7 +153,8 @@ reach, or lets go; **Space** lets go too.
 
 You can also **grapple straight onto a line** from a distance: that takes you
 onto it, hanging, rather than stringing another line to reach it. A route you
-built once is a route you can take.
+built once is a route you can take. The cross picks out the line you see it on,
+whatever is behind it — a floor a long way off, or nothing but sky.
 
 A *web* is still a floor: **silk is sticky**, a web keeps hold of you the way a
 wall does until you **jump off**, and it's about half again quicker underfoot
