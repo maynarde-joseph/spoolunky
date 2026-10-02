@@ -78,16 +78,16 @@ one kept to what the keys do today.
 | WASD / Space | move and jump — **jump is also how you let go of silk** |
 | **Shift** | **sprint** — it runs out, and it runs out faster the heavier the thing on your line |
 | *walk into a wall* | climb it — walls and ceilings are floors to a spider |
-| *stand on silk* | it holds you — a thread runs one way, and **jump** is how you come off |
+| *stand on a web* | it holds you — **jump** is how you come off. A line isn't a floor: you hang from it |
 | **Ctrl** | drop onto a dragline (from a wall or ceiling) |
 | **Ctrl** / **Space** | lower / raise yourself on the line |
 | **Right Mouse** | let go of the line |
 | **Left Mouse** | **go there, trailing silk** — moving and building are the same act |
-| **G** | **grapple style** — the **pull** takes you there; the **line** lays a line from your feet to where you point and stands you on it, and walking a line is fast — the same speed up it as down. Jump to step off |
+| **G** | **grapple style** — the **pull** takes you there; the **line** lays a line from your feet to where you point and hangs you from it, ready to zip along |
+| **Q** | take hold of the nearest line — hang from it and zip along it with **W**/**S**, toward or away from where you look. **Q** or **Space** lets go |
 | **Left Mouse** *on something you've caught* | put a line on it and drag it instead — same click, read the only way that makes sense |
 | **Right Mouse** | **cast what is in hand** — the web, to start with: tap, or hold to wind it up |
 | **1–9** | **take a spell in hand** — 1 the web, 2 the water, 3 lightning, 4 fire, 5 the pullback; the wheel turns through them too. Growing, and what you eat, opens more |
-| **Q** | free for now — meant for the bag, which is put away |
 | **E** | evolution — what you are, and your odds on what eating could make you |
 | **F** | wrap caught prey, then drain it (also re-arms a sprung snare). In the Hollow Wood a meal mends you, and at a shrine **F** rests |
 | **Y** | **put a line on a bundle and drag it along** — again to drop what you're carrying |
@@ -140,50 +140,48 @@ tiers gate what your silk can *hold* and how much you can spin, not where you
 are allowed to go. A long grapple is flung faster so it still lands in about a
 second, because distance should cost you silk rather than patience.
 
-Every line is a road, and **silk is sticky**. Step onto a thread and you're
-stuck to it — it keeps hold of you until you **jump off**, the same as the wall
-and the ceiling do. A thread only runs one way, so that's the way you walk on
-it: pushing across a line does nothing rather than walking you off the side of
-it. You still set your own pace and face either way. A *web* is a floor and
-gets none of that — walk about on it however you like.
+**A line is a rail, not a floor.** You can't stand on one — a thread a couple
+of centimetres across was the most finicky thing in the game to walk — so the
+spider **hangs from it and zips along it** instead. **W** zips you towards where
+you're looking along the line and **S** away, as fast up it as down it, because
+gravity has no say: the line is a rail you pull yourself along. Let go of the
+keys and you brake to a stop. Run off either end and you come off carrying the
+speed, onto whatever the end is tied to. **Q** takes hold of the nearest line in
+reach, or lets go; **Space** lets go too.
 
-**F** is the zipline, and it's the *only* way into one — nothing puts you on a
-ride for landing near silk or for grappling somewhere a line happened to be.
-Ask for it and you clip onto the line proper, gravity pulls you down the slope,
-and letting go throws you off carrying the speed.
+You can also **grapple straight onto a line** from a distance: that takes you
+onto it, hanging, rather than stringing another line to reach it. A route you
+built once is a route you can take.
 
-Silk is about half again quicker underfoot than the floor, and you can
-**grapple straight onto a line** from a distance to get on it — that joins the
-network rather than stringing another line to reach it. You arrive standing on
-the line, stuck to it like any other silk; whether you then walk it or ride it
-is yours. A route you built once is a route you can take.
+A *web* is still a floor: **silk is sticky**, a web keeps hold of you the way a
+wall does until you **jump off**, and it's about half again quicker underfoot
+than the floor.
 
 Placing an anchor **grapples you to it**, dragging a frame line behind you. So
 the frame of a web is the route you took around it, not an outline you drew from
 across the room.
 
-Frame lines are real silk that stands on its own, and they're ridable — walk a
-triangle into a corner and you've built three ziplines whether or not you ever
-weave anything into them. Once the run closes a loop, **F** weaves the enclosed
+Frame lines are real silk that stands on its own, and you can zip along them —
+walk a triangle into a corner and you've built three zip lines whether or not you
+ever weave anything into them. Once the run closes a loop, **F** weaves the enclosed
 area in one go, charging only for the silk inside; the frame was paid for as you
 dragged it. Pulling a web down later leaves the frame standing.
 
 If the selected pattern is a strand (tripline, bridge), that's what gets dragged
 instead of plain frame line, so you can lay a run of triplines the same way.
 
-**Every strand is a zipline** — there's no opt-in. And weaving isn't limited to
+**Every strand is a zip line** — there's no opt-in. And weaving isn't limited to
 a loop you just walked: all your silk is one graph, and lines count as joined
 where they *cross in mid-air* as well as where they share an end. Sling three
 lines across a shaft and the triangle where they overlap is a ring you can fill.
 Look at any ring and press **F**.
 
-## Riding your own silk
+## Zipping along your own silk
 
-Any strand built from a ridable pattern — the silk bridge — can be clipped onto
-with **F** or the middle mouse button, and ridden. Gravity does the work on a
-downhill line, the movement keys push you along a level one, and letting go
-throws you off carrying all the speed you built, plus a kick to clear the edge.
-Arrive on a line already moving and you keep it.
+Any line — a grapple's, a frame's, a bridge — can be hung from and zipped along.
+Arrive on a line already moving and you keep it. Letting go on purpose gives a
+kick to clear the edge; running off the end doesn't, so the wall the line is tied
+to takes you straight away.
 
 The camera opens up as you go faster. Look direction is kept in world terms, so
 the mouse means the same thing whatever surface the spider is stuck to, and the
@@ -644,8 +642,8 @@ with a gust and sweeps with its tail. Beating the Rat King gives you what it kep
 Wing Buds, a glide.
 
 **The line grapple** is one key away: **G** switches from the pull to a grapple
-that lays a line from your feet to where you point and stands you on it. Walking a
-line is fast, the same up it as down, and you stay on until you jump.
+that lays a line from your feet to where you point and hangs you from its near
+end. W zips you along it, and off its end onto whatever it is tied to.
 
 ## The hunting ground
 

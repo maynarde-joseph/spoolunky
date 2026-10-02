@@ -1086,8 +1086,7 @@ func place() -> void:
 	_launch_anchored = _anchored()
 	_pending_ride = aimed_line()
 	if _pending_ride != null:
-		# Joining the road network rather than extending it: no new silk, you
-		# just get on.
+		# Joining a line rather than laying one: no new silk, you just take hold.
 		aim_point = Geometry3D.get_closest_point_to_segment(aim_point,
 			_pending_ride.point_a, _pending_ride.point_b)
 	if not building and _climb != null and _climb.shoots_lines():
@@ -1101,12 +1100,12 @@ func place() -> void:
 
 
 ## The line grapple's whole move: silk from your feet to the cross, and you
-## standing on its near end facing along it. Nothing takes you anywhere — walking
-## the line is up to you, and a jump steps off it.
+## hanging from its near end. Nothing takes you anywhere — W zips you along it, and
+## Space or Q lets go.
 ##
 ## A line pointed at another line is laid to it, the same as to a wall: with this
 ## grapple a line is the only way of getting anywhere, so joining one still takes
-## one. Fired from the air, the near end is where you are, and you are standing on
+## one. Fired from the air, the near end is where you are, and you are hanging from
 ## it — silk is sticky, and a line that left you falling would be no line at all.
 func _shoot_line() -> void:
 	_pending_ride = null
@@ -1116,7 +1115,7 @@ func _shoot_line() -> void:
 	var strand := _lay_line(from, aim_point)
 	if strand == null:
 		return
-	_climb.board(strand, aim_point)
+	_climb.clip_on(strand, from)
 	_remember_line(strand)
 	_loop_source = -1
 	state_changed.emit()
@@ -1135,12 +1134,9 @@ func _arrive_at(point: Vector3) -> void:
 	if _pending_ride != null:
 		var line := _pending_ride
 		_pending_ride = null
-		# You joined the road network rather than extending it, so no new silk.
-		# What happens now you are here is yours: silk is sticky, so you arrive
-		# standing on the line, and F rides it if that is what you came for.
-		# Being put on a ride by a click that merely passed near a line is the
-		# game taking the controls off you, which is the one thing it must not do.
-		if is_instance_valid(line):
+		# You joined a line rather than laying one, so no new silk: you arrive
+		# hanging from it, and W zips you along it.
+		if is_instance_valid(line) and _climb != null and _climb.clip_on(line, point):
 			return
 	if building:
 		# The scripted run: saved designs and the test suite still walk an

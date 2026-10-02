@@ -1072,46 +1072,44 @@ up, which is what a bundle already was: dead weight that falls.
 
 ### Silk is the road network
 
-Every line is walkable, not only the ones spun as bridges — a bridge is simply
-wide enough to be comfortable, and anything else is a tightrope, which is what
-a spider is for. Silk is about half again quicker underfoot than the floor, so
-a route you built beats walking round.
+**Decided: a line is a rail, not a floor. The spider hangs from it and zips along
+it; only a web is something to stand on.**
 
-**Silk is sticky, and you leave it by jumping.** This took two goes to get
-right, and the second one is the one worth keeping.
+Every line used to be walkable, a tightrope two centimetres across, and that took
+three goes to get wrong:
 
-The first version gave every strand a thin collider and left you standing on
-it, which meant falling off constantly. A rope you fall off is not somewhere
-you can live, and the whole point of the network is that it is somewhere you
-live. So the second version clipped you onto the line on contact and railed
-you along it. That fixed falling off and introduced something worse: the game
-grabbing hold of you. Walk near your own silk and it took the controls away.
+* **A thin collider, and you standing on it.** You fell off constantly, and a rope
+  you fall off is not somewhere you can live.
+* **Clipped on by contact and railed along it.** That fixed falling off and
+  introduced something worse: the game grabbing hold of you. Walk near your own
+  silk and it took the controls away.
+* **Sticky, one way, walked under your own power.** It held, but it never stopped
+  being finicky. The surface probe found the thread's top one frame and its side
+  the next. And a grapple's own line ran under the spider when it landed, so it
+  stood you on the thread instead of the wall you had grappled to — where A and D
+  did nothing at all. That was a good half of "the keys go the wrong way after a
+  grapple".
 
-What was wrong was not the holding, it was who asked for it. A spider does not
-balance on its thread and it does not get railed along it either — it is
-simply *stuck to it*, and it lets go when it decides to. So silk is sticky
-now, as an ordinary surface: land on a thread and you are standing on it, and
-it keeps hold of you until you jump, exactly like the wall and the ceiling
-already did. A thread only runs one way, so that is the way you walk on it —
-pushing across a line does nothing instead of walking you off the side — but
-you set your own pace, face either way, and stop when you stop.
+So the feet leave lines alone now — a line has no collider for them at all — and
+traversal on a line is its own state, the way a person goes along a zip line:
 
-Riding is still there and is now something you *ask* for: press for it and you
-clip onto the line proper, gravity feeds you down the slope, and letting go
-throws you off carrying everything you built up. Two different things that
-were briefly the same thing.
+* **You hang under it and zip along it.** W zips you towards where you are looking
+  along the line, S away. Gravity has no say in it: the line is a rail you pull
+  yourself along, and it is as quick up as down (`zip_speed`, `zip_push`).
+* **Let go of the keys and you brake to a stop**, still hanging (`zip_brake`).
+* **Run off either end and you come off carrying the speed**, straight into
+  whatever the end is tied to, which takes hold at once. Let go on purpose — Q or
+  Space — and you get a little lift and a moment before anything takes hold, the
+  way a jump does.
+* **Getting on is asked for, or aimed.** Q takes hold of the nearest line in
+  reach, the one you are looking at by preference. Grappling at a line takes you
+  onto it, hanging, without stringing a second line to reach it — the difference
+  between joining the network and extending it.
 
-The key press is the *only* way into one. Grappling at a line still takes you
-to the line rather than stringing a second line to reach it — that is the
-difference between joining the network and extending it, and it is worth
-keeping — but it now leaves you standing on it. It used to start the ride, and
-because the pick is deliberately forgiving about aim, a click meant for the
-wall behind a line would be quietly stolen by the line and turned into a ride
-nobody asked for. Forgiving aim is only affordable when being wrong is cheap;
-arriving somewhere you can stand is cheap, and losing the controls is not.
+A bridge, the one strand spun to be walked, keeps its plank.
 
-A *web* gets none of the one-way rule, because a web is a floor, and a floor
-you can only cross in one direction is not a floor.
+A *web* is still a floor: silk is sticky, it keeps hold of you the way a wall does
+until you jump, and it is about half again quicker underfoot than the floor.
 
 Grappling at a line you already have puts you *on* it rather than stringing a
 second line to it. That is the difference between extending the network and
@@ -1746,18 +1744,13 @@ anything chasing you is simply left behind, which makes it an escape you can
 always take. So there is a second grapple, one key (**G**) away from the first,
 to play against it:
 
-* **The line** lays silk from your feet to where you point and stands you on its
-  near end, facing along it. Nothing takes you anywhere. Getting there is walking
-  the line.
-* **Walking a line is fast** — `line_speed`, three and a half times a walk — and
-  the same speed up it as down it and whatever its slope. It is a road you laid,
-  not a hill, and the spider is casting magic, not obeying it.
-* **You stay on until you jump.** Silk is sticky, and the spider sticks to it the
-  way it sticks to a wall, so there is no hanging and no falling off. Fired from
-  the air, the line starts where you are and catches you on it.
+* **The line** lays silk from your feet to where you point and hangs you from its
+  near end. Nothing takes you anywhere. Getting there is zipping along it — see
+  *Silk is the road network* — and off its end onto whatever it is tied to.
+* **Fired from the air**, the line starts where you are and catches you on it.
 
 What changes is that going somewhere is two things — putting the road down, and
-walking it — and the second is where you can be caught. The line is still one of
+zipping along it — and the second is where you can be caught. The line is still one of
 your three (§5), and still a wire a spell can run down.
 
 ### A grapple keeps what it was carrying
@@ -1780,18 +1773,16 @@ alone is invisible:
 
 **Why not swinging instead.** The obvious alternative — click an anchor and swing
 from it — is already in the game twice: `Ctrl` drops you onto a dragline and you
-swing on it, and `F` rides any line and throws you off the end with your speed.
+swing on it, and `Q` hangs you from any line to zip along it.
 What the grapple has that a swing does not is that **every click leaves a road**
 (§5). A swing anchored at one end leaves silk dangling from nothing, which turns
 the best property of the traversal into litter. The grapple's problem was never
 its shape; it was that it ended in a full stop.
 
-### Ziplines
-Any strand marked ridable can be clipped onto and slid along. Gravity does most
-of the work — a line strung downhill builds real speed — the movement keys push
-you along a level one, and letting go throws you off carrying everything you
-had built up, with a small kick to clear the edge. Arriving on a line with
-speed keeps it, so dropping onto one from a height flings you along it.
+### Zip lines
+Any line can be hung from and zipped along — see *Silk is the road network*.
+Arriving on a line with speed keeps it, so a grapple onto one carries you on
+along it.
 
 This is the traversal answer to a world built vertically, and the reason to
 string silk somewhere you have no intention of catching anything. A line is
@@ -2052,17 +2043,17 @@ hold in their head on the first screen.
 |-------|--------|
 | **WASD** | Move — on whatever surface you are stuck to. On a wall the keys go by which way you face it, not by the camera's tilt: facing it W climbs, looking along it the key on the wall's side climbs, facing away W comes down (*Walking on a wall*, §7) |
 | **Mouse** | Look |
-| **Space** | Jump. Also the only way off silk, which is sticky |
+| **Space** | Jump. Also the way off a web, which is sticky, and off a line you are hanging from |
 | **Shift** | **Sprint**, out of a pool of a few seconds that fills back up while you walk. It costs more per size class of whatever is on your line, which is what makes hauling something home at a run a decision rather than the obvious move (§2) |
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
-| **Left Mouse** | **Go there, trailing a line.** A surface pulls you over; a line puts you on it; something you already caught comes to you instead. A creature still on its feet is none of those, so the aim reads straight through it to whatever is behind (§2). As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5) |
-| **G** | **Grapple style**: the pull above, or the line — a line from your feet to where you point, with you standing on it; walking it is fast (*Two grapples*, §7) |
+| **Left Mouse** | **Go there, trailing a line.** A surface pulls you over; a line takes you onto it, hanging; something you already caught comes to you instead. A creature still on its feet is none of those, so the aim reads straight through it to whatever is behind (§2). As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5) |
+| **G** | **Grapple style**: the pull above, or the line — a line from your feet to where you point, with you hanging from it, ready to zip along (*Two grapples*, §7) |
 | **Right Mouse** | **Cast what is in hand** — the web, to start with (§3.2). With the web in hand: |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
 | **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |
 | **1–9** | **Take a spell in hand** — each key is one spell, in the book's order, whether or not you have it yet: 1 the web, 2 the water, 3 lightning, 4 fire, 5 the pullback. A key pressed mid-wind-up drops the wind-up and takes its own spell (§3.2) |
 | **Wheel** | The next or last spell you have — growing, and what you eat, opens more |
-| **Q** | Free. It is meant for the bag, which is put away for now |
+| **Q** | **Take hold of the nearest line**, or let go. Hanging from one, **W/S** zip you along it toward or away from where you look, with no gravity in it; run off the end onto whatever it is tied to (*Silk is the road network*, §6) |
 | **E** | Evolution — what you are, and your odds on what eating could make you |
 | **F** | Wrap the prey you are looking at, then drain it. At a shrine in the Hollow Wood, rest (§12) |
 | **X** | Pull down the web or line you are looking at |

@@ -24,12 +24,15 @@ WASD / Space           move and jump
 Shift                  sprint — it runs out, and it runs out faster the
                        heavier the thing you have on your line
 walk into a wall       climb it — walls and ceilings are floors to you
-silk is sticky         stand on it and it holds you; jump to come off
+silk is sticky         a web holds you; jump to come off it
 
 Left Mouse             grapple there, trailing a line — three at a time,
-                       and a fourth takes the oldest down
+                       and a fourth takes the oldest down. On a line, it
+                       takes you onto the line, hanging
+Q                      take hold of the nearest line, or let go
+on a line              W/S zip along it, toward or away from where you look
 G                      grapple style: the pull takes you there; the line
-                       lays a line from your feet to walk, fast
+                       lays a line from your feet and hangs you from it
 Right Mouse            cast what is in hand — the web, to start with: it
                        sticks where it lands and wraps what it lands on
 Right Mouse  (hold)    wind it up: a bigger web, a whirl that goes further,
@@ -744,15 +747,15 @@ func _refresh_state() -> void:
 	if climb.is_riding():
 		var along := climb.ride_velocity()
 		if absf(along) < 0.4:
-			state_label.text = "Riding a line — W/S along it   [F] or [Space] let go"
+			state_label.text = "On a line — W/S zip along it   [Q] or [Space] let go"
 		else:
-			state_label.text = "Riding — %.1f m/s   [F] or [Space] let go" % along
+			state_label.text = "Zipping — %.1f m/s   [Q] or [Space] let go" % along
 	elif climb.is_hanging():
 		state_label.text = "On a line — %.1fm   [Ctrl] down  [Space] up  [RMB] let go" % climb.line_length
 	elif not climb.is_attached():
 		state_label.text = "Falling"
 	elif climb.on_silk:
-		state_label.text = "On silk — it holds you   [Space] off   [F] ride it"
+		state_label.text = "On silk — it holds you   [Space] off"
 	elif climb.surface_normal.dot(Vector3.UP) < -0.5:
 		state_label.text = "On the ceiling   [Ctrl] drop on a line"
 	elif climb.on_steep_surface():

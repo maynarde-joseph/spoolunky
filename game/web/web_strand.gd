@@ -2,8 +2,8 @@ class_name WebStrand
 extends WebStructure
 
 ## Two anchors and a line between them: triplines, draglines and bridges.
-## A strand never encloses an area, so it never catches — it either reports
-## what crossed it or it holds the player's weight.
+## A strand never encloses an area, so it never catches — it reports what
+## crossed it, or the spider hangs from it and zips along it.
 
 var point_a := Vector3.ZERO
 var point_b := Vector3.ZERO
@@ -41,15 +41,17 @@ static func spin(pattern: WebPattern, a: Vector3, b: Vector3, quality: float) ->
 		trip_box.size = Vector3(girth, girth, length)
 		strand._make_catch_area(trip_box, alignment)
 
-	# Every line is something to walk along, not only the ones spun as bridges.
-	# A bridge is just wide enough to be comfortable; anything else is a
-	# tightrope, which is what a spider is for.
-	var width: float = maxf(0.05 * quality, 0.035)
+	# Only a bridge is something to walk on. Any other line is a rail to hang from
+	# and zip along — see [method SpiderClimb.clip_on] — and nothing at all to the
+	# feet. Standing on a thread a couple of centimetres across, with the surface
+	# probe finding its top one frame and its side the next, was finicky enough to
+	# be the thing the controls were remembered for; and a grapple's own line,
+	# under the spider when it landed, stood it on the thread instead of the wall.
 	if pattern.walkable:
-		width = maxf(pattern.walk_width * quality, 0.05)
-	var plank := BoxShape3D.new()
-	plank.size = Vector3(width, maxf(width * 0.25, 0.02), length)
-	strand._make_walk_surface(plank, alignment)
+		var width: float = maxf(pattern.walk_width * quality, 0.05)
+		var plank := BoxShape3D.new()
+		plank.size = Vector3(width, maxf(width * 0.25, 0.02), length)
+		strand._make_walk_surface(plank, alignment)
 
 	return strand
 

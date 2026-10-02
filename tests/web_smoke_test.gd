@@ -283,8 +283,8 @@ func _test_strands() -> void:
 	if not check(trip != null, "a tripline was spun"):
 		return
 	check(trip.catch_area != null, "the tripline watches for crossings")
-	check(trip.get_node_or_null("Walkway") != null,
-		"and you can walk along it, because every line is a road")
+	check(trip.get_node_or_null("Walkway") == null,
+		"and has nothing to walk on: a line is something to hang from")
 	builder.stop()
 
 
@@ -1088,7 +1088,7 @@ func _test_three_lines() -> void:
 	for strand in builder.lines():
 		strand.demolish()
 	builder._lines.clear()
-	spider.climb.standing_on = null
+	spider.climb.release()
 	await physics_frame
 	check(builder.line_count() == 0, "starting with none up (%d)" % builder.line_count())
 
@@ -1111,16 +1111,16 @@ func _test_three_lines() -> void:
 	check(is_instance_valid(second) and is_instance_valid(third) and is_instance_valid(fourth),
 		"and the other three are standing")
 
-	# The one holding you up is never the one that goes. Dropping the floor out
-	# from under the player is the game taking the controls off them.
-	spider.climb.standing_on = second
+	# The one holding you up is never the one that goes. Dropping the player out
+	# of the air is the game taking the controls off them.
+	spider.climb.clip_on(second, second.point_a.lerp(second.point_b, 0.5))
 	var fifth := _run_a_line(base + Vector3(8, 0, 0), base + Vector3(10, 0, 0))
 	await physics_frame
 	await process_frame
-	check(fifth != null, "a fifth while standing on the oldest")
-	check(is_instance_valid(second), "leaves the line under your feet alone")
+	check(fifth != null, "a fifth while hanging from the oldest")
+	check(is_instance_valid(second), "leaves the line you are hanging from alone")
 	check(not is_instance_valid(third), "and takes the next oldest instead")
-	spider.climb.standing_on = null
+	spider.climb.release()
 
 	for strand in builder.lines():
 		strand.demolish()

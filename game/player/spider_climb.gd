@@ -19,7 +19,7 @@ enum Mode {
 	ATTACHED,
 	## Swinging from a line of silk.
 	HANGING,
-	## Clipped onto a strand and sliding along it.
+	## Hanging from a line and zipping along it.
 	RIDING,
 	## Hauling itself to a point it is about to anchor silk to.
 	GRAPPLING,
@@ -29,9 +29,8 @@ enum Mode {
 enum GrappleStyle {
 	## Hauls the spider over to it, trailing the line behind.
 	PULL,
-	## Lays a line from the spider's feet to it and stands the spider on the near
-	## end. Getting there is walking the line, which is quick — see
-	## [member line_speed].
+	## Lays a line from the spider's feet to it and hangs the spider from the near
+	## end, ready to zip along it — see [member zip_speed].
 	LINE,
 }
 
@@ -137,21 +136,21 @@ const SETTLE_UP := 0.5
 @export var line_color := Color(0.95, 0.96, 1, 0.92)
 
 
-@export_group("Ziplining")
+@export_group("Zip lines")
 
-## How far the spider will reach to grab a line, in body heights.
+## How far the spider will reach to take hold of a line with Q, in body heights.
 @export var grab_reach := 9.0
 
-## Push along the line from the movement keys, in body heights per second.
-@export var ride_push := 9.0
+## How quickly a zip gets up to speed, and how quickly it stops once the keys are
+## let go, in body heights per second per second. Gravity has no say in either: a
+## line is a rail you pull yourself along, as quick up it as down it.
+@export var zip_push := 45.0
+@export var zip_brake := 45.0
 
-## Fastest a ride can get, in body heights per second. Gravity does the rest.
-@export var ride_top_speed := 26.0
+## Fastest a zip goes, in body heights per second.
+@export var zip_speed := 22.0
 
-## Drag on a moving rider, so a level line eventually coasts to a stop.
-@export var ride_drag := 0.35
-
-## Upward kick when letting go, so launching off a line clears the edge.
+## Upward kick when letting go, so coming off a line clears whatever is under it.
 @export var launch_lift := 2.5
 
 ## How fast the spider hauls itself to an anchor point, in body heights per
@@ -167,29 +166,17 @@ const SETTLE_UP := 0.5
 @export var grapple_max_travel := 1.1
 
 ## Which grapple the spider has. Two are kept so they can be played back to back:
-## the pull, which takes you there, and the line, which only gives you the road.
+## the pull, which takes you there, and the line, which lays one to zip along.
 @export var grapple_style := GrappleStyle.PULL
 
-## How fast a single line is walked with the line grapple, in multiples of the
-## walk. The same up a line as down it and whatever the line's slope: it is the
-## road you laid, not a hill. Sprinting on top of it still counts.
-@export var line_speed := 3.5
-
-## How much quicker silk is underfoot than anything else. A line you spun is a
-## road, and a road you built should beat walking round.
+## How much quicker silk is underfoot than anything else. A web you spun is
+## ground you built, and ground you built should beat walking round.
 @export var silk_speed_bonus := 1.5
 
 ## How much further the spider's feet reach for silk it is already on, in
-## multiples of the ordinary reach. A spider does not fall off its own thread:
+## multiples of the ordinary reach. A spider does not fall off its own web:
 ## once you are on silk it holds you, and you leave it by jumping.
 @export var silk_stick_reach := 2.5
-
-## How firmly a single thread pulls the body back over it, in metres per second
-## per metre of drift. A web is a floor and wants none of this; one strand is a
-## tightrope, and a spider that has to balance on a tightrope is a spider
-## falling off it. Only the drift across the line is corrected — moving along
-## it is left entirely alone.
-@export var thread_grip := 5.0
 
 
 var mode: Mode = Mode.AIRBORNE
@@ -197,7 +184,7 @@ var surface_normal := Vector3.UP
 var line_anchor := Vector3.ZERO
 var line_length := 0.0
 
-## The strand being ridden, how far along it, and how fast.
+## The line being hung from, how far along it, and how fast.
 var ride_web: WebStrand = null
 var ride_distance := 0.0
 var ride_speed := 0.0
@@ -211,10 +198,6 @@ var tangent_velocity := Vector3.ZERO
 
 ## Standing on silk rather than on the world, which is quicker underfoot.
 var on_silk := false
-
-## The one line the spider is standing on, if it is standing on a line rather
-## than on a web's floor or on the world.
-var standing_on: WebStrand = null
 
 ## What speed is multiplied by while dragging something. Written by the tether;
 ## one means empty-handed.
@@ -231,11 +214,6 @@ var _view: SpiderCamera
 var _facing := Vector3.FORWARD
 var _current_up := Vector3.UP
 var _grace := 0.0
-## The line [method board] just stood the spider on, held to for
-## [constant BOARD_HOLD] seconds whatever the surface probe says. See
-## [method _boarded_hit].
-var _boarded: WebStrand = null
-var _board_hold := 0.0
 var _previous_up := Vector3.ZERO
 var _swap_cooldown := 0.0
 var _grapple_time := 0.0
@@ -291,16 +269,13 @@ func is_hanging() -> bool:
 	return mode == Mode.HANGING
 
 
-## The line currently keeping the spider up — the one it is riding, or the one
-## it is standing on. Null when the world is doing the holding.
+## The line the spider is hanging from, or null.
 ##
-## The builder asks before it takes an old line down, because dropping the
-## floor out from under the player is the game taking the controls off them.
+## The builder asks before it takes an old line down, because dropping the player
+## out of the air is the game taking the controls off them.
 func holding_line() -> WebStrand:
 	if mode == Mode.RIDING and is_instance_valid(ride_web):
 		return ride_web
-	if standing_on != null and is_instance_valid(standing_on):
-		return standing_on
 	return null
 
 
@@ -418,7 +393,6 @@ func step(delta: float, input_axis: Vector2, want_jump: bool, want_sprint: bool,
 		return
 	_grace = maxf(0.0, _grace - delta)
 	_swap_cooldown = maxf(0.0, _swap_cooldown - delta)
-	_board_hold = maxf(0.0, _board_hold - delta)
 	_silk_warning = maxf(0.0, _silk_warning - delta)
 	if mode == Mode.GRAPPLING:
 		_step_grappling(delta)
@@ -454,7 +428,6 @@ func release() -> void:
 	if mode != Mode.AIRBORNE:
 		_set_mode(Mode.AIRBORNE)
 	ride_web = null
-	standing_on = null
 	ride_speed = 0.0
 	line_length = 0.0
 	_forget_walk()
@@ -470,26 +443,19 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	var height := _body_height()
 	var wish := _walk(input_axis)
 	var hit := _find_surface(height, wish)
-	if _board_hold > 0.0:
-		hit = _boarded_hit(hit)
 
 	if hit.is_empty() or _grace > 0.0:
 		on_silk = false
-		standing_on = null
 		_forget_walk()
 		_set_mode(Mode.AIRBORNE)
 		_move_airborne(delta, input_axis)
 		return
 
 	_note_surface(hit.get("collider"))
-	var thread := _strand_under(hit.get("collider")) if on_silk else null
-	standing_on = thread
 	# The frame the keys were read in on the way here. In the air that is the
 	# level one the air steers by, whatever the body is still rolling through.
 	var before := _current_up if mode == Mode.ATTACHED else Vector3.UP
-	# A thread's up comes from the thread, not from the probe. See _thread_up.
-	var found: Vector3 = hit["normal"]
-	_adopt_surface(_thread_up(thread, found) if thread != null else found)
+	_adopt_surface(hit["normal"])
 	_carry_over(before, input_axis)
 	_set_mode(Mode.ATTACHED)
 
@@ -506,8 +472,6 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	# Walking the surface: all the movement happens in its tangent plane, and
 	# the only force is the one holding the spider onto it.
 	wish = _walk(input_axis)
-	if thread != null:
-		wish = _along_thread(thread, wish)
 	var speed := _surface_speed(want_sprint)
 	var velocity := _spider.velocity
 	var tangent := velocity - _current_up * velocity.dot(_current_up)
@@ -526,13 +490,8 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	else:
 		var rate: float = acceleration if target.dot(tangent) > 0.0 else deceleration
 		tangent = tangent.lerp(target, clampf(rate * delta, 0.0, 1.0))
-	tangent = _hold_to_thread(thread, tangent)
 
 	var into := _current_up * stick_force * height
-	if _board_hold > 0.0:
-		# The line it was just stood on may not be solid yet. Pressing down onto it
-		# would put the spider through it before it is, so hold the height instead.
-		into = Vector3.ZERO
 	_spider.velocity = tangent - into
 	_spider.up_direction = _current_up
 	_spider.move_and_slide()
@@ -710,89 +669,6 @@ func _adopt_surface(raw_normal: Vector3, roll := true) -> void:
 	surface_changed.emit(normal)
 
 
-## The single line a walkway belongs to, if it is one. A web's walk surface
-## belongs to a net, which is a floor rather than a rope, so that stays null.
-func _strand_under(collider: Variant) -> WebStrand:
-	var node := collider as Node
-	while node != null:
-		var strand := node as WebStrand
-		if strand != null:
-			return strand
-		node = node.get_parent()
-	return null
-
-
-## A thread runs one way, so that is the way you can walk on it.
-##
-## Pushing across a line does nothing rather than walking you off the side of
-## it, which is what makes a thread somewhere a spider can live instead of
-## something it keeps falling off. You still set your own pace along it, under
-## your own power, facing either way — none of which riding lets you do.
-## Leaving is the jump.
-##
-## A web gets none of this. A web is a floor, and a floor you can only cross
-## in one direction is not a floor.
-func _along_thread(strand: WebStrand, wish: Vector3) -> Vector3:
-	var axis := _thread_axis(strand)
-	if axis == Vector3.ZERO or wish.length_squared() < 0.000001:
-		return Vector3.ZERO
-	return axis * wish.dot(axis)
-
-
-## The up to stand with while on a thread, which is *not* the probe's normal.
-##
-## A tightrope's collider is a box five centimetres across. The surface probe
-## finds its top face one frame and a side face the next, and the body dutifully
-## rolls ninety degrees between the two — which is the jank. An up derived from
-## the thread's own axis cannot flip, because the axis does not.
-func _thread_up(strand: WebStrand, probed: Vector3) -> Vector3:
-	var axis := _thread_axis(strand)
-	if axis == Vector3.ZERO:
-		return probed
-	var up := probed - axis * probed.dot(axis)
-	if up.length_squared() < 0.01:
-		# The probe found an end cap, or a face edge-on to the line. Stand up.
-		up = Vector3.UP - axis * Vector3.UP.dot(axis)
-	if up.length_squared() < 0.01:
-		# A vertical thread has no preferred up, so keep the one already held.
-		up = _current_up - axis * _current_up.dot(axis)
-	if up.length_squared() < 0.000001:
-		return probed
-	return up.normalized()
-
-
-## Keeps the body over the thread it is walking on. Only the drift across the
-## line is pulled back; moving along it is untouched, and so is the force
-## holding the spider on. With input already confined to the line this is
-## mopping up the last few centimetres, not steering.
-func _hold_to_thread(strand: WebStrand, tangent: Vector3) -> Vector3:
-	var axis := _thread_axis(strand)
-	if axis == Vector3.ZERO:
-		return tangent
-	var nearest := Geometry3D.get_closest_point_to_segment(_spider.global_position,
-		strand.point_a, strand.point_b)
-	var offset := nearest - _spider.global_position
-	offset -= axis * offset.dot(axis)
-	offset -= _current_up * offset.dot(_current_up)
-	# Cancel the drift before pulling it in, rather than pulling against it. The
-	# pull alone is a spring with no damping — five metres per second of
-	# correction for every metre of error, overshooting every time — and a spring
-	# with no damping is a wobble you cannot walk out of.
-	var adrift := tangent - axis * tangent.dot(axis)
-	adrift -= _current_up * adrift.dot(_current_up)
-	return tangent - adrift + offset * thread_grip
-
-
-## Which way a thread runs, or zero if it is not one.
-func _thread_axis(strand: WebStrand) -> Vector3:
-	if strand == null or not is_instance_valid(strand):
-		return Vector3.ZERO
-	var axis := strand.point_b - strand.point_a
-	if axis.length_squared() < 0.000001:
-		return Vector3.ZERO
-	return axis.normalized()
-
-
 ## Whether what is underfoot is silk rather than world. Read off the collider
 ## the surface probe found, so it costs nothing to know.
 func _note_surface(collider: Variant) -> void:
@@ -804,9 +680,6 @@ func _surface_speed(want_sprint: bool) -> float:
 	var speed := _spider.speed
 	if want_sprint:
 		speed *= _spider.sprint_speed_multiplier
-	if shoots_lines() and standing_on != null and is_instance_valid(standing_on):
-		# A line is the road the grapple laid, and a road is as quick up as down.
-		return speed * line_speed * haul
 	var steepness := clampf(1.0 - maxf(0.0, _current_up.dot(Vector3.UP)), 0.0, 1.0)
 	speed *= lerpf(1.0, steep_speed_factor, steepness)
 	if on_silk:
@@ -918,10 +791,6 @@ func _warn(text: String) -> void:
 ## body rides when standing on one.
 const FEET := 0.4
 
-## How long [method board] holds the spider to the line it stood it on, in
-## seconds: a couple of physics frames, which is how long a line just spun takes
-## to be something the surface probe can find.
-const BOARD_HOLD := 0.1
 
 ## Whether left mouse lays a line rather than pulling the spider anywhere.
 func shoots_lines() -> bool:
@@ -935,7 +804,7 @@ func toggle_grapple_style() -> void:
 		notice.emit("Grapple: pull — it takes you there")
 	else:
 		grapple_style = GrappleStyle.LINE
-		notice.emit("Grapple: line — it lays a line to walk; jump to step off")
+		notice.emit("Grapple: line — it lays a line and hangs you from it; W zips along")
 
 
 ## Where the spider's feet are: under the body, along whatever it calls up.
@@ -952,62 +821,6 @@ func fling(push: Vector3) -> void:
 	release()
 	_grace = release_grace
 	_spider.velocity = push
-
-
-## Stands the spider on [param strand] where it is nearest, facing along it
-## towards [param toward]: what the line grapple does with the line it has just
-## laid, so walking it is one key away. Returns false if there was no line to
-## stand on.
-##
-## The near end of a line laid from your feet is in the floor you are standing
-## on, and the surface probe keeps hold of the surface it already has — so
-## without this you would walk on under your own line rather than onto it.
-func board(strand: WebStrand, toward: Vector3) -> bool:
-	var axis := _thread_axis(strand)
-	if axis == Vector3.ZERO or _spider == null:
-		return false
-	var point := Geometry3D.get_closest_point_to_segment(_spider.global_position,
-		strand.point_a, strand.point_b)
-	var up := _thread_up(strand, _current_up)
-	var along := axis if (toward - point).dot(axis) >= 0.0 else -axis
-	ride_web = null
-	_grace = 0.0
-	_forget_walk()
-	_spider.velocity = Vector3.ZERO
-	tangent_velocity = Vector3.ZERO
-	_spider.global_position = point + up * _body_height() * FEET
-	_previous_up = _current_up
-	_current_up = up
-	surface_normal = up
-	_facing = (along - up * along.dot(up)).normalized()
-	on_silk = true
-	standing_on = strand
-	_boarded = strand
-	_board_hold = BOARD_HOLD
-	_spider.up_direction = up
-	_set_mode(Mode.ATTACHED)
-	surface_changed.emit(up)
-	return true
-
-
-## What the surface probe should have found just after [method board]: the line.
-##
-## A line spun this frame is not in the physics world until the next one, so the
-## first probe after boarding finds nothing under the spider in mid-air — or the
-## floor the line starts from — and the spider falls off a line it was just put
-## on. For [constant BOARD_HOLD] seconds the boarded line is what is underfoot,
-## unless the probe found the line itself already.
-func _boarded_hit(found: Dictionary) -> Dictionary:
-	if not is_instance_valid(_boarded):
-		return found
-	if _strand_under(found.get("collider")) == _boarded:
-		return found
-	var walkway := _boarded.get_node_or_null(NodePath("Walkway"))
-	if walkway == null:
-		return found
-	var point := Geometry3D.get_closest_point_to_segment(_spider.global_position,
-		_boarded.point_a, _boarded.point_b)
-	return {"collider": walkway, "normal": _current_up, "position": point}
 
 
 ## Hauls the spider to a point it is going to anchor silk to. Building a web is
@@ -1079,27 +892,23 @@ func _arrive() -> void:
 	grappled.emit(point, normal)
 
 
-# --- ziplines -----------------------------------------------------------
+# --- zip lines ----------------------------------------------------------
 
-## Clips onto the nearest ridable strand, or lets go of the one being ridden.
-## Returns true if anything happened.
-##
-## This is the only way into a ride, and it is a key press. Nothing puts the
-## spider on one for landing near silk, or for grappling somewhere a line
-## happened to be: silk holds you where you are, and riding it is a decision.
+## Takes hold of the nearest line in reach — the one you are looking at, if any —
+## or lets go of the one you are hanging from. Returns true if anything happened.
+## This is Q; a grapple onto a line takes hold of it too, with [method clip_on].
 func toggle_ride() -> bool:
 	if mode == Mode.RIDING:
 		_launch_off_line()
 		return true
 	var strand := _find_ridable()
 	if strand == null:
-		notice.emit("No line in reach to ride")
+		notice.emit("No line in reach to hang from")
 		return false
-	_grab_line(strand)
-	return true
+	return clip_on(strand, _spider.global_position)
 
 
-## The best strand to clip onto: near enough to reach, and roughly the way the
+## The best line to take hold of: near enough to reach, and roughly the way the
 ## player is looking so grabbing is aimed rather than accidental.
 func _find_ridable() -> WebStrand:
 	var height := _body_height()
@@ -1111,8 +920,7 @@ func _find_ridable() -> WebStrand:
 	var best_score := -INF
 	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
 		var strand := node as WebStrand
-		# Any silk you can reach is silk you can ride.
-		if strand == null or strand.pattern == null:
+		if strand == null or strand.pattern == null or strand.is_queued_for_deletion():
 			continue
 		var point := Geometry3D.get_closest_point_to_segment(origin,
 			strand.point_a, strand.point_b)
@@ -1128,23 +936,32 @@ func _find_ridable() -> WebStrand:
 	return best
 
 
-func _grab_line(strand: WebStrand) -> void:
+## Hangs the spider from [param strand] at the point of it nearest [param at],
+## carrying whatever speed it had along the line into the zip. What Q does, what a
+## grapple onto a line ends in, and what the line grapple does with the line it has
+## just laid. Returns false if there is no line to hang from.
+func clip_on(strand: WebStrand, at: Vector3) -> bool:
+	if strand == null or not is_instance_valid(strand) or _spider == null:
+		return false
 	ride_web = strand
-	var point := Geometry3D.get_closest_point_to_segment(_spider.global_position,
-		strand.point_a, strand.point_b)
+	var point := Geometry3D.get_closest_point_to_segment(at, strand.point_a, strand.point_b)
 	ride_distance = strand.point_a.distance_to(point)
-
-	# Carry whatever speed you arrived with into the ride, so dropping onto a
-	# line from a height throws you along it instead of stopping you dead.
-	var axis := _ride_axis()
-	ride_speed = _spider.velocity.dot(axis)
-	_spider.velocity = Vector3.ZERO
+	ride_speed = _spider.velocity.dot(_ride_axis())
+	_forget_walk()
+	_grace = 0.0
 	_set_mode(Mode.RIDING)
-	notice.emit("On the line")
+	_hang()
+	_spider.velocity = _ride_axis() * ride_speed
+	return true
 
 
+## Hanging from a line and zipping along it: W towards where the camera looks
+## along the line, S away from it, and nothing held brakes to a stop. Gravity has
+## no say in any of it — the line is a rail you pull yourself along, as quick up it
+## as down it. Run off either end and you come off it carrying the speed, free to
+## take hold of whatever the end is tied to; Space or Q lets go anywhere.
 func _step_riding(delta: float, input_axis: Vector2, want_jump: bool, want_release: bool) -> void:
-	if not is_instance_valid(ride_web):
+	if not is_instance_valid(ride_web) or ride_web.is_queued_for_deletion():
 		_launch_off_line()
 		return
 	if want_jump or want_release:
@@ -1154,40 +971,49 @@ func _step_riding(delta: float, input_axis: Vector2, want_jump: bool, want_relea
 	var height := _body_height()
 	var axis := _ride_axis()
 	var length := ride_web.point_a.distance_to(ride_web.point_b)
-
-	# Gravity pulls you down the slope; the keys push you along it.
-	ride_speed += -_spider.gravity * axis.y * delta
-	if absf(input_axis.y) > 0.1:
-		var facing_along: float = signf(_facing.dot(axis))
-		if facing_along == 0.0:
-			facing_along = 1.0
-		ride_speed += input_axis.y * facing_along * ride_push * height * delta
-	ride_speed -= ride_speed * ride_drag * delta
-	ride_speed = clampf(ride_speed, -ride_top_speed * height, ride_top_speed * height)
+	var look := _view.forward() if _view != null else _facing
+	var way: float = signf(look.dot(axis))
+	if way == 0.0:
+		way = 1.0
+	var push := clampf(input_axis.y, -1.0, 1.0) * way
+	if absf(push) > 0.1:
+		ride_speed = move_toward(ride_speed, push * zip_speed * height, zip_push * height * delta)
+	else:
+		ride_speed = move_toward(ride_speed, 0.0, zip_brake * height * delta)
 
 	ride_distance += ride_speed * delta
-	if ride_distance <= 0.0 or ride_distance >= length:
+	if (ride_distance <= 0.0 and ride_speed < 0.0) or (ride_distance >= length and ride_speed > 0.0):
 		ride_distance = clampf(ride_distance, 0.0, length)
-		_launch_off_line()
+		_hang()
+		_launch_off_line(true)
 		return
-
-	# Hang under the line like something on a pulley.
-	var point := ride_web.point_a + axis * ride_distance
-	_spider.global_position = point - Vector3.UP * height * 0.45
+	ride_distance = clampf(ride_distance, 0.0, length)
+	_hang()
 	_spider.velocity = axis * ride_speed
 	tangent_velocity = _spider.velocity
 
 
-func _launch_off_line() -> void:
-	var axis := _ride_axis()
-	var thrown := axis * ride_speed
+## Puts the body under the line where it has got to, hanging like something on a
+## pulley.
+func _hang() -> void:
+	var point := ride_web.point_a + _ride_axis() * ride_distance
+	_spider.global_position = point - Vector3.UP * _body_height() * 0.45
+
+
+## Comes off the line, carrying the zip's speed. Let go of on purpose, it gives a
+## little lift and a moment before anything can take hold again, the way a jump
+## does; run off [param at_end], it goes straight on into whatever the line is tied
+## to, which takes hold at once.
+func _launch_off_line(at_end := false) -> void:
+	var thrown := _ride_axis() * ride_speed
 	ride_web = null
-	standing_on = null
 	ride_speed = 0.0
 	ride_distance = 0.0
-	_grace = release_grace
+	_grace = 0.0 if at_end else release_grace
 	_set_mode(Mode.AIRBORNE)
-	_spider.velocity = thrown + Vector3.UP * launch_lift * _body_height()
+	_spider.velocity = thrown
+	if not at_end:
+		_spider.velocity += Vector3.UP * launch_lift * _body_height()
 
 
 func _ride_axis() -> Vector3:

@@ -511,6 +511,19 @@ func _hurl(spell: SpiderSpell, wound: float) -> Dictionary:
 	bolt.limit_to(cast_reach())
 	bolt.landed.connect(_on_fire_landed.bind(spell, spell.power_at(wound),
 		spell.size_at(wound) * body_height()))
+	var line := _builder.aimed_line() \
+		if _builder != null and _builder.shot_target() == null else null
+	if line != null:
+		# A line has nothing to strike — the feet leave lines alone now, so nothing
+		# collides with one — so the bolt bursts where it meets the one it was
+		# thrown at.
+		var pair := Geometry3D.get_closest_points_between_segments(from,
+			from + heading * cast_reach(), line.point_a, line.point_b)
+		bolt.limit_to(from.distance_to(pair[0]))
+		var power := spell.power_at(wound)
+		var wide := spell.size_at(wound) * body_height()
+		bolt.fizzled.connect(func() -> void:
+			_on_fire_landed(pair[1], Vector3.UP, null, heading, spell, power, wide))
 	bolt.add_to_group("spell_effects")
 	bolt.launch_from(_host(), from)
 	return {"cast": true, "at": from + heading * cast_reach()}

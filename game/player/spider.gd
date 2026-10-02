@@ -356,9 +356,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		device_placer.stop()
 	# Left mouse is always "silk connects me to that". What it does depends on
 	# what you pointed at, not on a mode you are in: a surface pulls you over
-	# to it, a line puts you on it, and something you have already caught comes
-	# to you instead — which is the same act read the only way that makes sense
-	# for a thing that is already wrapped up and going nowhere.
+	# to it, a line takes you onto it, hanging, and something you have already
+	# caught comes to you instead — which is the same act read the only way that
+	# makes sense for a thing that is already wrapped up and going nowhere.
 	elif event.is_action_pressed(input_place_anchor):
 		# Something already caught comes to you on a line; a web comes to you in
 		# one piece, with what was in it, and is gone; anything else is a surface

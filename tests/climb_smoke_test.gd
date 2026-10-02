@@ -52,7 +52,7 @@ func run_checks() -> void:
 	await _test_grappling()
 	await _test_grappling_without_a_mode()
 	await _test_grappling_a_long_way()
-	await _test_lines_are_roads()
+	await _test_lines_are_rails()
 	await _test_the_line_grapple()
 	await _test_sloppy_normals()
 	await _test_momentum_survives_a_grapple()
@@ -711,45 +711,46 @@ func _shape_at(parent: Node3D, shape: Shape3D, at: Vector3, basis: Basis) -> voi
 	parent.add_child(body)
 
 
-## Walking along a line to the wall it is tied to takes you off the line and onto
+## Zipping along a line to the wall it is tied to takes you off the line and onto
 ## the wall, once.
 ##
-## The same bounce as a corner, and the one that read as being unable to get off
-## the rope: on the wall W pointed back down onto the line, the line took you back,
-## and the line walked you into the wall again — the spider shuttling between the
-## two for as long as the key was held.
+## Walking a line used to end in a shuttle: on the wall W pointed back down onto
+## the line, the line took you back, and the line walked you into the wall again —
+## which read as being unable to get off the rope. A line is not something to walk
+## now: you come off its end carrying the zip, and the wall it is tied to takes you.
 func _test_off_a_line_onto_a_wall() -> void:
 	release_all()
-	var pattern: WebPattern = null
-	for candidate in _spider.web_builder.patterns:
-		if candidate.id == "frame_line":
-			pattern = candidate
-	if not check(pattern != null, "a frame line to walk"):
-		return
 	# Tied to the floor at one end and the +Z wall at the other, sloping up, the
 	# way a grapple from the floor to the wall leaves one.
 	var low := Vector3(0.0, -ROOM_HALF.y + 0.2 + 0.125, -1.0)
 	var high := Vector3(0.0, -0.4, ROOM_HALF.z - 0.2)
-	var line := WebStrand.spin(pattern, low, high, 1.0)
+	var line := WebStrand.spin(_frame_line_pattern(), low, high, 1.0)
 	if not check(line != null, "the line goes up"):
 		return
 	line.place_in(_room)
 	await physics_frame
-	await _set_down(low.lerp(high, 0.3) + Vector3.UP * 0.1, Vector3.BACK, -0.2)
-	if check(_spider.climb.on_silk and _spider.climb.standing_on == line,
-			"standing on the line"):
-		# Long enough to reach the wall and go on up it, which is where W carries you
-		# now: the wall is the next thing it stands on, whatever comes after.
-		var walk := await _walk_and_watch(150, line)
-		var visited: Array[Vector3] = walk["visited"]
-		var next: Vector3 = visited[1] if visited.size() > 1 else Vector3.ZERO
-		check(next.dot(Vector3.FORWARD) > 0.9,
-			"walking it to the wall puts you on the wall next (normal %.2v)" % next)
-		check(not _spider.climb.on_silk, "and off the silk")
-		check(walk["remounts"] == 0,
-			"without the line taking you back (%d times)" % walk["remounts"])
-		check(walk["returns"] == 0,
-			"or anything else you had already left (%d times)" % walk["returns"])
+	_spider.climb.stand_upright()
+	_spider.velocity = Vector3.ZERO
+	_spider.view.face(Vector3.BACK)
+	_spider.view.pitch = -0.2
+	if check(_spider.climb.clip_on(line, low.lerp(high, 0.3)), "hanging from the line"):
+		var off := false
+		Input.action_press("move_forward")
+		for i in 150:
+			await physics_frame
+			if not _spider.climb.is_riding():
+				off = true
+			if off and _spider.climb.is_attached():
+				break
+		Input.action_release("move_forward")
+		check(off, "zipping it to the wall takes you off its end")
+		check(_spider.climb.surface_normal.dot(Vector3.FORWARD) > 0.9,
+			"and onto the wall (normal %.2v)" % _spider.climb.surface_normal)
+		await run_frames(30)
+		check(not _spider.climb.is_riding()
+				and _spider.climb.surface_normal.dot(Vector3.FORWARD) > 0.9,
+			"and the line does not take you back")
+	_spider.climb.release()
 	line.queue_free()
 	await physics_frame
 
@@ -1000,24 +1001,17 @@ func _set_down(at: Vector3, look: Vector3, tip: float) -> void:
 ## Holds W for [param count] physics frames and says what the walk did: how many
 ## times it went back onto a surface it had already left, the surfaces it was on
 ## in order, where it ended up, and the most the camera moved in one frame beyond
-## what the spider itself moved, in body heights. With a [param line], also how
-## many times the spider got back onto it after stepping off.
-func _walk_and_watch(count: int, line: WebStrand = null) -> Dictionary:
+## what the spider itself moved, in body heights.
+func _walk_and_watch(count: int) -> Dictionary:
 	var height: float = _spider.stage().body_height
 	var visited: Array[Vector3] = [_spider.climb.body_up()]
 	var returns := 0
-	var remounts := 0
-	var standing: WebStrand = _spider.climb.standing_on
 	var jerk := 0.0
 	var camera_was := _spider.view.camera.global_position
 	var body_was := _spider.global_position
 	Input.action_press("move_forward")
 	for i in count:
 		await physics_frame
-		var now := _spider.climb.standing_on
-		if line != null and now == line and standing != line:
-			remounts += 1
-		standing = now
 		var up := _spider.climb.body_up()
 		if up.angle_to(visited.back()) > deg_to_rad(45.0):
 			for earlier in visited:
@@ -1032,85 +1026,96 @@ func _walk_and_watch(count: int, line: WebStrand = null) -> Dictionary:
 		body_was = body
 	Input.action_release("move_forward")
 	await run_frames(2)
-	return {"returns": returns, "remounts": remounts, "visited": visited,
-		"jerk": jerk, "normal": _spider.climb.surface_normal}
+	return {"returns": returns, "visited": visited, "jerk": jerk,
+		"normal": _spider.climb.surface_normal}
 
 
-## Stringing a line across the room and riding it: the ride should pick up
-## speed going downhill and fling the spider off the far end.
+## Hanging from a line and zipping along it.
+##
+## A line is a rail, not a floor: you hang under it and pull yourself along, W
+## towards where the camera looks along it and S away, as quick up it as down it
+## because gravity has no say in it. Let go of the keys and it brakes to a stop;
+## run off the end and you come off carrying the speed; Q lets go anywhere, and Q
+## takes hold again.
 func _test_ziplining() -> void:
 	_spider.climb.release()
-	_spider.global_position = Vector3(-ROOM_HALF.x + 0.6, ROOM_HALF.y - 0.5, 0.0)
-	_spider.velocity = Vector3.ZERO
-	# Bridges unlock at the second size tier, and build mode quietly falls back
-	# to something spinnable if you have not got there.
-	_spider.growth.feed(120.0, "test")
-	await run_frames(10)
-
-	# A line running downhill across the room.
-	var builder := _spider.web_builder
-	var top := Vector3(-ROOM_HALF.x + 0.5, ROOM_HALF.y - 0.4, 0.0)
-	var bottom := Vector3(ROOM_HALF.x - 0.5, -ROOM_HALF.y + 0.9, 0.0)
-	for i in builder.patterns.size():
-		if builder.patterns[i].id == "silk_bridge":
-			builder.pattern_index = i
-	builder.start()
-	builder.add_anchor(top)
-	builder.add_anchor(bottom)
-	builder.stop()
-	await run_frames(2)
-
-	var bridge: WebStrand = null
-	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
-		var strand := node as WebStrand
-		if strand != null and strand.pattern.id == "silk_bridge":
-			bridge = strand
-	if not check(bridge != null, "a line to ride"):
+	release_all()
+	# A line climbing across the room, from low on one side to high on the other.
+	var low := Vector3(-ROOM_HALF.x + 0.5, -ROOM_HALF.y + 0.9, 0.0)
+	var high := Vector3(ROOM_HALF.x - 0.5, ROOM_HALF.y - 0.4, 0.0)
+	var line := WebStrand.spin(_frame_line_pattern(), low, high, 1.0)
+	if not check(line != null, "a line to zip along"):
 		return
-	check(bridge.pattern.shape == WebPattern.Shape.STRAND,
-		"and it is a strand, which is all riding asks for now")
-
-	_spider.global_position = top + Vector3(0.1, -0.1, 0)
+	line.place_in(_room)
+	await physics_frame
+	var height: float = _spider.stage().body_height
+	var axis := (high - low).normalized()
+	_spider.global_position = low + axis * 0.4 + Vector3.DOWN * 0.1
 	_spider.velocity = Vector3.ZERO
+	_spider.view.face(high - low)
+	_spider.view.pitch = 0.2
 	await run_frames(2)
-	check(_get_on_line(), "the spider clips onto the line")
-	check(_spider.climb.is_riding(), "and is riding it")
-
-	var started_at := _spider.global_position
+	check(_get_on_line() and _spider.climb.is_riding(), "Q takes hold of it")
+	var hang := _spider.global_position
+	check(hang.y < Geometry3D.get_closest_point_to_segment(hang, low, high).y,
+		"and the spider hangs under it")
 	await run_frames(20)
-	check(_spider.climb.ride_velocity() > 0.3,
-		"it picks up speed going downhill (%.2f m/s)" % _spider.climb.ride_velocity())
-	check(_spider.global_position.distance_to(started_at) > 0.2, "and travels along the line")
-	check(_spider.global_position.y < started_at.y, "downwards, as gravity intends")
+	check(_spider.global_position.distance_to(hang) < 0.05,
+		"held still with nothing pressed, uphill or not")
 
-	# Ride it to the end and get thrown off.
+	# Uphill, under its own steam.
 	var top_speed := 0.0
-	for i in 200:
-		top_speed = maxf(top_speed, _spider.climb.ride_velocity())
-		if not _spider.climb.is_riding():
-			break
+	var from := _spider.global_position
+	Input.action_press("move_forward")
+	for i in 30:
 		await physics_frame
-	check(not _spider.climb.is_riding(), "the far end throws it off the line")
-	check(top_speed > 1.0, "after building real speed (%.2f m/s)" % top_speed)
-	check(_spider.velocity.length() > 0.5,
-		"and it carries that speed off the end (%.2f m/s)" % _spider.velocity.length())
+		top_speed = maxf(top_speed, _spider.climb.ride_velocity())
+	Input.action_release("move_forward")
+	var went := _spider.global_position - from
+	check(went.dot(axis) > 0.5,
+		"W zips you along it the way you are looking (%.2fm)" % went.dot(axis))
+	check(went.y > 0.15, "uphill, with nothing of gravity in it (%.2fm up)" % went.y)
+	check(top_speed > height * _spider.climb.zip_speed * 0.8,
+		"up to speed inside half a second (%.2f m/s)" % top_speed)
+	await run_frames(40)
+	check(_spider.climb.is_riding() and _spider.climb.ride_velocity() < 0.05,
+		"let go of W and it brakes to a stop, still on the line")
 
-	# Let go part way along instead.
+	from = _spider.global_position
+	Input.action_press("move_backward")
+	await run_frames(20)
+	Input.action_release("move_backward")
+	check((_spider.global_position - from).dot(axis) < -0.2,
+		"S takes you back the other way (%.2fm)" % (_spider.global_position - from).dot(axis))
+	await run_frames(40)
+	from = _spider.global_position
+	Input.action_press("move_right")
+	await run_frames(20)
+	Input.action_release("move_right")
+	check(_spider.global_position.distance_to(from) < 0.05, "and D does nothing on a line")
+
+	check(_spider.climb.toggle_ride() and not _spider.climb.is_riding(), "Q lets go")
+	check(_spider.velocity.y > 0.0, "with a kick to clear what is under the line")
+	check(_spider.climb.toggle_ride() and _spider.climb.is_riding(),
+		"and Q takes hold again, the line being right there")
+
+	# Off the far end, carrying the speed.
+	var off := false
+	var speed := 0.0
+	Input.action_press("move_forward")
+	for i in 200:
+		speed = _spider.climb.ride_velocity()
+		await physics_frame
+		if not _spider.climb.is_riding():
+			off = true
+			break
+	Input.action_release("move_forward")
+	check(off, "run it to the end and you come off it")
+	check(_spider.velocity.length() > speed * 0.8 and speed > height * 5.0,
+		"carrying the speed (%.2f m/s)" % _spider.velocity.length())
 	_spider.climb.release()
-	_spider.global_position = top + Vector3(0.1, -0.1, 0)
-	_spider.velocity = Vector3.ZERO
-	await run_frames(4)
-	_get_on_line()
-	await run_frames(25)
-	if check(_spider.climb.is_riding(), "back on the line"):
-		_spider.climb.toggle_ride()
-		check(not _spider.climb.is_riding(), "and can let go part way along")
-		check(_spider.velocity.y > 0.0, "with a kick to clear the edge")
-		# The other half of the pair: the line is still right there, so the same
-		# key takes hold again rather than making you land on it a second time.
-		check(_spider.climb.toggle_ride(), "and the same key takes hold again")
-		check(_spider.climb.is_riding(), "back on the line straight away")
-		_spider.climb.release()
+	line.queue_free()
+	await run_frames(30)
 
 	check(_spider.view.third_person, "the camera starts behind the spider")
 	_spider.view.toggle_mode()
@@ -1118,11 +1123,18 @@ func _test_ziplining() -> void:
 	_spider.view.toggle_mode()
 
 
-## Gets the spider onto a line the way a player would. Dropping onto one clips
-## you on by itself now, so pressing the key when you are already riding would
-## take you straight back off — this only presses it when it has to.
+## Gets the spider onto a line the way a player would, with Q — and only presses it
+## when it has to, since pressing it while hanging from one lets go.
 func _get_on_line() -> bool:
 	return _spider.climb.is_riding() or _spider.climb.toggle_ride()
+
+
+## The plain line grappling leaves behind.
+func _frame_line_pattern() -> WebPattern:
+	for candidate in _spider.web_builder.patterns:
+		if candidate.id == "frame_line":
+			return candidate
+	return null
 
 
 ## Placing an anchor is a journey: the spider hauls itself to the spot and
@@ -1157,11 +1169,13 @@ func _test_grappling() -> void:
 		% _spider.global_position.distance_to(started_at))
 	check(builder.anchors.size() == 1, "and the anchor landed there")
 
-	# A second anchor should leave a line between the two.
+	# A second anchor should leave a line between the two: on the floor out from
+	# the wall, which is inside what a spiderling's web can span.
 	var webs_before := 0
 	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
 		webs_before += 1
 	_spider.view.face(Vector3.FORWARD)
+	_spider.view.pitch = -0.5
 	await run_frames(2)
 	builder.place()
 	for i in 120:
@@ -1503,9 +1517,15 @@ func _test_grappling_a_long_way() -> void:
 	check(told, "while telling you why (%s)" % ", ".join(said))
 
 
-## Silk is the road network: you can stand on any line, it is quicker under
-## foot than the floor, and pointing at one and grappling puts you on it.
-func _test_lines_are_roads() -> void:
+## A line is a rail, not a floor.
+##
+## Every line used to be something to stand on: a tightrope a couple of centimetres
+## across, which the surface probe found as its top one frame and its side the next.
+## And a grapple's own line, under the spider when it landed, stood it on the thread
+## instead of on the wall it had grappled to, where A and D did nothing at all. Now
+## only a bridge has anything to stand on. A line is something to hang from:
+## grappling to one takes you onto it, hanging, without spinning another.
+func _test_lines_are_rails() -> void:
 	var builder := _spider.web_builder
 	builder.stop()
 	_spider.climb.release()
@@ -1523,11 +1543,7 @@ func _test_lines_are_roads() -> void:
 	await process_frame
 	check(_silk_count() == 0, "no silk left over from earlier (%d)" % _silk_count())
 
-	# A plain line across the room, of the sort grappling leaves behind.
-	var pattern: WebPattern = null
-	for candidate in builder.patterns:
-		if candidate.id == "frame_line":
-			pattern = candidate
+	var pattern := _frame_line_pattern()
 	if not check(pattern != null, "a frame line to lay"):
 		return
 	var eye := -ROOM_HALF.y + 0.6
@@ -1538,164 +1554,59 @@ func _test_lines_are_roads() -> void:
 		return
 	line.place_in(_room)
 	await physics_frame
+	check(line.get_node_or_null("Walkway") == null, "a line has nothing on it to stand on")
+	for candidate in builder.patterns:
+		if candidate.walkable:
+			var bridge := WebStrand.spin(candidate, a + Vector3.UP, b + Vector3.UP, 1.0)
+			check(bridge != null and bridge.get_node_or_null("Walkway") != null,
+				"where a bridge, spun to be walked, still has")
+			if bridge != null:
+				bridge.free()
+			break
 
-	check(not pattern.walkable,
-		"it is not a bridge — nothing about it was built to be walked on")
-	var walkway := line.get_node_or_null("Walkway")
-	check(walkway != null, "and yet it has something to stand on")
-	if walkway != null:
-		check((walkway.collision_layer & GameLayers.WEB_WALK) != 0,
-			"on the silk layer, so prey still goes straight through")
-
-	# Standing on it is quicker than standing on the floor.
-	_spider.climb.on_silk = false
-	var ground_speed := _spider.climb._surface_speed(false)
-	_spider.climb.on_silk = true
-	var silk_speed := _spider.climb._surface_speed(false)
-	_spider.climb.on_silk = false
-	check(silk_speed > ground_speed,
-		"and silk is quicker underfoot (%.2f vs %.2f)" % [silk_speed, ground_speed])
-
-	# Point at it and grapple: you get on the line rather than stringing a new
-	# one to it.
-	#
-	# Aimed at the line rather than levelled at it. The crosshair's ray goes
-	# through the camera's pivot, which sits above the spider, so looking dead
-	# level in third person puts the cross *over* a line at your own height — it
-	# used to pick the line anyway, because the aim was taken from the spider and
-	# the cross was a decoration that happened to be near it.
-	var on_line := (a + b) * 0.5
-	var toward := on_line - _spider.view.aim_pivot()
-	_spider.view.face(Vector3(toward.x, 0.0, toward.z))
-	_spider.view.pitch = atan2(toward.y, maxf(Vector2(toward.x, toward.z).length(), 0.0001))
-	await run_frames(2)
-	builder._update_aim()
-	var aimed := builder.aimed_line()
-	check(aimed == line, "the crosshair picks the line out")
-
-	# Silk is sticky. Landing on a line leaves you standing on it, not railed
-	# along it, and it holds you there until you jump off — a spider does not
-	# fall off its own thread, and it does not get grabbed into a ride it never
-	# asked for either.
+	# Put on top of it, the spider falls straight through to the floor.
 	_spider.climb.release()
 	_spider.global_position = Geometry3D.get_closest_point_to_segment(
 		_spider.global_position, line.point_a, line.point_b) + Vector3.UP * 0.1
 	_spider.velocity = Vector3.ZERO
-	var stuck: bool = await wait_until(func() -> bool:
-		return _spider.climb.is_attached() and _spider.climb.on_silk, 90)
-	check(stuck, "dropping onto a line sticks you to it")
-	check(not _spider.climb.is_riding(),
-		"and does not grab you into a ride you never asked for")
-	if stuck:
-		var held := _spider.global_position
-		await run_frames(40)
-		check(_spider.climb.on_silk, "still on it a moment later")
-		check(_spider.global_position.distance_to(held) < 0.5,
-			"without sliding off (%.2fm)"
-			% _spider.global_position.distance_to(held))
+	await run_frames(40)
+	check(_spider.climb.is_attached() and not _spider.climb.on_silk
+			and _spider.global_position.y < eye - 0.1,
+		"put on top of it, you fall straight through to the floor")
 
-		# Facing across the line and pushing forward should get you nowhere: a
-		# thread has one direction, and that is not it. Checking this on its own
-		# would pass just as well if a thread could not be walked at all, so the
-		# along-the-line case is checked straight after.
-		var axis := (line.point_b - line.point_a).normalized()
-		var sideways := axis.cross(Vector3.UP).normalized()
-		_spider.view.face(sideways)
-		_spider.view.pitch = 0.0
-		await run_frames(4)
-		var from := _spider.global_position
-		await _walk_forward(30)
-		var moved := _spider.global_position - from
-		var across := (moved - axis * moved.dot(axis)).length()
-		check(_spider.climb.on_silk, "pushing across it does not shake you off")
-		check(across < 0.25, "and you stay over the thread (%.2fm off it)" % across)
-
-		# Along it is the one direction it has, and you walk it under your own
-		# power rather than being fed down it.
-		_spider.view.face(axis)
-		_spider.view.pitch = 0.0
-		await run_frames(4)
-		from = _spider.global_position
-		# The body's up, frame by frame, while it walks. A tightrope's collider
-		# is a box a few centimetres across: the surface probe used to find its
-		# top face one frame and a side face the next, and the body rolled a
-		# right angle between the two, every few frames, the whole way along.
-		# That was the jank. An up taken from the thread's own axis cannot flip,
-		# because the axis does not.
-		var lurch := 0.0
-		var leaning := 0.0
-		var previous := _spider.climb.body_up()
-		Input.action_press("move_forward")
-		for i in 20:
-			await physics_frame
-			var now := _spider.climb.body_up()
-			lurch = maxf(lurch, rad_to_deg(previous.angle_to(now)))
-			leaning = maxf(leaning, absf(now.dot(axis)))
-			previous = now
-		Input.action_release("move_forward")
-		await run_frames(2)
-		moved = _spider.global_position - from
-		check(absf(moved.dot(axis)) > 0.25,
-			"and it walks you along it (%.2fm)" % absf(moved.dot(axis)))
-		check((moved - axis * moved.dot(axis)).length() < 0.25,
-			"still over the thread after walking it")
-		check(_spider.climb.on_silk and not _spider.climb.is_riding(),
-			"under your own power, not on a ride")
-		check(lurch < 8.0,
-			"and the walk is smooth — no roll worse than %.1f° in a frame" % lurch)
-		check(leaning < 0.2,
-			"with the body square to the thread all the way (%.3f along it)"
-			% leaning)
-
-		# And the way off is the jump.
-		Input.action_press("move_jump")
-		await run_frames(3)
-		Input.action_release("move_jump")
-		await run_frames(2)
-		check(not _spider.climb.is_attached(), "and a jump is what takes you off")
-		check(not _spider.climb.on_silk, "leaving the silk behind")
-
-	_spider.climb.release()
-	# Further off than the line's own thickness, and to one side, so the grapple
-	# comes in across the thread rather than creeping along its edge. Arrival
-	# stops within half a body height of the target, and against a plank a few
-	# centimetres thick that is the difference between landing on it and landing
-	# beside it.
+	# Grappled to, it takes you onto it, hanging.
 	_spider.global_position = Vector3(-2.0, -ROOM_HALF.y + 0.6, -1.0)
 	_spider.velocity = Vector3.ZERO
 	await run_frames(20)
-	# At the line, not level with it — see the pick above.
 	var at_line := (line.point_a + line.point_b) * 0.5 - _spider.view.aim_pivot()
 	_spider.view.face(Vector3(at_line.x, 0.0, at_line.z))
 	_spider.view.pitch = atan2(at_line.y,
 		maxf(Vector2(at_line.x, at_line.z).length(), 0.0001))
 	await run_frames(2)
 	builder._update_aim()
-
+	check(builder.aimed_line() == line, "the crosshair picks the line out")
 	var lines_before := _silk_count()
 	builder.place()
-	var arrived: bool = await wait_until(func() -> bool:
-		return _spider.climb.on_silk, 180)
-	check(arrived, "and grappling onto it puts you on it")
+	var on: bool = await wait_until(func() -> bool: return _spider.climb.is_riding(), 180)
+	check(on and _spider.climb.holding_line() == line,
+		"and grappling to it takes you onto it, hanging")
 	check(_silk_count() == lines_before,
 		"without spinning a second line to get there (%d)" % _silk_count())
-	# The click was aimed at a line, not at a ride. Nothing but the key starts
-	# one — a grapple that merely passed near silk must not take the controls.
-	check(not _spider.climb.is_riding(),
-		"and leaves the riding to you")
-	check(_spider.climb.toggle_ride(), "which the key still does")
-	check(_spider.climb.is_riding(), "and now it is a ride")
-
-	_spider.climb.toggle_ride()
+	check(_spider.global_position.y < eye, "under it, not on top")
+	Input.action_press("move_jump")
+	await run_frames(3)
+	Input.action_release("move_jump")
+	check(not _spider.climb.is_riding(), "and Space lets go")
+	_spider.climb.release()
 	line.queue_free()
 	await physics_frame
 	await process_frame
 
 
 ## The other grapple. Left mouse lays a line from your feet to wherever you point
-## and stands you on it, and that is all: getting there is walking the line, which
-## is quick, and as quick up it as down it. The pull is one key away, so the two
-## can be played back to back.
+## and hangs you from its near end, and that is all: W zips you along it, and off
+## its end onto the wall it is tied to. The pull is one key away, so the two can be
+## played back to back.
 func _test_the_line_grapple() -> void:
 	var builder := _spider.web_builder
 	var climb := _spider.climb
@@ -1708,7 +1619,6 @@ func _test_the_line_grapple() -> void:
 	_spider.velocity = Vector3.ZERO
 	await run_frames(30)
 	check(climb.is_attached() and not climb.on_silk, "standing on the floor to start")
-	var floor_speed := climb._surface_speed(false)
 
 	check(not climb.shoots_lines(), "the pull is the grapple you start with")
 	climb.toggle_grapple_style()
@@ -1728,9 +1638,9 @@ func _test_the_line_grapple() -> void:
 	check(_silk_count() == before + 1,
 		"it lays one line (%d -> %d)" % [before, _silk_count()])
 	var line := climb.holding_line()
-	if not check(line != null and climb.on_silk, "and stands you on it"):
+	if not check(line != null and climb.is_riding(), "and hangs you from it"):
 		return
-	check(_spider.global_position.distance_to(started_at) < 0.3,
+	check(_spider.global_position.distance_to(started_at) < 0.4,
 		"right where you were (%.2fm away)" % _spider.global_position.distance_to(started_at))
 	# The far wall is a slab 0.2 either side of the room's edge, so its face is
 	# that far in.
@@ -1740,55 +1650,32 @@ func _test_the_line_grapple() -> void:
 		"from your feet (%.2f, the body at %.2f)" % [line.point_a.y, started_at.y])
 	check(builder.lines().has(line), "and it is one of your three lines")
 
-	var on_line := climb._surface_speed(false)
-	check(is_equal_approx(on_line, _spider.speed * climb.line_speed),
-		"walking a line is %.1f times a walk (%.2f, the floor %.2f)"
-		% [climb.line_speed, on_line, floor_speed])
-
-	# Up it, under your own power, and fast.
-	var axis := (line.point_b - line.point_a).normalized()
-	_spider.view.face(Vector3(axis.x, 0.0, axis.z))
-	_spider.view.pitch = 0.0
-	await run_frames(2)
-	var from := _spider.global_position
+	# W zips you up it and off its end, onto the wall it is tied to.
+	var off := false
 	Input.action_press("move_forward")
-	await run_frames(16)
-	var up_speed := climb.tangent_velocity.length()
+	for i in 150:
+		await physics_frame
+		off = off or not climb.is_riding()
+		if off and climb.is_attached():
+			break
 	Input.action_release("move_forward")
-	await run_frames(2)
-	var climbed := (_spider.global_position - from).dot(axis)
-	check(climbed > floor_speed * 16.0 / 60.0 * 1.8,
-		"walking it takes you up it fast (%.2fm, a walk would be %.2fm)"
-		% [climbed, floor_speed * 16.0 / 60.0])
-	check(climb.holding_line() == line, "still on the line")
+	check(off and climb.is_attached() and climb.surface_normal.dot(Vector3.BACK) > 0.9,
+		"W zips you up it and onto the wall it is tied to (normal %.2v)" % climb.surface_normal)
 
-	# Down it, at the same speed: the slope makes no difference.
-	_spider.view.face(Vector3(-axis.x, 0.0, -axis.z))
-	await run_frames(2)
-	Input.action_press("move_forward")
-	await run_frames(10)
-	var down_speed := climb.tangent_velocity.length()
-	Input.action_release("move_forward")
-	await run_frames(2)
-	check(absf(up_speed - down_speed) < on_line * 0.15,
-		"and as quick down it as up it (%.2f up, %.2f down)" % [up_speed, down_speed])
-
-	# A jump steps off it.
-	Input.action_press("move_jump")
-	await run_frames(3)
-	Input.action_release("move_jump")
-	await run_frames(2)
-	check(not climb.on_silk, "and a jump steps off it")
-
-	# Fired from the air, the line starts where you are and you are on it: silk
+	# Fired from the air, the line starts where you are and you hang from it: silk
 	# is sticky, and a line that left you falling would be no line at all.
-	check(not climb.is_attached(), "in the air after the jump")
+	climb.release()
+	_spider.global_position = Vector3(0.0, 0.0, 0.0)
+	_spider.velocity = Vector3.ZERO
+	await physics_frame
+	check(not climb.is_attached(), "in the air")
+	toward = target - _spider.view.aim_pivot()
 	_spider.view.face(Vector3(toward.x, 0.0, toward.z))
 	_spider.view.pitch = atan2(toward.y, Vector2(toward.x, toward.z).length())
 	builder.place()
-	await run_frames(10)
+	await run_frames(3)
 	var caught := climb.holding_line()
-	check(caught != null and caught != line and climb.on_silk,
+	check(caught != null and caught != line and climb.is_riding(),
 		"a line fired from the air catches you on it")
 	check(builder.lines().size() == 2, "and that is two lines up (%d)" % builder.lines().size())
 
@@ -1799,6 +1686,7 @@ func _test_the_line_grapple() -> void:
 	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)
 	_spider.velocity = Vector3.ZERO
 	await run_frames(20)
+	toward = target - _spider.view.aim_pivot()
 	_spider.view.face(Vector3(toward.x, 0.0, toward.z))
 	_spider.view.pitch = atan2(toward.y, Vector2(toward.x, toward.z).length())
 	await run_frames(2)

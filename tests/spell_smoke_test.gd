@@ -200,8 +200,8 @@ func _test_the_strip() -> void:
 
 
 ## Each number key takes its spell in hand — the book's order, open or not, so a key
-## means one spell all game — Q is left for something else, and the bag's bar is
-## put away so the keys have one meaning.
+## means one spell all game — Q takes hold of lines, and the bag's bar is put away
+## so the keys have one meaning.
 func _test_number_keys() -> void:
 	for key in range(1, spells.book.size() + 1):
 		check(InputMap.has_action("spell_%d" % key), "a key for spell %d" % key)
@@ -210,13 +210,13 @@ func _test_number_keys() -> void:
 	for event in wheel:
 		on_the_wheel = on_the_wheel and event is InputEventMouseButton
 	check(on_the_wheel, "and the wheel turns it both ways")
-	var q_bound := false
+	var on_q: Array[StringName] = []
 	for action in InputMap.get_actions():
 		for event in InputMap.action_get_events(action):
 			var key_event := event as InputEventKey
 			if key_event != null and key_event.physical_keycode == KEY_Q:
-				q_bound = true
-	check(not q_bound, "Q is free")
+				on_q.append(action)
+	check(on_q == [&"web_ride"], "Q takes hold of a line, and is nothing else (%s)" % str(on_q))
 	var hud := level.get_node_or_null("HUD") as SpiderHUD
 	if check(hud != null, "the level has a HUD"):
 		check(not hud._hotbar.visible, "and the bag's bar is put away")
