@@ -497,7 +497,7 @@ what the circles are for.
 | **Douse** | Huntsman | Digestive Flood | water sprayed in a fan in front of the spider, 4–7 body heights out and 35° either side. What the spray catches is soaked and stung (4–7% of its health), fliers included, and the ground stays wet for 8–12 s: whatever stands on it stays soaked. Wet wings do not lift. A web the spray reaches is wet too, and a wet web does not burn | 6 s |
 | **Gust** | Huntsman | — | wind blown in the same fan. Everything loose in it is shoved away from the spider and stung (5–8%) — into a web, if one is in the way, which catches it. A boss stands its ground and only takes the sting. Over ground Douse left wet, it lifts the water into a **whirl**: it runs on the way the wind blew, stops at the first thing it reaches, and holds it there for 2.5–4 s, round and round, wearing it down | 6 s |
 | **Summon Lightning** | Root Weaver | Wing Buds | strikes where you point, and stuns what it reaches for 2.5–4 s: going nowhere, biting nothing, fighting nothing. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight. A web it reaches is live for twice the stun after; a line carries nothing | 7 s |
-| **Firebolt** | Glade Widow | — | a bolt thrown like silk — at a creature, or at a line under the cross — that bursts where it lands and burns every creature in the burst. Silk burns: a fifth of its harm to something bare, all of it to something wrapped all the way or held in a web. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line in the burst burns away | 5 s |
+| **Fire Geyser** | Glade Widow | — | a geyser of fire out of the ground under the cross — under the creature, the web or the line it is on, or where it meets the floor. The ground glows for a moment, then a column 1.6–2.8 body heights across bursts up five body heights tall, throws everything in it about three body heights into the air and burns it. Silk burns: a fifth of its harm (35–50% of a creature's health) to something bare, all of it to something wrapped all the way or held in a web. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line in the column burns away. No ground under the cross, nothing cast | 7 s |
 | **Pullback** | Fern Spinner | — | every web you have in reach comes off its anchors and flies back to you, folding up as it comes and taking the frame it was walked round on with it — the feathers coming home to a blade dancer. What it passes through takes the silk one shot of that web would put on it — enough, and it is wrapped where it stands — and what the web held lands at your feet, bundled. Nothing in reach, nothing cast and no wait spent | 10 s |
 
 **Opening is the gates' rule.** A spell opens at a rung of the ladder, which is
@@ -510,14 +510,14 @@ the same as locked traits.
 **They work off each other.** This is the part that makes the spells more than a
 row of buttons:
 
-* **Fire burns silk.** Every web and every line a burst reaches goes up, the
+* **Fire burns silk.** Every web and every line in a geyser's column goes up, the
   spider's own as much as any — the one it is standing on included — and a web
   takes the frame it was walked round on with it. What a web was holding drops
-  out of it, but burned first as hard as fire burns anything: fire into a full
-  web is the hardest burn there is, and the catch you lose is an easier one the
-  next time. Thrown at a line, the bolt goes to the line rather than the wall
-  behind it, so a line can be cut on purpose — yours, to drop something on the
-  end of it, or one a creature is crossing.
+  out of it, but burned first as hard as fire burns anything: a geyser under a
+  full web is the hardest burn there is, and the catch you lose is an easier one
+  the next time. Aimed at a line, the geyser comes up under the line rather than
+  at the wall behind it, so a line can be cut on purpose — yours, to drop
+  something on the end of it, or one a creature is crossing.
 * **Lightning runs through webs, and stays in them.** A strike that reaches a web
   runs through it, into every web whose silk touches it and down every wire from
   it, and stuns everything they hold. Strike the web you are standing next to and
@@ -541,7 +541,8 @@ row of buttons:
   a whirl reaches what it holds. Douse a corridor, then the strike.
 * **Water keeps silk from fire, and keeps lightning in it.** A web the spray
   reached is wet for as long as the ground is: fire passes it by, burning what it
-  holds without taking the web, and lightning stays in it twice as long.
+  holds without taking the web, and lightning stays in it twice as long. So a wet
+  web over a geyser is a net: what the geyser throws up goes into it, and sticks.
 * **Wind drives prey into silk.** A gust shoves what it reaches away from the
   spider, and a web in the way catches it as if it had flown in — so a web put up
   behind something is a web that thing can be blown into.
@@ -2359,9 +2360,9 @@ the *shape* is fun.
   three orb shots whole and one at nothing — and the same number goes for a bolt, a
   web left standing and a web thrown over it. Hostiles wear their health over their
   heads, with a thin bar of how much of them is wrapped under it.
-* **Fire is what hurts, and silk is what burns.** Firebolt bursts where it lands
-  and takes a fifth of its harm off something bare and all of it off something
-  wrapped all the way or held in a web. So the loop is wrap, burn, wrap: the silk
+* **Fire is what hurts, and silk is what burns.** The Fire Geyser comes up under
+  what you point at and takes a fifth of its harm off something bare and all of
+  it off something wrapped all the way or held in a web. So the loop is wrap, burn, wrap: the silk
   you put on first is what makes the fire count, and the fire is what makes the
   last of the silk take.
 * **One size, the whole way, every spell from the start.** In the wood the spider

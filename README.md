@@ -622,12 +622,14 @@ to put silk on it. Each hostile has a bite and one move of its own:
 **Catching them is like catching a monster.** Everything has health, shown over a
 hostile's head with a thin bar of how much of it is wrapped under it. The lower its
 health, the more of the way each hit of silk gets you — at full health a blade rat
-takes three orb shots; with nothing left, one. **Firebolt** is what wears it down,
-and silk burns: a bolt takes a fifth of its harm off something bare, and all of it
-off something wrapped all the way or hanging in a web. So the loop is wrap, burn,
-wrap. The silk goes up with it — a web or a line in the burst burns away, and what
-the web held drops out — so a web is somewhere to burn a thing once, not a place
-to keep it while you do.
+takes three orb shots; with nothing left, one. The **Fire Geyser** is what wears
+it down — fire out of the ground under what you point at, throwing it into the
+air — and silk burns: it takes a fifth of its harm off something bare, and all of
+it off something wrapped all the way or hanging in a web. So the loop is wrap,
+burn, wrap. The silk goes up with it — a web or a line in the column burns away,
+and what the web held drops out — so a web is somewhere to burn a thing once, not
+a place to keep it while you do. Unless it is wet: a web you have doused stands in
+the fire, and catches what the geyser throws up into it.
 
 And two bosses, named across the foot of the screen with their health and wrap:
 **the Rat King**, sealed in the Barrow, which whirls and cuts every thread round
@@ -836,8 +838,9 @@ opens the rest, the strip that shows them, and what each does — to what it lan
 on, and to the other spells and the silk it meets. Lightning run down a wire to a
 wasp across the room and left live in the web, a spray that leaves the ground and
 the silk wet, a gust that blows a beetle into a web, the whirl wind lifts off wet
-ground holding the first thing it reaches, acid water, fire that burns harder the more silk is on what it hits and burns the
-silk with it, webs called back through what is in their way, the magic circles
+ground holding the first thing it reaches, acid water, a geyser that burns harder
+the more silk is on what it throws and burns the silk with it — but not a wet web,
+which catches what it throws — webs called back through what is in their way, the magic circles
 each spell is drawn in, the number keys, and the whole book opened at once:
 
 ```sh

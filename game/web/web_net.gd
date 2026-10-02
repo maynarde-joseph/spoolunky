@@ -63,8 +63,8 @@ static func spin(pattern: WebPattern, world_points: PackedVector3Array, quality:
 			disc.radius = layout.spiral_radius
 			disc.height = maxf(depth, 0.02)
 			var sideways := layout.plane_u.cross(layout.normal).normalized()
-			var frame := Basis(layout.plane_u, layout.normal, sideways)
-			net._make_catch_area(disc, Transform3D(frame, layout.centre))
+			var facing := Basis(layout.plane_u, layout.normal, sideways)
+			net._make_catch_area(disc, Transform3D(facing, layout.centre))
 		else:
 			var hull := ConvexPolygonShape3D.new()
 			hull.points = WebGeometry.catch_hull(layout.rim, layout.normal, depth)
@@ -72,6 +72,27 @@ static func spin(pattern: WebPattern, world_points: PackedVector3Array, quality:
 
 	return net
 
+
+
+## The lines it was walked round on — both ends on its own anchors — which go
+## with it when it goes, rather than standing round the hole it leaves.
+func frame() -> Array[WebStrand]:
+	var found: Array[WebStrand] = []
+	if not is_inside_tree():
+		return found
+	for node in get_tree().get_nodes_in_group("silk_webs"):
+		var strand := node as WebStrand
+		if strand != null and not strand.is_queued_for_deletion() \
+				and _anchored_at(strand.point_a) and _anchored_at(strand.point_b):
+			found.append(strand)
+	return found
+
+
+func _anchored_at(point: Vector3) -> bool:
+	for anchor in anchors:
+		if anchor.distance_to(point) < 0.01:
+			return true
+	return false
 
 
 ## Signal lines attach at the middle of the web, not its node origin.
