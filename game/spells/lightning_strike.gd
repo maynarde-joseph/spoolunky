@@ -15,8 +15,8 @@ extends Node3D
 ##   through every web touching it, and every web wired to it — and reaches
 ##   everything they hold. And it stays: each of them is live for a while after,
 ##   keeping what it holds stunned and striking anything that touches it — see
-##   [WebCharge]. Lines carry nothing: a strike on a line is a strike on the floor
-##   under it.
+##   [WebCharge] — and twice as long in a web Douse left wet. Lines carry nothing:
+##   a strike on a line is a strike on the floor under it.
 ## * **Water.** Anything wet takes it twice as hard and passes it on to anything
 ##   wet near it, and a strike on a whirl reaches everything the whirl holds.
 ## * **Storm Rider.** It jumps on from what it struck to what is near, wet or not
@@ -155,7 +155,8 @@ func discharge() -> void:
 			frontier.append(other)
 			_paths.append([_middle(web), _middle(other)])
 	for web in charged:
-		WebCharge.lay(web, stun * LIVE_FOR, stun, colour)
+		var live := stun * LIVE_FOR * (WetSilk.LIVE_LONGER if WetSilk.is_wet(web) else 1.0)
+		WebCharge.lay(web, live, stun, colour)
 
 	# Water carries it on: anything wet near anything wet that it reached.
 	var reach := radius * CHAIN_REACH

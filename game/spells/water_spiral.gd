@@ -1,32 +1,33 @@
 class_name WaterSpiral
 extends Node3D
 
-## A whirl of water, sent out from under the spider along the ground.
+## A whirl of water, lifted off wet ground by the wind.
 ##
-## It leaves from the spider's feet and runs straight out the way you aimed, as far
-## as the wind-up sends it, riding whatever the ground does on the way, and breaks
-## on the first wall it meets. Everything it passes over is soaked, and slowed for
-## a few seconds after it has gone by: a hunter coming at you comes on at a crawl,
-## and a charge is half a charge. Wet wings do not lift, so a flier it catches comes
-## down and cannot climb again until it dries.
+## No spell casts it on its own. Douse wets the ground in a fan in front of the
+## spider; a Gust blown over that ground lifts the water into a whirl, which runs on
+## the way the wind blew, riding whatever the ground does on the way and breaking
+## on the first wall it meets — see [WetGround] and [Gust].
 ##
-## It is a slow, not a hold — what it catches is still yours to deal with, sooner —
-## and it is better with the rest of what the spider has:
+## It stops at the first thing it reaches and holds it there: round and round in
+## the water, going nowhere and doing nothing, soaked and worn down a little, for a
+## few seconds — see [method Prey.hold_at]. A boss is held for half as long. And it
+## is better with the rest of what the spider has:
 ##
-## * **Silk.** Something slowed is something a thrown web hardly has to lead.
-## * **Lightning.** Everything it has been over is wet, and water carries a strike
-##   twice as hard and on to anything wet near it; a strike on the whirl itself
-##   reaches everything in it — see [LightningStrike].
-## * **Digestive Flood.** The spider's water eats what it passes over: everything
-##   it touches is dosed.
+## * **Silk.** Something held is something a thrown web does not have to lead.
+## * **Lightning.** What it holds is wet, and water carries a strike twice as hard;
+##   a strike on the whirl itself reaches what it holds — see [LightningStrike].
+## * **Digestive Flood.** The spider's water eats what it holds: it is dosed.
 
-## Said when it is spent, with everything it slowed on the way.
-signal spent(whirl: WaterSpiral, slowed: Array[Prey])
+## Said when it is spent, with what it held, if it held anything.
+signal spent(whirl: WaterSpiral, held: Array[Prey])
 
 const GROUP := "water_spirals"
 
 ## How fast it goes, in the caster's body heights a second.
 const PACE := 10.0
+
+## How much shorter a hold on a boss is, as a share.
+const BOSS_HOLD := 0.5
 
 ## How far up from its floor it reaches, and how far down, as shares of its
 ## radius. Tall rather than flat, so it has fliers too.
@@ -58,8 +59,10 @@ var radius := 1.0
 var distance := 6.0
 var speed := 6.0
 
-## How long what it passes over stays slowed once it has gone by, in seconds.
-var slow_for := 3.0
+## How long it holds what it catches, in seconds, and how much of that creature's
+## health it wears away over the hold.
+var hold_for := 3.0
+var harm := 0.1
 
 ## Whether its water eats what it touches, and how hard. The spider's, from
 ## Digestive Flood.
@@ -74,10 +77,14 @@ var heading := Vector3.FORWARD
 ## How far it has come.
 var travelled := 0.0
 
-## Everything it has slowed, in the order it reached them.
-var slowed: Array[Prey] = []
+## What it has hold of, while it holds it.
+var caught: Prey = null
+
+## Whatever it held, once it has let go.
+var had: Array[Prey] = []
 
 var _age := 0.0
+var _hold_left := 0.0
 var _spent_at := -1.0
 var _view: Node3D
 var _water: StandardMaterial3D
@@ -86,11 +93,12 @@ var _streaks: StandardMaterial3D
 
 ## Sends one out from [param from] under [param host], along [param toward] laid
 ## flat, [param wide] metres from the middle to the rim, [param far] metres at
-## [param pace] metres a second; what it passes over is slowed for [param slows]
-## seconds. [param eats] is whether its water doses what it touches, at
-## [param strength]; [param tint] is the colour of it.
+## [param pace] metres a second; what it catches it holds for [param holds]
+## seconds, wearing away [param hurt] of its health over the hold. [param eats] is
+## whether its water doses what it holds, at [param strength]; [param tint] is the
+## colour of it.
 static func send(host: Node, from: Vector3, toward: Vector3, wide: float, far: float,
-		pace: float, slows: float, eats := false, strength := 1.0,
+		pace: float, holds: float, hurt := 0.1, eats := false, strength := 1.0,
 		tint := Color(0.36, 0.74, 0.9, 1.0)) -> WaterSpiral:
 	if host == null:
 		return null
@@ -100,7 +108,8 @@ static func send(host: Node, from: Vector3, toward: Vector3, wide: float, far: f
 	whirl.radius = maxf(wide, 0.05)
 	whirl.distance = maxf(far, 0.0)
 	whirl.speed = maxf(pace, 0.01)
-	whirl.slow_for = slows
+	whirl.hold_for = maxf(holds, 0.1)
+	whirl.harm = hurt
 	whirl.acid = eats
 	whirl.venom_strength = strength
 	whirl.colour = tint
@@ -118,9 +127,11 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_age += delta
-	if spinning():
+	if caught != null:
+		_hold(delta)
+	elif spinning():
 		_travel(delta)
-		_soak_what_it_holds()
+		_catch_first()
 	elif _age >= _spent_at + FADE:
 		queue_free()
 		return
@@ -140,17 +151,11 @@ func holds(point: Vector3) -> bool:
 	return Vector2(offset.x, offset.z).length() <= radius
 
 
-## Everything loose that is inside it now.
+## What it has hold of now: the one thing it caught, or nothing.
 func held() -> Array[Prey]:
 	var found: Array[Prey] = []
-	if not spinning():
-		return found
-	for node in get_tree().get_nodes_in_group("prey"):
-		var creature := node as Prey
-		if creature == null or not is_instance_valid(creature) or not creature.is_loose():
-			continue
-		if holds(creature.global_position):
-			found.append(creature)
+	if caught != null and is_instance_valid(caught):
+		found.append(caught)
 	return found
 
 
@@ -202,21 +207,55 @@ func _floor_under(point: Vector3) -> Vector3:
 	return hit.get("position", point)
 
 
-func _soak_what_it_holds() -> void:
-	for creature in held():
+## Stops at the first loose thing inside it and takes hold of it, where it caught
+## it.
+func _catch_first() -> void:
+	if not spinning():
+		return
+	for node in get_tree().get_nodes_in_group("prey"):
+		var creature := node as Prey
+		if creature == null or not is_instance_valid(creature) or creature.eaten \
+				or not creature.is_loose():
+			continue
+		if not holds(creature.global_position):
+			continue
+		caught = creature
+		_hold_left = hold_for * (BOSS_HOLD if creature.is_boss() else 1.0)
+		global_position = _floor_under(creature.global_position)
+		# Held and soaked from the moment it is caught, not from the next step.
+		creature.hold_at(eye(), 0.1)
 		creature.soak(SOAK)
-		creature.slow(slow_for)
-		if acid:
-			creature.poison(1.5, venom_strength)
-		if not slowed.has(creature):
-			slowed.append(creature)
+		return
+
+
+## Round and round: what it caught is kept at its eye, soaked and worn down, until
+## the hold runs out or there is nothing left to hold.
+func _hold(delta: float) -> void:
+	if not is_instance_valid(caught) or caught.eaten or not caught.is_loose():
+		_let_go()
+		return
+	_hold_left -= delta
+	caught.hold_at(eye(), maxf(delta * 2.0, 0.05))
+	caught.soak(SOAK)
+	caught.wound(harm / hold_for * delta)
+	if acid:
+		caught.poison(1.5, venom_strength)
+	if _hold_left <= 0.0:
+		_let_go()
+
+
+func _let_go() -> void:
+	if caught != null and is_instance_valid(caught):
+		had.append(caught)
+	caught = null
+	_spend()
 
 
 func _spend() -> void:
 	if not spinning():
 		return
 	_spent_at = _age
-	spent.emit(self, slowed)
+	spent.emit(self, had)
 
 
 # --- what you can see ----------------------------------------------------

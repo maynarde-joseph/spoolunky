@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SpiderSpell" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_spell.gd" id="1_spell"]
+
+[resource]
+script = ExtResource("1_spell")
+id = "douse"
+display_name = "Douse"
+description = "Water sprayed in a fan in front of you. What it catches is soaked and stung, and the ground stays wet: whatever stands on it stays soaked, and lightning hits anything wet twice as hard. A web it reaches is wet too, and a wet web does not burn."
+form = 1
+order = 1
+unlock_stage = 2
+keys = PackedStringArray("digestive")
+cooldown = 6.0
+size = Vector2(4, 7)
+duration = Vector2(8, 12)
+power = Vector2(0.04, 0.07)
+sigil = 5
+colour = Color(0.36, 0.74, 0.9, 1)

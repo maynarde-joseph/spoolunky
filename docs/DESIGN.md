@@ -462,21 +462,22 @@ rest are the same verb with other things behind it, so they share the web's
 keys, its reach, its wind-up and its kind of limit.
 
 **Right mouse casts whatever is in hand, and the number keys pick what is in
-hand** — 1 to 5, in the order below; the wheel turns through them too. A tap
-casts at once; holding winds it up — a bigger web, a hotter bolt, a whirl that
-goes further, a longer stun — over the same second the web always took.
+hand** — 1 to 6, in the order below; the wheel turns through them too. A tap
+casts at once; holding winds it up — a bigger web, a hotter bolt, a wider spray,
+a longer stun — over the same second the web always took.
 
 **Every spell but the web is drawn in a magic circle.** Thin line art in the
 spell's colour — two rings with marks like writing between them, and an inner
-ring with the spell's own star in it: three points for fire, eight for
-lightning, five for water, seven for the pullback — that draws itself in as the
+ring with the spell's own star in it: three points for fire, four for
+lightning, five for water, eight for wind, seven for the pullback — that draws
+itself in as the
 key goes down, turns
 while you hold, and flares and fades as the spell leaves through it. Where it is
 drawn is the aim made visible. Fire's hangs in front of the spider on the line
 the bolt will take, and the bolt goes through the middle of it. Lightning's lies
 on the ground where it will strike, as wide as the strike, and a second opens
-over it, face down, as the bolt comes out of it. Water's lies under the spider's
-feet, with the strip the whirl will run along laid out ahead of it. The
+over it, face down, as the bolt comes out of it. Water's and wind's lie under the
+spider's feet, with the fan they will cover laid out on the ground ahead. The
 pullback's is drawn round the spider, with a thin line out to every web it will
 call in. The web keeps
 its ball of silk over the spider's back: it is thrown silk, not magic.
@@ -484,7 +485,7 @@ its ball of silk over the spider's back: it is thrown silk, not magic.
 **One aim for all of them.** The crosshair is the only aiming there is, and it
 is the same for everything: a thrown spell goes from the spider to whatever the
 cross is on, at where the creature under it will be; lightning comes down on it;
-water goes the way it points. Giving each spell its own way of aiming was
+water and wind go the way it points. Giving each spell its own way of aiming was
 weighed and left: a second aim is a second thing to learn and get wrong in a
 fight, and what each spell actually needed was not another aim but to show,
 before you let go, what it will do from the aim there already is — which is
@@ -493,7 +494,8 @@ what the circles are for.
 | Spell | Opens at | Or with | What it does | Wait |
 |---|---|---|---|---|
 | **Silk** | the start | — | the thrown web: it sticks where it lands and wraps what it lands on | 3.5 s |
-| **Water Spiral** | Huntsman | Digestive Flood | a whirl sent out from under the spider along the ground the way you aim, and the longer you hold, the further — a quarter of silk's reach on a tap, three fifths wound up. Everything it passes over is soaked, and slowed to two fifths of its pace for 2.5–4 s after: walking, running, a charge or a dive. It rides kerbs and slopes and breaks on the first wall. Wet wings do not lift | 7 s |
+| **Douse** | Huntsman | Digestive Flood | water sprayed in a fan in front of the spider, 4–7 body heights out and 35° either side. What the spray catches is soaked and stung (4–7% of its health), fliers included, and the ground stays wet for 8–12 s: whatever stands on it stays soaked. Wet wings do not lift. A web the spray reaches is wet too, and a wet web does not burn | 6 s |
+| **Gust** | Huntsman | — | wind blown in the same fan. Everything loose in it is shoved away from the spider and stung (5–8%) — into a web, if one is in the way, which catches it. A boss stands its ground and only takes the sting. Over ground Douse left wet, it lifts the water into a **whirl**: it runs on the way the wind blew, stops at the first thing it reaches, and holds it there for 2.5–4 s, round and round, wearing it down | 6 s |
 | **Summon Lightning** | Root Weaver | Wing Buds | strikes where you point, and stuns what it reaches for 2.5–4 s: going nowhere, biting nothing, fighting nothing. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight. A web it reaches is live for twice the stun after; a line carries nothing | 7 s |
 | **Firebolt** | Glade Widow | — | a bolt thrown like silk — at a creature, or at a line under the cross — that bursts where it lands and burns every creature in the burst. Silk burns: a fifth of its harm to something bare, all of it to something wrapped all the way or held in a web. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line in the burst burns away | 5 s |
 | **Pullback** | Fern Spinner | — | every web you have in reach comes off its anchors and flies back to you, folding up as it comes and taking the frame it was walked round on with it — the feathers coming home to a blade dancer. What it passes through takes the silk one shot of that web would put on it — enough, and it is wrapped where it stands — and what the web held lands at your feet, bundled. Nothing in reach, nothing cast and no wait spent | 10 s |
@@ -505,8 +507,8 @@ strip down the right-hand side of the HUD shows every spell, what is waiting and
 for how long, and what opens the ones you do not have yet — shown, not hidden,
 the same as locked traits.
 
-**They work off each other.** This is the part that makes four spells more than
-four buttons:
+**They work off each other.** This is the part that makes the spells more than a
+row of buttons:
 
 * **Fire burns silk.** Every web and every line a burst reaches goes up, the
   spider's own as much as any — the one it is standing on included — and a web
@@ -533,14 +535,20 @@ four buttons:
 * **Webs are ammunition.** Every web put up is one the Pullback can throw back
   through something: spin them round a room, and the room is a trap that closes
   on you, with whatever wandered in the way.
-* **Water carries lightning.** A strike on a whirl reaches everything in it, and
-  anything wet — everything a whirl has been over, for six seconds after — takes
-  it twice as hard, twice as long stunned and twice the fight gone, and passes it
-  on to anything wet near it. Send the water down a corridor, then the strike.
-* **Water slows what silk has to catch.** Something slowed is something a thrown
-  web hardly has to lead, and a charge at two fifths of its pace falls short of
-  you. It is a slow, not a hold: the whirl goes on by, and what it caught is still
-  yours to deal with — sooner.
+* **Water carries lightning.** Anything wet — sprayed, standing on wet ground,
+  or held in a whirl — takes a strike twice as hard, twice as long stunned and
+  twice the fight gone, and passes it on to anything wet near it, and a strike on
+  a whirl reaches what it holds. Douse a corridor, then the strike.
+* **Water keeps silk from fire, and keeps lightning in it.** A web the spray
+  reached is wet for as long as the ground is: fire passes it by, burning what it
+  holds without taking the web, and lightning stays in it twice as long.
+* **Wind drives prey into silk.** A gust shoves what it reaches away from the
+  spider, and a web in the way catches it as if it had flown in — so a web put up
+  behind something is a web that thing can be blown into.
+* **Wind over water is a whirl.** Neither spell makes one alone. Wet the ground,
+  then blow over it, and the water rises into a whirl that runs on with the wind
+  and holds the first thing it reaches, going nowhere — something held is
+  something a thrown web does not have to lead.
 
 **And off what you have become.** A trait is a change to the animal (§3.1), and
 some of those changes reach the spells:
@@ -549,7 +557,7 @@ some of those changes reach the spells:
 |---|---|
 | Hollow Frame | every wait a fifth shorter, silk's included |
 | Paralytic Bite | every stun lasts half as long again |
-| Digestive Flood | acid water: a whirl doses what it passes over |
+| Digestive Flood | acid water: a whirl doses what it holds |
 | Storm Rider | a strike jumps on twice more, to whatever is nearest, wet or dry |
 | Hunting Fangs | acid water's dose is fanged, over twice as strong |
 
@@ -2053,7 +2061,7 @@ hold in their head on the first screen.
 | **Right Mouse** | **Cast what is in hand** — the web, to start with (§3.2). With the web in hand: |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
 | **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |
-| **1–9** | **Take a spell in hand** — each key is one spell, in the book's order, whether or not you have it yet: 1 the web, 2 the water, 3 lightning, 4 fire, 5 the pullback. A key pressed mid-wind-up drops the wind-up and takes its own spell (§3.2) |
+| **1–9** | **Take a spell in hand** — each key is one spell, in the book's order, whether or not you have it yet: 1 the web, 2 Douse, 3 Gust, 4 lightning, 5 fire, 6 the pullback. A key pressed mid-wind-up drops the wind-up and takes its own spell (§3.2) |
 | **Wheel** | The next or last spell you have — growing, and what you eat, opens more |
 | **Q** | **Take hold of the nearest line**, or let go. Hanging from one, **W/S** zip you along it toward or away from where you look, with no gravity in it; run off the end onto whatever it is tied to (*Silk is the road network*, §6) |
 | **E** | Evolution — what you are, and your odds on what eating could make you |

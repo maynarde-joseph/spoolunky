@@ -12,8 +12,9 @@ foxes, and what is not eaten goes home and breeds.
 What you eat changes what you are: every meal is a chance to take something from
 it — wings, armour, venom — and the bigger it was next to you, the better the
 odds. And what you are decides what you can cast: the thrown web is the first
-spell, and a call that brings your webs flying back, a whirl of water, lightning
-and fire open as you grow, each working off the others and off your silk.
+spell, and a call that brings your webs flying back, a spray of water, a gust of
+wind, lightning and fire open as you grow, each working off the others and off
+your silk — wind over wet ground lifts a whirl that holds what it reaches.
 
 The project opens somewhere else now, though: **the Hollow Wood**, a prototype of a
 second shape for the game. A stretch of old forest floor under the sky with ruins
@@ -42,8 +43,9 @@ game/
              builder, the tether, the bag, the traits, the spells, eating and
              stamina, and the body you see — a skeleton and the gait that walks it
   spells/    what spells leave in the world: the magic circle each is drawn
-             in, a whirl of water, a strike of lightning and the charge it leaves
-             in a web, a web called back, the bloom where one lands
+             in, wet ground and wet silk, a gust, the whirl wind lifts off wet
+             ground, a strike of lightning and the charge it leaves in a web, a
+             web called back, the bloom where one lands
   prey/      things to catch, and something to spawn them
   combat/    creatures fighting back: carrying out their attacks, and what they spit
   ecosystem/ what makes the valley live: the clock, dens, forage, haunts, and the
@@ -87,7 +89,7 @@ one kept to what the keys do today.
 | **Q** | take hold of the nearest line — hang from it and zip along it with **W**/**S**, toward or away from where you look. **Q** or **Space** lets go |
 | **Left Mouse** *on something you've caught* | put a line on it and drag it instead — same click, read the only way that makes sense |
 | **Right Mouse** | **cast what is in hand** — the web, to start with: tap, or hold to wind it up |
-| **1–9** | **take a spell in hand** — 1 the web, 2 the water, 3 lightning, 4 fire, 5 the pullback; the wheel turns through them too. Growing, and what you eat, opens more |
+| **1–9** | **take a spell in hand** — 1 the web, 2 Douse, 3 Gust, 4 lightning, 5 fire, 6 the pullback; the wheel turns through them too. Growing, and what you eat, opens more |
 | **E** | evolution — what you are, and your odds on what eating could make you |
 | **F** | wrap caught prey, then drain it (also re-arms a sprung snare). In the Hollow Wood a meal mends you, and at a shrine **F** rests |
 | **Y** | **put a line on a bundle and drag it along** — again to drop what you're carrying |
@@ -832,8 +834,9 @@ godot --headless --script res://tests/creature_smoke_test.gd
 A fifth casts every spell in the sandbox: the web as the first of them, what
 opens the rest, the strip that shows them, and what each does — to what it lands
 on, and to the other spells and the silk it meets. Lightning run down a wire to a
-wasp across the room and left live in the web, a whirl slowing what it runs over,
-acid water, fire that burns harder the more silk is on what it hits and burns the
+wasp across the room and left live in the web, a spray that leaves the ground and
+the silk wet, a gust that blows a beetle into a web, the whirl wind lifts off wet
+ground holding the first thing it reaches, acid water, fire that burns harder the more silk is on what it hits and burns the
 silk with it, webs called back through what is in their way, the magic circles
 each spell is drawn in, the number keys, and the whole book opened at once:
 

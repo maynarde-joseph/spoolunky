@@ -261,6 +261,16 @@ var stunned := 0.0
 ## Seconds it is slowed: water dragging at its legs and wings. See [method slow].
 var slowed := 0.0
 
+## Seconds it is being thrown about — by a gust, a geyser — and how quickly the
+## throw dies away, in metres a second each second. See [method shove].
+var shoved := 0.0
+var _shove_drag := 6.0
+
+## Seconds a whirl of water has hold of it, and where it is holding it. See
+## [method hold_at].
+var held := 0.0
+var _held_at := Vector3.ZERO
+
 var _struggle := 0.0
 var _fight_left := 0.0
 var _snap_timer := 0.0
@@ -431,6 +441,10 @@ func _physics_process(delta: float) -> void:
 		stunned = maxf(0.0, stunned - delta)
 	if slowed > 0.0:
 		slowed = maxf(0.0, slowed - delta)
+	if shoved > 0.0:
+		shoved = maxf(0.0, shoved - delta)
+	if held > 0.0:
+		held = maxf(0.0, held - delta)
 	if wounded > 0.0 and _state != State.DEAD:
 		var heal := WOUND_HEAL * (RESTING_HEAL if _state == State.RESTING else 1.0)
 		wounded = maxf(0.0, wounded - heal * delta)
@@ -438,7 +452,10 @@ func _physics_process(delta: float) -> void:
 		_mind.tick(delta)
 
 	# Out of it altogether: it is not steering.
-	if is_loose() and is_stunned():
+	if is_loose() and is_held():
+		_whirled(delta)
+		return
+	if is_loose() and (is_stunned() or is_shoved()):
 		_drift(delta)
 		return
 
@@ -714,6 +731,51 @@ func is_slowed() -> bool:
 	return slowed > 0.0
 
 
+## Thrown: its velocity becomes [param push] and it goes where that takes it for
+## [param seconds], steering nowhere, the throw dying away to nothing over that
+## time — a gust shoving it away, a geyser throwing it up. A hunter thrown gives up
+## the chase. A boss is not thrown about, and something a web or a whirl has hold
+## of stays held. Returns whether it went.
+func shove(push: Vector3, seconds := 0.5) -> bool:
+	if eaten or seconds <= 0.0 or not is_loose() or is_boss() or is_held():
+		return false
+	velocity = push
+	shoved = maxf(shoved, seconds)
+	_shove_drag = maxf(push.length() / seconds, 0.5)
+	if _state == State.HUNTING:
+		break_off()
+	return true
+
+
+func is_shoved() -> bool:
+	return shoved > 0.0
+
+
+## Held by a whirl of water for [param seconds]: round and round at [param point],
+## going nowhere and doing nothing. A hunter held gives up the chase. Does not
+## stack; the longer of the two, at the last place it was held.
+func hold_at(point: Vector3, seconds: float) -> void:
+	if eaten or seconds <= 0.0 or not is_loose():
+		return
+	held = maxf(held, seconds)
+	_held_at = point
+	shoved = 0.0
+	if _state == State.HUNTING:
+		break_off()
+
+
+func is_held() -> bool:
+	return held > 0.0
+
+
+## Round and round in a whirl of water: carried to the place it has hold of and
+## kept there, whatever it was doing.
+func _whirled(_delta: float) -> void:
+	_tow_pull = Vector3.ZERO
+	velocity = (_held_at - global_position) * 8.0
+	move_and_slide()
+
+
 ## How much of its own pace it moves at: all of it, or [constant SLOWED] of it while
 ## it is slowed.
 func pace() -> float:
@@ -735,9 +797,10 @@ func mind() -> CreatureMind:
 	return _mind
 
 
-## Whether it is free to act on what it wants: loose, and awake to the world.
+## Whether it is free to act on what it wants: loose, awake to the world, and not
+## being thrown about or held.
 func can_decide() -> bool:
-	return is_loose() and not is_stunned()
+	return is_loose() and not is_stunned() and not is_shoved() and not is_held()
 
 
 func is_feeding() -> bool:
@@ -1087,13 +1150,20 @@ func _process_chase(delta: float, target: Prey) -> void:
 
 
 ## Not steering: stunned, it drops — a flier as well, its wings having stopped.
-## Whatever has a line on it still pulls, the same as when it is steering itself.
+## Thrown, it goes where the throw takes it until the throw has died away; a flier
+## thrown keeps its wings, so it is blown about rather than knocked down. Whatever
+## has a line on it still pulls, the same as when it is steering itself.
 func _drift(delta: float) -> void:
 	var pull := _tow_pull
 	_tow_pull = Vector3.ZERO
-	velocity.x = move_toward(velocity.x, 0.0, delta * 6.0)
-	velocity.z = move_toward(velocity.z, 0.0, delta * 6.0)
-	velocity.y -= _gravity * delta
+	var drag := _shove_drag if is_shoved() else 6.0
+	if flying and is_shoved() and not is_stunned():
+		velocity = velocity.move_toward(Vector3.ZERO, delta * drag)
+	else:
+		var across := Vector2(velocity.x, velocity.z).move_toward(Vector2.ZERO, delta * drag)
+		velocity.x = across.x
+		velocity.z = across.y
+		velocity.y -= _gravity * delta
 	velocity += pull
 	move_and_slide()
 	var ceiling := _water_ceiling()

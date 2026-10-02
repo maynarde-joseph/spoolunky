@@ -35,8 +35,8 @@ G                      grapple style: the pull takes you there; the line
                        lays a line from your feet and hangs you from it
 Right Mouse            cast what is in hand — the web, to start with: it
                        sticks where it lands and wraps what it lands on
-Right Mouse  (hold)    wind it up: a bigger web, a whirl that goes further,
-                       a longer stun. Brackets on a creature: the silk goes
+Right Mouse  (hold)    wind it up: a bigger web, a wider spray, a longer
+                       stun. Brackets on a creature: the silk goes
                        where it is heading, so keep the cross on it
 1-9 / wheel            take a spell in hand — each key is one spell
 E                      evolution — what eating has made you, and might

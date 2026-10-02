@@ -24,8 +24,8 @@ extends Resource
 enum Form {
 	## The thrown web, cast by the web builder exactly as it always was.
 	SILK,
-	## A whirl of water where you point, that drags what is near it round and in.
-	SPIRAL,
+	## Water sprayed in a fan in front of the spider, that leaves the ground wet.
+	DOUSE,
 	## Lightning, called down where you point.
 	LIGHTNING,
 	## A bolt of fire thrown like silk, that burns what it lands among: harder the
@@ -33,6 +33,9 @@ enum Form {
 	FIRE,
 	## Every web in reach called back to the spider, hitting what it passes on the way.
 	PULLBACK,
+	## Wind blown in a fan in front of the spider, that shoves what it reaches away —
+	## and over wet ground, lifts the water into a whirl.
+	GUST,
 }
 
 @export var id := "silk"
@@ -62,11 +65,11 @@ enum Form {
 @export var cooldown := 6.0
 
 ## How wide it reaches, in body heights, from a tap to a full wind-up. The radius
-## of a strike, a whirl or a burst of fire.
+## of a strike or a burst of fire, or how far a fan of water or wind reaches.
 @export var size := Vector2(1.5, 3.0)
 
 ## How long what it leaves behind lasts, in seconds, from a tap to a full wind-up:
-## a whirl, a stun.
+## wet ground, a whirl's hold, a stun.
 @export var duration := Vector2(2.5, 4.0)
 
 ## How much of a creature's health it takes, from a tap to a full wind-up, when
