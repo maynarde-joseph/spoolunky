@@ -79,6 +79,16 @@ func signal_point() -> Vector3:
 	return to_global(centre_local)
 
 
+## Taken as a disc as wide as the web, in the web's own plane: near enough to its
+## silk for anything asking how close silk comes, and no nearer — a ball as wide
+## as the web would have it reaching a span out from its face.
+func nearest_silk(point: Vector3) -> Vector3:
+	var middle := to_global(centre_local)
+	var off := point - middle
+	var across := off - plane_normal * off.dot(plane_normal)
+	return middle + across.limit_length(radius)
+
+
 ## A wired snare whips out when the signal reaches it and drags in whatever is
 ## close enough. That reach is the entire reason to wire one up — left alone, a
 ## snare only ever catches what happens to walk into it.

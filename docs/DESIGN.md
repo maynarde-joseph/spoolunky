@@ -470,7 +470,7 @@ an area puts a ring where it will land, as wide as it will be.
 | **Silk** | the start | — | the thrown web: it sticks where it lands and wraps what it lands on | 3.5 s |
 | **Water Spiral** | Huntsman | Digestive Flood | a whirl on the floor where you point, for 5–8 s: it carries anything loose round and in, soaks it and holds it turning. Wet wings do not lift | 9 s |
 | **Summon Lightning** | Root Weaver | Wing Buds | strikes where you point, and stuns what it reaches for 2.5–4 s: going nowhere, biting nothing, fighting nothing. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight | 7 s |
-| **Firebolt** | Glade Widow | — | a bolt thrown like silk that bursts where it lands and burns every creature in the burst. Silk burns: a fifth of its harm to something bare, all of it to something wrapped all the way or held in a web. What it takes is health, and a creature low on health is an easier catch (§12) | 5 s |
+| **Firebolt** | Glade Widow | — | a bolt thrown like silk — at a creature, or at a line under the cross — that bursts where it lands and burns every creature in the burst. Silk burns: a fifth of its harm to something bare, all of it to something wrapped all the way or held in a web. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line in the burst burns away | 5 s |
 
 **Opening is the gates' rule.** A spell opens at a rung of the ladder, which is
 the key you can always count on, or sooner with a trait it names, which is the
@@ -482,6 +482,13 @@ the same as locked traits.
 **They work off each other.** This is the part that makes four spells more than
 four buttons:
 
+* **Fire burns silk.** Every web and every line a burst reaches goes up, the
+  spider's own as much as any — the one it is standing on included. What a web
+  was holding drops out of it, but burned first as hard as fire burns anything:
+  fire into a full web is the hardest burn there is, and the catch you lose is an
+  easier one the next time. Thrown at a line, the bolt goes to the line rather
+  than the wall behind it, so a line can be cut on purpose — yours, to drop
+  something on the end of it, or one a creature is crossing.
 * **Lightning runs through silk.** A strike that reaches a web runs through it,
   into every web whose silk touches it and down every wire from it, and stuns
   everything they hold. Silk was already the road network (§6); it is the wiring

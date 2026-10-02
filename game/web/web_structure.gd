@@ -376,6 +376,27 @@ func _prune_snared() -> void:
 	state_changed.emit(self)
 
 
+## The point on this web's silk nearest [param point]: what fire, lightning and a
+## creature's sweep all measure to. Lines and nets each know their own shape; this
+## is the fallback, for silk that is only its anchors.
+func nearest_silk(point: Vector3) -> Vector3:
+	if anchors.is_empty():
+		return global_position
+	var best := anchors[0]
+	for anchor in anchors:
+		if anchor.distance_to(point) < best.distance_to(point):
+			best = anchor
+	return best
+
+
+## Whether any of its silk comes within [param wide] of [param point].
+func reaches(point: Vector3, wide: float) -> bool:
+	for anchor in anchors:
+		if anchor.distance_to(point) <= wide:
+			return true
+	return nearest_silk(point).distance_to(point) <= wide
+
+
 ## How many things this holds at once.
 func capacity() -> int:
 	return pattern.capacity if pattern != null else 0

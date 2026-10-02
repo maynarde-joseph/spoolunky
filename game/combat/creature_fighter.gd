@@ -371,7 +371,7 @@ func _cut_silk(reach: float, facing: Vector3, arc: float) -> int:
 		var web := node as WebStructure
 		if web == null or not is_instance_valid(web) or web.is_queued_for_deletion():
 			continue
-		var near := _nearest_silk(web, centre)
+		var near := web.nearest_silk(centre)
 		if near.distance_to(centre) > reach:
 			continue
 		if arc < 360.0 and not _in_arc(near, facing, arc):
@@ -415,20 +415,6 @@ func _in_arc(point: Vector3, facing := Vector3.ZERO, arc := -1.0) -> bool:
 	if off.length_squared() < 0.0001 or ahead.length_squared() < 0.0001:
 		return true
 	return rad_to_deg(off.angle_to(ahead)) <= width * 0.5
-
-
-func _nearest_silk(web: WebStructure, point: Vector3) -> Vector3:
-	var strand := web as WebStrand
-	if strand != null:
-		return Geometry3D.get_closest_point_to_segment(point, strand.point_a, strand.point_b)
-	var net := web as WebNet
-	if net != null:
-		var middle := net.to_global(net.centre_local)
-		var off := point - middle
-		return middle + off.limit_length(net.radius)
-	if not web.anchors.is_empty():
-		return web.anchors[0]
-	return web.global_position
 
 
 func _mouth() -> Vector3:

@@ -132,7 +132,7 @@ func discharge() -> void:
 	var frontier: Array[WebStructure] = []
 	for node in get_tree().get_nodes_in_group("silk_webs"):
 		var web := node as WebStructure
-		if web == null or web.is_queued_for_deletion() or not _reaches(web, at, radius):
+		if web == null or web.is_queued_for_deletion() or not web.reaches(at, radius):
 			continue
 		charged.append(web)
 		frontier.append(web)
@@ -192,20 +192,6 @@ func _shock(creature: Prey, from: Vector3) -> bool:
 	return true
 
 
-## Whether a strike of [param wide] at [param at] reaches [param web]'s silk.
-static func _reaches(web: WebStructure, at: Vector3, wide: float) -> bool:
-	for anchor in web.anchors:
-		if anchor.distance_to(at) <= wide:
-			return true
-	var strand := web as WebStrand
-	if strand != null:
-		return _to_segment(at, strand.point_a, strand.point_b) <= wide
-	var net := web as WebNet
-	if net != null:
-		return net.to_global(net.centre_local).distance_to(at) <= wide + net.radius
-	return false
-
-
 ## The webs a charge in [param web] crosses to: any whose silk comes within
 ## [member touch] of its own, and any it is wired to either way.
 func _neighbours(web: WebStructure) -> Array[WebStructure]:
@@ -223,7 +209,7 @@ func _neighbours(web: WebStructure) -> Array[WebStructure]:
 		if other == null or other == web or other.is_queued_for_deletion() or found.has(other):
 			continue
 		for anchor in web.anchors:
-			if _reaches(other, anchor, touch):
+			if other.reaches(anchor, touch):
 				found.append(other)
 				break
 	return found
@@ -238,15 +224,6 @@ static func _middle(web: WebStructure) -> Vector3:
 	if strand != null:
 		return (strand.point_a + strand.point_b) * 0.5
 	return web.global_position
-
-
-static func _to_segment(point: Vector3, a: Vector3, b: Vector3) -> float:
-	var span := b - a
-	var length := span.length_squared()
-	if length < 0.000001:
-		return point.distance_to(a)
-	var t := clampf((point - a).dot(span) / length, 0.0, 1.0)
-	return point.distance_to(a + span * t)
 
 
 # --- what you can see ----------------------------------------------------

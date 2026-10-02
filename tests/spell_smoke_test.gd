@@ -39,6 +39,7 @@ func _sections() -> Array[Callable]:
 		_test_lightning_and_water,
 		_test_storm_and_paralysis,
 		_test_firebolt,
+		_test_fire_burns_silk,
 		_test_the_whole_book_open,
 	]
 
@@ -706,6 +707,78 @@ func _test_firebolt() -> void:
 	var wrapped := spawn("fly", centre + Vector3(height * 3.0, height, height * 6.0))
 	if check(wrapped != null and wrapped.bundle(), "something already caught"):
 		check(is_zero_approx(wrapped.burn(power)), "is left be: it is caught")
+
+
+## And the silk burns with it: fire thrown into a web takes the web, and what it
+## held drops out burned as hard as fire burns anything; fire thrown at a line
+## goes to the line and not the wall behind it, and burns it; and silk out of the
+## burst's reach is left standing.
+func _test_fire_burns_silk() -> void:
+	var fire := spells.by_id("fire")
+	if fire == null:
+		return
+	grow_to_tier(fire.unlock_stage)
+	spells.select("fire")
+	var slab := add_slab(Vector3(-60, 0.0, -120), Vector3(60, 0.5, 60))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 8.0))
+	await physics_frame
+	var centre := slab.global_position + Vector3(0, 0.25, 0)
+	clear_prey_near(centre, 30.0, null)
+	var height := spider.stage().body_height
+	var half := height * 1.2
+	var web := _spin(centre + Vector3(-height * 4.0, half + height * 0.3, 0.0), half)
+	var far := _spin(centre + Vector3(height * 8.0, half + height * 0.3, 0.0), half)
+	if not check(web != null and far != null, "a web to burn, and one well away from it"):
+		return
+	var wasp := spawn("wasp", (web as WebNet).signal_point())
+	if not check(wasp != null, "a wasp"):
+		return
+	wasp.move_speed = 0.0
+	wasp.aggression = 0.0
+	wasp.struggle_stamina = 30.0
+	await physics_frame
+	await physics_frame
+	if not check(wasp.is_stuck(), "held by the web"):
+		return
+	aim_at(wasp.global_position)
+	await process_frame
+	# Waited on by id: a lambda that holds the web itself complains once it is freed.
+	var web_id := web.get_instance_id()
+	check(spells.cast_now(fire), "fire thrown into the web")
+	var gone: bool = await wait_until(func() -> bool: return not is_instance_id_valid(web_id),
+		120)
+	check(gone, "and the web burns away")
+	check(is_instance_valid(wasp) and not wasp.is_stuck(), "dropping the wasp out of it")
+	if is_instance_valid(wasp):
+		check(wasp.health() < 1.0 - fire.power_at(0.0) * 0.95,
+			"burned as hard as fire burns anything held in silk (%d%% of it left)"
+			% roundi(wasp.health() * 100.0))
+	check(is_instance_valid(far) and not far.is_queued_for_deletion(),
+		"and the web out of the burst's reach still stands")
+
+	# A line across the room, with a wall a long way behind it: the cross just off
+	# the line is on the line, and that is where the fire goes.
+	spells.forget_waits()
+	clear_prey_near(centre, 30.0, null)
+	var a := centre + Vector3(-height * 3.0, height, 2.0)
+	var b := centre + Vector3(height * 3.0, height, 2.0)
+	var line := WebStrand.spin(pattern_named("frame_line"), a, b, 1.0)
+	add_slab(centre + Vector3(0.0, height * 2.0, -4.0), Vector3(40.0, height * 6.0, 0.5))
+	if not check(line != null, "a line"):
+		return
+	line.place_in(webs)
+	await physics_frame
+	aim_at((a + b) * 0.5 + Vector3.UP * height * 0.15)
+	await process_frame
+	check(builder.aimed_line() == line, "the cross is on the line")
+	var line_id := line.get_instance_id()
+	check(spells.cast_now(fire), "fire thrown at it")
+	var burned: bool = await wait_until(func() -> bool: return not is_instance_id_valid(line_id),
+		120)
+	check(burned, "and the line burns away")
+	check(is_instance_valid(far) and not far.is_queued_for_deletion(),
+		"and the far web stands still")
 
 
 ## A level can hand the spider the whole book at once: every spell open to a

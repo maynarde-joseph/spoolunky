@@ -54,6 +54,9 @@ static func spin(pattern: WebPattern, a: Vector3, b: Vector3, quality: float) ->
 	return strand
 
 
+func nearest_silk(point: Vector3) -> Vector3:
+	return Geometry3D.get_closest_point_to_segment(point, point_a, point_b)
+
 
 static func _safe_up(axis: Vector3) -> Vector3:
 	if absf(axis.dot(Vector3.UP)) > 0.95:

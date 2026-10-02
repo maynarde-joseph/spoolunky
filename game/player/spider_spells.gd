@@ -405,10 +405,14 @@ func _whirl(spell: SpiderSpell, wound: float) -> Dictionary:
 # --- fire -----------------------------------------------------------------
 
 ## A bolt of fire, thrown the way silk is — at the creature under the cross, led if
-## it is moving — that bursts where it lands and burns everything in the burst.
-## Silk burns, so what it does to each is worth the silk on it (see
-## [method Prey.burn]): little to something bare, all of it to something wrapped
-## or held in a web. And a creature burned low is an easy catch.
+## it is moving, or at the line under it — that bursts where it lands and burns
+## everything in the burst. Silk burns, so what it does to each creature is worth
+## the silk on it (see [method Prey.burn]): little to something bare, all of it to
+## something wrapped or held in a web. And a creature burned low is an easy catch.
+##
+## The silk itself goes up too: every web and every line the burst reaches burns
+## away, and what a web was holding drops out of it — burned as hard as fire burns
+## anything, and loose. See [method _on_fire_landed].
 func _hurl(spell: SpiderSpell, wound: float) -> Dictionary:
 	var from := _view.aim_origin()
 	var heading := _view.aim_forward()
@@ -417,6 +421,17 @@ func _hurl(spell: SpiderSpell, wound: float) -> Dictionary:
 		var lead := _builder.shot_lead(quarry) - from
 		if lead.length_squared() > 0.000001:
 			heading = lead.normalized()
+	elif _builder != null:
+		# A line is a hair across the view, so the same pick the grapple makes
+		# decides whether the cross is on one; if it is, the bolt goes to the line
+		# rather than past it to the wall behind.
+		var line := _builder.aimed_line()
+		if line != null:
+			var pair := Geometry3D.get_closest_points_between_segments(from,
+				from + heading * cast_reach(), line.point_a, line.point_b)
+			var to_line: Vector3 = pair[1] - from
+			if to_line.length_squared() > 0.000001:
+				heading = to_line.normalized()
 	var bolt := SilkShot.fire(from, heading, body_height(), exclusions())
 	bolt.name = "FireBolt"
 	bolt.catch_radius = 0.16 * body_height()
@@ -449,11 +464,46 @@ func _on_fire_landed(at: Vector3, _normal: Vector3, struck: Node3D, _heading: Ve
 		SpellFlash.burst(_host(), prey.global_position, spell.colour, prey.hit_radius() * 2.5,
 			0.6)
 		worst = maxf(worst, lost)
+	# Then the silk, once the creatures in it have burned as hard as a web makes
+	# them: webs and lines alike, and the spider's own as much as any.
+	var nets := 0
+	var lines := 0
+	for node in get_tree().get_nodes_in_group("silk_webs"):
+		var web := node as WebStructure
+		if web == null or web.is_queued_for_deletion() or not web.reaches(at, reach):
+			continue
+		_flare(web, spell.colour)
+		web.tear()
+		if web is WebStrand:
+			lines += 1
+		else:
+			nets += 1
+	var said := PackedStringArray()
 	if burned.size() == 1:
-		notice.emit("The %s burns — %d%% of it left" % [burned[0].species,
+		said.append("The %s burns — %d%% of it left" % [burned[0].species,
 			roundi(burned[0].health() * 100.0)])
 	elif burned.size() > 1:
-		notice.emit("Fire — %d burned" % burned.size())
+		said.append("Fire — %d burned" % burned.size())
+	if nets > 0:
+		said.append("%d web%s burned away" % [nets, "" if nets == 1 else "s"])
+	if lines > 0:
+		said.append("%d line%s burned away" % [lines, "" if lines == 1 else "s"])
+	if not said.is_empty():
+		notice.emit(" · ".join(said))
+
+
+## Fire running along [param web] as it goes: a bloom at both ends of a line and
+## in its middle, or one over the whole of a web.
+func _flare(web: WebStructure, colour: Color) -> void:
+	var strand := web as WebStrand
+	if strand != null:
+		for share in [0.0, 0.5, 1.0]:
+			SpellFlash.burst(_host(), strand.point_a.lerp(strand.point_b, share), colour,
+				body_height() * 0.5, 0.5)
+		return
+	var net := web as WebNet
+	if net != null:
+		SpellFlash.burst(_host(), net.signal_point(), colour, maxf(net.radius, 0.05), 0.5)
 
 
 ## How hard a dose of the spider's acid water works: fanged, with fangs.

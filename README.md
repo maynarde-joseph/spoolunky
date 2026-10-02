@@ -627,7 +627,9 @@ health, the more of the way each hit of silk gets you — at full health a blade
 takes three orb shots; with nothing left, one. **Firebolt** is what wears it down,
 and silk burns: a bolt takes a fifth of its harm off something bare, and all of it
 off something wrapped all the way or hanging in a web. So the loop is wrap, burn,
-wrap.
+wrap. The silk goes up with it — a web or a line in the burst burns away, and what
+the web held drops out — so a web is somewhere to burn a thing once, not a place
+to keep it while you do.
 
 And two bosses, named across the foot of the screen with their health and wrap:
 **the Rat King**, sealed in the Barrow, which whirls and cuts every thread round

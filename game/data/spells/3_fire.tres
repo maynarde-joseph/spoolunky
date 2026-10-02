@@ -6,7 +6,7 @@
 script = ExtResource("1_spell")
 id = "fire"
 display_name = "Firebolt"
-description = "A bolt of fire, thrown like silk, that bursts where it lands. Silk burns: the more of a thing is wrapped, the harder it burns — and the lower it burns, the easier it is to catch."
+description = "A bolt of fire, thrown like silk, that bursts where it lands. Silk burns: the more of a thing is wrapped, the harder it burns, and any web or line in the burst burns away — dropping what the web held."
 form = 3
 order = 3
 unlock_stage = 4
