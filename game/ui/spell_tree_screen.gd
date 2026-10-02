@@ -226,13 +226,15 @@ func _card(skill: SpellSkill) -> Button:
 		"" if skill.cost == 1 else "s"], 14)
 	kind.modulate = Color(0.75, 0.78, 0.86, 1.0)
 	lines.add_child(kind)
+	# Where it stands before what it does: a long interaction runs off the foot of
+	# the card, and the half that matters most is whether you can have it.
+	lines.add_child(_line("State", "", 15))
 	var what := _line("What", skill.description if skill.kind == SpellSkill.Kind.INTERACTION
 		else skill.effect_line(), 14)
 	what.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	what.max_lines_visible = 3
 	what.custom_minimum_size = Vector2(CARD.x - 20.0, 0.0)
 	lines.add_child(what)
-	lines.add_child(_line("State", "", 15))
 
 	_cards[skill.id] = card
 	return card
