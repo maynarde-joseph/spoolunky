@@ -80,6 +80,10 @@ enum Form {
 ## Its colour, on the strip and in the world.
 @export var colour := Color(0.85, 0.88, 0.95, 1.0)
 
+## How many points the star in its magic circle has: the spell's own mark, so two
+## circles side by side can be told apart. See [MagicCircle].
+@export_range(3, 12) var sigil := 6
+
 
 ## How wide, at [param wound] from 0 for a tap to 1 for a full wind-up, in body
 ## heights.

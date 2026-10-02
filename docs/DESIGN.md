@@ -460,12 +460,30 @@ rest are the same verb with other things behind it, so they share the web's
 keys, its reach, its wind-up and its kind of limit.
 
 **Right mouse casts whatever is in hand, and the number keys pick what is in
-hand** — 1 to 4, in the order below; the wheel turns through them too. A
-tap casts at once; holding winds it up — a bigger web, a hotter bolt, a whirl
-that goes further, a longer stun — over the same second the web always took.
-While it winds up it glows over the spider's back in its own colour; a spell that
-lands on an area puts a ring where it will land, as wide as it will be, and a
-whirl lays out the strip it will run along, as long and as wide as it will be.
+hand** — 1 to 4, in the order below; the wheel turns through them too. A tap
+casts at once; holding winds it up — a bigger web, a hotter bolt, a whirl that
+goes further, a longer stun — over the same second the web always took.
+
+**Every spell but the web is drawn in a magic circle.** Thin line art in the
+spell's colour — two rings with marks like writing between them, and an inner
+ring with the spell's own star in it: three points for fire, eight for
+lightning, five for water — that draws itself in as the key goes down, turns
+while you hold, and flares and fades as the spell leaves through it. Where it is
+drawn is the aim made visible. Fire's hangs in front of the spider on the line
+the bolt will take, and the bolt goes through the middle of it. Lightning's lies
+on the ground where it will strike, as wide as the strike, and a second opens
+over it, face down, as the bolt comes out of it. Water's lies under the spider's
+feet, with the strip the whirl will run along laid out ahead of it. The web keeps
+its ball of silk over the spider's back: it is thrown silk, not magic.
+
+**One aim for all of them.** The crosshair is the only aiming there is, and it
+is the same for everything: a thrown spell goes from the spider to whatever the
+cross is on, at where the creature under it will be; lightning comes down on it;
+water goes the way it points. Giving each spell its own way of aiming was
+weighed and left: a second aim is a second thing to learn and get wrong in a
+fight, and what each spell actually needed was not another aim but to show,
+before you let go, what it will do from the aim there already is — which is
+what the circles are for.
 
 | Spell | Opens at | Or with | What it does | Wait |
 |---|---|---|---|---|

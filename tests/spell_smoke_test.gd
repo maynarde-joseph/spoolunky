@@ -31,6 +31,7 @@ func _sections() -> Array[Callable]:
 		_test_what_opens_a_spell,
 		_test_the_strip,
 		_test_number_keys,
+		_test_spells_leave_through_circles,
 		_test_a_lean_spider_casts_sooner,
 		_test_water_spiral,
 		_test_acid_water,
@@ -243,6 +244,117 @@ func _test_number_keys() -> void:
 	check(spells.take(4) and not spells.charging and spells.current() == spells.book[3],
 		"a key mid-wind-up drops it and takes its own spell")
 	spells.take(1)
+
+
+## Every spell but silk is drawn in a magic circle while it winds up — fire in front
+## of the spider on the line it will take, lightning on the ground where it will
+## strike, water under the spider's feet — and leaves through it: the circle flares
+## and fades as the spell goes, lightning draws a second one over the strike, and a
+## wind-up given up fades the same way.
+func _test_spells_leave_through_circles() -> void:
+	spells.open_all = true
+	spider.require_captured_mouse = false
+	var slab := add_slab(Vector3(-30, 0.0, 150), Vector3(40, 0.5, 40))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 6.0))
+	await physics_frame
+	var centre := slab.global_position + Vector3(0, 0.25, 0)
+	clear_prey_near(centre, 20.0, null)
+	var height := spider.stage().body_height
+	aim_at(centre)
+	await process_frame
+
+	# Held the way a player holds it: the spider lets go for you if the key is up.
+	spells.take(1)
+	send_action(spider.input_shoot)
+	await process_frame
+	check(builder.aiming and _circles().is_empty(), "winding up silk is a ball of silk, not a circle")
+	spells.cancel_cast()
+	release_action(spider.input_shoot)
+	await process_frame
+
+	# Fire: in front of the spider, on the line the bolt will take.
+	spells.take(4)
+	var fire := spells.current()
+	send_action(spider.input_shoot)
+	await run_frames(20)
+	check(spells.charging, "winding up fire")
+	var circles := _circles()
+	if not check(circles.size() == 1, "draws one circle (%d)" % circles.size()):
+		return
+	var circle := circles[0]
+	var heading := spells.fire_heading()
+	var ahead := circle.global_position - spider.view.aim_origin()
+	check(absf(ahead.length() - height * spells.circle_ahead) < height * 0.05
+		and ahead.normalized().dot(heading) > 0.99,
+		"in front of the spider on the bolt's line (%.2f m out)" % ahead.length())
+	check(circle.global_basis.y.normalized().dot(heading) > 0.99, "facing the way it will go")
+	var wide := height * lerpf(spells.circle_bodies.x, spells.circle_bodies.y, spells.charge)
+	check(absf(circle.radius - wide) < height * 0.02 and circle.radius > height
+		* spells.circle_bodies.x * 1.05, "and growing with the wind-up (%.2f m)" % circle.radius)
+	check(circle.points == fire.sigil, "with fire's own star (%d)" % circle.points)
+	release_action(spider.input_shoot)
+	await process_frame
+	check(not spells.charging and spells.cooling(fire), "let go, it goes")
+	check(circle.is_fading(), "and the circle flares and fades as the bolt goes through it")
+	var circle_id := circle.get_instance_id()
+	var faded: bool = await wait_until(func() -> bool: return not is_instance_id_valid(circle_id),
+		90)
+	check(faded, "and is gone soon after")
+
+	# Lightning: on the ground where it will strike, and a second over the strike.
+	spells.take(3)
+	var lightning := spells.current()
+	send_action(spider.input_shoot)
+	await run_frames(2)
+	circles = _circles()
+	if not check(circles.size() == 1, "winding up lightning draws one circle (%d)" % circles.size()):
+		release_action(spider.input_shoot)
+		return
+	circle = circles[0]
+	var spot: Vector3 = spells.area_target(lightning).get("point", Vector3.ZERO)
+	check(circle.global_position.distance_to(spot) < height * 0.1,
+		"on the ground where it will strike (%.2f m off)" % circle.global_position.distance_to(spot))
+	check(circle.global_basis.y.normalized().dot(Vector3.UP) > 0.99, "lying flat")
+	check(absf(circle.radius - lightning.size_at(spells.charge) * height) < height * 0.05,
+		"as wide as the strike (%.2f m)" % circle.radius)
+	release_action(spider.input_shoot)
+	await process_frame
+	check(spells.cooling(lightning), "let go, it strikes")
+	var over := 0
+	for each in _circles():
+		if each.global_position.y > spot.y + height and each.global_basis.y.dot(Vector3.DOWN) > 0.99:
+			over += 1
+	check(over == 1, "with a second circle over the strike, face down (%d)" % over)
+	check(circle.is_fading(), "and the one on the ground flares and fades")
+	await wait_until(func() -> bool: return _circles().is_empty(), 90)
+
+	# Water: under the spider's feet. Given up, it fades the same way.
+	spells.take(2)
+	send_action(spider.input_shoot)
+	await run_frames(2)
+	circles = _circles()
+	if not check(circles.size() == 1, "winding up water draws one circle (%d)" % circles.size()):
+		release_action(spider.input_shoot)
+		return
+	circle = circles[0]
+	var under := circle.global_position - spider.global_position
+	check(Vector2(under.x, under.z).length() < height * 0.1 and under.y < 0.0,
+		"under the spider's feet")
+	spells.cancel_cast()
+	release_action(spider.input_shoot)
+	await run_frames(2)
+	check(circle.is_fading(), "and a wind-up given up fades out")
+
+
+## The magic circles standing now.
+func _circles() -> Array[MagicCircle]:
+	var found: Array[MagicCircle] = []
+	for node in spider.get_tree().get_nodes_in_group("spell_effects"):
+		var circle := node as MagicCircle
+		if circle != null and not circle.is_queued_for_deletion():
+			found.append(circle)
+	return found
 
 
 ## Hollow Frame is quicker with everything, silk included.

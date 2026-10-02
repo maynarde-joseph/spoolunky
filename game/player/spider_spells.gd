@@ -39,9 +39,12 @@ signal notice(text: String)
 ## figure, so everything the spider casts winds up in the same second.
 @export var charge_time := 0.9
 
-## How big the glow held over the spider's back is while a spell winds up, in body
-## heights, from a tap to a full wind-up. The same span the ball of silk has.
-@export var held_bodies := Vector2(0.12, 0.3)
+## How far in front of the spider a thrown spell's circle hangs, in body heights:
+## on the line the spell will take, so it leaves through the middle of it.
+@export var circle_ahead := 0.75
+
+## How wide that circle is, in body heights, from a tap to a full wind-up.
+@export var circle_bodies := Vector2(0.28, 0.5)
 
 ## Which spell is in hand, as an index into [member book].
 var selected := 0
@@ -66,10 +69,8 @@ var _growth: SpiderGrowth
 var _traits: SpiderTraits
 var _view: SpiderCamera
 var _builder: WebBuilder
-var _held: MeshInstance3D
-var _held_material: StandardMaterial3D
-var _marker: MeshInstance3D
-var _marker_material: StandardMaterial3D
+## The circle drawn while a spell winds up, until it goes.
+var _circle: MagicCircle = null
 var _path: MeshInstance3D
 var _path_material: StandardMaterial3D
 
@@ -119,8 +120,7 @@ func _process(delta: float) -> void:
 		# One owner for the framing: the builder eases it, for its own wind-up and
 		# for this one alike. Two things easing one number is two things fighting.
 		_builder.framing_held = charging
-	_update_held()
-	_update_marker()
+	_update_circle()
 	_update_path()
 
 
@@ -362,6 +362,7 @@ func cast_now(spell: SpiderSpell, wound := 0.0) -> bool:
 	var went := _cast_form(spell, clampf(wound, 0.0, 1.0))
 	if not went.get("cast", false):
 		return false
+	_cast_circle(spell, clampf(wound, 0.0, 1.0))
 	var span := wait_for(spell)
 	if span > 0.0:
 		_cooling[spell.id] = span
@@ -407,10 +408,17 @@ func _strike(spell: SpiderSpell, wound: float) -> Dictionary:
 	var at: Vector3 = target.get("point", _spider.global_position)
 	var stun := spell.duration_at(wound) * (_traits.stun_scale() if _traits != null else 1.0)
 	var jumps := _traits.arc_bonus() if _traits != null else 0
-	var strike := LightningStrike.call_down(_host(), at, spell.size_at(wound) * body_height(),
-		stun, jumps, body_height() * 0.6, spell.colour)
+	var radius := spell.size_at(wound) * body_height()
+	var strike := LightningStrike.call_down(_host(), at, radius, stun, jumps,
+		body_height() * 0.6, spell.colour)
 	if strike == null:
 		return {"cast": false}
+	# Where it comes down from: a second circle over the first, face down.
+	var top := at + Vector3.UP * maxf(radius * LightningStrike.FALL, LightningStrike.FALL_LEAST)
+	var sky := MagicCircle.draw(_host(), MagicCircle.facing(top, Vector3.DOWN), radius * 0.8,
+		spell.colour, spell.sigil)
+	if sky != null:
+		sky.release()
 	var said := PackedStringArray()
 	if not strike.shocked.is_empty():
 		said.append("%d stunned" % strike.shocked.size())
@@ -482,6 +490,25 @@ func _on_whirl_spent(_whirl: WaterSpiral, slowed: Array[Prey]) -> void:
 ## anything, and loose. See [method _on_fire_landed].
 func _hurl(spell: SpiderSpell, wound: float) -> Dictionary:
 	var from := _view.aim_origin()
+	var heading := fire_heading()
+	var bolt := SilkShot.fire(from, heading, body_height(), exclusions())
+	bolt.name = "FireBolt"
+	bolt.catch_radius = 0.16 * body_height()
+	bolt.colour = spell.colour
+	bolt.glow = 1.6
+	bolt.glows_own = true
+	bolt.limit_to(cast_reach())
+	bolt.landed.connect(_on_fire_landed.bind(spell, spell.power_at(wound),
+		spell.size_at(wound) * body_height()))
+	bolt.add_to_group("spell_effects")
+	bolt.launch_from(_host(), from)
+	return {"cast": true, "at": from + heading * cast_reach()}
+
+
+## Which way a bolt of fire goes from the spider: at where the creature under the
+## cross will be, at the line under the cross, or down the cross.
+func fire_heading() -> Vector3:
+	var from := _view.aim_origin()
 	var heading := _view.aim_forward()
 	var quarry := _builder.shot_target() if _builder != null else null
 	if quarry != null:
@@ -499,18 +526,7 @@ func _hurl(spell: SpiderSpell, wound: float) -> Dictionary:
 			var to_line: Vector3 = pair[1] - from
 			if to_line.length_squared() > 0.000001:
 				heading = to_line.normalized()
-	var bolt := SilkShot.fire(from, heading, body_height(), exclusions())
-	bolt.name = "FireBolt"
-	bolt.catch_radius = 0.16 * body_height()
-	bolt.colour = spell.colour
-	bolt.glow = 1.6
-	bolt.glows_own = true
-	bolt.limit_to(cast_reach())
-	bolt.landed.connect(_on_fire_landed.bind(spell, spell.power_at(wound),
-		spell.size_at(wound) * body_height()))
-	bolt.add_to_group("spell_effects")
-	bolt.launch_from(_host(), from)
-	return {"cast": true, "at": from + heading * cast_reach()}
+	return heading
 
 
 func _on_fire_landed(at: Vector3, _normal: Vector3, struck: Node3D, _heading: Vector3,
@@ -664,49 +680,66 @@ func _host() -> Node:
 
 # --- what you can see ----------------------------------------------------
 
-## The spell glowing over the spider's back while it winds up — the web's ball,
-## in the spell's colour. You can see the cast coming, and how big it has got.
-func _update_held() -> void:
+## The circle a spell is drawn in while it winds up: where it will come from, as
+## wide as it will be, in its own colour and with its own star. Thrown, it hangs in
+## front of the spider on the line the spell will take; lightning's lies on the
+## ground where it will strike; water's lies under the spider's feet. Silk has no
+## circle: it is the ball of silk, wound up by the builder.
+func _update_circle() -> void:
 	var spell := current()
-	var shown := charging and spell != null and _spider != null
-	if shown and _held == null:
-		_build_held()
-	if _held == null:
+	var held := charging and spell != null and spell.form != SpiderSpell.Form.SILK \
+		and _spider != null and _view != null
+	if not held:
+		# Given up, or gone: either way it fades rather than vanishing.
+		if _circle != null and is_instance_valid(_circle):
+			_circle.release()
+		_circle = null
 		return
-	_held.visible = shown
-	if not shown:
+	var place := circle_at(spell, charge)
+	if _circle == null or not is_instance_valid(_circle):
+		_circle = MagicCircle.draw(_host(), place["where"], place["wide"], spell.colour,
+			spell.sigil)
+	else:
+		_circle.hold(place["where"], place["wide"])
+
+
+## The circle [param spell] leaves through, wound up to [param wound]: the one held
+## through the wind-up, put where the spell went from, or one drawn there and then
+## for a cast with no wind-up behind it. Either way it flares as the spell goes.
+func _cast_circle(spell: SpiderSpell, wound: float) -> void:
+	if spell.form == SpiderSpell.Form.SILK:
 		return
+	var place := circle_at(spell, wound)
+	var circle := _circle if _circle != null and is_instance_valid(_circle) else null
+	_circle = null
+	if circle == null:
+		circle = MagicCircle.draw(_host(), place["where"], place["wide"], spell.colour,
+			spell.sigil)
+	else:
+		circle.hold(place["where"], place["wide"])
+	if circle != null:
+		circle.release()
+
+
+## Where [param spell]'s circle goes, wound up to [param wound], and how wide it is:
+## a dictionary of the transform it is drawn at and its radius in metres.
+func circle_at(spell: SpiderSpell, wound: float) -> Dictionary:
 	var height := body_height()
-	var wide := height * lerpf(held_bodies.x, held_bodies.y, charge)
-	var back := _spider.climb.view_up() if _spider.climb != null else Vector3.UP
-	_held.global_position = _spider.global_position + back * (height * 0.9 + wide)
-	_held.scale = Vector3.ONE * maxf(wide, 0.005)
-	_held_material.albedo_color = spell.colour
-	_held_material.emission = spell.colour
-	# Lit from inside, but not so bright that its colour washes out to white:
-	# the colour is how you tell a bolt of fire from a ball of silk.
-	_held_material.emission_energy_multiplier = lerpf(0.25, 0.9, charge)
-
-
-## A ring where an area spell will land, as wide as it will be, while it winds
-## up. The crosshair says where; this says how much of it.
-func _update_marker() -> void:
-	var spell := current()
-	var shown := charging and spell != null and is_area(spell) and _view != null
-	if shown and _marker == null:
-		_build_marker()
-	if _marker == null:
-		return
-	_marker.visible = shown
-	if not shown:
-		return
-	var target := area_target(spell)
-	var radius := spell.size_at(charge) * body_height()
-	var up: Vector3 = target.get("normal", Vector3.UP)
-	_marker.global_transform = Transform3D(Basis(Quaternion(Vector3.UP, up.normalized())),
-		target.get("point", Vector3.ZERO) + up * body_height() * 0.05)
-	_marker.scale = Vector3.ONE * maxf(radius, 0.01)
-	_marker_material.albedo_color = Color(spell.colour.r, spell.colour.g, spell.colour.b, 0.75)
+	match spell.form:
+		SpiderSpell.Form.FIRE:
+			var heading := fire_heading()
+			return {"where": MagicCircle.facing(_view.aim_origin() + heading * height
+				* circle_ahead, heading),
+				"wide": height * lerpf(circle_bodies.x, circle_bodies.y, wound)}
+		SpiderSpell.Form.LIGHTNING:
+			var target := area_target(spell)
+			var up: Vector3 = target.get("normal", Vector3.UP)
+			return {"where": MagicCircle.facing(target.get("point", _spider.global_position)
+				+ up * height * 0.03, up), "wide": spell.size_at(wound) * height}
+	var ground := _ground({"point": _spider.global_position, "hit": false})
+	var floor_up: Vector3 = ground.get("normal", Vector3.UP)
+	return {"where": MagicCircle.facing(ground.get("point", _spider.global_position)
+		+ floor_up * height * 0.03, floor_up), "wide": spell.size_at(wound) * height}
 
 
 ## Where an area spell lands, and which way is up there: lightning comes down on
@@ -748,25 +781,6 @@ func _update_path() -> void:
 	_path_material.albedo_color = Color(spell.colour.r, spell.colour.g, spell.colour.b, 0.3)
 
 
-func _build_held() -> void:
-	var mesh := SphereMesh.new()
-	mesh.radius = 1.0
-	mesh.height = 2.0
-	mesh.radial_segments = 12
-	mesh.rings = 6
-	_held_material = StandardMaterial3D.new()
-	_held_material.emission_enabled = true
-	_held_material.roughness = 0.4
-	_held = MeshInstance3D.new()
-	_held.name = "HeldSpell"
-	_held.mesh = mesh
-	_held.material_override = _held_material
-	_held.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_held.top_level = true
-	_held.visible = false
-	add_child(_held)
-
-
 func _build_path() -> void:
 	var mesh := PlaneMesh.new()
 	mesh.size = Vector2.ONE
@@ -782,26 +796,6 @@ func _build_path() -> void:
 	_path.top_level = true
 	_path.visible = false
 	add_child(_path)
-
-
-func _build_marker() -> void:
-	var mesh := TorusMesh.new()
-	mesh.inner_radius = 0.93
-	mesh.outer_radius = 1.0
-	mesh.rings = 48
-	mesh.ring_segments = 4
-	_marker_material = StandardMaterial3D.new()
-	_marker_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_marker_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_marker_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_marker = MeshInstance3D.new()
-	_marker.name = "SpellMarker"
-	_marker.mesh = mesh
-	_marker.material_override = _marker_material
-	_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_marker.top_level = true
-	_marker.visible = false
-	add_child(_marker)
 
 
 # --- keeping up with the spider ------------------------------------------

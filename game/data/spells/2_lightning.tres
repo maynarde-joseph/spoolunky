@@ -14,4 +14,5 @@ keys = PackedStringArray("wing_buds")
 cooldown = 7.0
 size = Vector2(1.2, 2.4)
 duration = Vector2(2.5, 4)
+sigil = 4
 colour = Color(0.98, 0.92, 0.55, 1)
