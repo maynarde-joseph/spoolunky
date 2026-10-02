@@ -31,6 +31,8 @@ enum Form {
 	## A bolt of fire thrown like silk, that burns what it lands among: harder the
 	## more silk is on it.
 	FIRE,
+	## Every web in reach called back to the spider, hitting what it passes on the way.
+	PULLBACK,
 }
 
 @export var id := "silk"

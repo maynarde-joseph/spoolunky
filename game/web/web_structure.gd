@@ -47,6 +47,10 @@ var max_durability := 1.0
 ## Snares are spun under tension and spend it on the first thing they catch.
 var armed := true
 
+## On its way back to the spider, called in by the Pullback: it catches nothing new
+## and lets go of nothing it has until it arrives. See [WebPull].
+var called_back := false
+
 ## Total metres of silk in the web, for the HUD and for repair costs.
 var strand_length := 0.0
 
@@ -487,7 +491,7 @@ func _make_walk_surface(shape: Shape3D, collider_transform := Transform3D.IDENTI
 
 
 func _on_body_entered(body: Node3D) -> void:
-	if body == null or not is_instance_valid(body):
+	if body == null or not is_instance_valid(body) or called_back:
 		return
 	if pattern.trigger == WebPattern.Trigger.ALERT:
 		_trip(body)
@@ -503,7 +507,7 @@ func _on_body_entered(body: Node3D) -> void:
 
 
 func _on_body_exited(body: Node3D) -> void:
-	if _snared.has(body):
+	if not called_back and _snared.has(body):
 		_release(body, false)
 
 

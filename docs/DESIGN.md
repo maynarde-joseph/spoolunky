@@ -460,20 +460,23 @@ rest are the same verb with other things behind it, so they share the web's
 keys, its reach, its wind-up and its kind of limit.
 
 **Right mouse casts whatever is in hand, and the number keys pick what is in
-hand** — 1 to 4, in the order below; the wheel turns through them too. A tap
+hand** — 1 to 5, in the order below; the wheel turns through them too. A tap
 casts at once; holding winds it up — a bigger web, a hotter bolt, a whirl that
 goes further, a longer stun — over the same second the web always took.
 
 **Every spell but the web is drawn in a magic circle.** Thin line art in the
 spell's colour — two rings with marks like writing between them, and an inner
 ring with the spell's own star in it: three points for fire, eight for
-lightning, five for water — that draws itself in as the key goes down, turns
+lightning, five for water, seven for the pullback — that draws itself in as the
+key goes down, turns
 while you hold, and flares and fades as the spell leaves through it. Where it is
 drawn is the aim made visible. Fire's hangs in front of the spider on the line
 the bolt will take, and the bolt goes through the middle of it. Lightning's lies
 on the ground where it will strike, as wide as the strike, and a second opens
 over it, face down, as the bolt comes out of it. Water's lies under the spider's
-feet, with the strip the whirl will run along laid out ahead of it. The web keeps
+feet, with the strip the whirl will run along laid out ahead of it. The
+pullback's is drawn round the spider, with a thin line out to every web it will
+call in. The web keeps
 its ball of silk over the spider's back: it is thrown silk, not magic.
 
 **One aim for all of them.** The crosshair is the only aiming there is, and it
@@ -491,6 +494,7 @@ what the circles are for.
 | **Water Spiral** | Huntsman | Digestive Flood | a whirl sent out from under the spider along the ground the way you aim, and the longer you hold, the further — a quarter of silk's reach on a tap, three fifths wound up. Everything it passes over is soaked, and slowed to two fifths of its pace for 2.5–4 s after: walking, running, a charge or a dive. It rides kerbs and slopes and breaks on the first wall. Wet wings do not lift | 7 s |
 | **Summon Lightning** | Root Weaver | Wing Buds | strikes where you point, and stuns what it reaches for 2.5–4 s: going nowhere, biting nothing, fighting nothing. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight. A web it reaches is live for twice the stun after; a line carries nothing | 7 s |
 | **Firebolt** | Glade Widow | — | a bolt thrown like silk — at a creature, or at a line under the cross — that bursts where it lands and burns every creature in the burst. Silk burns: a fifth of its harm to something bare, all of it to something wrapped all the way or held in a web. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line in the burst burns away | 5 s |
+| **Pullback** | Fern Spinner | — | every web you have in reach comes off its anchors and flies back to you, folding up as it comes and taking the frame it was walked round on with it — the feathers coming home to a blade dancer. What it passes through takes the silk one shot of that web would put on it — enough, and it is wrapped where it stands — and what the web held lands at your feet, bundled. Nothing in reach, nothing cast and no wait spent | 10 s |
 
 **Opening is the gates' rule.** A spell opens at a rung of the ladder, which is
 the key you can always count on, or sooner with a trait it names, which is the
@@ -521,6 +525,12 @@ four buttons:
   lasts.
 * **Lines carry nothing.** A line is a road (§6), not wiring: a strike on one is a
   strike on the floor under it, and nothing runs along it to the web at its end.
+* **A live web comes back live.** Called back with lightning still in it, a web
+  strikes everything it passes through on the way in. Strike your webs, then call
+  them back through whatever stands between you and them.
+* **Webs are ammunition.** Every web put up is one the Pullback can throw back
+  through something: spin them round a room, and the room is a trap that closes
+  on you, with whatever wandered in the way.
 * **Water carries lightning.** A strike on a whirl reaches everything in it, and
   anything wet — everything a whirl has been over, for six seconds after — takes
   it twice as hard, twice as long stunned and twice the fight gone, and passes it
@@ -1970,7 +1980,7 @@ hold in their head on the first screen.
 | **Right Mouse** | **Cast what is in hand** — the web, to start with (§3.2). With the web in hand: |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
 | **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |
-| **1–9** | **Take a spell in hand** — each key is one spell, in the book's order, whether or not you have it yet: 1 the web, 2 the water, 3 lightning, 4 fire. A key pressed mid-wind-up drops the wind-up and takes its own spell (§3.2) |
+| **1–9** | **Take a spell in hand** — each key is one spell, in the book's order, whether or not you have it yet: 1 the web, 2 the water, 3 lightning, 4 fire, 5 the pullback. A key pressed mid-wind-up drops the wind-up and takes its own spell (§3.2) |
 | **Wheel** | The next or last spell you have — growing, and what you eat, opens more |
 | **Q** | Free. It is meant for the bag, which is put away for now |
 | **E** | Evolution — what you are, and your odds on what eating could make you |

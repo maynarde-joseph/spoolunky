@@ -42,6 +42,7 @@ func _sections() -> Array[Callable]:
 		_test_storm_and_paralysis,
 		_test_firebolt,
 		_test_fire_burns_silk,
+		_test_pullback,
 		_test_the_whole_book_open,
 	]
 
@@ -1045,6 +1046,110 @@ func _test_fire_burns_silk() -> void:
 	check(is_instance_valid(far) and not far.is_queued_for_deletion(),
 		"and the far web stands still")
 	check(_frame_lines(far).size() == 4, "frame and all")
+
+
+## Every web in reach comes flying back: what it holds lands at the spider's feet,
+## bundled; what it passes through takes silk; a web out of reach stays; a web
+## lightning left live strikes what it passes; and with no web in reach nothing is
+## cast and nothing waits.
+func _test_pullback() -> void:
+	var pullback := spells.by_id("pullback")
+	if not check(pullback != null and pullback.form == SpiderSpell.Form.PULLBACK,
+			"there is a pullback in the book"):
+		return
+	check(not spells.is_open(pullback), "shut to a spiderling")
+	grow_to_tier(pullback.unlock_stage)
+	check(spells.is_open(pullback), "a %s can call its webs back"
+		% spider.growth.stages[pullback.unlock_stage].display_name)
+	spider.require_captured_mouse = false
+	var slab := add_slab(Vector3(150, 0.0, 30), Vector3(80, 0.5, 80))
+	await physics_frame
+	var stand := slab.global_position + Vector3(0, 0.25, 8.0)
+	stand_on(stand)
+	await physics_frame
+	var centre := slab.global_position + Vector3(0, 0.25, 0)
+	clear_prey_near(centre, 40.0, null)
+	var height := spider.stage().body_height
+	var half := height * 1.2
+	var lift := Vector3.UP * (half + height * 0.3)
+	var holding := _spin(centre + lift + Vector3(-height * 5.0, 0, 0), half)
+	var crossing := _spin(centre + lift + Vector3(height * 5.0, 0, 0), half)
+	var far := _spin(centre + lift + Vector3(0, 0, -spells.cast_reach() * 1.3), half)
+	if not check(holding != null and crossing != null and far != null,
+			"two webs in reach and one out of it"):
+		return
+	var fly := spawn("fly", (holding as WebNet).signal_point())
+	var on_the_way := (crossing as WebNet).signal_point().lerp(spider.global_position, 0.5)
+	var wasp := spawn("wasp", on_the_way)
+	if not check(fly != null and wasp != null, "a fly for one web, a wasp in the other's way"):
+		return
+	fly.struggle_stamina = 30.0
+	wasp.move_speed = 0.0
+	wasp.aggression = 0.0
+	await physics_frame
+	await physics_frame
+	if not check(fly.is_stuck() and wasp.is_loose(), "the fly caught, the wasp loose"):
+		return
+	check(spells.pullable_webs().size() == 2, "two webs to call back (%d)"
+		% spells.pullable_webs().size())
+
+	# Wound up the way a player does it: lines out to what is coming.
+	spells.take(spells.key_for(pullback))
+	send_action(spider.input_shoot)
+	await run_frames(3)
+	check(spells.pull_lines_shown() == 2, "winding up, it draws a line to each (%d)"
+		% spells.pull_lines_shown())
+	var ids := [holding.get_instance_id(), crossing.get_instance_id()]
+	var frame := _frame_lines(holding)
+	release_action(spider.input_shoot)
+	await process_frame
+	check(spells.cooling(pullback), "let go, they come")
+	check(spider.get_tree().get_nodes_in_group(WebPull.GROUP).size() == 2, "both of them")
+	var back: bool = await wait_until(func() -> bool:
+		return spider.get_tree().get_nodes_in_group(WebPull.GROUP).is_empty(), 300)
+	check(back, "and both arrive")
+	check(not is_instance_id_valid(ids[0]) and not is_instance_id_valid(ids[1]),
+		"and are gone once they do")
+	var frame_left := 0
+	for line in frame:
+		if is_instance_valid(line) and not line.is_queued_for_deletion():
+			frame_left += 1
+	check(frame.size() == 4 and frame_left == 0,
+		"taking the frames they were walked round on with them (%d of %d left)"
+		% [frame_left, frame.size()])
+	check(is_instance_valid(far) and not far.is_queued_for_deletion(),
+		"the web out of reach stays where it was")
+	check(fly.is_bundled() and fly.global_position.distance_to(spider.global_position)
+		< height * 3.0, "the fly lands at the spider's feet, bundled (%.2f m off)"
+		% fly.global_position.distance_to(spider.global_position))
+	check(wasp.bound > 0.0, "and the wasp in the way took silk as it went by (%d%%)"
+		% roundi(wasp.bound * 100.0))
+
+	# A live web strikes what it passes.
+	spells.forget_waits()
+	var live := _spin(centre + lift + Vector3(0, 0, -height * 6.0), half)
+	if not check(live != null, "another web"):
+		return
+	var beetle := spawn("beetle", (live as WebNet).signal_point().lerp(spider.global_position, 0.5))
+	if not check(beetle != null, "a beetle in its way"):
+		return
+	beetle.move_speed = 0.0
+	beetle.aggression = 0.0
+	await physics_frame
+	LightningStrike.call_down(level, (live as WebNet).signal_point(), height * 0.5, 2.0, 0,
+		height * 0.6)
+	check(WebCharge.of(live) != null and not beetle.is_stunned(),
+		"left live by lightning, out of the strike's reach of the beetle")
+	check(spells.cast_now(pullback), "called back")
+	var struck: bool = await wait_until(func() -> bool: return beetle.is_stunned(), 300)
+	check(struck, "and it strikes the beetle as it passes through")
+	await wait_until(func() -> bool:
+		return spider.get_tree().get_nodes_in_group(WebPull.GROUP).is_empty(), 300)
+
+	# Nothing in reach: nothing cast, and no wait spent on it.
+	spells.forget_waits()
+	check(not spells.cast_now(pullback), "with no web in reach, nothing comes")
+	check(not spells.cooling(pullback), "and the wait is not spent")
 
 
 ## A level can hand the spider the whole book at once: every spell open to a

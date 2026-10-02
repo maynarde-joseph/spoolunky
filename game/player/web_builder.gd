@@ -1181,6 +1181,12 @@ func lines() -> Array[WebStrand]:
 	return _lines.duplicate()
 
 
+## The webs that are up, oldest first.
+func webs() -> Array[WebNet]:
+	_forget_dead_webs()
+	return _webs.duplicate()
+
+
 ## Files a line the grapple just left, and takes the oldest down if that put us
 ## over the limit.
 ##

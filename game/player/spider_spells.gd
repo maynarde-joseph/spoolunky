@@ -39,6 +39,9 @@ signal notice(text: String)
 ## figure, so everything the spider casts winds up in the same second.
 @export var charge_time := 0.9
 
+## How fast a web called back by the Pullback comes, in body heights a second.
+@export var pull_pace := 18.0
+
 ## How far in front of the spider a thrown spell's circle hangs, in body heights:
 ## on the line the spell will take, so it leaves through the middle of it.
 @export var circle_ahead := 0.75
@@ -71,6 +74,11 @@ var _view: SpiderCamera
 var _builder: WebBuilder
 ## The circle drawn while a spell winds up, until it goes.
 var _circle: MagicCircle = null
+
+## Lines out to the webs a Pullback will call in, while it winds up.
+var _pull_lines: MeshInstance3D
+var _pull_mesh: ImmediateMesh
+var _pull_paint: StandardMaterial3D
 var _path: MeshInstance3D
 var _path_material: StandardMaterial3D
 
@@ -122,6 +130,7 @@ func _process(delta: float) -> void:
 		_builder.framing_held = charging
 	_update_circle()
 	_update_path()
+	_update_pull_lines()
 
 
 # --- the book -----------------------------------------------------------
@@ -381,6 +390,8 @@ func _cast_form(spell: SpiderSpell, wound: float) -> Dictionary:
 			return _strike(spell, wound)
 		SpiderSpell.Form.FIRE:
 			return _hurl(spell, wound)
+		SpiderSpell.Form.PULLBACK:
+			return _pull_back(spell, wound)
 	push_warning("%s has a form nothing casts yet" % spell.display_name)
 	return {"cast": false}
 
@@ -619,6 +630,66 @@ func _flare(web: WebStructure, colour: Color) -> void:
 		SpellFlash.burst(_host(), net.signal_point(), colour, maxf(net.radius, 0.05), 0.5)
 
 
+# --- pullback -------------------------------------------------------------
+
+## Every web the spider has in reach, called back to it at once — the way the
+## feathers come back to a blade dancer. Each comes off its anchors and flies
+## straight in with what it holds, and wraps what it passes through on the way as
+## one shot of that web would; a web lightning left live strikes it too. What the
+## webs held lands at the spider's feet, bundled. See [WebPull].
+##
+## Nothing in reach, nothing cast: the wait is not spent on a call nobody answers.
+func _pull_back(spell: SpiderSpell, wound: float) -> Dictionary:
+	var webs := pullable_webs()
+	if webs.is_empty():
+		notice.emit("No web in reach to call back")
+		return {"cast": false}
+	for web in webs:
+		# Off its anchors: the frame it was walked round on comes down as it goes,
+		# rather than standing round the place it was.
+		for line in _frame_of(web):
+			line.demolish()
+		var pull := WebPull.call_in(_host(), web, _spider, pull_pace * body_height(),
+			spell.size_at(wound) * body_height(), spell.power_at(wound), body_height())
+		if pull != null:
+			pull.arrived.connect(_on_pull_arrived)
+	notice.emit("Pullback — %d web%s coming back" % [webs.size(), "" if webs.size() == 1 else "s"])
+	return {"cast": true, "at": _spider.global_position}
+
+
+## The spider's own webs that a Pullback would call in now: standing, in reach, and
+## not already on their way.
+func pullable_webs() -> Array[WebNet]:
+	var found: Array[WebNet] = []
+	if _builder == null or _spider == null:
+		return found
+	var coming := {}
+	for node in get_tree().get_nodes_in_group(WebPull.GROUP):
+		var pull := node as WebPull
+		if pull != null and is_instance_valid(pull.web):
+			coming[pull.web] = true
+	for web in _builder.webs():
+		if web.is_queued_for_deletion() or coming.has(web):
+			continue
+		if web.signal_point().distance_to(_spider.global_position) <= cast_reach():
+			found.append(web)
+	return found
+
+
+func _on_pull_arrived(pull: WebPull, took: int) -> void:
+	var hit := 0
+	for creature in pull.hit:
+		if is_instance_valid(creature):
+			hit += 1
+	var said := PackedStringArray()
+	if took > 0:
+		said.append("%d bundle%s at your feet" % [took, "" if took == 1 else "s"])
+	if hit > 0:
+		said.append("%d hit on the way" % hit)
+	if not said.is_empty():
+		notice.emit("A web came back — " + ", ".join(said))
+
+
 ## How hard a dose of the spider's acid water works: fanged, with fangs.
 func venom_strength() -> float:
 	return Prey.FANG_VENOM if _traits != null and _traits.has_fangs() else 1.0
@@ -738,8 +809,13 @@ func circle_at(spell: SpiderSpell, wound: float) -> Dictionary:
 				+ up * height * 0.03, up), "wide": spell.size_at(wound) * height}
 	var ground := _ground({"point": _spider.global_position, "hit": false})
 	var floor_up: Vector3 = ground.get("normal", Vector3.UP)
+	var wide := spell.size_at(wound) * height
+	if spell.form == SpiderSpell.Form.PULLBACK:
+		# Called to the spider, so drawn round it: the size it is matters less than
+		# that it can be seen.
+		wide = height * lerpf(1.0, 1.3, wound)
 	return {"where": MagicCircle.facing(ground.get("point", _spider.global_position)
-		+ floor_up * height * 0.03, floor_up), "wide": spell.size_at(wound) * height}
+		+ floor_up * height * 0.03, floor_up), "wide": wide}
 
 
 ## Where an area spell lands, and which way is up there: lightning comes down on
@@ -779,6 +855,45 @@ func _update_path() -> void:
 		floor_at + heading * far * 0.5 + Vector3.UP * body_height() * 0.05)
 	_path.scale = Vector3(wide, 1.0, far)
 	_path_material.albedo_color = Color(spell.colour.r, spell.colour.g, spell.colour.b, 0.3)
+
+
+## A thin line out to every web a Pullback will call in, while it winds up: what
+## is coming back, before it comes.
+func _update_pull_lines() -> void:
+	var spell := current()
+	var shown := charging and spell != null and spell.form == SpiderSpell.Form.PULLBACK \
+		and _spider != null
+	if shown and _pull_lines == null:
+		_pull_mesh = ImmediateMesh.new()
+		_pull_paint = StandardMaterial3D.new()
+		_pull_paint.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_pull_paint.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_pull_paint.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_pull_paint.vertex_color_use_as_albedo = true
+		_pull_lines = MeshInstance3D.new()
+		_pull_lines.name = "PullLines"
+		_pull_lines.mesh = _pull_mesh
+		_pull_lines.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_pull_lines.top_level = true
+		add_child(_pull_lines)
+	if _pull_lines == null:
+		return
+	_pull_mesh.clear_surfaces()
+	_pull_lines.visible = shown
+	if not shown:
+		return
+	_pull_lines.global_transform = Transform3D.IDENTITY
+	var tint := Color(spell.colour.r, spell.colour.g, spell.colour.b, 0.55)
+	for web in pullable_webs():
+		WebGeometry.draw_line_into(_pull_mesh, _pull_paint, _spider.global_position,
+			web.signal_point(), body_height() * 0.02, tint)
+
+
+## How many webs the Pullback is showing lines to: for a check.
+func pull_lines_shown() -> int:
+	if _pull_lines == null or not _pull_lines.visible:
+		return 0
+	return _pull_mesh.get_surface_count()
 
 
 func _build_path() -> void:
