@@ -687,16 +687,19 @@ func is_wet() -> bool:
 	return wet > 0.0
 
 
-## Struck: stunned for [param seconds] — [constant WET_SHOCK] times as long if it
-## is wet — and, if a web has hold of it and it is still fighting, a share of its
-## fight gone with it, so a strike is how a web wins a fight it was losing.
-## Returns whether it took, which it does unless the creature is past caring.
-func shock(seconds: float) -> bool:
+## Struck: stunned for [param seconds] and hurt by [param harm] of its health —
+## [constant WET_SHOCK] times as long and as hard if it is wet — and, if a web has
+## hold of it and it is still fighting, a share of its fight gone with it, so a
+## strike is how a web wins a fight it was losing. Returns whether it took, which
+## it does unless the creature is past caring.
+func shock(seconds: float, harm := 0.0) -> bool:
 	if eaten or seconds <= 0.0 or _state == State.BUNDLED or _state == State.WRAPPED \
 			or _state == State.DEAD:
 		return false
 	var hard := WET_SHOCK if is_wet() else 1.0
 	stun(seconds * hard)
+	if harm > 0.0:
+		wound(harm * hard)
 	if is_fighting():
 		_fight_left = maxf(0.0, _fight_left - struggle_stamina * SHOCK_FIGHT * hard)
 	return true

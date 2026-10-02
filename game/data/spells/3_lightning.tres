@@ -6,7 +6,7 @@
 script = ExtResource("1_spell")
 id = "lightning"
 display_name = "Summon Lightning"
-description = "Lightning, called down where you point. It stuns what it strikes, runs through your silk to what your webs hold, and water carries it further."
+description = "Lightning, called down where you point. It stuns and hurts what it strikes, runs through your silk to what your webs hold, and water carries it further — twice as hard."
 form = 2
 order = 3
 unlock_stage = 3
@@ -14,5 +14,6 @@ keys = PackedStringArray("wing_buds")
 cooldown = 7.0
 size = Vector2(1.2, 2.4)
 duration = Vector2(2.5, 4)
+power = Vector2(0.1, 0.15)
 sigil = 4
 colour = Color(0.98, 0.92, 0.55, 1)

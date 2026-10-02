@@ -676,8 +676,8 @@ func _square(centre: Vector3, half: float) -> Array[Vector3]:
 
 # --- lightning ------------------------------------------------------------
 
-## Called down where the cross is: what it strikes is stunned, a hunter gives up
-## the chase, a flier falls — and the spider is never struck by its own.
+## Called down where the cross is: what it strikes is stunned and hurt, a hunter
+## gives up the chase, a flier falls — and the spider is never struck by its own.
 func _test_summon_lightning() -> void:
 	var lightning := spells.by_id("lightning")
 	if not check(lightning != null and lightning.form == SpiderSpell.Form.LIGHTNING,
@@ -715,6 +715,9 @@ func _test_summon_lightning() -> void:
 		return
 	check(is_equal_approx(wasp.stunned, lightning.duration.x),
 		"stunned for a tap's %.1fs" % wasp.stunned)
+	check(lightning.power_at(0.0) > 0.0
+		and is_equal_approx(wasp.health(), 1.0 - lightning.power_at(0.0)),
+		"and hurt (%d%% of it left)" % roundi(wasp.health() * 100.0))
 	check(not wasp.is_hunting(), "it gives up the chase")
 	check(is_equal_approx(spider.health, whole),
 		"and the spider is not struck by its own lightning")
@@ -787,9 +790,10 @@ func _test_lightning_runs_through_silk() -> void:
 
 
 ## A strike on a web leaves it live: what it holds stays stunned for as long as the
-## charge lasts, and what touches it is struck — caught by it, or loose in it. Then
-## the charge runs out, and it is a web again. A strike on a line leaves nothing in
-## the line, and nothing runs along it to the web at its end.
+## charge lasts, and what touches it is struck and hurt — caught by it, or loose in
+## it. Then the charge runs out, and it is a web again. A strike on a line leaves
+## nothing in the line, and nothing runs along it to the web at its end; aimed at a
+## line, it comes down on the floor under it.
 func _test_a_struck_web_stays_live() -> void:
 	var lightning := spells.by_id("lightning")
 	if lightning == null:
@@ -816,9 +820,12 @@ func _test_a_struck_web_stays_live() -> void:
 	if not check(wasp.is_fighting(), "fighting the web"):
 		return
 	var stun := lightning.duration.x
+	var harm := lightning.power_at(0.0)
 	var strike := LightningStrike.call_down(level, (web as WebNet).signal_point(), radius,
-		stun, 0, height * 0.6)
+		stun, 0, height * 0.6, lightning.colour, harm)
 	check(strike.charged.has(web), "struck")
+	check(is_equal_approx(wasp.health(), 1.0 - harm),
+		"and the wasp in it hurt (%d%% of it left)" % roundi(wasp.health() * 100.0))
 	var charge := WebCharge.of(web)
 	if not check(charge != null, "and the web is live"):
 		return
@@ -836,6 +843,7 @@ func _test_a_struck_web_stays_live() -> void:
 	var caught: bool = await wait_until(func() -> bool: return fly.is_stuck(), 60)
 	check(caught and fly.is_stunned(), "a fly caught in it is struck as it is caught")
 	check(charge.struck.has(fly), "and the web says it struck it")
+	check(fly.health() < 1.0, "and hurt (%d%% of it left)" % roundi(fly.health() * 100.0))
 
 	# Loose in it, but the web cannot take it: struck all the same.
 	var beetle := spawn("beetle", (web as WebNet).signal_point() + Vector3(-half * 0.3, 0.0, 0.0))
@@ -846,6 +854,7 @@ func _test_a_struck_web_stays_live() -> void:
 	beetle.aggression = 0.0
 	var touched: bool = await wait_until(func() -> bool: return beetle.is_stunned(), 60)
 	check(touched and beetle.is_loose(), "a beetle it cannot hold is struck where it touches it")
+	check(beetle.health() < 1.0, "and hurt (%d%% of it left)" % roundi(beetle.health() * 100.0))
 
 	# Then it runs out.
 	var web_id := web.get_instance_id()
@@ -868,6 +877,14 @@ func _test_a_struck_web_stays_live() -> void:
 		height * 0.6)
 	check(on_line.charged.is_empty(), "a strike on a line runs through nothing")
 	check(WebCharge.of(far_web) == null, "and the web at its end is not live")
+	aim_at((line.point_a + line.point_b) * 0.5 + Vector3.UP * height * 0.1)
+	# The builder finds where the cross lands on its physics frame.
+	await physics_frame
+	await process_frame
+	var under: Vector3 = spells.area_target(lightning).get("point", Vector3.ZERO)
+	check(builder.aimed_line() == line and absf(under.y - centre.y) < height * 0.1,
+		"aimed at the line, it comes down on the floor under it (%.2f m up)"
+		% (under.y - centre.y))
 
 
 ## Water carries a strike: what a whirl holds, twice as hard, and on from one wet
@@ -913,11 +930,14 @@ func _test_lightning_and_water() -> void:
 	var rim := whirl.global_position + side * whirl.radius * 0.95 + Vector3.UP * whirl.radius * 0.2
 	check(beetle.global_position.distance_to(rim) > small + beetle.hit_radius(),
 		"the rim of the whirl is out of the strike's own reach")
+	var before := beetle.health()
 	var strike := LightningStrike.call_down(level, rim, small, lightning.duration.x, 0,
-		height * 0.6)
+		height * 0.6, lightning.colour, lightning.power_at(0.0))
 	check(strike.shocked.has(beetle), "a strike on the whirl reaches what it holds")
 	check(is_equal_approx(beetle.stunned, lightning.duration.x * Prey.WET_SHOCK),
 		"and wet, twice as hard (%.1fs stunned)" % beetle.stunned)
+	check(is_equal_approx(before - beetle.health(), lightning.power_at(0.0) * Prey.WET_SHOCK),
+		"and twice as hurt (%d%% of it gone)" % roundi((before - beetle.health()) * 100.0))
 	spells.open_all = false
 
 	# On from one wet thing to the next, and no further than the water goes.

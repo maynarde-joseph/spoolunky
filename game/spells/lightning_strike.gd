@@ -4,7 +4,7 @@ extends Node3D
 ## Lightning, called down where the spider pointed.
 ##
 ## It strikes once, at once, and everything it reaches is stunned — out of it for
-## a few seconds, going nowhere, biting nothing, fighting nothing (see
+## a few seconds, going nowhere, biting nothing, fighting nothing — and hurt (see
 ## [method Prey.shock]). A hunter stunned gives up the chase and a flier stunned
 ## falls. Something a web is holding loses a share of its fight as well, so a
 ## strike is how a web wins a fight it was losing.
@@ -17,8 +17,9 @@ extends Node3D
 ##   keeping what it holds stunned and striking anything that touches it — see
 ##   [WebCharge] — and twice as long in a web Douse left wet. Lines carry nothing:
 ##   a strike on a line is a strike on the floor under it.
-## * **Water.** Anything wet takes it twice as hard and passes it on to anything
-##   wet near it, and a strike on a whirl reaches everything the whirl holds.
+## * **Water.** Anything wet takes it twice as hard — twice the stun and twice the
+##   hurt — and passes it on to anything wet near it, and a strike on a whirl
+##   reaches everything the whirl holds.
 ## * **Storm Rider.** It jumps on from what it struck to what is near, wet or not
 ##   — see [member arcs].
 ##
@@ -45,9 +46,10 @@ const FALL := 5.0
 const FALL_LEAST := 3.0
 
 ## How wide it strikes, in metres; how long what it strikes stays stunned, in
-## seconds, before anything wet doubles it.
+## seconds, and how much of its health it takes, before anything wet doubles them.
 var radius := 1.0
 var stun := 2.5
+var harm := 0.0
 
 ## How many times it jumps on from what it struck to the nearest thing it did not,
 ## wet or dry. Storm Rider's.
@@ -70,16 +72,18 @@ var _material: StandardMaterial3D
 var _light: OmniLight3D
 
 
-## Calls one down at [param at] under [param host]. It has struck by the time
-## this returns, so what it reached can be read straight off it.
+## Calls one down at [param at] under [param host], taking [param hurt] of the
+## health of everything it strikes. It has struck by the time this returns, so
+## what it reached can be read straight off it.
 static func call_down(host: Node, at: Vector3, wide: float, stun_for: float, jumps := 0,
-		gap := 0.2, tint := Color(0.98, 0.92, 0.55, 1.0)) -> LightningStrike:
+		gap := 0.2, tint := Color(0.98, 0.92, 0.55, 1.0), hurt := 0.0) -> LightningStrike:
 	if host == null:
 		return null
 	var strike := LightningStrike.new()
 	strike.name = "LightningStrike"
 	strike.radius = maxf(wide, 0.05)
 	strike.stun = stun_for
+	strike.harm = maxf(hurt, 0.0)
 	strike.arcs = maxi(jumps, 0)
 	strike.touch = maxf(gap, 0.01)
 	strike.colour = tint
@@ -156,7 +160,7 @@ func discharge() -> void:
 			_paths.append([_middle(web), _middle(other)])
 	for web in charged:
 		var live := stun * LIVE_FOR * (WetSilk.LIVE_LONGER if WetSilk.is_wet(web) else 1.0)
-		WebCharge.lay(web, live, stun, colour)
+		WebCharge.lay(web, live, stun, colour, harm)
 
 	# Water carries it on: anything wet near anything wet that it reached.
 	var reach := radius * CHAIN_REACH
@@ -193,7 +197,7 @@ func discharge() -> void:
 
 
 func _shock(creature: Prey, from: Vector3) -> bool:
-	if creature == null or shocked.has(creature) or not creature.shock(stun):
+	if creature == null or shocked.has(creature) or not creature.shock(stun, harm):
 		return false
 	shocked.append(creature)
 	_paths.append([from, creature.global_position])

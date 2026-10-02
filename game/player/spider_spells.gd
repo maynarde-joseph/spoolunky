@@ -413,7 +413,7 @@ func _ground(target: Dictionary) -> Dictionary:
 		"prey": null, "hit": true}
 
 
-## Lightning, called down where you point. See [LightningStrike].
+## Lightning, called down where you point: it stuns and hurts. See [LightningStrike].
 func _strike(spell: SpiderSpell, wound: float) -> Dictionary:
 	var target := area_target(spell)
 	var at: Vector3 = target.get("point", _spider.global_position)
@@ -421,7 +421,7 @@ func _strike(spell: SpiderSpell, wound: float) -> Dictionary:
 	var jumps := _traits.arc_bonus() if _traits != null else 0
 	var radius := spell.size_at(wound) * body_height()
 	var strike := LightningStrike.call_down(_host(), at, radius, stun, jumps,
-		body_height() * 0.6, spell.colour)
+		body_height() * 0.6, spell.colour, spell.power_at(wound))
 	if strike == null:
 		return {"cast": false}
 	# Where it comes down from: a second circle over the first, face down.
@@ -837,11 +837,15 @@ func circle_at(spell: SpiderSpell, wound: float) -> Dictionary:
 
 
 ## Where an area spell lands, and which way is up there: lightning comes down on
-## what the cross is on, and through open air to whatever is under it; a geyser
-## comes up out of the ground under what the cross is on.
+## what the cross is on, and through open air — or a line, which carries nothing —
+## to whatever is under it; a geyser comes up out of the ground under what the
+## cross is on.
 func area_target(spell: SpiderSpell) -> Dictionary:
 	if spell != null and spell.form == SpiderSpell.Form.LIGHTNING:
-		return _ground(aim_target())
+		var target := aim_target()
+		if target.get("line") != null:
+			target["hit"] = false
+		return _ground(target)
 	if spell != null and spell.form == SpiderSpell.Form.FIRE:
 		return _ground_under(aim_target())
 	return aim_target()

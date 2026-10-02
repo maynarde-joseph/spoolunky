@@ -6,8 +6,8 @@ extends Node3D
 ## A strike that reaches a web does not only run through it: the charge stays in
 ## the silk for a while, and the web is live. Everything it holds stays stunned
 ## for as long as the charge lasts — hanging limp, its fight running down, the
-## silk winning — and anything that touches it is struck: flown into, walked into,
-## or caught by it while it is live. A trap that shocks, put up where you want one,
+## silk winning — and anything that touches it is struck, stunned and hurt: flown
+## into, walked into, or caught by it while it is live. A trap that shocks, put up where you want one,
 ## and as good against something too big to hold as against something that is not.
 ##
 ## Webs only. A line is a road, not a trap, and lightning on one does nothing; see
@@ -31,8 +31,10 @@ var web: WebStructure
 ## Seconds of charge left.
 var left := 5.0
 
-## How long what it strikes stays stunned, before anything wet doubles it.
+## How long what it strikes stays stunned, and how much of its health a strike
+## takes, before anything wet doubles them.
 var stun := 2.5
+var harm := 0.0
 
 var colour := Color(0.98, 0.92, 0.55, 1.0)
 
@@ -48,22 +50,24 @@ var _emission_energy := 0.22
 
 
 ## Leaves a charge in [param in_web] for [param seconds], striking what it holds and
-## what touches it for [param stun_for] seconds. A web already live keeps whichever
-## charge is the longer and the harder.
+## what touches it for [param stun_for] seconds and [param hurt] of its health. A
+## web already live keeps whichever charge is the longer and the harder.
 static func lay(in_web: WebStructure, seconds: float, stun_for: float,
-		tint := Color(0.98, 0.92, 0.55, 1.0)) -> WebCharge:
+		tint := Color(0.98, 0.92, 0.55, 1.0), hurt := 0.0) -> WebCharge:
 	if in_web == null or not is_instance_valid(in_web) or in_web.is_queued_for_deletion():
 		return null
 	var charge := of(in_web)
 	if charge != null:
 		charge.left = maxf(charge.left, seconds)
 		charge.stun = maxf(charge.stun, stun_for)
+		charge.harm = maxf(charge.harm, hurt)
 		return charge
 	charge = WebCharge.new()
 	charge.name = NAME
 	charge.web = in_web
 	charge.left = seconds
 	charge.stun = stun_for
+	charge.harm = maxf(hurt, 0.0)
 	charge.colour = tint
 	charge.add_to_group("spell_effects")
 	in_web.add_child(charge)
@@ -140,7 +144,7 @@ func _touched(body: Node3D) -> void:
 		return
 	if not creature.is_loose() and creature.held_by() != web:
 		return
-	if creature.shock(stun):
+	if creature.shock(stun, harm):
 		if not struck.has(creature):
 			struck.append(creature)
 		SpellFlash.burst(get_tree().current_scene, creature.global_position, colour,

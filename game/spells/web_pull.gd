@@ -115,7 +115,7 @@ func _strike_along(from: Vector3, to: Vector3) -> void:
 			continue
 		hit.append(creature)
 		if charge != null:
-			creature.shock(charge.stun)
+			creature.shock(charge.stun, charge.harm)
 		var wrapped := creature.bind(creature.bind_share(web.hold_strength()) * share)
 		if wrapped:
 			creature.bundle()

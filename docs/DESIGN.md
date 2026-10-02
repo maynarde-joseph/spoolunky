@@ -496,7 +496,7 @@ what the circles are for.
 | **Silk** | the start | — | the thrown web: it sticks where it lands and wraps what it lands on | 3.5 s |
 | **Douse** | Huntsman | Digestive Flood | water sprayed in a fan in front of the spider, 4–7 body heights out and 35° either side. What the spray catches is soaked and stung (4–7% of its health), fliers included, and the ground stays wet for 8–12 s: whatever stands on it stays soaked. Wet wings do not lift. A web the spray reaches is wet too, and a wet web does not burn | 6 s |
 | **Gust** | Huntsman | — | wind blown in the same fan. Everything loose in it is shoved away from the spider and stung (5–8%) — into a web, if one is in the way, which catches it. A boss stands its ground and only takes the sting. Over ground Douse left wet, it lifts the water into a **whirl**: it runs on the way the wind blew, stops at the first thing it reaches, and holds it there for 2.5–4 s, round and round, wearing it down | 6 s |
-| **Summon Lightning** | Root Weaver | Wing Buds | strikes where you point, and stuns what it reaches for 2.5–4 s: going nowhere, biting nothing, fighting nothing. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight. A web it reaches is live for twice the stun after; a line carries nothing | 7 s |
+| **Summon Lightning** | Root Weaver | Wing Buds | strikes where you point, and stuns what it reaches for 2.5–4 s — going nowhere, biting nothing, fighting nothing — and takes 10–15% of its health. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight. A web it reaches is live for twice the stun after, and strikes what touches it as hard; a line carries nothing, and a strike aimed at one comes down on the floor under it | 7 s |
 | **Fire Geyser** | Glade Widow | — | a geyser of fire out of the ground under the cross — under the creature, the web or the line it is on, or where it meets the floor. The ground glows for a moment, then a column 1.6–2.8 body heights across bursts up five body heights tall, throws everything in it about three body heights into the air and burns it. Silk burns: a fifth of its harm (35–50% of a creature's health) to something bare, all of it to something wrapped all the way or held in a web. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line in the column burns away. No ground under the cross, nothing cast | 7 s |
 | **Pullback** | Fern Spinner | — | every web you have in reach comes off its anchors and flies back to you, folding up as it comes and taking the frame it was walked round on with it — the feathers coming home to a blade dancer. What it passes through takes the silk one shot of that web would put on it — enough, and it is wrapped where it stands — and what the web held lands at your feet, bundled. Nothing in reach, nothing cast and no wait spent | 10 s |
 
@@ -536,9 +536,9 @@ row of buttons:
   through something: spin them round a room, and the room is a trap that closes
   on you, with whatever wandered in the way.
 * **Water carries lightning.** Anything wet — sprayed, standing on wet ground,
-  or held in a whirl — takes a strike twice as hard, twice as long stunned and
-  twice the fight gone, and passes it on to anything wet near it, and a strike on
-  a whirl reaches what it holds. Douse a corridor, then the strike.
+  or held in a whirl — takes a strike twice as hard: twice as long stunned, twice
+  the hurt and twice the fight gone, and passes it on to anything wet near it, and
+  a strike on a whirl reaches what it holds. Douse a corridor, then the strike.
 * **Water keeps silk from fire, and keeps lightning in it.** A web the spray
   reached is wet for as long as the ground is: fire passes it by, burning what it
   holds without taking the web, and lightning stays in it twice as long. So a wet
@@ -572,8 +572,10 @@ not a web you cannot throw.
 
 **What is deliberately not in it:** no mana, no spell points and no damage
 numbers. A spell changes what a creature can do — move, fly, fight a web — which
-is what the rest of the game already reads, so a spell is only ever a new way of
-winning the fight the silk was already having.
+is what the rest of the game already reads. Every spell but silk and the
+Pullback hurts too, and what it takes is health, which is how hard a creature
+fights the silk (§12): so a spell is only ever a new way of winning the fight
+the silk was already having.
 
 ---
 
