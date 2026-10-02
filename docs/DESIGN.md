@@ -186,17 +186,19 @@ Three changes, and they only work together:
   standing, a web thrown over something, a bolt square on — now ask the creature the
   same question, and all three see the silk already on it.
 
-* **A web can be taken home.** Click a net and it comes down, with everything in
-  it arriving at the spider's feet as **bundles** — the state something wrapped
-  and cut loose is already in, so they keep their silk and go nowhere. A larder
-  stops being somewhere you have to go and stand in the open; you cash it in from
-  where you are. It costs the web, which is the same bargain `on_prey_taken` makes
-  one catch at a time, paid for the whole shelf at once. Lines are not collected;
-  a road is the floor you walk on.
+* **A web can be taken home** — by the Pullback (§3.2), which calls every web in
+  reach back with everything in it arriving at the spider's feet as **bundles**:
+  the state something wrapped and cut loose is already in, so they keep their silk
+  and go nowhere. A larder stops being somewhere you have to go and stand in the
+  open; you cash it in from where you are. It costs the web, which is the same
+  bargain `on_prey_taken` makes one catch at a time, paid for the whole shelf at
+  once.
 
-  Everything comes, a catch still fighting included. The alternative — it gets
-  loose if it was mid-struggle — reads as a coin flip rather than a decision, and
-  it makes the outcome of a trap depend on the frame you happened to click on.
+  It used to be a click: left mouse on a net took it down. That did what the spell
+  does for nothing, which made the spell pointless, and it made the click a
+  gamble — a grapple meant for the wall behind a web took the web down instead. A
+  web is a surface like any other now, and the click on one is a grapple to it.
+  It still stands in the way: a bundle behind a web is not hooked through it.
 
   This replaced hauling the web home on a rope. The rope was fiddly, and worse, it
   made the catch depend on the *trip*: walk it through a corner and half of it
@@ -1034,7 +1036,7 @@ to — needs that verb first.
 **Left mouse does it**, which is the part worth keeping. The button already
 means "silk connects me to that", and what it does has always depended on what
 you pointed at rather than on a mode you were in: a surface pulls you over to
-it, a line puts you on it. Something you have already caught is the third
+it, a line takes you onto it, hanging. Something you have already caught is the third
 reading, and the only sensible one — hauling yourself across a room to stand
 next to a thing that is wrapped up and going nowhere is not what the click
 meant. A long shot pays out the whole distance and then winds back in, so

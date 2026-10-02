@@ -261,14 +261,12 @@ enough. So the two tools work together — soften it with shots, then take it wi
 web — and the silk works off again if you leave it alone, so it is a burst of
 commitment rather than a slow grind from safety.
 
-**Take one home.** Point at a web you left somewhere and click: it comes down,
-and what was in it lands at your feet as **bundles** — silk still on them, going
-nowhere, yours to drain whenever. So a larder isn't somewhere you have to go and
-stand in the open any more; you cash it in from where you are.
-
-Everything in it comes, including anything still fighting. Taking the web is
-taking the catch; a catch that squirmed off because it happened to be mid-struggle
-would be a coin flip rather than a decision.
+**Call them home.** The **Pullback** spell brings every web you have in reach
+flying back to you, and what was in each lands at your feet as **bundles** —
+silk still on them, going nowhere, yours to drain whenever. So a larder isn't
+somewhere you have to go and stand in the open; you cash it in from where you
+are. A click on a web doesn't do that: a web is a surface like any other, and
+left mouse on it is a grapple to it.
 
 Silk you land also slows the thing down — the same silk that costs it fight costs
 it legs. That matters more than it sounds: almost everything outruns you when it
@@ -285,12 +283,7 @@ the web rule only ever takes down an **empty** one, because a web you filled is
 the thing you came back for.
 
 It costs you the web, mind — the same bargain taking one catch out already makes,
-paid for the whole shelf at once. Lines can't be taken down this way: a road is
-the floor you walk on, so the click on one stays a grapple.
-
-(This replaced dragging the web home on a rope. The rope was fiddly, and it made
-the catch depend on the trip — walk it through a corner and half of it spilled.
-What you actually wanted was the contents.)
+paid for the whole shelf at once.
 
 **Shoot it.** A bolt that lands on a creature puts silk on it and does nothing
 else — no web is left where it was standing, so shooting something down by your

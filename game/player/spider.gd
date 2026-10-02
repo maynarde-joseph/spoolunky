@@ -360,9 +360,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	# caught comes to you instead — which is the same act read the only way that
 	# makes sense for a thing that is already wrapped up and going nowhere.
 	elif event.is_action_pressed(input_place_anchor):
-		# Something already caught comes to you on a line; a web comes to you in
-		# one piece, with what was in it, and is gone; anything else is a surface
-		# to grapple to. [LiveLine] gets asked in between, but it ships set to do
+		# Something already caught comes to you on a line; anything else — a web
+		# included, since calling webs in is the Pullback's — is a surface to
+		# grapple to. [LiveLine] gets asked in between, but it ships set to do
 		# nothing, so by default a creature still on its feet is none of those and
 		# the aim reads through it — a creature standing in front of a wall is a
 		# creature *and* a wall, and a click that means one thing or the other

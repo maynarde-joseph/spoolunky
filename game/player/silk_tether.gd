@@ -228,7 +228,8 @@ func drag_factor() -> float:
 ##
 ## Webs are not cargo any more. Dragging one home on a rope was fiddly and it made
 ## the catch depend on the trip — walk it through a corner and half of it spilled.
-## A web comes home in one go now, and is gone: see [method collect_aimed].
+## Calling a web in, catches and all, is the Pullback's now: see
+## [method SpiderSpells.pullable_webs].
 func can_carry(target: Node3D) -> bool:
 	if target == null or not is_instance_valid(target):
 		return false
@@ -292,7 +293,8 @@ func _aim_tolerance(along: float, height: float) -> float:
 	return clampf(along * 0.05, height * 0.5, height * 2.0)
 
 
-## The net worth taking down along the line of sight, near or far.
+## The net along the line of sight, near or far: what stands between the cross and a
+## catch behind it.
 func aimed_web() -> WebStructure:
 	var found := _aimed_web()
 	return found.get("web") as WebStructure if not found.is_empty() else null
@@ -325,8 +327,7 @@ func _aimed_web() -> Dictionary:
 	if hit.is_empty():
 		return {}
 	var web := _web_under(hit.get("collider"))
-	# A road is a hit and not a web to take: the click falls through to the
-	# grapple, which is how you get onto one.
+	# A line is too thin to stand in front of anything.
 	if web == null or not web.can_be_collected():
 		return {}
 	var along: float = origin.distance_to(hit["position"])
@@ -347,26 +348,27 @@ func _web_under(collider: Variant) -> WebStructure:
 	return null
 
 
-## What left mouse asks the tether first, and whether it dealt with the click.
+## What left mouse asks the tether first, and whether it dealt with the click: a
+## catch under the crosshair comes to you on a line, rather than the grapple hauling
+## you over to stand next to it.
 ##
-## A catch comes to you on a line. A web comes to you in one piece and is gone.
-## Firing silk at either should do something to *it* rather than haul you over to
-## stand next to it, which is what the grapple would otherwise do.
+## A web under it does not come to you any more. Calling webs in, catches and all,
+## is the Pullback's — see [method SpiderSpells.pullable_webs] — and a click that did
+## what the spell does, for nothing, made the spell pointless and the click a
+## gamble: a grapple meant for the wall behind a web took the web down instead. So a
+## web is a surface like any other, and the click on one is a grapple to it.
 ##
-## Whichever of the two is nearer along the line of sight wins. That is the only
-## rule that matches what you can see: a bundle lying on the floor in *front* of a
-## web is the thing you pointed at, and the web behind it is not — and the other
-## way round just as much. Asking cargo first regardless was the first cut, and it
-## meant a web with anything settled in it could not be taken at all, because the
-## catch answered for it.
+## It still stands in the way, though. Whichever of a web and a bundle is nearer
+## along the line of sight is the thing you pointed at, so a bundle behind a web is
+## not hooked through it: the click grapples to the web.
 func take_aimed() -> bool:
-	var found := _aimed_web()
 	var target := aimed_cargo()
-	if found.is_empty():
-		return grab_aimed()
-	if target != null and _along_aim(target.global_position) <= float(found["along"]):
-		return grab_aimed()
-	return _collect(found["web"] as WebStructure)
+	if target == null:
+		return false
+	var found := _aimed_web()
+	if not found.is_empty() and float(found["along"]) < _along_aim(target.global_position):
+		return false
+	return grab_aimed()
 
 
 ## How far down the line of sight something sits.
@@ -382,32 +384,6 @@ func grab_aimed() -> bool:
 		return false
 	var target := aimed_cargo()
 	return target != null and hook(target)
-
-
-## Takes down the web under the crosshair and brings it in, catches and all.
-##
-## The catches arrive bundled — silk still on them, going nowhere, yours to drain
-## when you like — and the web is gone. That is the trade: a web is a larder while
-## it stands, and collecting it is how you cash it in, which costs you the web. The
-## same bargain [method WebStructure.on_prey_taken] already makes one catch at a
-## time; this is the whole shelf at once.
-func collect_aimed() -> bool:
-	return _collect(aimed_web())
-
-
-func _collect(web: WebStructure) -> bool:
-	if web == null or not is_instance_valid(web):
-		return false
-	var label := web.label()
-	var took := web.collect(_hand(), _height() * 1.5)
-	if took <= 0:
-		notice.emit("Took the %s down — there was nothing in it" % label)
-	elif took == 1:
-		notice.emit("Took the %s and what was in it — a bundle at your feet" % label)
-	else:
-		notice.emit("Took the %s and what was in it — %d bundles at your feet"
-			% [label, took])
-	return true
 
 
 ## How far the crosshair gets before it meets something solid. Cargo behind a
