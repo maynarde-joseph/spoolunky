@@ -7,6 +7,11 @@ extends CanvasLayer
 const HOTBAR_SLOT := 72.0
 const HOTBAR_GAP := 8.0
 
+## Whether the bag's bar is on screen. Put away for now: the number keys are the
+## spells', and nothing in the game asks for a device. Its keys are bound to nothing
+## while it is away, and the bar is still built, so bringing it back is this.
+const SHOW_BAG := false
+
 ## How far the bar sits off the bottom edge.
 const HOTBAR_MARGIN := 16.0
 
@@ -27,12 +32,10 @@ G                      grapple style: the pull takes you there; the line
                        lays a line from your feet to walk, fast
 Right Mouse            cast what is in hand — the web, to start with: it
                        sticks where it lands and wraps what it lands on
-Right Mouse  (hold)    wind it up: a bigger web, a wider whirl, a longer
-                       stun. Brackets on a creature: the silk goes where
-                       it is heading, so keep the cross on it and let go
-Q                      the next spell you have — growing opens more
-1-9 / wheel            pick a pocket on the bar
-X                      pick up the item you are looking at
+Right Mouse  (hold)    wind it up: a bigger web, a whirl that goes further,
+                       a longer stun. Brackets on a creature: the silk goes
+                       where it is heading, so keep the cross on it
+1-9 / wheel            take a spell in hand — each key is one spell
 E                      evolution — what eating has made you, and might
 F                      wrap prey, then drain it — in the Hollow Wood
                        a meal mends you; at a shrine, rest
@@ -482,7 +485,8 @@ func _on_trait_gained(gift: SpiderTrait, source: String) -> void:
 func _refresh_in_hand(builder: WebBuilder) -> void:
 	var spells := _spider.spells
 	var spell := spells.current() if spells != null else null
-	var more := "    [Q] next spell" if spells != null and spells.open_spells().size() > 1 else ""
+	var more := "    [1-%d] spells" % spells.book.size() \
+		if spells != null and spells.open_spells().size() > 1 else ""
 	if spell == null or spell.form == SpiderSpell.Form.SILK:
 		var chosen := builder.current_pattern()
 		pattern_label.text = "Silk — %s" % chosen.display_name if chosen != null else "Silk"
@@ -546,6 +550,16 @@ func _build_spell_strip() -> void:
 		row.add_theme_constant_override("separation", 10)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		chip.add_child(row)
+		# The key that takes it in hand, first, where the eye starts.
+		var key := Label.new()
+		key.name = "Key"
+		key.text = str(spells.key_for(spell))
+		key.add_theme_font_size_override("font_size", TITLE_SIZE)
+		key.custom_minimum_size = Vector2(22.0, 0.0)
+		key.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		key.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		key.modulate = Color(spell.colour.r, spell.colour.g, spell.colour.b, 1.0)
+		row.add_child(key)
 		var swatch := ColorRect.new()
 		swatch.name = "Swatch"
 		swatch.color = spell.colour
@@ -656,6 +670,7 @@ func _build_hotbar() -> void:
 	_hotbar.offset_right = wide * 0.5
 	_hotbar.offset_top = -(HOTBAR_SLOT + HOTBAR_MARGIN)
 	_hotbar.offset_bottom = -HOTBAR_MARGIN
+	_hotbar.visible = SHOW_BAG
 	add_child(_hotbar)
 
 	for i in SpiderInventory.SLOTS:

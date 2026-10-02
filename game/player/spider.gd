@@ -53,6 +53,7 @@ signal skill_tree_toggled()
 @export var input_shoot := "web_shoot"
 @export var input_skill_tree := "skill_tree"
 @export var input_next_spell := "spell_next"
+@export var input_prev_spell := "spell_prev"
 @export var input_grapple_style := "grapple_style"
 
 ## How much the view opens up at speed. Pure sugar, and most of what makes a
@@ -328,13 +329,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		tether.toggle()
 	# Right mouse casts whatever is in hand, and the first thing in hand is the
 	# web. A tap casts straight away; holding winds it up — a bigger ball of silk,
-	# a wider whirl, a longer stun — until you let go.
+	# a whirl that goes further, a longer stun — until you let go.
 	elif event.is_action_pressed(input_shoot):
 		spells.begin_cast()
 	elif event.is_action_released(input_shoot):
 		spells.release_cast()
 	elif event.is_action_pressed(input_next_spell):
 		spells.cycle(1)
+	elif event.is_action_pressed(input_prev_spell):
+		spells.cycle(-1)
+	elif _spell_key_input(event):
+		pass
 	elif event.is_action_pressed(input_skill_tree):
 		skill_tree_toggled.emit()
 	elif _hotbar_input(event):
@@ -376,8 +381,19 @@ func _unhandled_input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
+## The number keys: each takes its spell in hand. Returns whether the event was one
+## of them, so the caller can stop looking.
+func _spell_key_input(event: InputEvent) -> bool:
+	for key in range(1, 10):
+		if event.is_action_pressed("spell_%d" % key):
+			spells.take(key)
+			return true
+	return false
+
+
 ## The bar: nine numbered pockets and the wheel. Returns whether the event was
-## one of them, so the caller can stop looking.
+## one of them, so the caller can stop looking. Its keys are bound to nothing while
+## the bag is put away — see [member SpiderHUD.SHOW_BAG].
 func _hotbar_input(event: InputEvent) -> bool:
 	if bag == null:
 		return false

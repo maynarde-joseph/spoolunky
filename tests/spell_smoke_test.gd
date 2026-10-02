@@ -30,6 +30,7 @@ func _sections() -> Array[Callable]:
 		_test_silk_is_a_spell,
 		_test_what_opens_a_spell,
 		_test_the_strip,
+		_test_number_keys,
 		_test_a_lean_spider_casts_sooner,
 		_test_water_spiral,
 		_test_acid_water,
@@ -75,7 +76,7 @@ func _test_the_book() -> void:
 ## Right mouse still throws a web, through the spells now: silk in hand is the
 ## web builder's own throw, wait and all.
 func _test_silk_is_a_spell() -> void:
-	check(InputMap.has_action("spell_next"), "there is a key for the next spell")
+	check(InputMap.has_action("spell_next"), "the wheel turns the book")
 	var slab := add_slab(Vector3(60, 0.0, 60))
 	await physics_frame
 	stand_on(slab.global_position + Vector3(0, 0.25, 0))
@@ -119,7 +120,7 @@ func _test_what_opens_a_spell() -> void:
 	var ways := spells.opens_with(early)
 	check(ways.contains(spider.growth.stages[2].display_name) and ways.contains("Wing Buds"),
 		"and says what opens it (%s)" % ways)
-	check(not spells.cycle(1), "so Q has nothing else to take in hand")
+	check(not spells.cycle(1), "so the wheel has nothing else to take in hand")
 	check(spells.current().id == "silk", "and silk stays there")
 
 	grow_to_tier(2)
@@ -130,12 +131,12 @@ func _test_what_opens_a_spell() -> void:
 	while spells.current() != early and presses < spells.book.size():
 		spells.cycle(1)
 		presses += 1
-	check(spells.current() == early, "Q takes it in hand (%d press(es))" % presses)
+	check(spells.current() == early, "the wheel takes it in hand (%d turn(s))" % presses)
 	presses = 0
 	while spells.current().id != "silk" and presses < spells.book.size():
 		spells.cycle(1)
 		presses += 1
-	check(spells.current().id == "silk", "and Q again comes round to silk")
+	check(spells.current().id == "silk", "and the wheel comes round to silk again")
 
 	rewind_growth()
 	await physics_frame
@@ -194,6 +195,54 @@ func _test_the_strip() -> void:
 	if state != null:
 		check(state.text.begins_with("in hand · ") and state.text.ends_with("s"),
 			"and the chip counts the wait down (%s)" % state.text)
+
+
+## Each number key takes its spell in hand — the book's order, open or not, so a key
+## means one spell all game — Q is left for something else, and the bag's bar is
+## put away so the keys have one meaning.
+func _test_number_keys() -> void:
+	for key in range(1, spells.book.size() + 1):
+		check(InputMap.has_action("spell_%d" % key), "a key for spell %d" % key)
+	var wheel := InputMap.action_get_events("spell_next") + InputMap.action_get_events("spell_prev")
+	var on_the_wheel := wheel.size() == 2
+	for event in wheel:
+		on_the_wheel = on_the_wheel and event is InputEventMouseButton
+	check(on_the_wheel, "and the wheel turns it both ways")
+	var q_bound := false
+	for action in InputMap.get_actions():
+		for event in InputMap.action_get_events(action):
+			var key_event := event as InputEventKey
+			if key_event != null and key_event.physical_keycode == KEY_Q:
+				q_bound = true
+	check(not q_bound, "Q is free")
+	var hud := level.get_node_or_null("HUD") as SpiderHUD
+	if check(hud != null, "the level has a HUD"):
+		check(not hud._hotbar.visible, "and the bag's bar is put away")
+		var chip := hud._spell_chips.get(spells.book[2].id) as Control
+		var label := chip.get_node_or_null(NodePath("Row/Key")) as Label if chip != null else null
+		check(label != null and label.text == "3",
+			"each chip says its key (%s)" % (label.text if label != null else "—"))
+
+	spider.require_captured_mouse = false
+	var third := spells.book[2]
+	send_action("spell_3")
+	await process_frame
+	release_action("spell_3")
+	check(spells.current().id == "silk", "a shut spell's key leaves the hand where it was")
+	spells.open_all = true
+	send_action("spell_3")
+	await process_frame
+	release_action("spell_3")
+	check(spells.current() == third, "open, its key takes it in hand (%s)" % third.display_name)
+	send_action("spell_1")
+	await process_frame
+	release_action("spell_1")
+	check(spells.current().id == "silk", "and 1 takes silk back")
+	# A key while winding up: the wind-up is given up and the key has its way.
+	check(spells.take(2) and spells.begin_cast() and spells.charging, "winding up the second")
+	check(spells.take(4) and not spells.charging and spells.current() == spells.book[3],
+		"a key mid-wind-up drops it and takes its own spell")
+	spells.take(1)
 
 
 ## Hollow Frame is quicker with everything, silk included.
@@ -893,7 +942,7 @@ func _test_the_whole_book_open() -> void:
 	spells.open_all = true
 	check(spells.open_spells().size() == spells.book.size(),
 		"with the whole book open, it has all %d" % spells.book.size())
-	check(spells.cycle(1) and spells.current().id != "silk", "and Q takes the next in hand")
+	check(spells.cycle(1) and spells.current().id != "silk", "and the wheel takes the next in hand")
 	spells.open_all = false
 	check(spells.open_spells().size() == 1 and spells.current().id == "silk",
 		"shut again, it is back to silk")

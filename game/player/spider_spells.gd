@@ -5,8 +5,9 @@ extends Node3D
 ## ready again.
 ##
 ## Right mouse casts whatever is in hand: a tap casts it at once, and holding
-## winds it up — bigger, longer — until you let go. [b]Q[/b] moves the hand on to
-## the next spell that is open. Silk is the first spell and is still thrown by
+## winds it up — bigger, longer — until you let go. The number keys take a spell in
+## hand, and the wheel moves the hand along to the next one that is open. Silk is
+## the first spell and is still thrown by
 ## the [WebBuilder] exactly as it always was; all this decides is that silk is
 ## what the key means right now. Every other spell is cast from here.
 ##
@@ -197,10 +198,36 @@ func cycle(step := 1) -> bool:
 		if is_open(book[index]):
 			selected = index
 			changed.emit()
-			var spell := current()
-			notice.emit("%s in hand — %s" % [spell.display_name, spell.description])
+			notice.emit("%s in hand" % current().display_name)
 			return true
 	return false
+
+
+## Takes the spell on number key [param key] in hand: the book's first spell is 1,
+## its second 2, and so on, open or not, so a key means the same spell all game.
+## A wind-up under way is given up — the key is the player saying what they want in
+## hand now, and a key that waited on the throw it interrupted would feel dead.
+## False if there is no such spell, or it is shut, or already in hand.
+func take(key: int) -> bool:
+	var index := key - 1
+	if index < 0 or index >= book.size():
+		return false
+	var spell := book[index]
+	if not is_open(spell):
+		notice.emit("%s opens with %s" % [spell.display_name, opens_with(spell)])
+		return false
+	if index == selected:
+		return false
+	cancel_cast()
+	selected = index
+	changed.emit()
+	notice.emit("%s in hand" % spell.display_name)
+	return true
+
+
+## The number key that takes [param spell] in hand, or 0 if it is not in the book.
+func key_for(spell: SpiderSpell) -> int:
+	return book.find(spell) + 1
 
 
 ## Takes [param spell_id] in hand. False if it is not in the book or not open.
@@ -807,5 +834,6 @@ func _read_the_book(announce := true) -> void:
 	if announce:
 		for spell in fresh:
 			opened.emit(spell)
-			notice.emit("New spell: %s — [Q] to take it in hand" % spell.display_name)
+			notice.emit("New spell: %s — [%d] to take it in hand"
+				% [spell.display_name, key_for(spell)])
 	changed.emit()

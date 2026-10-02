@@ -459,7 +459,8 @@ press, and something leaves the spider and does its work where it lands. The
 rest are the same verb with other things behind it, so they share the web's
 keys, its reach, its wind-up and its kind of limit.
 
-**Right mouse casts whatever is in hand, and Q takes the next one in hand.** A
+**Right mouse casts whatever is in hand, and the number keys pick what is in
+hand** — 1 to 4, in the order below; the wheel turns through them too. A
 tap casts at once; holding winds it up — a bigger web, a hotter bolt, a whirl
 that goes further, a longer stun — over the same second the web always took.
 While it winds up it glows over the spider's back in its own colour; a spell that
@@ -1137,7 +1138,7 @@ and drags a line behind you**, always, with no mode around it. Getting about
 *is* building, so the silk is a record of where you went rather than something
 you stopped to construct. The only deliberate step left is the one that is
 actually a decision: look at a gap your lines enclose and press **Q** to fill
-it. *(Since parked; Q takes the next spell in hand now, §3.2.)*
+it. *(Since parked; Q is free now, §9.)*
 
 **Range is not a size tier.** Reach was capped at the tier's `anchor_range` —
 3.2 m as a spiderling — which meant getting anywhere was a chain of little
@@ -1951,8 +1952,9 @@ hold in their head on the first screen.
 | **Right Mouse** | **Cast what is in hand** — the web, to start with (§3.2). With the web in hand: |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
 | **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |
-| **Q** | The next spell you have — growing, and what you eat, opens more (§3.2) |
-| **1–9 / wheel** | Pick a pocket on the bar |
+| **1–9** | **Take a spell in hand** — each key is one spell, in the book's order, whether or not you have it yet: 1 the web, 2 the water, 3 lightning, 4 fire. A key pressed mid-wind-up drops the wind-up and takes its own spell (§3.2) |
+| **Wheel** | The next or last spell you have — growing, and what you eat, opens more |
+| **Q** | Free. It is meant for the bag, which is put away for now |
 | **E** | Evolution — what you are, and your odds on what eating could make you |
 | **F** | Wrap the prey you are looking at, then drain it. At a shrine in the Hollow Wood, rest (§12) |
 | **X** | Pull down the web or line you are looking at |
@@ -1963,8 +1965,9 @@ hold in their head on the first screen.
 ### Parked, not deleted
 
 The hold-to-size placer, the tuning dials, the weave modes, saved designs,
-trigger wiring, the bag mode and the tether all still exist, still compile and
-are still tested — their input actions are simply bound to nothing. Each is one
+trigger wiring, the bag and its bar, and the tether all still exist, still compile
+and are still tested — their input actions are simply bound to nothing, and the
+bar is hidden. Each is one
 line in `project.godot` to bring back once the simpler feel is proven, and
 nothing that works was thrown away to find out.
 

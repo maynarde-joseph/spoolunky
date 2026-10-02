@@ -86,13 +86,14 @@ one kept to what the keys do today.
 | **G** | **grapple style** — the **pull** takes you there; the **line** lays a line from your feet to where you point and stands you on it, and walking a line is fast — the same speed up it as down. Jump to step off |
 | **Left Mouse** *on something you've caught* | put a line on it and drag it instead — same click, read the only way that makes sense |
 | **Right Mouse** | **cast what is in hand** — the web, to start with: tap, or hold to wind it up |
-| **Q** | the next spell you have — growing, and what you eat, opens more |
+| **1–9** | **take a spell in hand** — 1 the web, 2 the water, 3 lightning, 4 fire; the wheel turns through them too. Growing, and what you eat, opens more |
+| **Q** | free for now — meant for the bag, which is put away |
 | **E** | evolution — what you are, and your odds on what eating could make you |
 | **F** | wrap caught prey, then drain it (also re-arms a sprung snare). In the Hollow Wood a meal mends you, and at a shrine **F** rests |
 | **Y** | **put a line on a bundle and drag it along** — again to drop what you're carrying |
 | **X** | pull down the web you're looking at, for half the silk back — or pick a device back up |
 | **G** | wire two things together — web or device, press on each end |
-| **N** | open the bag — place a device (wheel to pick, left mouse to put down) |
+| **N** | open the bag — place a device (wheel to pick, left mouse to put down). The bag's bar is hidden for now and its keys are free |
 | **J** | silk: unlimited / costs again (sandbox switch, starts unlimited) |
 | **B** | keep the rig you're looking at as a design |
 | **V** | place a saved design — wheel to pick, left mouse to spin it |
