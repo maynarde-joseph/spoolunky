@@ -470,7 +470,7 @@ whirl lays out the strip it will run along, as long and as wide as it will be.
 |---|---|---|---|---|
 | **Silk** | the start | — | the thrown web: it sticks where it lands and wraps what it lands on | 3.5 s |
 | **Water Spiral** | Huntsman | Digestive Flood | a whirl sent out from under the spider along the ground the way you aim, and the longer you hold, the further — a quarter of silk's reach on a tap, three fifths wound up. Everything it passes over is soaked, and slowed to two fifths of its pace for 2.5–4 s after: walking, running, a charge or a dive. It rides kerbs and slopes and breaks on the first wall. Wet wings do not lift | 7 s |
-| **Summon Lightning** | Root Weaver | Wing Buds | strikes where you point, and stuns what it reaches for 2.5–4 s: going nowhere, biting nothing, fighting nothing. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight | 7 s |
+| **Summon Lightning** | Root Weaver | Wing Buds | strikes where you point, and stuns what it reaches for 2.5–4 s: going nowhere, biting nothing, fighting nothing. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight. A web it reaches is live for twice the stun after; a line carries nothing | 7 s |
 | **Firebolt** | Glade Widow | — | a bolt thrown like silk — at a creature, or at a line under the cross — that bursts where it lands and burns every creature in the burst. Silk burns: a fifth of its harm to something bare, all of it to something wrapped all the way or held in a web. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line in the burst burns away | 5 s |
 
 **Opening is the gates' rule.** A spell opens at a rung of the ladder, which is
@@ -490,11 +490,17 @@ four buttons:
   easier one the next time. Thrown at a line, the bolt goes to the line rather
   than the wall behind it, so a line can be cut on purpose — yours, to drop
   something on the end of it, or one a creature is crossing.
-* **Lightning runs through silk.** A strike that reaches a web runs through it,
-  into every web whose silk touches it and down every wire from it, and stuns
-  everything they hold. Silk was already the road network (§6); it is the wiring
-  too. Strike the web you are standing next to and the wasp fighting a web across
-  the room stops fighting.
+* **Lightning runs through webs, and stays in them.** A strike that reaches a web
+  runs through it, into every web whose silk touches it and down every wire from
+  it, and stuns everything they hold. Strike the web you are standing next to and
+  the wasp fighting a web across the room stops fighting. And every one of them is
+  live after, for twice the stun: what it holds stays stunned the whole time, and
+  anything that touches it is struck — flown into it, walked into it, or caught by
+  it — whether or not the web could ever hold it. A live web is a trap that shocks,
+  and a wall a charge will not come through. The silk glows and sparks while it
+  lasts.
+* **Lines carry nothing.** A line is a road (§6), not wiring: a strike on one is a
+  strike on the floor under it, and nothing runs along it to the web at its end.
 * **Water carries lightning.** A strike on a whirl reaches everything in it, and
   anything wet — everything a whirl has been over, for six seconds after — takes
   it twice as hard, twice as long stunned and twice the fight gone, and passes it

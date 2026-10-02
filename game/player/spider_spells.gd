@@ -384,12 +384,14 @@ func _strike(spell: SpiderSpell, wound: float) -> Dictionary:
 		stun, jumps, body_height() * 0.6, spell.colour)
 	if strike == null:
 		return {"cast": false}
+	var said := PackedStringArray()
 	if not strike.shocked.is_empty():
-		var through := ""
-		if not strike.charged.is_empty():
-			through = " — through %d web%s" % [strike.charged.size(),
-				"" if strike.charged.size() == 1 else "s"]
-		notice.emit("Lightning — %d stunned%s" % [strike.shocked.size(), through])
+		said.append("%d stunned" % strike.shocked.size())
+	if not strike.charged.is_empty():
+		said.append("%d web%s live for %ds" % [strike.charged.size(),
+			"" if strike.charged.size() == 1 else "s", roundi(stun * LightningStrike.LIVE_FOR)])
+	if not said.is_empty():
+		notice.emit("Lightning — " + ", ".join(said))
 	return {"cast": true, "at": at}
 
 

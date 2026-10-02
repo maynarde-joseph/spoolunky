@@ -11,10 +11,12 @@ extends Node3D
 ##
 ## What makes it worth more than a stun is where it runs to:
 ##
-## * **Silk.** A strike on a web, or near enough to one, runs through it — and
+## * **Webs.** A strike on a web, or near enough to one, runs through it — and
 ##   through every web touching it, and every web wired to it — and reaches
-##   everything they hold. Silk was already the road network; it is the wiring
-##   too.
+##   everything they hold. And it stays: each of them is live for a while after,
+##   keeping what it holds stunned and striking anything that touches it — see
+##   [WebCharge]. Lines carry nothing: a strike on a line is a strike on the floor
+##   under it.
 ## * **Water.** Anything wet takes it twice as hard and passes it on to anything
 ##   wet near it, and a strike on a whirl reaches everything the whirl holds.
 ## * **Storm Rider.** It jumps on from what it struck to what is near, wet or not
@@ -33,6 +35,9 @@ const SHOWN := 0.35
 
 ## How bright the flash it lights the room with is, at its brightest.
 const FLASH := 3.0
+
+## How long a web it reaches stays live, as so many times the stun.
+const LIVE_FOR := 2.0
 
 ## How far above the strike the bolt comes down from, in radii — and in metres,
 ## at the least.
@@ -127,11 +132,11 @@ func discharge() -> void:
 		for creature in whirl.held():
 			_shock(creature, eye)
 
-	# Silk: every web it reaches, every web those touch or are wired to, and
-	# everything any of them holds.
+	# Webs: every one it reaches, every one those touch or are wired to, and
+	# everything any of them holds — and the charge stays in all of them. Not lines.
 	var frontier: Array[WebStructure] = []
 	for node in get_tree().get_nodes_in_group("silk_webs"):
-		var web := node as WebStructure
+		var web := node as WebNet
 		if web == null or web.is_queued_for_deletion() or not web.reaches(at, radius):
 			continue
 		charged.append(web)
@@ -149,6 +154,8 @@ func discharge() -> void:
 			charged.append(other)
 			frontier.append(other)
 			_paths.append([_middle(web), _middle(other)])
+	for web in charged:
+		WebCharge.lay(web, stun * LIVE_FOR, stun, colour)
 
 	# Water carries it on: anything wet near anything wet that it reached.
 	var reach := radius * CHAIN_REACH
@@ -193,19 +200,20 @@ func _shock(creature: Prey, from: Vector3) -> bool:
 
 
 ## The webs a charge in [param web] crosses to: any whose silk comes within
-## [member touch] of its own, and any it is wired to either way.
+## [member touch] of its own, and any it is wired to either way. Webs only — never
+## a line.
 func _neighbours(web: WebStructure) -> Array[WebStructure]:
 	var found: Array[WebStructure] = []
 	for link in web.links:
-		var linked := link as WebStructure
+		var linked := link as WebNet
 		if linked != null and is_instance_valid(linked):
 			found.append(linked)
 	for source in web.linked_sources():
-		var linked := source as WebStructure
+		var linked := source as WebNet
 		if linked != null and is_instance_valid(linked) and not found.has(linked):
 			found.append(linked)
 	for node in get_tree().get_nodes_in_group("silk_webs"):
-		var other := node as WebStructure
+		var other := node as WebNet
 		if other == null or other == web or other.is_queued_for_deletion() or found.has(other):
 			continue
 		for anchor in web.anchors:
@@ -237,16 +245,16 @@ func _build_view() -> void:
 	var strands := WebGeometry.StrandSet.new()
 	var drop := maxf(radius * FALL, FALL_LEAST)
 	var top := at + Vector3.UP * drop
-	_zigzag(strands, top, at, 14, drop * 0.05, width * 1.5)
+	zigzag(strands, top, at, 14, drop * 0.05, width * 1.5)
 	# Two short forks off the main bolt, part way down.
 	for fork in 2:
 		var from := top.lerp(at, 0.35 + 0.25 * float(fork))
 		var out := Vector3(randf_range(-1.0, 1.0), -0.6, randf_range(-1.0, 1.0)).normalized()
-		_zigzag(strands, from, from + out * drop * 0.18, 4, drop * 0.02, width)
+		zigzag(strands, from, from + out * drop * 0.18, 4, drop * 0.02, width)
 	for path in _paths:
 		var a: Vector3 = path[0]
 		var b: Vector3 = path[1]
-		_zigzag(strands, a, b, maxi(3, int(a.distance_to(b) / maxf(radius * 0.15, 0.01))),
+		zigzag(strands, a, b, maxi(3, int(a.distance_to(b) / maxf(radius * 0.15, 0.01))),
 			a.distance_to(b) * 0.08, width * 0.7)
 	_material = StandardMaterial3D.new()
 	_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -272,7 +280,10 @@ func _build_view() -> void:
 	SpellFlash.burst(get_parent(), at, colour, radius * 0.6, 0.25)
 
 
-static func _zigzag(strands: WebGeometry.StrandSet, from: Vector3, to: Vector3, pieces: int,
+## A crooked line from [param from] to [param to] in [param pieces] pieces, each
+## bend up to [param wander] off the straight: what a charge looks like going
+## somewhere.
+static func zigzag(strands: WebGeometry.StrandSet, from: Vector3, to: Vector3, pieces: int,
 		wander: float, width: float) -> void:
 	var span := to - from
 	if span.length_squared() < 0.000001:

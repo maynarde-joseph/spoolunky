@@ -35,6 +35,7 @@ func _sections() -> Array[Callable]:
 		_test_acid_water,
 		_test_summon_lightning,
 		_test_lightning_runs_through_silk,
+		_test_a_struck_web_stays_live,
 		_test_lightning_and_water,
 		_test_storm_and_paralysis,
 		_test_firebolt,
@@ -497,6 +498,90 @@ func _test_lightning_runs_through_silk() -> void:
 	await run_frames(30)
 	check(wasp.is_stuck() and wasp.is_stunned(),
 		"stunned in the silk, it is not fighting its way out")
+
+
+## A strike on a web leaves it live: what it holds stays stunned for as long as the
+## charge lasts, and what touches it is struck — caught by it, or loose in it. Then
+## the charge runs out, and it is a web again. A strike on a line leaves nothing in
+## the line, and nothing runs along it to the web at its end.
+func _test_a_struck_web_stays_live() -> void:
+	var lightning := spells.by_id("lightning")
+	if lightning == null:
+		return
+	grow_to_tier(lightning.unlock_stage)
+	var slab := add_slab(Vector3(-150, 0.0, -150), Vector3(40, 0.5, 40))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 6.0))
+	await physics_frame
+	var centre := slab.global_position + Vector3(0, 0.25, 0)
+	clear_prey_near(centre, 20.0, null)
+	var height := spider.stage().body_height
+	var radius := lightning.size_at(0.0) * height
+	var half := radius * 0.8
+	var web := _spin(centre + Vector3.UP * (half + height * 0.3), half)
+	if not check(web != null, "a web"):
+		return
+	var wasp := spawn("wasp", (web as WebNet).signal_point())
+	if not check(wasp != null, "a wasp in it"):
+		return
+	wasp.struggle_stamina = 30.0
+	await physics_frame
+	await physics_frame
+	if not check(wasp.is_fighting(), "fighting the web"):
+		return
+	var stun := lightning.duration.x
+	var strike := LightningStrike.call_down(level, (web as WebNet).signal_point(), radius,
+		stun, 0, height * 0.6)
+	check(strike.charged.has(web), "struck")
+	var charge := WebCharge.of(web)
+	if not check(charge != null, "and the web is live"):
+		return
+	check(is_equal_approx(charge.left, stun * LightningStrike.LIVE_FOR),
+		"for %.1fs, twice the stun" % charge.left)
+	# Past the stun the strike gave it, and it is still out of it.
+	await run_frames(roundi((stun + 0.6) * 60.0))
+	check(is_instance_valid(wasp) and wasp.is_stuck() and wasp.is_stunned(),
+		"the wasp stays stunned in it past the strike's own %.1fs" % stun)
+
+	# Caught while it is live: struck as it is caught.
+	var fly := spawn("fly", (web as WebNet).signal_point() + Vector3(half * 0.4, half * 0.3, 0.0))
+	if not check(fly != null, "a fly"):
+		return
+	var caught: bool = await wait_until(func() -> bool: return fly.is_stuck(), 60)
+	check(caught and fly.is_stunned(), "a fly caught in it is struck as it is caught")
+	check(charge.struck.has(fly), "and the web says it struck it")
+
+	# Loose in it, but the web cannot take it: struck all the same.
+	var beetle := spawn("beetle", (web as WebNet).signal_point() + Vector3(-half * 0.3, 0.0, 0.0))
+	if not check(beetle != null, "a beetle"):
+		return
+	beetle._recatch_cooldown = 30.0
+	beetle.move_speed = 0.0
+	beetle.aggression = 0.0
+	var touched: bool = await wait_until(func() -> bool: return beetle.is_stunned(), 60)
+	check(touched and beetle.is_loose(), "a beetle it cannot hold is struck where it touches it")
+
+	# Then it runs out.
+	var web_id := web.get_instance_id()
+	var out: bool = await wait_until(func() -> bool:
+		var standing := instance_from_id(web_id) as WebStructure
+		return standing == null or WebCharge.of(standing) == null, 900)
+	check(out, "and in the end the charge runs out")
+
+	# A line: nothing in it, and nothing along it to the web at its end.
+	var far_web := _spin(centre + Vector3(height * 10.0, half + height * 0.3, 0.0), half)
+	var line := WebStrand.spin(pattern_named("frame_line"),
+		centre + Vector3(height * 3.0, half + height * 0.3, 0.0),
+		(far_web as WebNet).signal_point(), 1.0) if far_web != null else null
+	if not check(line != null, "a line out to another web"):
+		return
+	line.place_in(webs)
+	await physics_frame
+	var on_line := LightningStrike.call_down(level,
+		centre + Vector3(height * 4.0, half + height * 0.3, 0.0), radius * 0.3, stun, 0,
+		height * 0.6)
+	check(on_line.charged.is_empty(), "a strike on a line runs through nothing")
+	check(WebCharge.of(far_web) == null, "and the web at its end is not live")
 
 
 ## Water carries a strike: everything a whirl has hold of, twice as hard, and on
