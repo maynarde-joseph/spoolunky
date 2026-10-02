@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SpellSkill" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spell_skill.gd" id="1_skill"]
+
+[resource]
+script = ExtResource("1_skill")
+id = "douse"
+display_name = "Douse"
+description = "Water sprayed in a fan in front of you. It soaks and stings what it catches, fliers included, and leaves the ground wet."
+kind = 0
+row = 0
+column = 0
+cost = 1
+spell = "douse"

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SpellSkill" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spell_skill.gd" id="1_skill"]
+
+[resource]
+script = ExtResource("1_skill")
+id = "archweaver"
+display_name = "Archweaver"
+description = "Every spell waits a quarter less, silk's included."
+kind = 3
+row = 4
+column = 1
+cost = 2
+cooldown_scale = 0.75

@@ -38,8 +38,10 @@ Right Mouse            cast what is in hand — the web, to start with: it
 Right Mouse  (hold)    wind it up: a bigger web, a wider spray, a longer
                        stun. Brackets on a creature: the silk goes
                        where it is heading, so keep the cross on it
-1-9 / wheel            take a spell in hand — each key is one spell
-E                      evolution — what eating has made you, and might
+1 / 2-6 / wheel        take a spell in hand — 1 is silk, 2 to 6 the five
+                       spells in your loadout
+E                      the spell tree — catching and eating earn ranks,
+                       ranks earn points, points learn spells
 F                      wrap prey, then drain it — in the Hollow Wood
                        a meal mends you; at a shrine, rest
 X                      pull down the web you're looking at
@@ -80,6 +82,9 @@ var _toast_timer := 0.0
 var _hotbar: HBoxContainer
 var _pockets: Array[Panel] = []
 var _tree: TraitTree
+var _spell_tree: SpellTreeScreen
+var _rank_label: Label
+var _rank_bar: ProgressBar
 var _condition_label: Label
 var _condition_bar: ProgressBar
 var _wind_bar: ProgressBar
@@ -157,6 +162,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	# Opening the tree frees the mouse, and a free mouse is exactly what stops
 	# the spider reading its keys — so the way back out has to be handled here.
+	elif _spell_tree != null and _spell_tree.open and event.is_action_pressed("skill_tree"):
+		_spell_tree.close()
+		get_viewport().set_input_as_handled()
 	elif _tree != null and _tree.open and event.is_action_pressed("skill_tree"):
 		_tree.close()
 		get_viewport().set_input_as_handled()
@@ -182,6 +190,10 @@ func _bind() -> void:
 	if _spider.traits != null:
 		_tree.setup(_spider.traits, _spider.growth)
 		_spider.traits.gained.connect(_on_trait_gained)
+	if _spider.spell_tree != null:
+		_spell_tree.setup(_spider.spell_tree, _spider.spells)
+		_spider.spell_tree.changed.connect(_refresh_rank)
+		_refresh_rank()
 	_spider.growth.biomass_changed.connect(_on_biomass_changed)
 	_spider.grew.connect(_on_grew)
 	_build_spell_strip()
@@ -242,6 +254,9 @@ func _set_sizes() -> void:
 		(label as Label).add_theme_font_size_override("font_size", int(sizes[label]))
 	if _condition_label != null:
 		_condition_label.add_theme_font_size_override("font_size", int(BODY_SIZE))
+	if _rank_label != null:
+		_rank_label.add_theme_font_size_override("font_size", int(BODY_SIZE))
+		_rank_bar.custom_minimum_size = Vector2(0.0, 8.0)
 	if _clock_label != null:
 		_clock_label.add_theme_font_size_override("font_size", int(BODY_SIZE))
 	if _area_label != null:
@@ -288,6 +303,34 @@ func _build_condition() -> void:
 	_wind_bar.max_value = 1.0
 	stats.add_child(_wind_bar)
 	stats.move_child(_wind_bar, 3)
+	# Under the size, the rank: what catching and eating are earning you.
+	_rank_label = Label.new()
+	_rank_label.name = "RankLabel"
+	stats.add_child(_rank_label)
+	stats.move_child(_rank_label, 4)
+	_rank_bar = ProgressBar.new()
+	_rank_bar.name = "RankBar"
+	_rank_bar.show_percentage = false
+	_rank_bar.max_value = 1.0
+	_rank_bar.modulate = Color(1.0, 0.86, 0.6, 1.0)
+	stats.add_child(_rank_bar)
+	stats.move_child(_rank_bar, 5)
+
+
+## The rank, how far to the next, and the points waiting to be spent.
+func _refresh_rank() -> void:
+	if _rank_label == null or _spider == null or _spider.spell_tree == null:
+		return
+	var tree := _spider.spell_tree
+	var points := tree.points()
+	var spend := "   %d point%s — [E]" % [points, "" if points == 1 else "s"] if points > 0 \
+		else ""
+	if tree.is_top_rank():
+		_rank_label.text = "%s%s" % [tree.rank_name(), spend]
+	else:
+		_rank_label.text = "%s   %d / %d%s" % [tree.rank_name(), roundi(tree.xp),
+			roundi(tree.rank_xp[tree.rank + 1]), spend]
+	_rank_bar.value = tree.rank_progress()
 
 
 ## A boss's name, its health, and under that how much of it is wrapped, across
@@ -463,15 +506,20 @@ func _refresh_condition() -> void:
 
 # --- the tree -----------------------------------------------------------
 
+## The spell tree, which [E] opens, and the evolution screen it took the key from —
+## still built, the way the bag's bar still is, for when evolving comes back.
 func _build_tree() -> void:
 	_tree = TraitTree.new()
 	_tree.name = "TraitTree"
 	add_child(_tree)
+	_spell_tree = SpellTreeScreen.new()
+	_spell_tree.name = "SpellTree"
+	add_child(_spell_tree)
 
 
 func _on_tree_asked_for() -> void:
-	if _tree != null:
-		_tree.toggle()
+	if _spell_tree != null:
+		_spell_tree.toggle()
 
 
 func _on_trait_gained(gift: SpiderTrait, source: String) -> void:
@@ -488,8 +536,8 @@ func _on_trait_gained(gift: SpiderTrait, source: String) -> void:
 func _refresh_in_hand(builder: WebBuilder) -> void:
 	var spells := _spider.spells
 	var spell := spells.current() if spells != null else null
-	var more := "    [1-%d] spells" % spells.book.size() \
-		if spells != null and spells.open_spells().size() > 1 else ""
+	var more := "    [1-%d] spells" % spells.hand().size() \
+		if spells != null and spells.hand().size() > 1 else ""
 	if spell == null or spell.form == SpiderSpell.Form.SILK:
 		var chosen := builder.current_pattern()
 		pattern_label.text = "Silk — %s" % chosen.display_name if chosen != null else "Silk"
@@ -513,23 +561,29 @@ func _refresh_spell_aim(spells: SpiderSpells) -> void:
 	problem_label.text = "On the %s" % prey.species if prey != null else ""
 
 
-## Every spell in the book, down the right-hand side: what is in hand, what is
-## waiting and for how long, and what opens the ones you do not have yet. Shut
-## spells are shown rather than hidden, the same as locked traits, because what
-## you are working toward is worth being able to see.
+## The keys, down the right-hand side: silk on 1, then the loadout — what is in
+## hand, what is waiting and for how long — and the slots still empty, which say
+## where to fill them.
 ##
-## Built once the spider is found, because the book is the spider's.
+## Built once the spider is found, because the keys are the spider's, and built
+## again whenever the number of them changes.
 func _build_spell_strip() -> void:
 	var spells := _spider.spells
-	if spells == null or spells.book.is_empty() or _spell_strip != null:
+	if spells == null or spells.book.is_empty():
 		return
+	var count := _strip_size(spells)
+	if _spell_strip != null and _spell_chips.size() == count:
+		return
+	if _spell_strip != null:
+		remove_child(_spell_strip)
+		_spell_strip.free()
+	_spell_chips.clear()
 	_spell_strip = VBoxContainer.new()
 	_spell_strip.name = "SpellStrip"
 	_spell_strip.add_theme_constant_override("separation", int(SPELL_GAP))
 	_spell_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# An explicit rect, the same as the bar: the strip is a known number of chips
 	# of a known size, so its height is arithmetic.
-	var count := spells.book.size()
 	var tall := float(count) * SPELL_CHIP.y + float(count - 1) * SPELL_GAP
 	_spell_strip.anchor_left = 1.0
 	_spell_strip.anchor_right = 1.0
@@ -540,12 +594,12 @@ func _build_spell_strip() -> void:
 	_spell_strip.offset_top = -(tall + HOTBAR_MARGIN)
 	_spell_strip.offset_bottom = -HOTBAR_MARGIN
 	add_child(_spell_strip)
-	# Under the evolution screen, which dims everything else while it is up.
+	# Under the screens, which dim everything else while they are up.
 	if _tree != null:
 		move_child(_spell_strip, _tree.get_index())
-	for spell in spells.book:
+	for i in count:
 		var chip := PanelContainer.new()
-		chip.name = spell.id
+		chip.name = "Key%d" % (i + 1)
 		chip.custom_minimum_size = SPELL_CHIP
 		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var row := HBoxContainer.new()
@@ -556,16 +610,14 @@ func _build_spell_strip() -> void:
 		# The key that takes it in hand, first, where the eye starts.
 		var key := Label.new()
 		key.name = "Key"
-		key.text = str(spells.key_for(spell))
+		key.text = str(i + 1)
 		key.add_theme_font_size_override("font_size", TITLE_SIZE)
 		key.custom_minimum_size = Vector2(22.0, 0.0)
 		key.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		key.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		key.modulate = Color(spell.colour.r, spell.colour.g, spell.colour.b, 1.0)
 		row.add_child(key)
 		var swatch := ColorRect.new()
 		swatch.name = "Swatch"
-		swatch.color = spell.colour
 		swatch.custom_minimum_size = Vector2(8.0, 0.0)
 		swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(swatch)
@@ -576,7 +628,6 @@ func _build_spell_strip() -> void:
 		row.add_child(lines)
 		var title := Label.new()
 		title.name = "Name"
-		title.text = spell.display_name
 		title.add_theme_font_size_override("font_size", BODY_SIZE)
 		lines.add_child(title)
 		var state := Label.new()
@@ -586,48 +637,70 @@ func _build_spell_strip() -> void:
 		state.custom_minimum_size = Vector2(SPELL_CHIP.x - 40.0, 0.0)
 		lines.add_child(state)
 		_spell_strip.add_child(chip)
-		_spell_chips[spell.id] = chip
+		_spell_chips[i] = chip
+
+
+## How many keys the strip shows: silk and the loadout's slots, filled or not — or,
+## with everything open, every spell there is.
+func _strip_size(spells: SpiderSpells) -> int:
+	var keys := spells.hand().size()
+	if spells.open_all:
+		return keys
+	return maxi(keys, SpellTree.LOADOUT_SIZE + 1)
 
 
 ## Read off the spells every frame, the same way the silk limits are: a wait
 ## running down has no moment worth signalling.
 func _refresh_spells() -> void:
 	var spells := _spider.spells
-	if spells == null or _spell_strip == null:
+	if spells == null:
 		return
+	_build_spell_strip()
+	if _spell_strip == null:
+		return
+	var keys := spells.hand()
 	var holding := spells.current()
-	for spell in spells.book:
-		var chip: PanelContainer = _spell_chips.get(spell.id)
-		if chip == null:
-			continue
-		var open := spells.is_open(spell)
-		var in_hand := open and spell == holding
+	for i in _spell_chips:
+		var chip: PanelContainer = _spell_chips[i]
+		var spell: SpiderSpell = keys[i] if i < keys.size() else null
+		var in_hand := spell != null and spell == holding
 		chip.add_theme_stylebox_override("panel", _chip_style(spell, in_hand))
-		chip.modulate = Color(1, 1, 1, 1) if open else Color(1, 1, 1, 0.45)
+		chip.modulate = Color(1, 1, 1, 1) if spell != null else Color(1, 1, 1, 0.45)
+		var tint := spell.colour if spell != null else Color(0.6, 0.62, 0.68, 1.0)
+		var key := chip.get_node_or_null(NodePath("Row/Key")) as Label
+		if key != null:
+			key.modulate = Color(tint.r, tint.g, tint.b, 1.0)
+		var swatch := chip.get_node_or_null(NodePath("Row/Swatch")) as ColorRect
+		if swatch != null:
+			swatch.color = tint
+		var title := chip.get_node_or_null(NodePath("Row/Lines/Name")) as Label
+		if title != null:
+			title.text = spell.display_name if spell != null else "—"
 		var state := chip.get_node_or_null(NodePath("Row/Lines/State")) as Label
 		if state != null:
-			state.text = _chip_state(spells, spell, open, in_hand)
+			state.text = _chip_state(spells, spell, in_hand)
 
 
 ## What a chip says under the spell's name.
-func _chip_state(spells: SpiderSpells, spell: SpiderSpell, open: bool, in_hand: bool) -> String:
-	if not open:
-		return "opens: %s" % spells.opens_with(spell)
+func _chip_state(spells: SpiderSpells, spell: SpiderSpell, in_hand: bool) -> String:
+	if spell == null:
+		return "empty — put a spell here in the tree [E]"
 	var wait := "%.1fs" % spells.cooldown_left(spell) if spells.cooling(spell) else "ready"
 	return "in hand · %s" % wait if in_hand else wait
 
 
-## The frame round a chip: the spell's own colour, heavy while it is in hand.
-## Made once per look and kept, rather than a new one every frame.
+## The frame round a chip: the spell's own colour, heavy while it is in hand, and
+## grey round an empty slot. Made once per look and kept, rather than a new one
+## every frame.
 func _chip_style(spell: SpiderSpell, in_hand: bool) -> StyleBoxFlat:
-	var key := "%s|%s" % [spell.id, in_hand]
+	var key := "%s|%s" % [spell.id if spell != null else "", in_hand]
 	if _chip_styles.has(key):
 		return _chip_styles[key]
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.06, 0.07, 0.1, 0.82)
 	var edge := 3 if in_hand else 1
-	style.border_color = Color(spell.colour.r, spell.colour.g, spell.colour.b,
-		0.95 if in_hand else 0.3)
+	var tint := spell.colour if spell != null else Color(0.6, 0.62, 0.68, 1.0)
+	style.border_color = Color(tint.r, tint.g, tint.b, 0.95 if in_hand else 0.3)
 	style.border_width_left = edge
 	style.border_width_right = edge
 	style.border_width_top = edge

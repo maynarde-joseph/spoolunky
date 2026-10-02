@@ -215,6 +215,8 @@ func rewind_spells() -> void:
 	spells.cancel_cast()
 	spells.forget_waits()
 	spells.open_all = false
+	if spider.spell_tree != null:
+		spider.spell_tree.forget_all()
 	spells.selected = 0
 	for node in spider.get_tree().get_nodes_in_group("spell_effects"):
 		if is_instance_valid(node) and not node.is_queued_for_deletion():

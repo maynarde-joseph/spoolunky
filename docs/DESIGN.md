@@ -312,8 +312,8 @@ heights in the world's units, where a metre is about fourteen.
 
 What each eats is what it is built for: the creature whose size class the
 tier's bite power reaches. Anything bigger is still food if you can hold it,
-and the best meal in the game — it is how you evolve fastest (§3.1); the wyvern
-is past every tier's bite, and only ever that kind of meal. The names are the
+and the best meal in the game — worth the most experience, the bigger it is
+(§3.3); the wyvern is past every tier's bite, and only ever that kind of meal. The names are the
 places: each place in the hunting ground is built for a stretch of tiers (§4),
 the fern floor for the first three, the Rootways for the third to the fifth, the
 glade for the fourth to the sixth, the ruins for the fifth to the seventh, the
@@ -343,6 +343,11 @@ now. A door you are too big for is never the design; a door that needs more of
 you than you have yet, always is.
 
 ### 3.1 Evolution — what eating turns you into
+
+> **Parked.** The spell tree (§3.3) is what the spider grows into now, and a
+> meal no longer rolls for a trait anywhere (`evolves_by_eating` is off by
+> default). Everything below is kept as it was — the traits, the odds, the
+> screen — so it can come back; a boss still hands over what it kept.
 
 The rejection above has one real cost, and it took a while to see it: if the
 only thing eating does is move you up a fixed ladder, there is **no decision in
@@ -462,9 +467,10 @@ rest are the same verb with other things behind it, so they share the web's
 keys, its reach, its wind-up and its kind of limit.
 
 **Right mouse casts whatever is in hand, and the number keys pick what is in
-hand** — 1 to 6, in the order below; the wheel turns through them too. A tap
-casts at once; holding winds it up — a bigger web, a hotter bolt, a wider spray,
-a longer stun — over the same second the web always took.
+hand** — 1 is always the web, and 2 to 6 are the five spells in the loadout
+(§3.3); the wheel turns through them too. A tap casts at once; holding winds it
+up — a bigger web, a taller geyser, a wider spray, a longer stun — over the same
+second the web always took.
 
 **Every spell but the web is drawn in a magic circle.** Thin line art in the
 spell's colour — two rings with marks like writing between them, and an inner
@@ -473,39 +479,37 @@ lightning, five for water, eight for wind, seven for the pullback — that draws
 itself in as the
 key goes down, turns
 while you hold, and flares and fades as the spell leaves through it. Where it is
-drawn is the aim made visible. Fire's hangs in front of the spider on the line
-the bolt will take, and the bolt goes through the middle of it. Lightning's lies
-on the ground where it will strike, as wide as the strike, and a second opens
-over it, face down, as the bolt comes out of it. Water's and wind's lie under the
+drawn is the aim made visible. Fire's lies on the ground the geyser will come up
+out of, as wide as the column. Lightning's lies on the ground where it will
+strike, as wide as the strike, and a second opens over it, face down, as the bolt
+comes out of it. Water's and wind's lie under the
 spider's feet, with the fan they will cover laid out on the ground ahead. The
 pullback's is drawn round the spider, with a thin line out to every web it will
 call in. The web keeps
 its ball of silk over the spider's back: it is thrown silk, not magic.
 
 **One aim for all of them.** The crosshair is the only aiming there is, and it
-is the same for everything: a thrown spell goes from the spider to whatever the
-cross is on, at where the creature under it will be; lightning comes down on it;
-water and wind go the way it points. Giving each spell its own way of aiming was
+is the same for everything: silk goes from the spider to whatever the cross is
+on, at where the creature under it will be; lightning comes down on it, and fire
+comes up out of the ground under it; water and wind go the way it points. Giving each spell its own way of aiming was
 weighed and left: a second aim is a second thing to learn and get wrong in a
 fight, and what each spell actually needed was not another aim but to show,
 before you let go, what it will do from the aim there already is — which is
 what the circles are for.
 
-| Spell | Opens at | Or with | What it does | Wait |
-|---|---|---|---|---|
-| **Silk** | the start | — | the thrown web: it sticks where it lands and wraps what it lands on | 3.5 s |
-| **Douse** | Huntsman | Digestive Flood | water sprayed in a fan in front of the spider, 4–7 body heights out and 35° either side. What the spray catches is soaked and stung (4–7% of its health), fliers included, and the ground stays wet for 8–12 s: whatever stands on it stays soaked. Wet wings do not lift. A web the spray reaches is wet too, and a wet web does not burn | 6 s |
-| **Gust** | Huntsman | — | wind blown in the same fan. Everything loose in it is shoved away from the spider and stung (5–8%) — into a web, if one is in the way, which catches it. A boss stands its ground and only takes the sting. Over ground Douse left wet, it lifts the water into a **whirl**: it runs on the way the wind blew, stops at the first thing it reaches, and holds it there for 2.5–4 s, round and round, wearing it down | 6 s |
-| **Summon Lightning** | Root Weaver | Wing Buds | strikes where you point, and stuns what it reaches for 2.5–4 s — going nowhere, biting nothing, fighting nothing — and takes 10–15% of its health. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight. A web it reaches is live for twice the stun after, and strikes what touches it as hard; a line carries nothing, and a strike aimed at one comes down on the floor under it | 7 s |
-| **Fire Geyser** | Glade Widow | — | a geyser of fire out of the ground under the cross — under the creature, the web or the line it is on, or where it meets the floor. The ground glows for a moment, then a column 1.6–2.8 body heights across bursts up five body heights tall, throws everything in it about three body heights into the air and burns it. Silk burns: a fifth of its harm (35–50% of a creature's health) to something bare, all of it to something wrapped all the way or held in a web. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line in the column burns away. No ground under the cross, nothing cast | 7 s |
-| **Pullback** | Fern Spinner | — | every web you have in reach comes off its anchors and flies back to you, folding up as it comes and taking the frame it was walked round on with it — the feathers coming home to a blade dancer. What it passes through takes the silk one shot of that web would put on it — enough, and it is wrapped where it stands — and what the web held lands at your feet, bundled. Nothing in reach, nothing cast and no wait spent | 10 s |
+| Spell | Learned | What it does | Wait |
+|---|---|---|---|
+| **Silk** | from the start | the thrown web: it sticks where it lands and wraps what it lands on | 3.5 s |
+| **Douse** | Apprentice, 1 point | water sprayed in a fan in front of the spider, 4–7 body heights out and 35° either side. What the spray catches is soaked and stung (4–7% of its health), fliers included, and the ground stays wet for 8–12 s: whatever stands on it stays soaked. Wet wings do not lift. With Wet Silk learned, a web the spray reaches is wet too, and a wet web does not burn | 6 s |
+| **Gust** | Apprentice, 1 point | wind blown in the same fan. Everything loose in it is shoved away from the spider and stung (5–8%) — into a web, if one is in the way, which catches it. A boss stands its ground and only takes the sting. With Waterspout learned, over ground Douse left wet it lifts the water into a **whirl**: it runs on the way the wind blew, stops at the first thing it reaches, and holds it there for 2.5–4 s, round and round, wearing it down | 6 s |
+| **Summon Lightning** | Adept, 1 point | strikes where you point, and stuns what it reaches for 2.5–4 s — going nowhere, biting nothing, fighting nothing — and takes 10–15% of its health. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight. With Live Silk learned, a web it reaches is live for twice the stun after, and strikes what touches it as hard; a line carries nothing until Live Lines, and a strike aimed at one comes down on the floor under it | 7 s |
+| **Fire Geyser** | Journeyman, 2 points | a geyser of fire out of the ground under the cross — under the creature, the web or the line it is on, or where it meets the floor. The ground glows for a moment, then a column 1.6–2.8 body heights across bursts up five body heights tall, throws everything in it about three body heights into the air and burns it. Silk burns: a fifth of its harm (35–50% of a creature's health) to something bare, all of it to something wrapped all the way or held in a web. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line in the column burns away. No ground under the cross, nothing cast | 7 s |
+| **Pullback** | Apprentice, 1 point | every web you have in reach comes off its anchors and flies back to you, folding up as it comes and taking the frame it was walked round on with it — the feathers coming home to a blade dancer. What it passes through takes the silk one shot of that web would put on it — enough, and it is wrapped where it stands — and what the web held lands at your feet, bundled. Nothing in reach, nothing cast and no wait spent | 10 s |
 
-**Opening is the gates' rule.** A spell opens at a rung of the ladder, which is
-the key you can always count on, or sooner with a trait it names, which is the
-shortcut luck can hand you. What eating turns you into is what you can cast. The
-strip down the right-hand side of the HUD shows every spell, what is waiting and
-for how long, and what opens the ones you do not have yet — shown, not hidden,
-the same as locked traits.
+**Spells are learned, in the tree** (§3.3): with points that ranks hand out, in
+the rank's row. The strip down the right-hand side of the HUD shows the keys —
+the web on 1 and the loadout's five on 2 to 6 — what is in hand, what is waiting
+and for how long, and the slots still empty, which say where to fill them.
 
 **They work off each other.** This is the part that makes the spells more than a
 row of buttons:
@@ -518,17 +522,20 @@ row of buttons:
   the next time. Aimed at a line, the geyser comes up under the line rather than
   at the wall behind it, so a line can be cut on purpose — yours, to drop
   something on the end of it, or one a creature is crossing.
-* **Lightning runs through webs, and stays in them.** A strike that reaches a web
-  runs through it, into every web whose silk touches it and down every wire from
-  it, and stuns everything they hold. Strike the web you are standing next to and
+* **Lightning runs through webs, and stays in them** (Live Silk). A strike that
+  reaches a web runs through it, into every web whose silk touches it and down
+  every wire from it, and stuns everything they hold. Strike the web you are standing next to and
   the wasp fighting a web across the room stops fighting. And every one of them is
   live after, for twice the stun: what it holds stays stunned the whole time, and
   anything that touches it is struck — flown into it, walked into it, or caught by
   it — whether or not the web could ever hold it. A live web is a trap that shocks,
   and a wall a charge will not come through. The silk glows and sparks while it
   lasts.
-* **Lines carry nothing.** A line is a road (§6), not wiring: a strike on one is a
-  strike on the floor under it, and nothing runs along it to the web at its end.
+* **Lines carry nothing — until Live Lines.** A line is a road (§6), not wiring: a
+  strike on one is a strike on the floor under it, and nothing runs along it to the
+  web at its end. With Live Lines, a strike that reaches a line runs down it to the
+  webs at its ends, and a charge in a web runs down every line tied to it: string
+  your webs together and one strike runs through all of them.
 * **A live web comes back live.** Called back with lightning still in it, a web
   strikes everything it passes through on the way in. Strike your webs, then call
   them back through whatever stands between you and them.
@@ -539,20 +546,23 @@ row of buttons:
   or held in a whirl — takes a strike twice as hard: twice as long stunned, twice
   the hurt and twice the fight gone, and passes it on to anything wet near it, and
   a strike on a whirl reaches what it holds. Douse a corridor, then the strike.
-* **Water keeps silk from fire, and keeps lightning in it.** A web the spray
-  reached is wet for as long as the ground is: fire passes it by, burning what it
-  holds without taking the web, and lightning stays in it twice as long. So a wet
-  web over a geyser is a net: what the geyser throws up goes into it, and sticks.
+* **Water keeps silk from fire, and keeps lightning in it** (Wet Silk). A web the
+  spray reached is wet for as long as the ground is: fire passes it by, burning
+  what it holds without taking the web, and lightning stays in it twice as long.
+  So a wet web over a geyser is a net: what the geyser throws up goes into it, and
+  sticks. With Sodden Silk the water weighs it down, and it holds half as hard
+  again while it is wet.
 * **Wind drives prey into silk.** A gust shoves what it reaches away from the
   spider, and a web in the way catches it as if it had flown in — so a web put up
   behind something is a web that thing can be blown into.
-* **Wind over water is a whirl.** Neither spell makes one alone. Wet the ground,
-  then blow over it, and the water rises into a whirl that runs on with the wind
-  and holds the first thing it reaches, going nowhere — something held is
-  something a thrown web does not have to lead.
+* **Wind over water is a whirl** (Waterspout). Neither spell makes one alone. Wet
+  the ground, then blow over it, and the water rises into a whirl that runs on
+  with the wind and holds the first thing it reaches, going nowhere — something
+  held is something a thrown web does not have to lead.
 
-**And off what you have become.** A trait is a change to the animal (§3.1), and
-some of those changes reach the spells:
+**And off what you have become.** A trait is a change to the animal (§3.1) —
+parked, but a trait a boss hands over still counts — and some of those changes
+reach the spells:
 
 | Trait | What it does to spells |
 |---|---|
@@ -576,6 +586,59 @@ is what the rest of the game already reads. Every spell but silk and the
 Pullback hurts too, and what it takes is health, which is how hard a creature
 fights the silk (§12): so a spell is only ever a new way of winning the fight
 the silk was already having.
+
+### 3.3 Ranks and the spell tree
+
+What the spider grows into is what it can cast, and how well.
+
+**Ranks are earned.** Everything caught — bundled, wrapped, or held in a web until
+it has fought itself out — is experience, ten for each size class of it, half as
+much again for something that fights back and three times as much for a boss; a
+meal drunk to the end is worth half the catch again. A practice target off a
+post is worth nothing. Enough of it is the next rank:
+
+| Rank | Experience |
+|---|---|
+| Apprentice Spooder | the start |
+| Adept Spooder | 100 |
+| Journeyman Spooder | 250 |
+| Master Spooder | 500 |
+| Grand Spooder | 900 |
+
+**Each rank opens its row of the tree, and hands out two points** — the first,
+an Apprentice's, included. A point buys a skill in a row you have reached,
+standing on whatever it needs:
+
+| Row | Skills |
+|---|---|
+| Apprentice | **Douse**, **Gust**, **Pullback** (spells, 1 point each); **Quick Silk** — silk waits a quarter less |
+| Adept | **Summon Lightning** (1); **Wet Silk** — Douse wets your webs (needs Douse); **Waterspout** — wind over wet ground is a whirl (needs Douse and Gust); **Long Recall** — the Pullback sweeps and wraps half as hard again (needs Pullback) |
+| Journeyman | **Fire Geyser** (2); **Live Silk** — lightning stays in a web (needs Lightning); **Deluge** — Douse a third further and wet half as long again; **Gale** — Gust a quarter further, shoving and stinging half as hard again |
+| Master | **Sodden Silk** — a wet web holds half as hard again (needs Wet Silk); **Thunderhead** — lightning a third wider, harder and longer; **Eruption** — the geyser a third wider and hotter; **Steady Hands** — every wait 15% shorter |
+| Grand | **Live Lines** — lightning runs along your lines (2, needs Live Silk); **Archweaver** — every wait a quarter shorter (2) |
+
+There are twenty-one points of it and ten to spend, so a rank is a choice, and
+what you learn is the kind of spider you are: a storm spider wiring its webs
+together, a wet one whose webs survive its own fire, one that lives on the
+Pullback. Skills are resources in `game/data/skills/`, and the tree grows a card
+for a new one with nothing else to edit.
+
+**The loadout is five.** Silk is always on 1 and takes no slot; five more ride on
+2 to 6. A spell learned goes on the next free key; the tree screen (**E**) takes a
+spell off the keys or puts one on. There are five spells beside the web now, so
+the limit does not bite yet — it is there for when there are more than five worth
+carrying.
+
+**The testing switch.** `all_spells_open` on the spider — on in the Hollow Wood —
+makes every spell and every interaction known from the start and lifts the
+loadout's limit. Tiers and shorter waits are still bought with points, so the
+spells are played at their own numbers until the spider earns better.
+
+**Why rows by rank, and not a free tree.** A rank is a moment the game can name —
+"Adept Spooder" says more than "level 7" — and a row per rank keeps the order of
+spells sensible without a lattice of prerequisites to read: what is open is what
+your rank has reached, and the few requirements there are say why (an interaction
+needs the spells it is between).
 
 ---
 
@@ -2272,9 +2335,21 @@ inside; a sealed lair with something kept in it; a boss that walks a beat; and t
 wood itself, a biome with seven places standing in it. It replaced a first cut,
 the Hollows, which was dungeons joined into one enclosed world — you started inside
 a structure, and the wood is the opposite.
-Left: the skill tree that size is meant to come from (a "Big Body" that buys
-stamina with size), more spells built for fights, more bosses, and everything
-about how it looks.
+Left: more spells built for fights, more bosses, and everything about how it
+looks.
+
+**Milestone 8 — The spider wizard** *(in progress)*
+Done: what makes it fun turned out to be spells and how they work off silk, so the
+game leans on them. Movement that reads the keys right on walls, round curves and
+after a grapple; lines that are rails to hang from and zip along rather than
+tightropes to walk; a click on a web that grapples to it; Douse and Gust, and the
+whirl that only the two of them together make; the Fire Geyser in place of the
+Firebolt; every spell but the web and the Pullback doing harm; and ranks earned by
+catching and eating, opening rows of a spell tree whose points buy spells, second
+tiers, interactions and shorter waits, with five spells on the keys (§3.3).
+Evolving by chance is parked, its code kept.
+Left: more interactions between spells and silk, a reason for the loadout's limit
+to bite, and the tree's numbers played and tuned.
 
 ---
 
@@ -2370,10 +2445,11 @@ the *shape* is fun.
 * **One size, the whole way, every spell from the start.** In the wood the spider
   is a Huntsman and stays one: it does not grow by eating, and a meal passes no
   trait on either, since some traits are size (`grows_by_eating`,
-  `evolves_by_eating` and `start_stage` on the spider). Every spell is open from
-  the start (`all_spells_open`). Size is meant to come from a skill tree instead —
-  a "Big Body" that buys stamina at the cost of being bigger is the example —
-  which is not built yet. The one trait to be had is the one a boss keeps.
+  `evolves_by_eating` and `start_stage` on the spider). Every spell and every
+  interaction is known from the start and the keys have no limit
+  (`all_spells_open`); the tiers and shorter waits are earned with the ranks that
+  catching and eating bring (§3.3). The one trait to be had is the one a boss
+  keeps.
 * **Everything is hostile.** No size rule and no aggression roll: a hostile thing
   comes for you whatever either of you is, as long as it can see you (walls and
   trunks block sight; silk does not), and only gives up when you are well out of

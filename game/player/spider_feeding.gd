@@ -15,6 +15,9 @@ signal notice(text: String)
 ## A mouthful went down: how much biomass it was worth.
 signal drank(food: float)
 
+## A meal was drunk to the end: what it was.
+signal finished(kind: PreySpecies)
+
 ## Biomass swallowed per second, at a bite power of one.
 ##
 ## A meal is a few seconds you spend standing still, and that is the whole point
@@ -192,6 +195,7 @@ func drink(delta: float) -> void:
 	if meal.eaten:
 		var kind := meal.kind
 		stop()
+		finished.emit(kind)
 		if _traits != null:
 			_traits.record(kind)
 			_traits.digest(kind, _growth.stage_index, _past)

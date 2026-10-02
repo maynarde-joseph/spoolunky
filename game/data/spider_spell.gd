@@ -10,10 +10,9 @@ extends Resource
 ## so they share the web's keys, its reach, its wind-up and its kind of limit: a
 ## wait, never a bill.
 ##
-## Which spells a spider has is decided the way the gates decide who passes. Each
-## opens at a rung of the ladder, which is the key you can always count on, and
-## may name traits that open it sooner, which is the shortcut luck can hand you.
-## What eating turns you into is what you can cast.
+## Which spells a spider has is the spell tree's: each is learned there, with
+## points the ranks hand out, and goes on the number keys in the loadout. See
+## [SpellTree] and [SpellSkill].
 ##
 ## A spell is numbers. What it does is its [member form], and the code for each
 ## form lives in [SpiderSpells]; drop a new .tres built from this script into
@@ -28,8 +27,8 @@ enum Form {
 	DOUSE,
 	## Lightning, called down where you point.
 	LIGHTNING,
-	## A bolt of fire thrown like silk, that burns what it lands among: harder the
-	## more silk is on it.
+	## A geyser of fire out of the ground under the cross, that throws what it
+	## catches into the air and burns it: harder the more silk is on it.
 	FIRE,
 	## Every web in reach called back to the spider, hitting what it passes on the way.
 	PULLBACK,
@@ -48,15 +47,6 @@ enum Form {
 
 ## Where it sits on the strip, first to last.
 @export var order := 0
-
-
-@export_group("Opening")
-
-## The rung of the ladder it opens at, 0 for a spiderling.
-@export var unlock_stage := 0
-
-## Traits that open it before its rung, any one of them.
-@export var keys := PackedStringArray()
 
 
 @export_group("Casting")

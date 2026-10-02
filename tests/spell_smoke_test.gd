@@ -28,7 +28,10 @@ func _sections() -> Array[Callable]:
 	return [
 		_test_the_book,
 		_test_silk_is_a_spell,
-		_test_what_opens_a_spell,
+		_test_learning_a_spell,
+		_test_ranks,
+		_test_the_tree,
+		_test_the_tree_screen,
 		_test_the_strip,
 		_test_number_keys,
 		_test_spells_leave_through_circles,
@@ -40,6 +43,7 @@ func _sections() -> Array[Callable]:
 		_test_summon_lightning,
 		_test_lightning_runs_through_silk,
 		_test_a_struck_web_stays_live,
+		_test_live_silk_and_lines,
 		_test_lightning_and_water,
 		_test_storm_and_paralysis,
 		_test_fire_geyser,
@@ -58,7 +62,7 @@ func _test_the_book() -> void:
 	var first := book[0]
 	check(first.id == "silk" and first.form == SpiderSpell.Form.SILK,
 		"and the web is the first spell in it")
-	check(first.unlock_stage == 0 and first.keys.is_empty(), "open from the start")
+	check(spells.is_open(first) and spells.key_for(first) == 1, "known from the start, on key 1")
 	check(spells.current() == first, "and in hand to begin with")
 	var ids := {}
 	var nameless := PackedStringArray()
@@ -69,12 +73,30 @@ func _test_the_book() -> void:
 	check(nameless.is_empty(), "every spell has a name and says what it does %s" % nameless)
 	check(ids.size() == book.size(), "and no two share an id")
 	check(SpellLibrary.find("silk") != null, "the library finds one by id")
+	# Every spell but silk is learned in the tree, and the tree only teaches what
+	# there is.
+	var tree := spider.spell_tree
+	var unlearnable := PackedStringArray()
 	for spell in book:
-		for key in spell.keys:
-			check(traits.by_id(key) != null,
-				"%s is opened by a trait that exists (%s)" % [spell.display_name, key])
+		if spell.form == SpiderSpell.Form.SILK:
+			continue
+		var taught := false
+		for skill in tree.skills:
+			taught = taught or (skill.kind == SpellSkill.Kind.SPELL and skill.spell == spell.id)
+		if not taught:
+			unlearnable.append(spell.id)
+	check(unlearnable.is_empty(), "every other spell has a skill that teaches it %s" % unlearnable)
+	var strays := PackedStringArray()
+	for skill in tree.skills:
+		if not skill.spell.is_empty() and spells.by_id(skill.spell) == null:
+			strays.append("%s: %s" % [skill.id, skill.spell])
+		for needed in skill.requires:
+			if tree.by_id(needed) == null:
+				strays.append("%s needs %s" % [skill.id, needed])
+	check(strays.is_empty(),
+		"and every skill is about a spell, and stands on skills, that exist %s" % strays)
 	check(spells.open_spells().size() == 1 and spells.open_spells()[0] == first,
-		"a spiderling can cast silk and nothing else")
+		"an Apprentice who has learned nothing casts silk and nothing else")
 
 
 ## Right mouse still throws a web, through the spells now: silk in hand is the
@@ -104,63 +126,304 @@ func _test_silk_is_a_spell() -> void:
 	check(not spells.cast_now(silk), "a second cast waits for it")
 
 
-## A spell opens the way a gate does: at its rung, or sooner with any trait it
-## names. Checked on a pretend spell, so it holds whatever the book is.
-func _test_what_opens_a_spell() -> void:
-	var early := SpiderSpell.new()
-	early.id = "test_early"
-	early.display_name = "Test Early"
-	early.description = "A spell for checking."
-	early.form = SpiderSpell.Form.SILK
-	early.unlock_stage = 2
-	early.keys = PackedStringArray(["wing_buds"])
-	early.order = 900
-	spells.book.append(early)
+## A spell is learned in the tree, with the points an Apprentice starts with, in a
+## row its rank has opened. Learned, it says so, goes on the next key and the wheel
+## takes it in hand; forgotten, the hand comes off it, back onto silk.
+func _test_learning_a_spell() -> void:
+	var tree := spider.spell_tree
+	var douse := spells.by_id("douse")
+	var skill := tree.by_id("douse")
+	if not check(douse != null and skill != null, "Douse, and the skill that teaches it"):
+		return
 	var heard: Array = []
 	var listen := func(spell: SpiderSpell) -> void: heard.append(spell.id)
 	spells.opened.connect(listen)
-
-	check(not spells.is_open(early), "shut to a spiderling")
-	var ways := spells.opens_with(early)
-	check(ways.contains(spider.growth.stages[2].display_name) and ways.contains("Wing Buds"),
-		"and says what opens it (%s)" % ways)
+	check(not spells.is_open(douse), "not known to begin with")
+	check(spells.opens_with(douse).contains(tree.rank_name(skill.row)),
+		"and it says where it is learned (%s)" % spells.opens_with(douse))
 	check(not spells.cycle(1), "so the wheel has nothing else to take in hand")
-	check(spells.current().id == "silk", "and silk stays there")
-
-	grow_to_tier(2)
-	check(spells.is_open(early), "its rung opens it")
-	check(heard.has("test_early"), "and says so")
-	# Whatever else has opened at that rung, Q gets there, and comes back round.
-	var presses := 0
-	while spells.current() != early and presses < spells.book.size():
-		spells.cycle(1)
-		presses += 1
-	check(spells.current() == early, "the wheel takes it in hand (%d turn(s))" % presses)
-	presses = 0
-	while spells.current().id != "silk" and presses < spells.book.size():
-		spells.cycle(1)
-		presses += 1
-	check(spells.current().id == "silk", "and the wheel comes round to silk again")
-
-	rewind_growth()
-	await physics_frame
-	check(not spells.is_open(early), "a spiderling again, it is shut again")
-	heard.clear()
-	check(traits.take(traits.by_id("wing_buds")), "wings grow")
-	check(spells.is_open(early), "and a trait it names opens it before its rung")
-	check(heard.has("test_early"), "which says so too")
-	check(spells.select("test_early"), "it can be taken in hand")
-	traits.owned.clear()
-	traits.changed.emit()
-	check(not spells.is_open(early), "without the wings it shuts")
-	check(spells.current().id == "silk", "and the hand comes off it, back onto silk")
-
+	check(tree.points() == SpellTree.POINTS_PER_RANK,
+		"an Apprentice has %d points to spend (%d)" % [SpellTree.POINTS_PER_RANK, tree.points()])
+	check(tree.learn(skill), "learned")
+	check(spells.is_open(douse) and heard.has("douse"), "and it is known, and says so")
+	check(spells.key_for(douse) == 2, "on the first key after silk's (%d)" % spells.key_for(douse))
+	check(tree.points() == SpellTree.POINTS_PER_RANK - skill.cost, "for its point")
+	check(spells.cycle(1) and spells.current() == douse, "the wheel takes it in hand")
+	check(spells.cycle(1) and spells.current().id == "silk", "and comes round to silk again")
+	check(spells.take(2) and spells.current() == douse, "and so does its key")
+	tree.forget_all()
+	check(not spells.is_open(douse) and spells.current().id == "silk",
+		"forgotten, it is shut, and the hand comes off it, back onto silk")
 	spells.opened.disconnect(listen)
-	spells.book.erase(early)
-	spells.changed.emit()
 
 
-## The strip down the right-hand side, and the readout over the bar.
+## Catching and eating earn ranks: a catch is worth its size, more for something
+## that fights back, and a meal half that again — and a practice target nothing.
+## Each rank opens its row of the tree and two more points, and says so.
+func _test_ranks() -> void:
+	var tree := spider.spell_tree
+	check(tree.rank == 0 and tree.rank_name() == "Apprentice Spooder",
+		"an Apprentice Spooder to begin with")
+	check(SpellTree.RANKS[SpellTree.RANKS.size() - 1] == "Grand Spooder",
+		"with a Grand Spooder at the top")
+	check(tree.points() == SpellTree.POINTS_PER_RANK and tree.row_open(0) and not tree.row_open(1),
+		"two points to spend, and the first row of the tree open")
+	var beetle := PreyLibrary.find("beetle")
+	var blade := load(CreatureFighter.HOSTILES_DIR.path_join("blade_rat.tres")) as PreySpecies
+	var post := load(TrainingDummy.SPECIES_DIR.path_join("dummy_post.tres")) as PreySpecies
+	if not check(beetle != null and blade != null and post != null,
+			"a beetle, a blade rat and a post"):
+		return
+	check(is_equal_approx(tree.catch_worth(beetle), SpellTree.CATCH_XP * beetle.size_class),
+		"a beetle caught is worth its size (%d)" % roundi(tree.catch_worth(beetle)))
+	check(tree.catch_worth(blade) > SpellTree.CATCH_XP * blade.size_class,
+		"something that fights back, more (%d)" % roundi(tree.catch_worth(blade)))
+	check(is_zero_approx(tree.catch_worth(post)), "and a practice target, nothing")
+	check(is_equal_approx(tree.meal_worth(beetle), tree.catch_worth(beetle) * 0.5),
+		"a meal is worth half what the catch was (%d)" % roundi(tree.meal_worth(beetle)))
+
+	# Through the game's own paths: bundled by silk, then drunk to the end.
+	var slab := add_slab(Vector3(30, 0.0, 180), Vector3(20, 0.5, 20))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	await physics_frame
+	clear_prey_near(spider.global_position, 10.0, null)
+	var ranks: Array = []
+	var listen := func(rank: int) -> void: ranks.append(rank)
+	tree.ranked_up.connect(listen)
+	var said: Array = []
+	var hear := func(text: String) -> void: said.append(text)
+	spider.notice.connect(hear)
+	var wasp := spawn("wasp", spider.global_position + Vector3(0.3, 0.2, 0.0))
+	if not check(wasp != null, "a wasp"):
+		return
+	wasp.move_speed = 0.0
+	wasp.aggression = 0.0
+	await physics_frame
+	var before := tree.xp
+	wasp.bundle()
+	# Kept rather than read off the wasp: once it is eaten, there is no wasp.
+	var kind := wasp.kind
+	var caught := tree.catch_worth(kind)
+	check(is_equal_approx(tree.xp - before, caught),
+		"bundled, it is caught: +%d" % roundi(tree.xp - before))
+	wasp.credit_catch()
+	check(is_equal_approx(tree.xp - before, caught), "and a catch counts once")
+	spider.tether.hook(wasp)
+	await eat(wasp, 900)
+	check(is_equal_approx(tree.xp - before, caught + tree.meal_worth(kind)),
+		"and drunk to the end, a meal: +%d in all" % roundi(tree.xp - before))
+	if spider.tether.is_towing():
+		spider.tether.cut()
+
+	# Held in a web until it has no fight left is caught too. Stunned, so it does
+	# not tear out while its fight runs down, and with only a moment of it left.
+	var web := _spin(spider.global_position + Vector3(0.0, 1.5, -2.0), 0.4)
+	# A frame for the web to be in the world before anything flies into it.
+	await physics_frame
+	before = tree.xp
+	var held := spawn("wasp", (web as WebNet).signal_point()) if web != null else null
+	if held != null:
+		held.move_speed = 0.0
+		held.aggression = 0.0
+		held.struggle_stamina = 30.0
+		held.stun(5.0)
+	await physics_frame
+	await physics_frame
+	if check(held != null and web != null and held.is_fighting(), "a wasp held in a web"):
+		check(is_equal_approx(tree.xp, before), "which is not caught yet")
+		held._fight_left = 0.05
+		var out: bool = await wait_until(func() -> bool: return tree.xp > before, 120)
+		check(out and held.is_secured()
+			and is_equal_approx(tree.xp - before, tree.catch_worth(held.kind)),
+			"fought out in it, it is caught: +%d" % roundi(tree.xp - before))
+
+	# Enough of it is the next rank.
+	tree.earn(tree.xp_to_next())
+	check(tree.rank == 1 and ranks == [1], "enough of it is the next rank (%s)" % str(ranks))
+	check(tree.points() == 2 * SpellTree.POINTS_PER_RANK - 0, "two more points (%d)" % tree.points())
+	check(tree.row_open(1) and not tree.row_open(2), "and the next row of the tree")
+	var told := false
+	for line in said:
+		told = told or str(line).begins_with("Adept Spooder")
+	check(told, "and the spider says so")
+	tree.earn(100000.0)
+	check(tree.is_top_rank() and tree.rank_name() == "Grand Spooder" and is_equal_approx(
+		tree.rank_progress(), 1.0), "and at the top, a Grand Spooder")
+	check(ranks.size() == SpellTree.RANKS.size() - 1, "having passed every rank on the way (%s)"
+		% str(ranks))
+	tree.ranked_up.disconnect(listen)
+	spider.notice.disconnect(hear)
+
+
+## What the tree teaches and how: a skill needs its row open, what it stands on and
+## the points; a tier makes its spell bigger; a cut shortens the waits, silk's too;
+## five spells fill the loadout and the tree moves them; and with everything open
+## every spell is on a key.
+func _test_the_tree() -> void:
+	var tree := spider.spell_tree
+	for row in SpellTree.RANKS.size():
+		check(tree.row(row).size() >= 2,
+			"%s has a row of its own (%d)" % [SpellTree.RANKS[row], tree.row(row).size()])
+	var total := 0
+	var kinds := {}
+	for skill in tree.skills:
+		total += skill.cost
+		kinds[skill.kind] = true
+		check(skill.effect_line() != "" and skill.description != "",
+			"%s says what it does (%s)" % [skill.display_name, skill.effect_line()])
+	check(total > SpellTree.RANKS.size() * SpellTree.POINTS_PER_RANK,
+		"there is more to learn (%d points) than the ranks hand out (%d): a rank is a choice"
+		% [total, SpellTree.RANKS.size() * SpellTree.POINTS_PER_RANK])
+	check(kinds.size() == SpellSkill.Kind.size(),
+		"spells, tiers, interactions and shorter waits, all of them in it")
+
+	var douse := tree.by_id("douse")
+	var lightning := tree.by_id("lightning")
+	var wet := tree.by_id("wet_silk")
+	var deluge := tree.by_id("deluge")
+	var fire := tree.by_id("fire")
+	check(tree.why_not(lightning).begins_with("opens at Adept"),
+		"a skill in a row not reached yet is shut (%s)" % tree.why_not(lightning))
+	check(not tree.learn(lightning), "and cannot be learned")
+	tree.earn(tree.xp_to_next())
+	check(tree.why_not(wet) == "needs Douse",
+		"one that stands on another needs it first (%s)" % tree.why_not(wet))
+	check(tree.learn(douse) and tree.learn(wet) and tree.learn(lightning),
+		"learned in order, with the points for them")
+	check(tree.points() == 1, "one point left of four (%d)" % tree.points())
+	tree.earn(tree.xp_to_next())
+	check(tree.learn(fire) and tree.points() == 1, "Fire Geyser, for two of three")
+	check(tree.why_not(tree.by_id("live_lines")).begins_with("opens at"),
+		"and Live Lines waits for its rank")
+	tree.earn(tree.xp_to_next())
+	tree.earn(tree.xp_to_next())
+	check(tree.points() == 5, "a Grand Spooder, with five to spend (%d)" % tree.points())
+	check(tree.why_not(tree.by_id("live_lines")) == "needs Live Silk",
+		"where Live Lines still stands on Live Silk (%s)" % tree.why_not(tree.by_id("live_lines")))
+	var before := tree.points()
+	check(tree.grant("live_silk") and tree.points() == before,
+		"a skill given costs no points (%d)" % tree.points())
+
+	# A tier makes its spell bigger.
+	var spell := spells.by_id("douse")
+	var reach := spells.fan_reach(spell, 0.0)
+	check(tree.learn(deluge), "Deluge learned")
+	check(is_equal_approx(spells.fan_reach(spell, 0.0), reach * deluge.size_scale),
+		"Douse throws further (%.1f -> %.1f m)" % [reach, spells.fan_reach(spell, 0.0)])
+	check(is_equal_approx(spells.duration_of(spell, 0.0), spell.duration_at(0.0)
+		* deluge.duration_scale), "and the ground stays wet longer")
+	check(deluge.effect_line().contains("%"), "and its card says so (%s)" % deluge.effect_line())
+
+	# A cut makes the waits shorter, silk's too.
+	var slab := add_slab(Vector3(-30, 0.0, 180))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 0))
+	await process_frame
+	var silk := spells.by_id("silk")
+	check(spells.cast_now(silk), "a web thrown")
+	var plain_silk := builder._cooldown_span
+	await wait_until(func() -> bool: return not builder.shot_in_flight(), 120)
+	builder._cooling = 0.0
+	var plain := spells.wait_for(spell)
+	check(tree.grant("steady_hands"), "Steady Hands")
+	check(is_equal_approx(spells.wait_for(spell), plain * 0.85),
+		"every spell waits 15%% less (%.1fs -> %.1fs)" % [plain, spells.wait_for(spell)])
+	check(spells.cast_now(silk), "and another web")
+	check(is_equal_approx(builder._cooldown_span, plain_silk * 0.85),
+		"silk's included (%.2fs -> %.2fs)" % [plain_silk, builder._cooldown_span])
+
+	# Five on the keys, and the tree moves them. A sixth spell, made up for the
+	# purpose: the book has only five beside silk.
+	tree.forget_all()
+	tree.earn(100000.0)
+	for spell_id in ["douse", "gust", "pullback", "lightning", "fire"]:
+		tree.learn(tree.by_id(spell_id))
+	check(tree.loadout.size() == SpellTree.LOADOUT_SIZE and spells.hand().size() == 6,
+		"five spells fill the loadout, on keys 2 to 6 (%s)" % str(tree.loadout))
+	var extra := SpiderSpell.new()
+	extra.id = "test_extra"
+	extra.display_name = "Test Extra"
+	extra.description = "A spell for checking."
+	extra.form = SpiderSpell.Form.DOUSE
+	extra.order = 900
+	spells.book.append(extra)
+	var teaches := SpellSkill.new()
+	teaches.id = "test_extra"
+	teaches.display_name = "Test Extra"
+	teaches.kind = SpellSkill.Kind.SPELL
+	teaches.spell = "test_extra"
+	tree.skills.append(teaches)
+	check(tree.grant("test_extra") and spells.is_open(extra) and spells.key_for(extra) == 0,
+		"a sixth is known, but not on a key: the loadout is full")
+	check(not tree.slot("test_extra"), "and there is no room for it")
+	check(tree.unslot("gust") and tree.slot("test_extra"), "until one comes off")
+	check(spells.key_for(extra) == 6 and spells.key_for(spells.by_id("pullback")) == 3,
+		"then it goes on the last key, and the rest move up (%d, %d)"
+		% [spells.key_for(extra), spells.key_for(spells.by_id("pullback"))])
+	check(spells.select("douse") and tree.unslot("douse") and spells.current().id == "silk",
+		"a spell taken off the keys while in hand leaves silk in hand")
+	spells.open_all = true
+	check(spells.hand().size() == spells.book.size(),
+		"with everything open, every spell is on a key, past the five (%d)" % spells.hand().size())
+	spells.open_all = false
+	spells.book.erase(extra)
+	tree.skills.erase(teaches)
+	tree.forget_all()
+
+
+## [E] opens the spell tree: the ranks down the page and a card for every skill,
+## each saying where it stands. Pressing one learns it; pressing a spell you know
+## takes it on or off the keys; the loadout runs along the foot.
+func _test_the_tree_screen() -> void:
+	var hud := level.get_node_or_null("HUD") as SpiderHUD
+	if not check(hud != null, "the level has a HUD"):
+		return
+	var screen := hud.get_node_or_null(NodePath("SpellTree")) as SpellTreeScreen
+	if not check(screen != null, "which built a spell tree screen"):
+		return
+	var tree := spider.spell_tree
+	check(not screen.open and not screen.visible, "shut until it is asked for")
+	check(screen._cards.size() == tree.skills.size(),
+		"with a card for every skill (%d)" % screen._cards.size())
+	spider.require_captured_mouse = false
+	send_action(spider.input_skill_tree)
+	await process_frame
+	release_action(spider.input_skill_tree)
+	check(screen.open and screen.visible, "[E] opens it")
+	check(screen.rank_text().contains("Apprentice Spooder") and screen.rank_text().contains(
+		"2 points"), "the rank and the points across the top (%s)" % screen.rank_text())
+	check(screen.card_text("douse").begins_with("learn it"),
+		"a skill an Apprentice can learn says so (%s)" % screen.card_text("douse"))
+	check(screen.card_text("lightning").begins_with("opens at Adept"),
+		"one in a row not reached yet names its rank (%s)" % screen.card_text("lightning"))
+	check(screen.press("douse") and tree.has("douse"), "pressing a card learns it")
+	check(screen.card_text("douse") == "learned · on [2]",
+		"and the card says which key it is on (%s)" % screen.card_text("douse"))
+	check(screen.loadout_text().contains("[2] Douse"),
+		"and so does the loadout (%s)" % screen.loadout_text())
+	check(screen.press("douse") and not tree.is_slotted("douse"),
+		"pressed again, it comes off the keys")
+	check(screen.card_text("douse") == "learned · not on a key", "and says so")
+	check(screen.press("douse") and tree.is_slotted("douse"), "and again, back on")
+	check(not screen.press("fire") and screen.message_text().contains("opens at"),
+		"a shut one says why when it is pressed (%s)" % screen.message_text())
+	tree.earn(tree.xp_to_next())
+	await process_frame
+	check(screen.card_text("waterspout") == "needs Gust",
+		"one standing on another says what it still needs (%s)" % screen.card_text("waterspout"))
+	check(screen.card_text("wet_silk").begins_with("learn it"),
+		"and once it is learned, that it can be learned (%s)" % screen.card_text("wet_silk"))
+	check(screen.rank_text().contains("Adept Spooder"),
+		"a new rank, across the top (%s)" % screen.rank_text())
+	send_action(spider.input_skill_tree)
+	await process_frame
+	release_action(spider.input_skill_tree)
+	check(not screen.open and not screen.visible, "and [E] again puts it away")
+
+
+## The keys down the right-hand side — silk and the loadout's five, filled or empty —
+## and the readout over the bar.
 func _test_the_strip() -> void:
 	var hud := level.get_node_or_null("HUD") as SpiderHUD
 	if not check(hud != null, "the level has a HUD"):
@@ -169,9 +432,9 @@ func _test_the_strip() -> void:
 	var strip := hud.get_node_or_null(NodePath("SpellStrip")) as Control
 	if not check(strip != null, "which has a strip of spells"):
 		return
-	check(hud._spell_chips.size() == spells.book.size(),
-		"a chip for every spell in the book (%d)" % hud._spell_chips.size())
-	var chip := hud._spell_chips.get("silk") as Control
+	check(hud._spell_chips.size() == SpellTree.LOADOUT_SIZE + 1,
+		"a chip for silk and one for each of the loadout's five (%d)" % hud._spell_chips.size())
+	var chip := hud._spell_chips.get(0) as Control
 	var state := chip.get_node_or_null(NodePath("Row/Lines/State")) as Label if chip != null \
 		else null
 	if check(state != null, "silk has a chip"):
@@ -181,13 +444,18 @@ func _test_the_strip() -> void:
 		"the readout over the bar says what is in hand (%s)" % hud.pattern_label.text)
 	check(hud.hint_label.text.contains("Right mouse"),
 		"and what right mouse does with it (%s)" % hud.hint_label.text)
-	for spell in spells.book:
-		var shut := hud._spell_chips.get(spell.id) as Control
-		if shut == null or spells.is_open(spell):
-			continue
-		var line := shut.get_node_or_null(NodePath("Row/Lines/State")) as Label
-		check(line != null and line.text.begins_with("opens:"),
-			"a shut spell says what opens it (%s)" % (line.text if line != null else "—"))
+	var empty := hud._spell_chips.get(1) as Control
+	var line := empty.get_node_or_null(NodePath("Row/Lines/State")) as Label if empty != null \
+		else null
+	check(line != null and line.text.begins_with("empty"),
+		"an empty slot says where to fill it (%s)" % (line.text if line != null else "—"))
+	spider.spell_tree.grant("gust")
+	await process_frame
+	await process_frame
+	var filled := (hud._spell_chips.get(1) as Control).get_node_or_null(
+		NodePath("Row/Lines/Name")) as Label
+	check(filled != null and filled.text == "Gust",
+		"a spell learned fills the first of them (%s)" % (filled.text if filled != null else "—"))
 
 	# Throw one, and the chip counts the wait down.
 	var slab := add_slab(Vector3(60, 0.0, -60))
@@ -201,9 +469,8 @@ func _test_the_strip() -> void:
 			"and the chip counts the wait down (%s)" % state.text)
 
 
-## Each number key takes its spell in hand — the book's order, open or not, so a key
-## means one spell all game — Q takes hold of lines, and the bag's bar is put away
-## so the keys have one meaning.
+## Each number key takes what is on it in hand — silk on 1, the loadout on 2 to 6 —
+## Q takes hold of lines, and the bag's bar is put away so the keys have one meaning.
 func _test_number_keys() -> void:
 	for key in range(1, spells.book.size() + 1):
 		check(InputMap.has_action("spell_%d" % key), "a key for spell %d" % key)
@@ -222,7 +489,7 @@ func _test_number_keys() -> void:
 	var hud := level.get_node_or_null("HUD") as SpiderHUD
 	if check(hud != null, "the level has a HUD"):
 		check(not hud._hotbar.visible, "and the bag's bar is put away")
-		var chip := hud._spell_chips.get(spells.book[2].id) as Control
+		var chip := hud._spell_chips.get(2) as Control
 		var label := chip.get_node_or_null(NodePath("Row/Key")) as Label if chip != null else null
 		check(label != null and label.text == "3",
 			"each chip says its key (%s)" % (label.text if label != null else "—"))
@@ -232,7 +499,7 @@ func _test_number_keys() -> void:
 	send_action("spell_3")
 	await process_frame
 	release_action("spell_3")
-	check(spells.current().id == "silk", "a shut spell's key leaves the hand where it was")
+	check(spells.current().id == "silk", "a key with nothing on it leaves the hand where it was")
 	spells.open_all = true
 	send_action("spell_3")
 	await process_frame
@@ -404,11 +671,8 @@ func _test_douse() -> void:
 	if not check(douse != null and douse.form == SpiderSpell.Form.DOUSE,
 			"there is Douse in the book"):
 		return
-	check(spells.opens_with(douse).contains("Digestive Flood"),
-		"a digestive flood would open it sooner (%s)" % spells.opens_with(douse))
-	grow_to_tier(douse.unlock_stage)
-	check(spells.select("douse"), "a %s can douse"
-		% spider.growth.stages[douse.unlock_stage].display_name)
+	_learned("douse", 2)
+	check(spells.select("douse"), "learned, it can be taken in hand")
 	check(not spells.is_area(douse), "it is thrown from the spider, not called down")
 
 	var slab := add_slab(Vector3(90, 0.0, -90), Vector3(60, 0.5, 60))
@@ -462,7 +726,7 @@ func _test_douse() -> void:
 		120)
 	check(gone, "and the wet is gone")
 
-	# Silk it reaches is wet, and fire passes a wet web by.
+	# Silk it reaches is wet once Wet Silk is learned, and fire passes a wet web by.
 	spells.forget_waits()
 	clear_prey_near(start, full * 2.0, null)
 	var half := height * 1.2
@@ -472,9 +736,20 @@ func _test_douse() -> void:
 		return
 	await physics_frame
 	aim_at(start + ahead * full * 2.0 + Vector3.DOWN * 0.25)
-	check(spells.cast_now(douse), "sprayed at the web")
+	check(spells.cast_now(douse), "sprayed at a web")
+	check(not WetSilk.is_wet(soaked_web), "before Wet Silk is learned, the web stays dry")
+	spells.forget_waits()
+	spider.spell_tree.grant("wet_silk")
+	check(spells.cast_now(douse), "sprayed at it again, with Wet Silk learned")
 	check(WetSilk.is_wet(soaked_web), "the web it reaches is wet")
 	check(not WetSilk.is_wet(dry_web), "and the one out of the spray is dry")
+	var plain_hold := soaked_web.hold_strength()
+	spells.forget_waits()
+	spider.spell_tree.grant("sodden_silk")
+	check(spells.cast_now(douse), "and again, with Sodden Silk")
+	check(is_equal_approx(soaked_web.hold_strength(), plain_hold * WetSilk.HEAVY_HOLD),
+		"which holds half as hard again while it is wet (%.1f -> %.1f)"
+		% [plain_hold, soaked_web.hold_strength()])
 	var fire := spells.by_id("fire")
 	var soaked_id := soaked_web.get_instance_id()
 	var dry_id := dry_web.get_instance_id()
@@ -495,9 +770,8 @@ func _test_gust() -> void:
 	var gust := spells.by_id("gust")
 	if not check(gust != null and gust.form == SpiderSpell.Form.GUST, "there is Gust in the book"):
 		return
-	grow_to_tier(gust.unlock_stage)
-	check(spells.select("gust"), "a %s can blow"
-		% spider.growth.stages[gust.unlock_stage].display_name)
+	_learned("gust", 2)
+	check(spells.select("gust"), "learned, it can be taken in hand")
 	var slab := add_slab(Vector3(-90, 0.0, -90), Vector3(60, 0.5, 60))
 	await physics_frame
 	var start := slab.global_position + Vector3(0, 0.25, 22.0)
@@ -558,13 +832,15 @@ func _test_gust() -> void:
 ## blew, stops at the first thing it reaches and holds it there — round and round,
 ## going nowhere, worn down a little — for as long as the wind-up gave it. The
 ## ground it came from is dry, what is further on is left alone, and wind with no
-## wet ground under it lifts nothing.
+## wet ground under it lifts nothing. All of it once Waterspout is learned: before,
+## wind over wet ground is only wind.
 func _test_the_whirl() -> void:
 	var douse := spells.by_id("douse")
 	var gust := spells.by_id("gust")
 	if douse == null or gust == null:
 		return
-	spells.open_all = true
+	spider.spell_tree.grant("douse")
+	spider.spell_tree.grant("gust")
 	var slab := add_slab(Vector3(90, 0.0, 90), Vector3(60, 0.5, 60))
 	await physics_frame
 	var start := slab.global_position + Vector3(0, 0.25, 22.0)
@@ -587,7 +863,11 @@ func _test_the_whirl() -> void:
 	var wet := _first_wet()
 	if not check(wet != null and _first_whirl() == null, "wet, and no whirl yet"):
 		return
-	check(spells.cast_now(gust), "and wind blown over it")
+	check(spells.cast_now(gust), "wind blown over it, before Waterspout is learned")
+	check(_first_whirl() == null and wet.is_wet(), "lifts nothing, and the ground stays wet")
+	spells.forget_waits()
+	spider.spell_tree.grant("waterspout")
+	check(spells.cast_now(gust), "and with it learned, wind blown over it")
 	var whirl := _first_whirl()
 	if not check(whirl != null, "lifts the water into a whirl"):
 		return
@@ -615,7 +895,6 @@ func _test_the_whirl() -> void:
 	spells.forget_waits()
 	check(spells.cast_now(gust), "wind again, over dry ground")
 	check(_first_whirl() == null, "lifts nothing")
-	spells.open_all = false
 
 
 ## A spider with Digestive Flood has acid water: what its whirl holds is dosed.
@@ -624,7 +903,8 @@ func _test_acid_water() -> void:
 	var gust := spells.by_id("gust")
 	if douse == null or gust == null:
 		return
-	spells.open_all = true
+	for skill_id in ["douse", "gust", "waterspout"]:
+		spider.spell_tree.grant(skill_id)
 	var slab := add_slab(Vector3(-90, 0.0, 90), Vector3(30, 0.5, 30))
 	await physics_frame
 	var start := slab.global_position + Vector3(0, 0.25, 6.0)
@@ -646,7 +926,6 @@ func _test_acid_water() -> void:
 	check(spells.cast_now(douse) and spells.cast_now(gust), "doused, and a whirl blown at it")
 	var eaten: bool = await wait_until(func() -> bool: return ant.is_poisoned(), 240)
 	check(eaten, "and its water doses what it holds")
-	spells.open_all = false
 
 
 func _first_whirl() -> WaterSpiral:
@@ -683,15 +962,9 @@ func _test_summon_lightning() -> void:
 	if not check(lightning != null and lightning.form == SpiderSpell.Form.LIGHTNING,
 			"there is lightning in the book"):
 		return
-	check(not spells.is_open(lightning), "shut to a spiderling")
-	check(traits.take(traits.by_id("wing_buds")), "until wings grow")
-	check(spells.is_open(lightning), "which open it long before a %s would"
-		% spider.growth.stages[lightning.unlock_stage].display_name)
-	traits.owned.clear()
-	traits.changed.emit()
-	grow_to_tier(lightning.unlock_stage)
-	check(spells.select("lightning"), "a %s can call it down"
-		% spider.growth.stages[lightning.unlock_stage].display_name)
+	check(not spells.is_open(lightning), "not known to begin with")
+	_learned("lightning", 3)
+	check(spells.select("lightning"), "learned, it can be called down")
 
 	var slab := add_slab(Vector3(120, 0.0, 120), Vector3(30, 0.5, 30))
 	await physics_frame
@@ -738,7 +1011,7 @@ func _test_lightning_runs_through_silk() -> void:
 	var lightning := spells.by_id("lightning")
 	if lightning == null:
 		return
-	grow_to_tier(lightning.unlock_stage)
+	grow_to_tier(3)
 	var slab := add_slab(Vector3(-120, 0.0, 120), Vector3(40, 0.5, 40))
 	await physics_frame
 	stand_on(slab.global_position + Vector3(0, 0.25, 6.0))
@@ -795,10 +1068,9 @@ func _test_lightning_runs_through_silk() -> void:
 ## nothing in the line, and nothing runs along it to the web at its end; aimed at a
 ## line, it comes down on the floor under it.
 func _test_a_struck_web_stays_live() -> void:
-	var lightning := spells.by_id("lightning")
+	var lightning := _learned("lightning", 3)
 	if lightning == null:
 		return
-	grow_to_tier(lightning.unlock_stage)
 	var slab := add_slab(Vector3(-150, 0.0, -150), Vector3(40, 0.5, 40))
 	await physics_frame
 	stand_on(slab.global_position + Vector3(0, 0.25, 6.0))
@@ -887,6 +1159,67 @@ func _test_a_struck_web_stays_live() -> void:
 		% (under.y - centre.y))
 
 
+## Live Silk and Live Lines, cast the way a player casts. Before Live Silk a strike
+## runs through a web and leaves nothing in it; after, the web stays live. Before
+## Live Lines a line carries nothing; after, a charge in a web runs down a line tied
+## to it to the web at its other end, and a strike on a line runs down it both ways.
+func _test_live_silk_and_lines() -> void:
+	var lightning := _learned("lightning", 3)
+	if lightning == null:
+		return
+	spells.select("lightning")
+	var slab := add_slab(Vector3(150, 0.0, -150), Vector3(40, 0.5, 40))
+	await physics_frame
+	stand_on(slab.global_position + Vector3(0, 0.25, 6.0))
+	await physics_frame
+	var centre := slab.global_position + Vector3(0, 0.25, 0)
+	clear_prey_near(centre, 20.0, null)
+	var height := spider.stage().body_height
+	var radius := lightning.size_at(0.0) * height
+	var half := radius * 0.8
+	var web := _spin(centre + Vector3.UP * (half + height * 0.3), half)
+	var far_web := _spin(centre + Vector3(height * 10.0, half + height * 0.3, 0.0), half)
+	if not check(web != null and far_web != null, "a web, and another across the room"):
+		return
+	await physics_frame
+	aim_at((web as WebNet).signal_point())
+	await physics_frame
+	await process_frame
+	check(spells.cast_now(lightning), "struck, before Live Silk")
+	var strike := _last_strike()
+	check(strike != null and strike.charged.has(web), "it runs through the web")
+	check(WebCharge.of(web) == null, "but leaves nothing in it")
+	spells.forget_waits()
+	spider.spell_tree.grant("live_silk")
+	check(spells.cast_now(lightning), "struck again, with Live Silk learned")
+	check(WebCharge.of(web) != null, "and the web stays live")
+
+	# A line from a corner of one to a corner of the other.
+	var line := WebStrand.spin(pattern_named("frame_line"), web.anchors[1], far_web.anchors[0],
+		1.0)
+	if not check(line != null, "a line between them"):
+		return
+	line.place_in(webs)
+	await physics_frame
+	spells.forget_waits()
+	check(spells.cast_now(lightning), "struck, before Live Lines")
+	strike = _last_strike()
+	check(strike != null and not strike.charged.has(far_web),
+		"the line carries nothing to the web at its end")
+	spells.forget_waits()
+	spider.spell_tree.grant("live_lines")
+	check(spells.cast_now(lightning), "struck, with Live Lines learned")
+	strike = _last_strike()
+	check(strike != null and strike.charged.has(far_web) and strike.ran_along.has(line),
+		"it runs down the line to the web at its end")
+	check(WebCharge.of(far_web) != null, "and leaves that one live too")
+	var middle := (line.point_a + line.point_b) * 0.5
+	var on_line := LightningStrike.call_down(level, middle, radius * 0.3, lightning.duration.x,
+		0, height * 0.6, lightning.colour, 0.0, true, true)
+	check(on_line.charged.has(web) and on_line.charged.has(far_web),
+		"and a strike on the line runs down it to both")
+
+
 ## Water carries a strike: what a whirl holds, twice as hard, and on from one wet
 ## thing to the next.
 func _test_lightning_and_water() -> void:
@@ -963,10 +1296,9 @@ func _test_lightning_and_water() -> void:
 ## Two traits that work on lightning: Paralytic Bite stuns for half as long again,
 ## and Storm Rider makes a strike jump on to what is near, wet or not.
 func _test_storm_and_paralysis() -> void:
-	var lightning := spells.by_id("lightning")
+	var lightning := _learned("lightning", 3)
 	if lightning == null:
 		return
-	grow_to_tier(lightning.unlock_stage)
 	spells.select("lightning")
 	var slab := add_slab(Vector3(-120, 0.0, -120), Vector3(40, 0.5, 40))
 	await physics_frame
@@ -1031,10 +1363,9 @@ func _test_fire_geyser() -> void:
 			"there is fire in the book"):
 		return
 	check(spells.is_area(fire), "raised where you point, not sent out from the spider")
-	check(not spells.is_open(fire), "shut to a spiderling")
-	grow_to_tier(fire.unlock_stage)
-	check(spells.is_open(fire), "a %s can raise one"
-		% spider.growth.stages[fire.unlock_stage].display_name)
+	check(not spells.is_open(fire), "not known to begin with")
+	_learned("fire", 4)
+	check(spells.is_open(fire), "learned, it can be raised")
 	var slab := add_slab(Vector3(60, 0.0, -120), Vector3(40, 0.5, 40))
 	await physics_frame
 	stand_on(slab.global_position + Vector3(0, 0.25, 8.0))
@@ -1137,10 +1468,9 @@ func _test_fire_geyser() -> void:
 ## it, and burns it; silk out of the column is left standing; and a wet web over it
 ## stands in the fire, and catches what the geyser throws up into it.
 func _test_fire_burns_silk() -> void:
-	var fire := spells.by_id("fire")
+	var fire := _learned("fire", 4)
 	if fire == null:
 		return
-	grow_to_tier(fire.unlock_stage)
 	spells.select("fire")
 	var slab := add_slab(Vector3(-60, 0.0, -120), Vector3(60, 0.5, 60))
 	await physics_frame
@@ -1270,10 +1600,9 @@ func _test_pullback() -> void:
 	if not check(pullback != null and pullback.form == SpiderSpell.Form.PULLBACK,
 			"there is a pullback in the book"):
 		return
-	check(not spells.is_open(pullback), "shut to a spiderling")
-	grow_to_tier(pullback.unlock_stage)
-	check(spells.is_open(pullback), "a %s can call its webs back"
-		% spider.growth.stages[pullback.unlock_stage].display_name)
+	check(not spells.is_open(pullback), "not known to begin with")
+	_learned("pullback", 1)
+	check(spells.is_open(pullback), "learned, it can call webs back")
 	spider.require_captured_mouse = false
 	var slab := add_slab(Vector3(150, 0.0, 30), Vector3(80, 0.5, 80))
 	await physics_frame
@@ -1368,13 +1697,20 @@ func _test_pullback() -> void:
 	check(not spells.cooling(pullback), "and the wait is not spent")
 
 
-## A level can hand the spider the whole book at once: every spell open to a
-## spiderling, and shut again when it takes the book back.
+## A level can hand the spider the whole book at once: every spell known and on a
+## key, and every interaction, to an Apprentice — but no tier and no point — and
+## shut again when it takes the book back.
 func _test_the_whole_book_open() -> void:
-	check(spells.open_spells().size() == 1, "a spiderling has silk and nothing else")
+	check(spells.open_spells().size() == 1, "an Apprentice has silk and nothing else")
 	spells.open_all = true
 	check(spells.open_spells().size() == spells.book.size(),
 		"with the whole book open, it has all %d" % spells.book.size())
+	check(spells.hand().size() == spells.book.size(), "every one of them on a key")
+	var tree := spider.spell_tree
+	check(tree.knows(&"live_silk") and tree.knows(&"waterspout"), "and every interaction")
+	check(not tree.has_tier("douse") and tree.points() == SpellTree.POINTS_PER_RANK
+		and is_equal_approx(tree.wait_scale("douse"), 1.0),
+		"but no tier, no shorter wait and no point given away")
 	check(spells.cycle(1) and spells.current().id != "silk", "and the wheel takes the next in hand")
 	spells.open_all = false
 	check(spells.open_spells().size() == 1 and spells.current().id == "silk",
@@ -1406,6 +1742,14 @@ func _last_strike() -> LightningStrike:
 		if strike != null and not strike.is_queued_for_deletion():
 			found = strike
 	return found
+
+
+## [param spell_id] learned — skill and all, given rather than bought — by a spider
+## grown to [param tier], the size the check was written for. The spell.
+func _learned(spell_id: String, tier := 0) -> SpiderSpell:
+	grow_to_tier(tier)
+	spider.spell_tree.grant(spell_id)
+	return spells.by_id(spell_id)
 
 
 ## A sheet web standing up, [param half] either side of [param middle].

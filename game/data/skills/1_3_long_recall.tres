@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="SpellSkill" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spell_skill.gd" id="1_skill"]
+
+[resource]
+script = ExtResource("1_skill")
+id = "long_recall"
+display_name = "Long Recall"
+description = "The Pullback sweeps half as wide again, and what it passes through takes half as much silk again."
+kind = 1
+row = 1
+column = 3
+cost = 1
+requires = PackedStringArray("pullback")
+spell = "pullback"
+size_scale = 1.5
+power_scale = 1.5

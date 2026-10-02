@@ -424,13 +424,19 @@ func shoot() -> bool:
 	return true
 
 
-## What the spider's traits do to the wait between casts. See
-## [method SpiderTraits.cast_scale].
+## What the spider's traits and what it has learned do to the wait between
+## casts. See [method SpiderTraits.cast_scale] and [method SpellTree.wait_scale].
 func _cast_scale() -> float:
-	if _spider == null or not "traits" in _spider:
+	if _spider == null:
 		return 1.0
-	var traits := _spider.get("traits") as SpiderTraits
-	return traits.cast_scale() if traits != null else 1.0
+	var scale := 1.0
+	if "traits" in _spider:
+		var traits := _spider.get("traits") as SpiderTraits
+		scale *= traits.cast_scale() if traits != null else 1.0
+	if "spell_tree" in _spider:
+		var tree := _spider.get("spell_tree") as SpellTree
+		scale *= tree.wait_scale("silk") if tree != null else 1.0
+	return scale
 
 
 ## How far silk goes: one thread's span, times [member silk_span].

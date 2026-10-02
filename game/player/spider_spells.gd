@@ -6,24 +6,24 @@ extends Node3D
 ##
 ## Right mouse casts whatever is in hand: a tap casts it at once, and holding
 ## winds it up — bigger, longer — until you let go. The number keys take a spell in
-## hand, and the wheel moves the hand along to the next one that is open. Silk is
-## the first spell and is still thrown by
-## the [WebBuilder] exactly as it always was; all this decides is that silk is
-## what the key means right now. Every other spell is cast from here.
+## hand — silk on 1, always, and the loadout on 2 to 6 — and the wheel moves the
+## hand along them. Silk is still thrown by the [WebBuilder] exactly as it always
+## was; all this decides is that silk is what the key means right now. Every other
+## spell is cast from here.
 ##
 ## The limit is the web's: a wait, never a bill (see §5 of the design). Each
-## spell waits on its own, so casting one never costs you another, and a trait
-## can shorten every wait at once — see [method SpiderTraits.cast_scale].
+## spell waits on its own, so casting one never costs you another, and the tree can
+## shorten the waits — see [method wait_for].
 ##
-## Which spells are open is decided the way a gate decides who passes: a rung of
-## the ladder, or any trait the spell names as a key — see [method is_open]. The
-## book is read afresh whenever the spider grows or a trait comes, and anything
-## newly open is announced.
+## Which spells the spider has, which are on its keys, and how far each has come
+## are the [SpellTree]'s: a spell is learned there, put in the loadout there, and
+## raised a tier there, and the interactions it learns are what this asks
+## [method SpellTree.knows] before doing them.
 
 ## Something opened, the hand moved, or a wait ran out. The strip redraws off this.
 signal changed()
 
-## A spell became castable. Carries it, for the message.
+## A spell was learned. Carries it, for the message.
 signal opened(spell: SpiderSpell)
 
 ## Something was cast. [param at] is where it went.
@@ -60,15 +60,12 @@ var charge := 0.0
 var _cooling := {}
 var _spans := {}
 
-## Spell id to whether it was open the last time the book was read, so what
-## opens can be told apart from what was open all along.
-var _open := {}
-
 var _spider: SpiderPlayer
 var _growth: SpiderGrowth
 var _traits: SpiderTraits
 var _view: SpiderCamera
 var _builder: WebBuilder
+var _tree: SpellTree
 ## The circle drawn while a spell winds up, until it goes.
 var _circle: MagicCircle = null
 
@@ -81,13 +78,15 @@ var _fan: MeshInstance3D
 var _fan_paint: StandardMaterial3D
 
 
-## Every spell open, whatever the rung or the traits. See
+## Every spell and interaction known and the loadout's limit lifted: the tree's
+## switch, reached from here. See [member SpellTree.open_all] and
 ## [member SpiderPlayer.all_spells_open].
-var open_all := false:
+var open_all: bool:
+	get:
+		return _tree != null and _tree.open_all
 	set(value):
-		open_all = value
-		if _spider != null:
-			_read_the_book(false)
+		if _tree != null:
+			_tree.open_all = value
 
 
 func _ready() -> void:
@@ -96,18 +95,22 @@ func _ready() -> void:
 
 
 func setup(spider: SpiderPlayer, growth: SpiderGrowth, traits: SpiderTraits,
-		view: SpiderCamera, builder: WebBuilder) -> void:
+		view: SpiderCamera, builder: WebBuilder, tree: SpellTree = null) -> void:
 	_spider = spider
 	_growth = growth
 	_traits = traits
 	_view = view
 	_builder = builder
-	if _growth != null:
-		_growth.stage_changed.connect(_on_stage_changed)
-	if _traits != null:
-		_traits.changed.connect(_on_traits_changed)
-	# Quietly: what a spiderling starts with is not news.
-	_read_the_book(false)
+	_tree = tree
+	if _tree != null:
+		_tree.changed.connect(_read_the_book)
+		_tree.learned.connect(_on_learned)
+	_read_the_book()
+
+
+## The spider's tree: what it knows, and what is on its keys.
+func tree() -> SpellTree:
+	return _tree
 
 
 func _process(delta: float) -> void:
@@ -147,23 +150,14 @@ func by_id(spell_id: String) -> SpiderSpell:
 	return null
 
 
-## Whether [param spell] can be cast by this spider: its rung reached, or one of
-## its keys owned. The same either-key rule a gate uses, so the size is what you
-## can always count on and the trait is what luck may hand you first — unless the
-## whole book is open, which a level can hand the spider from the start.
+## Whether [param spell] can be cast by this spider: silk always, anything else
+## once the tree has it learned.
 func is_open(spell: SpiderSpell) -> bool:
 	if spell == null:
 		return false
-	if open_all:
+	if spell.form == SpiderSpell.Form.SILK:
 		return true
-	var rung := _growth.stage_index if _growth != null else 0
-	if rung >= spell.unlock_stage:
-		return true
-	if _traits != null:
-		for key in spell.keys:
-			if _traits.has(key):
-				return true
-	return false
+	return _tree != null and _tree.knows_spell(spell.id)
 
 
 ## Every spell this spider can cast, in order.
@@ -175,73 +169,92 @@ func open_spells() -> Array[SpiderSpell]:
 	return found
 
 
-## What opens a shut spell, written out: its rung, and any trait that would open
-## it first.
+## What the number keys hold, 1 first: silk, then the loadout. With everything
+## open, every spell in the book, in its order.
+func hand() -> Array[SpiderSpell]:
+	var found: Array[SpiderSpell] = []
+	for spell in book:
+		if spell.form == SpiderSpell.Form.SILK:
+			found.append(spell)
+			break
+	if _tree == null:
+		return found
+	if _tree.open_all:
+		for spell in book:
+			if spell.form != SpiderSpell.Form.SILK:
+				found.append(spell)
+		return found
+	for spell_id in _tree.loadout:
+		var spell := by_id(spell_id)
+		if spell != null and is_open(spell) and not found.has(spell):
+			found.append(spell)
+	return found
+
+
+## Whether [param spell] is on a number key.
+func in_hand(spell: SpiderSpell) -> bool:
+	return hand().has(spell)
+
+
+## What learns a spell not learned yet: its skill, and the row it is in.
 func opens_with(spell: SpiderSpell) -> String:
 	if spell == null:
 		return ""
-	var ways := PackedStringArray()
-	var stages: Array = _growth.stages if _growth != null else []
-	if spell.unlock_stage < stages.size():
-		ways.append((stages[spell.unlock_stage] as GrowthStage).display_name)
-	else:
-		ways.append("stage %d" % (spell.unlock_stage + 1))
-	if _traits != null:
-		for key in spell.keys:
-			var gift := _traits.by_id(key)
-			ways.append(gift.display_name if gift != null else key)
-	return " or ".join(ways)
+	if _tree != null:
+		for skill in _tree.skills:
+			if skill.kind == SpellSkill.Kind.SPELL and skill.spell == spell.id:
+				return "%s, %s" % [skill.display_name, _tree.rank_name(skill.row)]
+	return "the tree"
 
 
-## Takes the next open spell in hand, going [param step] along the book. False
-## — and nothing moves — if nothing else is open, or while something is being
+## Takes the next spell on the keys in hand, going [param step] along them. False
+## — and nothing moves — if nothing else is on them, or while something is being
 ## wound up: the hand does not change what it is holding mid-throw.
 func cycle(step := 1) -> bool:
 	if book.is_empty() or charging or (_builder != null and _builder.aiming):
 		return false
-	var count := book.size()
-	for i in range(1, count):
-		var index := posmod(selected + step * i, count)
-		if is_open(book[index]):
-			selected = index
-			changed.emit()
-			notice.emit("%s in hand" % current().display_name)
-			return true
-	return false
+	var keys := hand()
+	if keys.size() < 2:
+		return false
+	var at := maxi(keys.find(current()), 0)
+	selected = book.find(keys[posmod(at + step, keys.size())])
+	changed.emit()
+	notice.emit("%s in hand" % current().display_name)
+	return true
 
 
-## Takes the spell on number key [param key] in hand: the book's first spell is 1,
-## its second 2, and so on, open or not, so a key means the same spell all game.
-## A wind-up under way is given up — the key is the player saying what they want in
-## hand now, and a key that waited on the throw it interrupted would feel dead.
-## False if there is no such spell, or it is shut, or already in hand.
+## Takes the spell on number key [param key] in hand: silk on 1, the loadout on 2
+## onward. A wind-up under way is given up — the key is the player saying what they
+## want in hand now, and a key that waited on the throw it interrupted would feel
+## dead. False if nothing is on the key, or it is already in hand.
 func take(key: int) -> bool:
+	var keys := hand()
 	var index := key - 1
-	if index < 0 or index >= book.size():
+	if index < 0:
 		return false
-	var spell := book[index]
-	if not is_open(spell):
-		notice.emit("%s opens with %s" % [spell.display_name, opens_with(spell)])
+	if index >= keys.size():
+		notice.emit("Nothing on [%d] — put a spell there in the tree [E]" % key)
 		return false
-	if index == selected:
+	var spell := keys[index]
+	if spell == current():
 		return false
 	cancel_cast()
-	selected = index
+	selected = book.find(spell)
 	changed.emit()
 	notice.emit("%s in hand" % spell.display_name)
 	return true
 
 
-## The number key that takes [param spell] in hand, or 0 if it is not in the book.
+## The number key that takes [param spell] in hand, or 0 if it is on none.
 func key_for(spell: SpiderSpell) -> int:
-	return book.find(spell) + 1
+	return hand().find(spell) + 1
 
 
-## Takes [param spell_id] in hand. False if it is not in the book or not open.
+## Takes [param spell_id] in hand. False if it is not on a key.
 func select(spell_id: String) -> bool:
-	for i in book.size():
-		if book[i].id == spell_id and is_open(book[i]):
-			selected = i
+	for spell in hand():
+		if spell.id == spell_id:
+			selected = book.find(spell)
 			changed.emit()
 			return true
 	return false
@@ -278,12 +291,37 @@ func cooldown_progress(spell: SpiderSpell) -> float:
 	return clampf(1.0 - cooldown_left(spell) / span, 0.0, 1.0)
 
 
-## How long [param spell] makes you wait, after what the spider has become.
+## How long [param spell] makes you wait, after what the spider has learned and
+## what it has become.
 func wait_for(spell: SpiderSpell) -> float:
 	if spell == null:
 		return 0.0
 	var scale := _traits.cast_scale() if _traits != null else 1.0
+	if _tree != null:
+		scale *= _tree.wait_scale(spell.id)
 	return spell.cooldown * scale
+
+
+## How far [param spell] reaches at [param wound], in body heights, after its
+## tier: [method SpiderSpell.size_at] with what the tree has made of it.
+func size_of(spell: SpiderSpell, wound: float) -> float:
+	return spell.size_at(wound) * (_tree.tier(spell.id).x if _tree != null else 1.0)
+
+
+## How hard [param spell] hits at [param wound], after its tier.
+func power_of(spell: SpiderSpell, wound: float) -> float:
+	return spell.power_at(wound) * (_tree.tier(spell.id).y if _tree != null else 1.0)
+
+
+## How long what [param spell] leaves lasts at [param wound], after its tier.
+func duration_of(spell: SpiderSpell, wound: float) -> float:
+	return spell.duration_at(wound) * (_tree.tier(spell.id).z if _tree != null else 1.0)
+
+
+## Whether the spider has learned the interaction called [param what]. See
+## [method SpellTree.knows].
+func knows(what: StringName) -> bool:
+	return _tree != null and _tree.knows(what)
 
 
 ## Everything ready at once, for a check that casts twice and is not about the
@@ -417,11 +455,12 @@ func _ground(target: Dictionary) -> Dictionary:
 func _strike(spell: SpiderSpell, wound: float) -> Dictionary:
 	var target := area_target(spell)
 	var at: Vector3 = target.get("point", _spider.global_position)
-	var stun := spell.duration_at(wound) * (_traits.stun_scale() if _traits != null else 1.0)
+	var stun := duration_of(spell, wound) * (_traits.stun_scale() if _traits != null else 1.0)
 	var jumps := _traits.arc_bonus() if _traits != null else 0
-	var radius := spell.size_at(wound) * body_height()
+	var radius := size_of(spell, wound) * body_height()
 	var strike := LightningStrike.call_down(_host(), at, radius, stun, jumps,
-		body_height() * 0.6, spell.colour, spell.power_at(wound))
+		body_height() * 0.6, spell.colour, power_of(spell, wound), knows(&"live_silk"),
+		knows(&"live_lines"))
 	if strike == null:
 		return {"cast": false}
 	# Where it comes down from: a second circle over the first, face down.
@@ -433,9 +472,12 @@ func _strike(spell: SpiderSpell, wound: float) -> Dictionary:
 	var said := PackedStringArray()
 	if not strike.shocked.is_empty():
 		said.append("%d stunned" % strike.shocked.size())
-	if not strike.charged.is_empty():
+	if not strike.charged.is_empty() and strike.live:
 		said.append("%d web%s live for %ds" % [strike.charged.size(),
 			"" if strike.charged.size() == 1 else "s", roundi(stun * LightningStrike.LIVE_FOR)])
+	elif not strike.charged.is_empty():
+		said.append("through %d web%s" % [strike.charged.size(),
+			"" if strike.charged.size() == 1 else "s"])
 	if not said.is_empty():
 		notice.emit("Lightning — " + ", ".join(said))
 	return {"cast": true, "at": at}
@@ -444,17 +486,18 @@ func _strike(spell: SpiderSpell, wound: float) -> Dictionary:
 ## Water sprayed in a fan in front of the spider, out across the ground as far as
 ## the wind-up throws it. Everything the spray catches is soaked and stung, a flier
 ## comes down, and the ground stays wet for a while after: whatever stands on it
-## stays soaked. Silk the spray reaches is soaked too, and a wet web does not burn.
-## See [WetGround] and [WetSilk].
+## stays soaked. With Wet Silk learned, the silk the spray reaches is soaked too,
+## and a wet web does not burn — with Sodden Silk, it holds harder as well. See
+## [WetGround] and [WetSilk].
 func _douse(spell: SpiderSpell, wound: float) -> Dictionary:
 	var from := feet_ground()
 	var heading := fan_heading()
 	var far := fan_reach(spell, wound)
-	var lasts := spell.duration_at(wound)
+	var lasts := duration_of(spell, wound)
 	var wet := WetGround.spill(_host(), from, heading, far, lasts, spell.colour)
 	if wet == null:
 		return {"cast": false}
-	var harm := spell.power_at(wound)
+	var harm := power_of(spell, wound)
 	var soaked := 0
 	for node in get_tree().get_nodes_in_group("prey"):
 		var creature := node as Prey
@@ -466,12 +509,14 @@ func _douse(spell: SpiderSpell, wound: float) -> Dictionary:
 		creature.wound(harm)
 		soaked += 1
 	var webs := 0
-	for node in get_tree().get_nodes_in_group("silk_webs"):
-		var web := node as WebStructure
-		if web != null and not web.is_queued_for_deletion() \
-				and _spray_reaches(web, from, heading, far):
-			WetSilk.soak(web, lasts)
-			webs += 1
+	if knows(&"wet_silk"):
+		var heavy := knows(&"sodden_silk")
+		for node in get_tree().get_nodes_in_group("silk_webs"):
+			var web := node as WebStructure
+			if web != null and not web.is_queued_for_deletion() \
+					and _spray_reaches(web, from, heading, far):
+				WetSilk.soak(web, lasts, heavy)
+				webs += 1
 	var said := PackedStringArray()
 	if soaked > 0:
 		said.append("%d soaked" % soaked)
@@ -484,21 +529,25 @@ func _douse(spell: SpiderSpell, wound: float) -> Dictionary:
 
 ## Wind blown in a fan in front of the spider: everything loose in it is shoved away
 ## and stung — into a web, if one is in the way, which catches it — and a boss only
-## takes the sting. Over ground Douse left wet it lifts the water into a whirl that
-## runs on the way the wind blew, and holds the first thing it reaches. See [Gust]
-## and [WaterSpiral].
+## takes the sting. With Waterspout learned, over ground Douse left wet it lifts the
+## water into a whirl that runs on the way the wind blew, and holds the first thing
+## it reaches. See [Gust] and [WaterSpiral].
 func _blow(spell: SpiderSpell, wound: float) -> Dictionary:
 	var from := feet_ground()
 	var heading := fan_heading()
 	var far := fan_reach(spell, wound)
 	var height := body_height()
-	var push := lerpf(Gust.PUSH.x, Gust.PUSH.y, wound) * height
+	var push := lerpf(Gust.PUSH.x, Gust.PUSH.y, wound) * height \
+		* (_tree.tier(spell.id).y if _tree != null else 1.0)
 	var gust := Gust.blow(_host(), from + Vector3.UP * height * 0.3, heading, far, push,
-		spell.power_at(wound), spell.colour)
+		power_of(spell, wound), spell.colour)
 	if gust == null:
 		return {"cast": false}
 	var whirls := 0
-	for node in get_tree().get_nodes_in_group(WetGround.GROUP):
+	# Only with Waterspout learned does wind take the water up at all.
+	var spouts: Array = get_tree().get_nodes_in_group(WetGround.GROUP) \
+		if knows(&"waterspout") else []
+	for node in spouts:
 		var wet := node as WetGround
 		if wet == null or not wet.is_wet():
 			continue
@@ -507,7 +556,7 @@ func _blow(spell: SpiderSpell, wound: float) -> Dictionary:
 			continue
 		var whirl := WaterSpiral.send(_host(), met, heading,
 			lerpf(SPIRAL_BODIES.x, SPIRAL_BODIES.y, wound) * height, wet.reach + far * 0.5,
-			WaterSpiral.PACE * height, spell.duration_at(wound), spell.power_at(wound) * 2.0,
+			WaterSpiral.PACE * height, duration_of(spell, wound), power_of(spell, wound) * 2.0,
 			_traits != null and _traits.acid_water(), venom_strength(), wet.colour)
 		wet.dry()
 		if whirl != null:
@@ -541,7 +590,7 @@ func fan_heading() -> Vector3:
 
 ## How far a fan of water or wind wound up to [param wound] reaches, in metres.
 func fan_reach(spell: SpiderSpell, wound: float) -> float:
-	return spell.size_at(wound) * body_height()
+	return size_of(spell, wound) * body_height()
 
 
 ## The ground under the spider, where water and wind leave from.
@@ -603,8 +652,8 @@ func _erupt(spell: SpiderSpell, wound: float) -> Dictionary:
 		notice.emit("No ground under the cross for a geyser to come up out of")
 		return {"cast": false}
 	var at: Vector3 = target.get("point", _spider.global_position)
-	var geyser := FireGeyser.erupt(_host(), at, spell.size_at(wound) * body_height(),
-		body_height(), spell.power_at(wound), spell.colour)
+	var geyser := FireGeyser.erupt(_host(), at, size_of(spell, wound) * body_height(),
+		body_height(), power_of(spell, wound), spell.colour)
 	if geyser == null:
 		return {"cast": false}
 	geyser.erupted.connect(_on_erupted)
@@ -664,7 +713,7 @@ func _pull_back(spell: SpiderSpell, wound: float) -> Dictionary:
 		for line in web.frame():
 			line.demolish()
 		var pull := WebPull.call_in(_host(), web, _spider, pull_pace * body_height(),
-			spell.size_at(wound) * body_height(), spell.power_at(wound), body_height())
+			size_of(spell, wound) * body_height(), power_of(spell, wound), body_height())
 		if pull != null:
 			pull.arrived.connect(_on_pull_arrived)
 	notice.emit("Pullback — %d web%s coming back" % [webs.size(), "" if webs.size() == 1 else "s"])
@@ -824,10 +873,10 @@ func circle_at(spell: SpiderSpell, wound: float) -> Dictionary:
 			var target := area_target(spell)
 			var up: Vector3 = target.get("normal", Vector3.UP)
 			return {"where": MagicCircle.facing(target.get("point", _spider.global_position)
-				+ up * height * 0.03, up), "wide": spell.size_at(wound) * height}
+				+ up * height * 0.03, up), "wide": size_of(spell, wound) * height}
 	var ground := _ground({"point": _spider.global_position, "hit": false})
 	var floor_up: Vector3 = ground.get("normal", Vector3.UP)
-	var wide := spell.size_at(wound) * height
+	var wide := size_of(spell, wound) * height
 	if spell.form == SpiderSpell.Form.PULLBACK:
 		# Called to the spider, so drawn round it: the size it is matters less than
 		# that it can be seen.
@@ -954,34 +1003,30 @@ func fan_shown() -> float:
 
 # --- keeping up with the spider ------------------------------------------
 
-func _on_stage_changed(_stage: GrowthStage, _index: int) -> void:
-	_read_the_book()
-
-
-func _on_traits_changed() -> void:
-	_read_the_book()
-
-
-## Reads which spells are open, says so for any that have just opened, and moves
-## the hand off anything that has shut.
-func _read_the_book(announce := true) -> void:
-	var fresh: Array[SpiderSpell] = []
-	for spell in book:
-		var now := is_open(spell)
-		if now and not bool(_open.get(spell.id, false)):
-			fresh.append(spell)
-		_open[spell.id] = now
-	if not is_open(current()):
+## Reads what is on the keys afresh, and moves the hand off anything that has left
+## them. Quiet: what is new is announced as it is learned — see [method _on_learned].
+func _read_the_book() -> void:
+	if not in_hand(current()):
 		selected = 0
 		for i in book.size():
-			if is_open(book[i]):
+			if book[i].form == SpiderSpell.Form.SILK:
 				selected = i
 				break
 		if charging:
 			cancel_cast()
-	if announce:
-		for spell in fresh:
-			opened.emit(spell)
-			notice.emit("New spell: %s — [%d] to take it in hand"
-				% [spell.display_name, key_for(spell)])
 	changed.emit()
+
+
+func _on_learned(skill: SpellSkill) -> void:
+	if skill.kind != SpellSkill.Kind.SPELL:
+		return
+	var spell := by_id(skill.spell)
+	if spell == null:
+		return
+	opened.emit(spell)
+	var key := key_for(spell)
+	if key > 0:
+		notice.emit("New spell: %s — [%d] to take it in hand" % [spell.display_name, key])
+	else:
+		notice.emit("New spell: %s — the loadout is full: make room in the tree [E]"
+			% spell.display_name)

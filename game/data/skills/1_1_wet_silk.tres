@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="SpellSkill" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spell_skill.gd" id="1_skill"]
+
+[resource]
+script = ExtResource("1_skill")
+id = "wet_silk"
+display_name = "Wet Silk"
+description = "Douse soaks the silk its spray reaches. A wet web does not burn — it stands in the fire and catches what a geyser throws into it — and lightning stays in it twice as long."
+kind = 2
+row = 1
+column = 1
+cost = 1
+requires = PackedStringArray("douse")
+interaction = &"wet_silk"

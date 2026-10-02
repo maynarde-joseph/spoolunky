@@ -9,7 +9,6 @@ display_name = "Gust"
 description = "Wind blown in a fan in front of you. It shoves what it reaches away and stings it — into a web, if one is in the way, which catches it. Over wet ground it lifts the water into a whirl that holds the first thing it reaches."
 form = 5
 order = 2
-unlock_stage = 2
 cooldown = 6.0
 size = Vector2(4, 7)
 duration = Vector2(2.5, 4)

@@ -9,12 +9,14 @@ crag is something you could eat. Everything out there is eating something too:
 hares graze the glade, foxes hunt the hares, wolves come out at dusk for the
 foxes, and what is not eaten goes home and breeds.
 
-What you eat changes what you are: every meal is a chance to take something from
-it — wings, armour, venom — and the bigger it was next to you, the better the
-odds. And what you are decides what you can cast: the thrown web is the first
-spell, and a call that brings your webs flying back, a spray of water, a gust of
-wind, lightning and fire open as you grow, each working off the others and off
-your silk — wind over wet ground lifts a whirl that holds what it reaches.
+You are a spider wizard. The thrown web is the first spell, and what you catch and
+eat earns the rest: experience makes rank — Apprentice Spooder up to Grand
+Spooder — and every rank opens a row of the **spell tree** and two points to
+spend in it. A call that brings your webs flying back, a spray of water, a gust
+of wind, lightning and a geyser of fire, each with a second tier; the ways they
+work off your silk and each other — webs that will not burn, webs left live,
+lightning run along your lines, wind over wet ground lifting a whirl; and shorter
+waits. Five spells ride on your keys beside the web.
 
 The project opens somewhere else now, though: **the Hollow Wood**, a prototype of a
 second shape for the game. A stretch of old forest floor under the sky with ruins
@@ -35,13 +37,14 @@ trap catalogue, and the Hollow Wood (§12) — is in [`docs/DESIGN.md`](docs/DES
 
 ```
 game/
-  data/      web patterns, devices, size tiers, traits, spells, creatures and
-             their bodies, and the hostiles and their attacks (plain
-             resources — edit the numbers)
+  data/      web patterns, devices, size tiers, traits, spells and the spell
+             tree's skills, creatures and their bodies, and the hostiles and
+             their attacks (plain resources — edit the numbers)
   web/       procedural silk geometry and the webs themselves
   player/    the spider, one node per job: growth, climbing, the camera, the
-             builder, the tether, the bag, the traits, the spells, eating and
-             stamina, and the body you see — a skeleton and the gait that walks it
+             builder, the tether, the bag, the traits, the spells and the spell
+             tree, eating and stamina, and the body you see — a skeleton and the
+             gait that walks it
   spells/    what spells leave in the world: the magic circle each is drawn
              in, wet ground and wet silk, a gust, the whirl wind lifts off wet
              ground, a strike of lightning and the charge it leaves in a web, a
@@ -89,8 +92,8 @@ one kept to what the keys do today.
 | **Q** | take hold of the nearest line — hang from it and zip along it with **W**/**S**, toward or away from where you look. **Q** or **Space** lets go |
 | **Left Mouse** *on something you've caught* | put a line on it and drag it instead — same click, read the only way that makes sense |
 | **Right Mouse** | **cast what is in hand** — the web, to start with: tap, or hold to wind it up |
-| **1–9** | **take a spell in hand** — 1 the web, 2 Douse, 3 Gust, 4 lightning, 5 fire, 6 the pullback; the wheel turns through them too. Growing, and what you eat, opens more |
-| **E** | evolution — what you are, and your odds on what eating could make you |
+| **1, 2–6** | **take a spell in hand** — 1 is always the web; 2 to 6 are the five spells in your loadout. The wheel turns through them too |
+| **E** | the **spell tree** — your rank, the points to spend, every skill and where it stands. Click a skill to learn it; click a spell you know to put it on a key or take it off |
 | **F** | wrap caught prey, then drain it (also re-arms a sprung snare). In the Hollow Wood a meal mends you, and at a shrine **F** rests |
 | **Y** | **put a line on a bundle and drag it along** — again to drop what you're carrying |
 | **X** | pull down the web you're looking at, for half the silk back — or pick a device back up |
@@ -355,6 +358,41 @@ somewhere else.
 
 Same object, same rules, either way — including whether it holds what hits it.
 
+## Spells, ranks and the spell tree
+
+Right mouse casts what is in hand — the web, to start with — and holding winds it
+up. Everything else is learned:
+
+* **Catching and eating earn rank.** Anything taken for keeps — bundled, wrapped,
+  or held in a web until it has fought itself out — is experience, more the bigger
+  it was and more again for something that fights back; drinking it to the end is
+  worth half as much again. A practice target is worth nothing. Apprentice Spooder,
+  Adept, Journeyman, Master, Grand Spooder.
+* **Each rank opens its row of the tree and two points.** **E** opens the tree. A
+  point buys a skill in a row you have reached: a **spell** (Douse, Gust and the
+  Pullback for an Apprentice; Summon Lightning for an Adept; the Fire Geyser for a
+  Journeyman), a spell's **second tier** (Deluge, Gale, Thunderhead, Eruption, Long
+  Recall), an **interaction**, or a **shorter wait**. There are twenty-one points
+  of it and ten to earn, so what you learn is the kind of spider you are.
+* **The interactions are where it gets interesting.** **Wet Silk**: Douse wets
+  your webs, and a wet web stands in fire — a wet web over a geyser catches what
+  it throws up — and keeps lightning twice as long. **Sodden Silk**: a wet web
+  holds half as hard again. **Waterspout**: wind over wet ground lifts a whirl that
+  holds the first thing it reaches. **Live Silk**: lightning stays in a web, and
+  the web strikes whatever touches it. **Live Lines**: lightning runs along your
+  lines to every web they tie together.
+* **Five on the keys.** The web is always on 1 and five spells ride on 2 to 6. A
+  spell learned goes on the next free key; the tree takes one off or puts one on.
+
+Every spell but the web and the Pullback hurts, and what it takes is health,
+which is how hard a creature fights silk — so a spell is always a way of making
+a catch easier. The level switch `all_spells_open` hands over every spell and
+interaction at once with no limit on the keys, for trying them out; tiers and
+shorter waits are still earned.
+
+Evolving by chance from what you eat is parked: the traits and their screen are
+kept in the code, and a boss still gives you what it kept.
+
 ## What there is to catch
 
 Creatures are resources in `game/data/prey/`, and one scene serves all of them
@@ -579,9 +617,11 @@ most are `shape` (strand or net), `trigger` (passive, alert, snare or lure),
 floor, out under a grey late sky, with ruins standing in it. Ferns, toadstools,
 fallen leaves and the old trees fill the ground between the places, and worn paths
 run from the clearing to all of them. The spider is a Huntsman the whole way
-through — eating here neither grows it nor passes anything on — every spell is
-open from the start, and nothing mends it but a shrine and a meal: drink something
-you have wrapped and you get some of yourself back.
+through — eating here neither grows it nor passes anything on — every spell and
+every interaction is known from the start with no limit on the keys (the tiers
+and the shorter waits are still earned, rank by rank), and nothing mends it but a
+shrine and a meal: drink something you have wrapped and you get some of yourself
+back.
 
 * **The Shrine Clearing**, in the south: a ring of standing stones round a dais and
   a shrine. You wake here, and nothing hostile comes in.
@@ -834,9 +874,11 @@ thrashing when it is caught, curled up and still once it is wrapped:
 godot --headless --script res://tests/creature_smoke_test.gd
 ```
 
-A fifth casts every spell in the sandbox: the web as the first of them, what
-opens the rest, the strip that shows them, and what each does — to what it lands
-on, and to the other spells and the silk it meets. Lightning run down a wire to a
+A fifth casts every spell in the sandbox: the web as the first of them, the rest
+learned in the tree — rank from catching and eating, points, rows, the loadout of
+five and the tree on **E** — the strip that shows the keys, and what each spell does
+— to what it lands on, and to the other spells and the silk it meets, before and
+after the interaction that lets it. Lightning run down a wire to a
 wasp across the room and left live in the web, a spray that leaves the ground and
 the silk wet, a gust that blows a beetle into a web, the whirl wind lifts off wet
 ground holding the first thing it reaches, acid water, a geyser that burns harder

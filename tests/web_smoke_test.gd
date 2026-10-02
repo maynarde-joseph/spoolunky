@@ -4297,7 +4297,8 @@ func _test_fangs() -> void:
 		% quarry.display_name)
 
 
-## The evolution screen: a map of what eating could make you, not a shop.
+## The evolution screen: a map of what eating could make you, not a shop — parked,
+## with the code kept, while the spell tree has the key.
 func _test_the_tree_on_screen() -> void:
 	var hud := level.get_node_or_null("HUD") as SpiderHUD
 	if not check(hud != null, "the level has a HUD to hang the tree off"):
@@ -4329,11 +4330,13 @@ func _test_the_tree_on_screen() -> void:
 			check(open_text.contains("sure"),
 				"down to the ones a meal of is a sure thing (%s)" % open_text)
 
+	# Parked: [E] opens the spell tree now, and this is kept for when evolving
+	# comes back — so it still opens and shuts, from here.
 	screen.show_tree()
-	check(screen.open and screen.visible, "[E] opens it")
+	check(screen.open and screen.visible, "it still opens")
 	check(screen._larder.text != "", "with the larder across the top (%s)" % screen._larder.text)
 	screen.close()
-	check(not screen.open and not screen.visible, "and [E] again puts it away")
+	check(not screen.open and not screen.visible, "and shuts")
 
 
 ## Speed one tenth of a second of falling adds, at a given glide. Measured well

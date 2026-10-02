@@ -229,6 +229,10 @@ var bound := 0.0
 var wrapped := false
 var eaten := false
 
+## Whether the spider has been told this was caught: a catch is worth something
+## once, however it is taken after. See [method credit_catch].
+var _credited := false
+
 ## Killed by venom: drainable no matter how big it is.
 var subdued := false
 
@@ -1250,6 +1254,7 @@ func bundle() -> bool:
 	# never report standing on anything, so it would never settle.
 	motion_mode = CharacterBody3D.MOTION_MODE_GROUNDED
 	up_direction = Vector3.UP
+	credit_catch()
 	return true
 
 
@@ -1289,6 +1294,19 @@ func wrap() -> void:
 	_struggle = 0.0
 	_set_marked(false)
 	_set_cocoon(true)
+	credit_catch()
+
+
+## Caught for keeps by the spider's silk — bundled, wrapped, or fought out in a
+## web — and the spider is told, once. What a catch is worth is the spider's to
+## decide: see [method SpiderPlayer.credit_catch].
+func credit_catch() -> void:
+	if _credited or not is_inside_tree():
+		return
+	_credited = true
+	var spider := get_tree().get_first_node_in_group("spider")
+	if spider != null and spider.has_method("credit_catch"):
+		spider.credit_catch(self)
 
 
 ## Takes a mouthful. Returns what was actually in it, which is less than was
@@ -1369,7 +1387,8 @@ func _process_stuck(delta: float) -> void:
 	if _fight_left <= 0.0:
 		# Fought itself out. It is not getting free on its own any more, so it
 		# keeps until you come for it — still hanging there pulling, which is
-		# what eventually costs you the web if you never do.
+		# what eventually costs you the web if you never do. Caught, then.
+		credit_catch()
 		_web.take_damage(settled_drain * delta)
 		return
 

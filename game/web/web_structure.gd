@@ -184,11 +184,12 @@ func _takes_cleanly(body: Node3D) -> bool:
 
 
 ## How hard this web holds on to prey. A web that has just been signalled is
-## drawn tight and holds better for a few seconds.
+## drawn tight and holds better for a few seconds, and one soaked heavy holds
+## harder while it is wet — see [method WetSilk.hold_scale].
 func hold_strength() -> float:
 	if pattern == null:
 		return 0.0
-	var hold := pattern.hold_strength * quality
+	var hold := pattern.hold_strength * quality * WetSilk.hold_scale(self)
 	if _tense_timer > 0.0:
 		hold *= pattern.tense_multiplier
 	return hold

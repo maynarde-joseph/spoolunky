@@ -13,10 +13,13 @@ extends Node3D
 ##
 ## * **Webs.** A strike on a web, or near enough to one, runs through it — and
 ##   through every web touching it, and every web wired to it — and reaches
-##   everything they hold. And it stays: each of them is live for a while after,
-##   keeping what it holds stunned and striking anything that touches it — see
-##   [WebCharge] — and twice as long in a web Douse left wet. Lines carry nothing:
-##   a strike on a line is a strike on the floor under it.
+##   everything they hold. With [member live] it stays: each of them is live for a
+##   while after, keeping what it holds stunned and striking anything that touches
+##   it — see [WebCharge] — and twice as long in a web Douse left wet.
+## * **Lines.** Lines carry nothing — a strike on a line is a strike on the floor
+##   under it — unless [member lines]: then a strike that reaches a line runs down
+##   it to the webs at its ends, and a charge in a web runs down every line tied to
+##   it to the webs at their other ends.
 ## * **Water.** Anything wet takes it twice as hard — twice the stun and twice the
 ##   hurt — and passes it on to anything wet near it, and a strike on a whirl
 ##   reaches everything the whirl holds.
@@ -59,11 +62,19 @@ var arcs := 0
 ## other, in metres.
 var touch := 0.2
 
+## Whether the webs it runs through stay live after: the Live Silk skill's.
+var live := true
+
+## Whether it runs along lines to the webs at their ends: the Live Lines skill's.
+var lines := false
+
 var colour := Color(0.98, 0.92, 0.55, 1.0)
 
-## What it stunned, and the webs it ran through, in the order it reached them.
+## What it stunned, the webs it ran through, and the lines it ran along to get to
+## them, in the order it reached them.
 var shocked: Array[Prey] = []
 var charged: Array[WebStructure] = []
+var ran_along: Array[WebStrand] = []
 
 ## Where it went, as pairs of points, for drawing.
 var _paths: Array = []
@@ -73,10 +84,12 @@ var _light: OmniLight3D
 
 
 ## Calls one down at [param at] under [param host], taking [param hurt] of the
-## health of everything it strikes. It has struck by the time this returns, so
-## what it reached can be read straight off it.
+## health of everything it strikes, leaving the webs it runs through live if
+## [param stays], and running along lines if [param along]. It has struck by the
+## time this returns, so what it reached can be read straight off it.
 static func call_down(host: Node, at: Vector3, wide: float, stun_for: float, jumps := 0,
-		gap := 0.2, tint := Color(0.98, 0.92, 0.55, 1.0), hurt := 0.0) -> LightningStrike:
+		gap := 0.2, tint := Color(0.98, 0.92, 0.55, 1.0), hurt := 0.0, stays := true,
+		along := false) -> LightningStrike:
 	if host == null:
 		return null
 	var strike := LightningStrike.new()
@@ -84,6 +97,8 @@ static func call_down(host: Node, at: Vector3, wide: float, stun_for: float, jum
 	strike.radius = maxf(wide, 0.05)
 	strike.stun = stun_for
 	strike.harm = maxf(hurt, 0.0)
+	strike.live = stays
+	strike.lines = along
 	strike.arcs = maxi(jumps, 0)
 	strike.touch = maxf(gap, 0.01)
 	strike.colour = tint
@@ -146,6 +161,22 @@ func discharge() -> void:
 		charged.append(web)
 		frontier.append(web)
 		_paths.append([at, _middle(web)])
+	if lines:
+		# A line in the strike runs it down to whatever is tied at either end.
+		for node in get_tree().get_nodes_in_group("silk_webs"):
+			var line := node as WebStrand
+			if line == null or line.is_queued_for_deletion() or not line.reaches(at, radius):
+				continue
+			for end in [line.point_a, line.point_b]:
+				for web in _tied_at(end):
+					if charged.has(web):
+						continue
+					charged.append(web)
+					frontier.append(web)
+					_paths.append([at, end])
+					_paths.append([end, _middle(web)])
+					if not ran_along.has(line):
+						ran_along.append(line)
 	while not frontier.is_empty():
 		var web: WebStructure = frontier.pop_back()
 		for held in web.snared_prey():
@@ -159,8 +190,10 @@ func discharge() -> void:
 			frontier.append(other)
 			_paths.append([_middle(web), _middle(other)])
 	for web in charged:
-		var live := stun * LIVE_FOR * (WetSilk.LIVE_LONGER if WetSilk.is_wet(web) else 1.0)
-		WebCharge.lay(web, live, stun, colour, harm)
+		if not live:
+			break
+		var lasts := stun * LIVE_FOR * (WetSilk.LIVE_LONGER if WetSilk.is_wet(web) else 1.0)
+		WebCharge.lay(web, lasts, stun, colour, harm)
 
 	# Water carries it on: anything wet near anything wet that it reached.
 	var reach := radius * CHAIN_REACH
@@ -205,8 +238,9 @@ func _shock(creature: Prey, from: Vector3) -> bool:
 
 
 ## The webs a charge in [param web] crosses to: any whose silk comes within
-## [member touch] of its own, and any it is wired to either way. Webs only — never
-## a line.
+## [member touch] of its own, and any it is wired to either way — and with
+## [member lines], any at the far end of a line tied to it. Webs only: a line is
+## run along, never left live.
 func _neighbours(web: WebStructure) -> Array[WebStructure]:
 	var found: Array[WebStructure] = []
 	for link in web.links:
@@ -225,6 +259,33 @@ func _neighbours(web: WebStructure) -> Array[WebStructure]:
 			if other.reaches(anchor, touch):
 				found.append(other)
 				break
+	if lines:
+		for node in get_tree().get_nodes_in_group("silk_webs"):
+			var line := node as WebStrand
+			if line == null or line.is_queued_for_deletion():
+				continue
+			var far := Vector3.INF
+			if web.reaches(line.point_a, touch):
+				far = line.point_b
+			elif web.reaches(line.point_b, touch):
+				far = line.point_a
+			if far == Vector3.INF:
+				continue
+			for other in _tied_at(far):
+				if other != web and not found.has(other):
+					found.append(other)
+					if not ran_along.has(line):
+						ran_along.append(line)
+	return found
+
+
+## The webs whose silk is tied at [param point]: within [member touch] of it.
+func _tied_at(point: Vector3) -> Array[WebStructure]:
+	var found: Array[WebStructure] = []
+	for node in get_tree().get_nodes_in_group("silk_webs"):
+		var web := node as WebNet
+		if web != null and not web.is_queued_for_deletion() and web.reaches(point, touch):
+			found.append(web)
 	return found
 
 

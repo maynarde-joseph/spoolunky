@@ -71,12 +71,14 @@ signal skill_tree_toggled()
 ## The size tier the spider starts at, counted from nought: 2 is the Huntsman.
 @export var start_stage := 0
 
-## Whether a meal can pass a trait on to the spider. A level that holds the spider
-## to one size turns this off as well, since some traits are size: what you eat
-## there changes nothing about you, and what you beat gives you what it kept.
-@export var evolves_by_eating := true
+## Whether a meal can pass a trait on to the spider. Off: evolving by chance is
+## parked while the spell tree is what the spider grows into, and the code is kept
+## for when it comes back. What you beat still gives you what it kept.
+@export var evolves_by_eating := false
 
-## Every spell open from the start, whatever the spider's size or traits.
+## Every spell and every interaction known from the start, and the loadout's
+## limit lifted: the switch for playing a level to test the spells. Tiers and
+## shorter waits are still earned. See [member SpellTree.open_all].
 @export var all_spells_open := false
 
 ## Whether condition comes back on its own after a quiet spell. A level where the
@@ -107,6 +109,8 @@ signal skill_tree_toggled()
 @onready var live_line: LiveLine = $LiveLine
 ## What the spider can cast, and which of it is in hand.
 @onready var spells: SpiderSpells = $Spells
+## What the spider has learned, how far it has come, and what is on its keys.
+@onready var spell_tree: SpellTree = $SpellTree
 
 var _spawn_transform: Transform3D
 
@@ -152,8 +156,10 @@ func _ready() -> void:
 	jaws.setup(self, growth, traits, view, tether)
 	vitals.setup(self, climb, tether, jaws)
 	live_line.setup(self, growth, view, climb, web_builder)
-	spells.setup(self, growth, traits, view, web_builder)
-	spells.open_all = all_spells_open
+	spells.setup(self, growth, traits, view, web_builder, spell_tree)
+	spell_tree.open_all = all_spells_open
+	spell_tree.ranked_up.connect(_on_ranked_up)
+	jaws.finished.connect(_on_meal_finished)
 	if body != null:
 		body.setup(self)
 	growth.shaped_by(traits)
@@ -693,6 +699,24 @@ func _on_line_dropped(_anchor: Vector3) -> void:
 
 func _on_line_cut() -> void:
 	notice.emit("Let go of the line")
+
+
+## Something was caught for keeps by the spider's silk, wherever it was: a web
+## that out-held it, a shot that bundled it, a wrap. Worth experience. Called by
+## the creature, once — see [method Prey.credit_catch].
+func credit_catch(prey: Prey) -> void:
+	if prey != null and spell_tree != null:
+		spell_tree.credit_catch(prey.kind)
+
+
+func _on_meal_finished(kind: PreySpecies) -> void:
+	if spell_tree != null:
+		spell_tree.credit_meal(kind)
+
+
+func _on_ranked_up(rank: int) -> void:
+	notice.emit("%s — %d points, and a new row of the tree [E]"
+		% [spell_tree.rank_name(rank), spell_tree.points()])
 
 
 func _on_notice(text: String) -> void:

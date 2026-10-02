@@ -9,7 +9,6 @@ display_name = "Fire Geyser"
 description = "A geyser of fire out of the ground under the cross. It throws what it catches up into the air and burns it — and silk burns: the more of a thing is wrapped, the harder it burns. Every web and line in the column burns away, dropping what the web held; a wet web stands, and catches what the geyser throws into it."
 form = 3
 order = 4
-unlock_stage = 4
 cooldown = 7.0
 size = Vector2(0.8, 1.4)
 duration = Vector2(0.5, 0.5)
