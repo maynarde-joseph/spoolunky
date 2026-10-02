@@ -484,12 +484,13 @@ the same as locked traits.
 four buttons:
 
 * **Fire burns silk.** Every web and every line a burst reaches goes up, the
-  spider's own as much as any — the one it is standing on included. What a web
-  was holding drops out of it, but burned first as hard as fire burns anything:
-  fire into a full web is the hardest burn there is, and the catch you lose is an
-  easier one the next time. Thrown at a line, the bolt goes to the line rather
-  than the wall behind it, so a line can be cut on purpose — yours, to drop
-  something on the end of it, or one a creature is crossing.
+  spider's own as much as any — the one it is standing on included — and a web
+  takes the frame it was walked round on with it. What a web was holding drops
+  out of it, but burned first as hard as fire burns anything: fire into a full
+  web is the hardest burn there is, and the catch you lose is an easier one the
+  next time. Thrown at a line, the bolt goes to the line rather than the wall
+  behind it, so a line can be cut on purpose — yours, to drop something on the
+  end of it, or one a creature is crossing.
 * **Lightning runs through webs, and stays in them.** A strike that reaches a web
   runs through it, into every web whose silk touches it and down every wire from
   it, and stuns everything they hold. Strike the web you are standing next to and

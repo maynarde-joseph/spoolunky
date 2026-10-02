@@ -505,19 +505,30 @@ func _on_fire_landed(at: Vector3, _normal: Vector3, struck: Node3D, _heading: Ve
 			0.6)
 		worst = maxf(worst, lost)
 	# Then the silk, once the creatures in it have burned as hard as a web makes
-	# them: webs and lines alike, and the spider's own as much as any.
-	var nets := 0
-	var lines := 0
+	# them: webs and lines alike, and the spider's own as much as any. A web goes
+	# with the frame it was walked round on.
+	var burning: Array[WebStructure] = []
 	for node in get_tree().get_nodes_in_group("silk_webs"):
 		var web := node as WebStructure
-		if web == null or web.is_queued_for_deletion() or not web.reaches(at, reach):
+		if web != null and not web.is_queued_for_deletion() and web.reaches(at, reach):
+			burning.append(web)
+	var frames: Array[WebStructure] = []
+	for web in burning:
+		var net := web as WebNet
+		if net == null:
 			continue
+		for line in _frame_of(net):
+			if not burning.has(line) and not frames.has(line):
+				frames.append(line)
+	var nets := 0
+	var lines := 0
+	for web in burning + frames:
 		_flare(web, spell.colour)
 		web.tear()
-		if web is WebStrand:
-			lines += 1
-		else:
+		if web is WebNet:
 			nets += 1
+		elif not frames.has(web):
+			lines += 1
 	var said := PackedStringArray()
 	if burned.size() == 1:
 		said.append("The %s burns — %d%% of it left" % [burned[0].species,
@@ -530,6 +541,25 @@ func _on_fire_landed(at: Vector3, _normal: Vector3, struck: Node3D, _heading: Ve
 		said.append("%d line%s burned away" % [lines, "" if lines == 1 else "s"])
 	if not said.is_empty():
 		notice.emit(" · ".join(said))
+
+
+## The lines [param net] was walked round on — both ends on its own anchors — which
+## go up with it rather than standing round the hole it leaves.
+func _frame_of(net: WebNet) -> Array[WebStrand]:
+	var found: Array[WebStrand] = []
+	for node in get_tree().get_nodes_in_group("silk_webs"):
+		var strand := node as WebStrand
+		if strand != null and not strand.is_queued_for_deletion() \
+				and _is_anchor(net, strand.point_a) and _is_anchor(net, strand.point_b):
+			found.append(strand)
+	return found
+
+
+static func _is_anchor(net: WebNet, point: Vector3) -> bool:
+	for anchor in net.anchors:
+		if anchor.distance_to(point) < 0.01:
+			return true
+	return false
 
 
 ## Fire running along [param web] as it goes: a bloom at both ends of a line and

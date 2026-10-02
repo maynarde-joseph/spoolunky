@@ -826,6 +826,10 @@ func _test_fire_burns_silk() -> void:
 	var far := _spin(centre + Vector3(height * 8.0, half + height * 0.3, 0.0), half)
 	if not check(web != null and far != null, "a web to burn, and one well away from it"):
 		return
+	var frame := _frame_lines(web)
+	var far_frame := _frame_lines(far)
+	check(frame.size() == 4 and far_frame.size() == 4,
+		"each walked round on four lines (%d, %d)" % [frame.size(), far_frame.size()])
 	var wasp := spawn("wasp", (web as WebNet).signal_point())
 	if not check(wasp != null, "a wasp"):
 		return
@@ -844,6 +848,11 @@ func _test_fire_burns_silk() -> void:
 	var gone: bool = await wait_until(func() -> bool: return not is_instance_id_valid(web_id),
 		120)
 	check(gone, "and the web burns away")
+	var frame_left := 0
+	for line in frame:
+		if is_instance_valid(line) and not line.is_queued_for_deletion():
+			frame_left += 1
+	check(frame_left == 0, "and the frame it was walked round on with it (%d left)" % frame_left)
 	check(is_instance_valid(wasp) and not wasp.is_stuck(), "dropping the wasp out of it")
 	if is_instance_valid(wasp):
 		check(wasp.health() < 1.0 - fire.power_at(0.0) * 0.95,
@@ -874,6 +883,7 @@ func _test_fire_burns_silk() -> void:
 	check(burned, "and the line burns away")
 	check(is_instance_valid(far) and not far.is_queued_for_deletion(),
 		"and the far web stands still")
+	check(_frame_lines(far).size() == 4, "frame and all")
 
 
 ## A level can hand the spider the whole book at once: every spell open to a
@@ -887,6 +897,24 @@ func _test_the_whole_book_open() -> void:
 	spells.open_all = false
 	check(spells.open_spells().size() == 1 and spells.current().id == "silk",
 		"shut again, it is back to silk")
+
+
+## The lines [param web] was walked round on: both ends on its own anchors.
+func _frame_lines(web: WebStructure) -> Array[WebStrand]:
+	var found: Array[WebStrand] = []
+	if not is_instance_valid(web):
+		return found
+	for standing in standing_webs():
+		var line := standing as WebStrand
+		if line == null:
+			continue
+		var ends := 0
+		for anchor in web.anchors:
+			if anchor.distance_to(line.point_a) < 0.01 or anchor.distance_to(line.point_b) < 0.01:
+				ends += 1
+		if ends >= 2:
+			found.append(line)
+	return found
 
 
 func _last_strike() -> LightningStrike:
