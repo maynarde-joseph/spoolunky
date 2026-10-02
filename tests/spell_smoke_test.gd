@@ -46,7 +46,7 @@ func _sections() -> Array[Callable]:
 		_test_live_silk_and_lines,
 		_test_lightning_and_water,
 		_test_storm_and_paralysis,
-		_test_fire_geyser,
+		_test_fire_breath,
 		_test_fire_burns_silk,
 		_test_pullback,
 		_test_the_whole_book_open,
@@ -293,7 +293,7 @@ func _test_the_tree() -> void:
 		"learned in order, with the points for them")
 	check(tree.points() == 1, "one point left of four (%d)" % tree.points())
 	tree.earn(tree.xp_to_next())
-	check(tree.learn(fire) and tree.points() == 1, "Fire Geyser, for two of three")
+	check(tree.learn(fire) and tree.points() == 1, "Fire Breath, for two of three")
 	check(tree.why_not(tree.by_id("live_lines")).begins_with("opens at"),
 		"and Live Lines waits for its rank")
 	tree.earn(tree.xp_to_next())
@@ -516,12 +516,12 @@ func _test_number_keys() -> void:
 	spells.take(1)
 
 
-## Every spell but silk is drawn in a magic circle while it winds up — fire on the
-## ground the geyser will come up out of, lightning on the ground where it will
-## strike, water and wind under the spider's feet, with the fan or the strip they
-## will cover ahead — and leaves through it: the circle flares and fades as the
-## spell goes, lightning draws a second one over the strike, and a wind-up given up
-## fades the same way.
+## Every spell but silk is drawn in a magic circle while it winds up — fire in front
+## of the spider's jaws on the line the breath will take, lightning on the ground
+## where it will strike, water and wind under the spider's feet, with the fan or the
+## strip they will cover ahead — and leaves through it: the circle flares and fades
+## as the spell goes, lightning draws a second one over the strike, and a wind-up
+## given up fades the same way.
 func _test_spells_leave_through_circles() -> void:
 	spells.open_all = true
 	spider.require_captured_mouse = false
@@ -544,7 +544,7 @@ func _test_spells_leave_through_circles() -> void:
 	release_action(spider.input_shoot)
 	await process_frame
 
-	# Fire: on the ground the geyser will come up out of.
+	# Fire: in front of the spider's jaws, on the line the breath will take.
 	spells.take(5)
 	var fire := spells.current()
 	send_action(spider.input_shoot)
@@ -554,24 +554,21 @@ func _test_spells_leave_through_circles() -> void:
 	if not check(circles.size() == 1, "draws one circle (%d)" % circles.size()):
 		return
 	var circle := circles[0]
-	var ground: Vector3 = spells.area_target(fire).get("point", Vector3.ZERO)
-	check(circle.global_position.distance_to(ground) < height * 0.1
-		and absf(ground.y - centre.y) < height * 0.1,
-		"on the ground where the geyser will come up (%.2f m off)"
-		% circle.global_position.distance_to(ground))
-	check(circle.global_basis.y.normalized().dot(Vector3.UP) > 0.99, "lying flat")
-	check(absf(circle.radius - fire.size_at(spells.charge) * height) < height * 0.05
-		and circle.radius > fire.size_at(0.0) * height * 1.05,
-		"as wide as the column, and growing with the wind-up (%.2f m)" % circle.radius)
+	var heading := spells.breath_heading()
+	var ahead := circle.global_position - spells.breath_origin()
+	check(absf(ahead.length() - height * spells.circle_ahead) < height * 0.05
+		and ahead.normalized().dot(heading) > 0.99,
+		"in front of the jaws, on the breath's line (%.2f m out)" % ahead.length())
+	check(circle.global_basis.y.normalized().dot(heading) > 0.99, "facing the way it will go")
+	var wide := height * lerpf(spells.circle_bodies.x, spells.circle_bodies.y, spells.charge)
+	check(absf(circle.radius - wide) < height * 0.02 and circle.radius > height
+		* spells.circle_bodies.x * 1.05, "and growing with the wind-up (%.2f m)" % circle.radius)
 	check(circle.points == fire.sigil, "with fire's own star (%d)" % circle.points)
 	release_action(spider.input_shoot)
 	await process_frame
 	check(not spells.charging and spells.cooling(fire), "let go, it goes")
-	check(circle.is_fading(), "and the circle flares and fades as the geyser comes up through it")
-	var geyser := _last_geyser()
-	check(geyser != null and Vector2(geyser.global_position.x - ground.x,
-		geyser.global_position.z - ground.z).length() < height * 0.1,
-		"where the ground glows, and the geyser will burst")
+	check(circle.is_fading(), "and the circle flares and fades as the breath goes through it")
+	check(_last_breath() != null, "and the spider breathes fire")
 	var circle_id := circle.get_instance_id()
 	var faded: bool = await wait_until(func() -> bool: return not is_instance_id_valid(circle_id),
 		90)
@@ -775,10 +772,11 @@ func _test_douse() -> void:
 	var soaked_id := soaked_web.get_instance_id()
 	var dry_id := dry_web.get_instance_id()
 	for web in [soaked_web, dry_web]:
-		var under := (web as WebNet).signal_point()
-		under.y = start.y
-		FireGeyser.erupt(level, under, height * 1.2, height, fire.power_at(0.0))
-	await run_frames(roundi(FireGeyser.WARN * 60.0) + 6)
+		# Breathed straight into the middle of each, from a little way off.
+		var middle := (web as WebNet).signal_point()
+		FireBreath.breathe(level, middle + Vector3.BACK * height * 2.0, Vector3.FORWARD,
+			height * 4.0, 0.3, fire.power_at(0.0), height)
+	await run_frames(12)
 	check(is_instance_id_valid(soaked_id) and not soaked_web.is_queued_for_deletion(),
 		"fire passes the wet web by")
 	check(not is_instance_id_valid(dry_id) or dry_web.is_queued_for_deletion(),
@@ -1385,19 +1383,19 @@ func _test_storm_and_paralysis() -> void:
 # --- fire ---------------------------------------------------------------------
 
 ## Silk burns. Fire takes a little of something bare, more of something half
-## wrapped and all it is worth of something a web holds. A geyser raised under a
-## creature glows on the ground first, then bursts, burns it and throws it up into
-## the air; what it burns low is an easy catch; and with no ground under the cross
-## for it to come up out of, nothing is raised and nothing waits.
-func _test_fire_geyser() -> void:
+## wrapped and all it is worth of something a web holds. Breathed at a creature, it
+## burns it for as long as it is in the flame; it follows the cross, so it can be
+## swept from one creature onto another; a wall stops it; and what it burns low is
+## an easy catch.
+func _test_fire_breath() -> void:
 	var fire := spells.by_id("fire")
 	if not check(fire != null and fire.form == SpiderSpell.Form.FIRE,
 			"there is fire in the book"):
 		return
-	check(spells.is_area(fire), "raised where you point, not sent out from the spider")
+	check(not spells.is_area(fire), "breathed from the spider, not called down where you point")
 	check(not spells.is_open(fire), "not known to begin with")
 	_learned("fire", 4)
-	check(spells.is_open(fire), "learned, it can be raised")
+	check(spells.is_open(fire), "learned, it can be breathed")
 	var slab := add_slab(Vector3(60, 0.0, -120), Vector3(40, 0.5, 40))
 	await physics_frame
 	stand_on(slab.global_position + Vector3(0, 0.25, 8.0))
@@ -1436,69 +1434,96 @@ func _test_fire_geyser() -> void:
 	check(is_equal_approx(from_held, power),
 		"and held in a web, all it is worth (%d%%)" % roundi(from_held * 100.0))
 
-	# Raised the way a player does it: under the creature the cross is on.
+	# Breathed the way a player does it: at the creature under the cross.
 	clear_prey_near(centre, 20.0, null)
-	var target := spawn("beetle", spider.global_position + Vector3(0.0, 0.1, -3.0))
-	if not check(target != null, "a beetle to raise it under"):
+	var target := spawn("beetle", spider.global_position + Vector3(0.0, 0.1, -height * 2.5))
+	if not check(target != null, "a beetle to breathe it on"):
 		return
 	target.move_speed = 0.0
 	target.aggression = 0.0
-	# A tough one, so that one burn is not already the whole catch.
+	# A tough one, so that one breath is not already the whole catch.
 	target.struggle_power = 12.0
 	target.struggle_stamina = 30.0
 	target.bind(0.6)
 	await physics_frame
-	await physics_frame
 	var hold := builder.shot_hold(pattern_named("orb_web"), 3.0)
 	var share := target.bind_share(hold)
 	aim_at(target.global_position)
+	await physics_frame
 	await process_frame
-	var ground: Vector3 = spells.area_target(fire).get("point", Vector3.ZERO)
-	var under := ground - target.global_position
-	check(Vector2(under.x, under.z).length() < height * 0.2 and absf(ground.y - centre.y)
-		< height * 0.1, "it comes up out of the floor under it (%.2f m off)"
-		% Vector2(under.x, under.z).length())
-	var was := target.global_position.y
-	check(spells.select("fire") and spells.cast_now(fire, 1.0), "raised")
-	var geyser := _last_geyser()
-	if not check(geyser != null and not geyser.has_burst(), "the ground glows first"):
+	check(spells.select("fire") and spells.cast_now(fire, 1.0), "breathed")
+	var breath := _last_breath()
+	if not check(breath != null and breath.burning(), "a jet of fire, out of the spider's jaws"):
 		return
-	check(is_equal_approx(target.health(), 1.0), "and nothing burns yet")
-	var burned: bool = await wait_until(func() -> bool: return target.health() < 0.999, 120)
-	if not check(burned, "then it bursts, and the beetle burns"):
-		return
-	var expected := fire.power_at(1.0) * lerpf(Prey.BARE_BURN, 1.0, target.bound)
-	check(target.health() < 1.0 - expected * 0.8,
-		"for about what its silk says (%d%% of it left)" % roundi(target.health() * 100.0))
-	var top := target.global_position.y
-	for i in 40:
-		await physics_frame
-		top = maxf(top, target.global_position.y)
-	check(top > was + height * 1.5,
-		"thrown up into the air (%.1f body heights)" % ((top - was) / height))
+	var burned: bool = await wait_until(func() -> bool: return target.health() < 0.999, 30)
+	check(burned, "and the beetle in it burns")
+	var done: bool = await wait_until(func() -> bool: return _last_breath() == null, 240)
+	check(done, "until its %.1fs are up, and it dies down" % fire.duration_at(1.0))
+	var expected := fire.power_at(1.0) * fire.duration_at(1.0) \
+		* lerpf(Prey.BARE_BURN, 1.0, target.bound)
+	check(target.health() < 1.0 - expected * 0.6,
+		"burned for about what its silk says, the whole breath long (%d%% of it left)"
+		% roundi(target.health() * 100.0))
 	check(target.bind_share(hold) > share * 1.3,
 		"and burned low, it is an easier catch (%d%% a shot -> %d%%)"
 		% [roundi(share * 100.0), roundi(target.bind_share(hold) * 100.0)])
 	check(spells.cooling(fire), "and fire has its own wait (%.1fs)" % spells.cooldown_left(fire))
 
+	# Swept: on one, then turned onto the other while it lasts.
+	spells.forget_waits()
+	clear_prey_near(centre, 20.0, null)
+	var left := spawn("beetle", spider.global_position + Vector3(-height * 2.0, 0.1, -height * 2.5))
+	var right := spawn("beetle", spider.global_position + Vector3(height * 2.0, 0.1, -height * 2.5))
+	if not check(left != null and right != null, "two beetles, either side"):
+		return
+	for beetle in [left, right]:
+		beetle.move_speed = 0.0
+		beetle.aggression = 0.0
+	await physics_frame
+	aim_at(left.global_position)
+	await physics_frame
+	await process_frame
+	check(spells.cast_now(fire, 1.0), "breathed at one")
+	await run_frames(12)
+	check(left.health() < 1.0 and is_equal_approx(right.health(), 1.0),
+		"it burns the one under the cross and not the other")
+	aim_at(right.global_position)
+	var swept: bool = await wait_until(func() -> bool: return right.health() < 0.999, 60)
+	check(swept, "and turned onto the other while it lasts, it follows the cross")
+	await wait_until(func() -> bool: return _last_breath() == null, 240)
+
+	# A wall in the way stops it.
+	spells.forget_waits()
+	clear_prey_near(centre, 20.0, null)
+	var hidden := spawn("beetle", spider.global_position + Vector3(0.0, 0.1, -height * 4.0))
+	add_slab(spider.global_position + Vector3(0.0, height, -height * 2.0),
+		Vector3(height * 6.0, height * 3.0, 0.2))
+	if not check(hidden != null, "a beetle behind a wall"):
+		return
+	hidden.move_speed = 0.0
+	hidden.aggression = 0.0
+	await physics_frame
+	aim_at(hidden.global_position)
+	await physics_frame
+	await process_frame
+	check(spells.cast_now(fire, 1.0), "breathed at it")
+	await run_frames(30)
+	breath = _last_breath()
+	check(breath != null and breath.length() < height * 2.2,
+		"the flame reaches only as far as the wall (%.2f m)"
+		% (breath.length() if breath != null else -1.0))
+	check(is_equal_approx(hidden.health(), 1.0), "and the beetle behind it is not burned")
+	await wait_until(func() -> bool: return _last_breath() == null, 240)
+
 	var wrapped := spawn("fly", centre + Vector3(height * 3.0, height, height * 6.0))
 	if check(wrapped != null and wrapped.bundle(), "something already caught"):
 		check(is_zero_approx(wrapped.burn(power)), "is left be: it is caught")
 
-	# Straight up at the sky: no ground under it, nothing raised, no wait spent.
-	spells.forget_waits()
-	aim_at(spider.view.aim_origin() + Vector3(0.0, 100.0, -1.0))
-	await process_frame
-	check(not spells.area_target(fire).get("hit", false), "the sky has no ground under it")
-	check(not spells.cast_now(fire), "and nothing comes up out of it")
-	check(not spells.cooling(fire), "and the wait is not spent")
 
-
-## And the silk burns with it: a geyser under a web takes the web, and the frame it
-## was walked round on, and what it held drops out burned as hard as fire burns
-## anything; aimed at a line, it comes up under the line and not at the wall behind
-## it, and burns it; silk out of the column is left standing; and a wet web over it
-## stands in the fire, and catches what the geyser throws up into it.
+## And the silk burns with it: breathed into a web, the web goes up with the frame
+## it was walked round on, and what it held drops out burned as hard as fire burns
+## anything; swept across a line, the line burns; silk out of the flame is left
+## standing; and a wet web stands in the flame while what it holds burns.
 func _test_fire_burns_silk() -> void:
 	var fire := _learned("fire", 4)
 	if fire == null:
@@ -1511,15 +1536,17 @@ func _test_fire_burns_silk() -> void:
 	var centre := slab.global_position + Vector3(0, 0.25, 0)
 	clear_prey_near(centre, 30.0, null)
 	var height := spider.stage().body_height
-	var half := height * 1.2
-	var web := _spin(centre + Vector3(-height * 4.0, half + height * 0.3, 0.0), half)
-	var far := _spin(centre + Vector3(height * 8.0, half + height * 0.3, 0.0), half)
+	var half := height * 1.0
+	var spot := spider.global_position + Vector3(0.0, 0.0, -height * 3.0)
+	var web := _spin(spot + Vector3(0.0, half + height * 0.3, 0.0), half)
+	var far := _spin(spot + Vector3(height * 10.0, half + height * 0.3, 0.0), half)
 	if not check(web != null and far != null, "a web to burn, and one well away from it"):
 		return
 	var frame := _frame_lines(web)
 	var far_frame := _frame_lines(far)
 	check(frame.size() == 4 and far_frame.size() == 4,
 		"each walked round on four lines (%d, %d)" % [frame.size(), far_frame.size()])
+	await physics_frame
 	var wasp := spawn("wasp", (web as WebNet).signal_point())
 	if not check(wasp != null, "a wasp"):
 		return
@@ -1531,14 +1558,11 @@ func _test_fire_burns_silk() -> void:
 	if not check(wasp.is_stuck(), "held by the web"):
 		return
 	aim_at(wasp.global_position)
+	await physics_frame
 	await process_frame
-	var ground: Vector3 = spells.area_target(fire).get("point", Vector3.ZERO)
-	check(absf(ground.y - centre.y) < height * 0.1
-		and Vector2(ground.x - wasp.global_position.x, ground.z - wasp.global_position.z)
-		.length() < height * 0.5, "the cross on the wasp puts the geyser on the floor under it")
 	# Waited on by id: a lambda that holds the web itself complains once it is freed.
 	var web_id := web.get_instance_id()
-	check(spells.cast_now(fire), "a geyser raised under the web")
+	check(spells.cast_now(fire), "fire breathed into the web")
 	var gone: bool = await wait_until(func() -> bool: return not is_instance_id_valid(web_id),
 		120)
 	check(gone, "and the web burns away")
@@ -1553,73 +1577,70 @@ func _test_fire_burns_silk() -> void:
 			"burned as hard as fire burns anything held in silk (%d%% of it left)"
 			% roundi(wasp.health() * 100.0))
 	check(is_instance_valid(far) and not far.is_queued_for_deletion(),
-		"and the web out of the column still stands")
+		"and the web out of the flame still stands")
+	await wait_until(func() -> bool: return _last_breath() == null, 240)
 
-	# A line across the room, with a wall a long way behind it: the cross just off
-	# the line is on the line, and the geyser comes up under it.
+	# A line across the way ahead: breathed across, it burns.
 	spells.forget_waits()
 	clear_prey_near(centre, 30.0, null)
-	var a := centre + Vector3(-height * 3.0, height, 2.0)
-	var b := centre + Vector3(height * 3.0, height, 2.0)
+	var a := spot + Vector3(-height * 3.0, height, 0.0)
+	var b := spot + Vector3(height * 3.0, height, 0.0)
 	var line := WebStrand.spin(pattern_named("frame_line"), a, b, 1.0)
-	add_slab(centre + Vector3(0.0, height * 2.0, -4.0), Vector3(40.0, height * 6.0, 0.5))
 	if not check(line != null, "a line"):
 		return
 	line.place_in(webs)
 	await physics_frame
-	aim_at((a + b) * 0.5 + Vector3.UP * height * 0.15)
-	# The builder finds where the cross lands on its physics frame.
+	aim_at((a + b) * 0.5)
 	await physics_frame
 	await process_frame
-	check(builder.aimed_line() == line, "the cross is on the line")
-	var under: Vector3 = spells.area_target(fire).get("point", Vector3.ZERO)
-	check(absf(under.z - a.z) < height * 0.3 and absf(under.y - centre.y) < height * 0.1,
-		"and the geyser goes on the floor under it, not at the wall behind (%.2f m off)"
-		% absf(under.z - a.z))
 	var line_id := line.get_instance_id()
-	check(spells.cast_now(fire), "raised")
+	check(spells.cast_now(fire), "fire breathed across it")
 	var burned: bool = await wait_until(func() -> bool: return not is_instance_id_valid(line_id),
 		120)
 	check(burned, "and the line burns away")
 	check(is_instance_valid(far) and not far.is_queued_for_deletion(),
 		"and the far web stands still")
 	check(_frame_lines(far).size() == 4, "frame and all")
+	await wait_until(func() -> bool: return _last_breath() == null, 240)
 
-	# A wet web lying over a geyser stands in the fire, and catches what it throws up.
+	# A wet web stands in the flame, and what it holds burns in it.
 	spells.forget_waits()
 	clear_prey_near(centre, 30.0, null)
-	var spot := centre + Vector3(-height * 4.0, 0.0, height * 8.0)
-	var canopy := _spin_flat(spot + Vector3.UP * height * 2.0, half)
-	if not check(canopy != null, "a web lying flat over the floor"):
+	var wet := _spin(spot + Vector3(0.0, half + height * 0.3, 0.0), half)
+	if not check(wet != null, "another web"):
 		return
-	WetSilk.soak(canopy, 10.0)
-	var beetle := spawn("beetle", spot + Vector3.UP * 0.2)
-	if not check(beetle != null, "a beetle under it"):
+	WetSilk.soak(wet, 10.0)
+	await physics_frame
+	var roast := spawn("wasp", (wet as WebNet).signal_point())
+	if not check(roast != null, "a wasp for it"):
 		return
-	beetle.move_speed = 0.0
-	beetle.aggression = 0.0
-	beetle.struggle_stamina = 30.0
+	roast.move_speed = 0.0
+	roast.aggression = 0.0
+	roast.struggle_stamina = 30.0
 	await physics_frame
 	await physics_frame
-	check(beetle.is_loose(), "loose to start with")
-	var canopy_id := canopy.get_instance_id()
-	FireGeyser.erupt(level, spot, height, height, fire.power_at(0.0))
-	var caught: bool = await wait_until(func() -> bool: return beetle.is_stuck(), 120)
-	check(caught and beetle.held_by() == canopy, "thrown up into the wet web, it is caught")
-	check(beetle.health() < 1.0, "burned on the way (%d%% left)" % roundi(beetle.health() * 100.0))
-	await run_frames(roundi((FireGeyser.BURN + FireGeyser.FADE) * 60.0) + 6)
-	check(is_instance_id_valid(canopy_id) and not canopy.is_queued_for_deletion(),
-		"and the wet web stands in the fire")
-	check(beetle.is_stuck(), "holding it still")
+	if not check(roast.is_stuck(), "held by the wet web"):
+		return
+	aim_at(roast.global_position)
+	await physics_frame
+	await process_frame
+	var wet_id := wet.get_instance_id()
+	check(spells.cast_now(fire), "fire breathed into it")
+	await wait_until(func() -> bool: return _last_breath() == null, 240)
+	check(is_instance_id_valid(wet_id) and not wet.is_queued_for_deletion(),
+		"the wet web stands in the flame")
+	check(roast.is_stuck() and roast.health() < 1.0 - fire.power_at(0.0) * fire.duration_at(0.0)
+		* 0.6, "and the wasp burns in it, held all the while (%d%% left)"
+		% roundi(roast.health() * 100.0))
 
 
-## The geyser raised last, or null.
-func _last_geyser() -> FireGeyser:
-	var found: FireGeyser = null
-	for node in spider.get_tree().get_nodes_in_group(FireGeyser.GROUP):
-		var geyser := node as FireGeyser
-		if geyser != null and not geyser.is_queued_for_deletion():
-			found = geyser
+## The breath of fire going now, or null.
+func _last_breath() -> FireBreath:
+	var found: FireBreath = null
+	for node in spider.get_tree().get_nodes_in_group(FireBreath.GROUP):
+		var breath := node as FireBreath
+		if breath != null and not breath.is_queued_for_deletion():
+			found = breath
 	return found
 
 

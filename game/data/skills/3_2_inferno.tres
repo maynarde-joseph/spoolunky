@@ -4,9 +4,9 @@
 
 [resource]
 script = ExtResource("1_skill")
-id = "eruption"
-display_name = "Eruption"
-description = "The geyser comes up a third wider and burns a third harder."
+id = "inferno"
+display_name = "Inferno"
+description = "The breath reaches a third further and burns a third hotter."
 kind = 1
 row = 3
 column = 2

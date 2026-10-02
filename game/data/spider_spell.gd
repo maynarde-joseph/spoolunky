@@ -27,8 +27,8 @@ enum Form {
 	DOUSE,
 	## Lightning, called down where you point.
 	LIGHTNING,
-	## A geyser of fire out of the ground under the cross, that throws what it
-	## catches into the air and burns it: harder the more silk is on it.
+	## Fire breathed out of the spider's jaws along the cross, swept while it lasts,
+	## that burns what it touches: harder the more silk is on it.
 	FIRE,
 	## Every web in reach called back to the spider, hitting what it passes on the way.
 	PULLBACK,
@@ -54,8 +54,9 @@ enum Form {
 ## Seconds before it can be cast again. Silk's wait is the web builder's own.
 @export var cooldown := 6.0
 
-## How wide it reaches, in body heights, from a tap to a full wind-up. The radius
-## of a strike or a burst of fire, or how far a fan of water or wind reaches.
+## How wide it reaches, in body heights, from a tap to a full wind-up: the radius
+## of a strike, how far a fan of water or a breath of fire reaches, or how wide a
+## lane of wind is either side of its middle.
 @export var size := Vector2(1.5, 3.0)
 
 ## How long what it leaves behind lasts, in seconds, from a tap to a full wind-up:

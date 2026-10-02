@@ -5,8 +5,8 @@
 [resource]
 script = ExtResource("1_skill")
 id = "fire"
-display_name = "Fire Geyser"
-description = "A geyser of fire out of the ground under the cross. It throws what it catches into the air and burns it — and silk burns: the more of a thing is wrapped, the harder."
+display_name = "Fire Breath"
+description = "Fire out of your jaws along the cross, for as long as you wound it up, swept wherever you look. It burns what it touches — and silk burns: the more of a thing is wrapped, the harder."
 kind = 0
 row = 2
 column = 0

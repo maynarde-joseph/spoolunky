@@ -46,6 +46,13 @@ signal notice(text: String)
 ## body heights, from a tap to a full wind-up.
 const SPIRAL_BODIES := Vector2(1.3, 1.6)
 
+## How far in front of the spider fire's circle hangs, in body heights: on the line
+## the breath will take, so it leaves through the middle of it.
+@export var circle_ahead := 0.75
+
+## How wide that circle is, in body heights, from a tap to a full wind-up.
+@export var circle_bodies := Vector2(0.28, 0.5)
+
 ## Which spell is in hand, as an index into [member book].
 var selected := 0
 
@@ -431,7 +438,7 @@ func _cast_form(spell: SpiderSpell, wound: float) -> Dictionary:
 		SpiderSpell.Form.LIGHTNING:
 			return _strike(spell, wound)
 		SpiderSpell.Form.FIRE:
-			return _erupt(spell, wound)
+			return _breathe(spell, wound)
 		SpiderSpell.Form.PULLBACK:
 			return _pull_back(spell, wound)
 	push_warning("%s has a form nothing casts yet" % spell.display_name)
@@ -650,35 +657,45 @@ func _on_whirl_spent(_whirl: WaterSpiral, held: Array[Prey]) -> void:
 
 # --- fire -----------------------------------------------------------------
 
-## A geyser of fire, out of the ground under the cross: under the creature it is on,
-## the web or the line, or where it meets the floor. The ground glows where it will
-## come up, and a moment later it bursts, throws everything in it up into the air
-## and burns it. Silk burns, so what it does to each creature is worth the silk on
-## it (see [method Prey.burn]): little to something bare, all of it to something
+## Fire, breathed out of the spider's jaws along the cross for as long as the
+## wind-up gave it, and swept wherever the cross goes while it lasts. It reaches as
+## far as the wind-up sends it or the first wall, and burns what is in it the way
+## fire burns: silk burns, so what it does to a creature is worth the silk on it
+## (see [method Prey.burn]) — little to something bare, all of it to something
 ## wrapped or held in a web. And a creature burned low is an easy catch.
 ##
-## The silk itself goes up too: every web and line in the column burns away, a web
-## with the frame it was walked round on, and what a web was holding drops out of it
-## burned. A wet web stands, and catches what the geyser throws up into it. See
-## [FireGeyser].
-##
-## No ground under the cross, nothing cast: the wait is not spent on a geyser with
-## nowhere to come up.
-func _erupt(spell: SpiderSpell, wound: float) -> Dictionary:
-	var target := area_target(spell)
-	if not target.get("hit", false):
-		notice.emit("No ground under the cross for a geyser to come up out of")
+## The silk itself goes up too: every web and line the flame touches burns away, a
+## web with the frame it was walked round on, and what a web was holding drops out
+## of it burned. A wet web stands, and what it holds burns in it. See [FireBreath].
+func _breathe(spell: SpiderSpell, wound: float) -> Dictionary:
+	var breath := FireBreath.breathe(_host(), breath_origin(), breath_heading(),
+		size_of(spell, wound) * body_height(), duration_of(spell, wound),
+		power_of(spell, wound), body_height(), spell.colour, self)
+	if breath == null:
 		return {"cast": false}
-	var at: Vector3 = target.get("point", _spider.global_position)
-	var geyser := FireGeyser.erupt(_host(), at, size_of(spell, wound) * body_height(),
-		body_height(), power_of(spell, wound), spell.colour)
-	if geyser == null:
-		return {"cast": false}
-	geyser.erupted.connect(_on_erupted)
-	return {"cast": true, "at": at}
+	breath.finished.connect(_on_breath_finished)
+	return {"cast": true, "at": breath_origin() + breath_heading() * breath.reach}
 
 
-func _on_erupted(_geyser: FireGeyser, burned: Array[Prey], webs: int, lines: int) -> void:
+## Where a breath of fire comes from: the spider's jaws, where its aim starts.
+func breath_origin() -> Vector3:
+	return _view.aim_origin()
+
+
+## Which way a breath of fire goes: from the jaws to whatever the cross is on — the
+## creature under it, a line, a web, the world — by the same pick everything else
+## aims with, so a line the cross is on is a line the flame crosses. On open sky,
+## the way the cross looks.
+func breath_heading() -> Vector3:
+	var target := aim_target()
+	var toward: Vector3 = target.get("point", Vector3.ZERO) - breath_origin()
+	if target.get("hit", false) and toward.length_squared() > 0.000001:
+		return toward.normalized()
+	return _view.aim_forward()
+
+
+func _on_breath_finished(_breath: FireBreath, burned: Array[Prey], webs: int,
+		lines: int) -> void:
 	var said := PackedStringArray()
 	if burned.size() == 1 and is_instance_valid(burned[0]):
 		said.append("The %s burns — %d%% of it left" % [burned[0].species,
@@ -691,24 +708,6 @@ func _on_erupted(_geyser: FireGeyser, burned: Array[Prey], webs: int, lines: int
 		said.append("%d line%s burned away" % [lines, "" if lines == 1 else "s"])
 	if not said.is_empty():
 		notice.emit(" · ".join(said))
-
-
-## The ground under what [param target] is on: where a geyser comes up. Looked for
-## straight down, through silk and creatures, from just off the surface the cross is
-## on — so a point on the floor finds that floor, one on a wall the floor at its
-## foot, and one in the air the ground under it. No ground within reach, and it is
-## not a hit.
-func _ground_under(target: Dictionary) -> Dictionary:
-	var point: Vector3 = target.get("point", Vector3.ZERO)
-	var off: Vector3 = target.get("normal", Vector3.UP)
-	var from := point + off * body_height() * 0.25
-	var query := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * cast_reach(),
-		GameLayers.WORLD, exclusions())
-	var hit := get_world_3d().direct_space_state.intersect_ray(query)
-	if hit.is_empty():
-		return {"point": point, "normal": Vector3.UP, "prey": target.get("prey"), "hit": false}
-	return {"point": hit.get("position", point), "normal": hit.get("normal", Vector3.UP),
-		"prey": target.get("prey"), "hit": true}
 
 
 # --- pullback -------------------------------------------------------------
@@ -842,11 +841,11 @@ func _host() -> Node:
 # --- what you can see ----------------------------------------------------
 
 ## The circle a spell is drawn in while it winds up: where it will come from, as
-## wide as it will be, in its own colour and with its own star. Lightning's lies on
-## what it will strike, and fire's on the ground the geyser will come up out of;
-## water's lies under the spider's feet with the fan ahead, and wind's with the strip
-## it will blow down. Silk has no circle: it is the ball of silk, wound up by the
-## builder.
+## wide as it will be, in its own colour and with its own star. Fire's hangs in
+## front of the spider's jaws on the line the breath will take; lightning's lies on
+## what it will strike; water's lies under the spider's feet with the fan ahead, and
+## wind's with the strip it will blow down. Silk has no circle: it is the ball of
+## silk, wound up by the builder.
 func _update_circle() -> void:
 	var spell := current()
 	var held := charging and spell != null and spell.form != SpiderSpell.Form.SILK \
@@ -888,7 +887,12 @@ func _cast_circle(spell: SpiderSpell, wound: float) -> void:
 func circle_at(spell: SpiderSpell, wound: float) -> Dictionary:
 	var height := body_height()
 	match spell.form:
-		SpiderSpell.Form.LIGHTNING, SpiderSpell.Form.FIRE:
+		SpiderSpell.Form.FIRE:
+			var heading := breath_heading()
+			return {"where": MagicCircle.facing(breath_origin() + heading * height
+				* circle_ahead, heading),
+				"wide": height * lerpf(circle_bodies.x, circle_bodies.y, wound)}
+		SpiderSpell.Form.LIGHTNING:
 			var target := area_target(spell)
 			var up: Vector3 = target.get("normal", Vector3.UP)
 			return {"where": MagicCircle.facing(target.get("point", _spider.global_position)
@@ -906,23 +910,20 @@ func circle_at(spell: SpiderSpell, wound: float) -> Dictionary:
 
 ## Where an area spell lands, and which way is up there: lightning comes down on
 ## what the cross is on, and through open air — or a line, which carries nothing —
-## to whatever is under it; a geyser comes up out of the ground under what the
-## cross is on.
+## to whatever is under it.
 func area_target(spell: SpiderSpell) -> Dictionary:
 	if spell != null and spell.form == SpiderSpell.Form.LIGHTNING:
 		var target := aim_target()
 		if target.get("line") != null:
 			target["hit"] = false
 		return _ground(target)
-	if spell != null and spell.form == SpiderSpell.Form.FIRE:
-		return _ground_under(aim_target())
 	return aim_target()
 
 
-## Whether [param spell] lands on an area where you point, rather than being sent
-## out along the ground from the spider.
+## Whether [param spell] lands on an area where you point, rather than leaving the
+## spider: breathed, sprayed, blown or called back.
 func is_area(spell: SpiderSpell) -> bool:
-	return spell.form == SpiderSpell.Form.LIGHTNING or spell.form == SpiderSpell.Form.FIRE
+	return spell.form == SpiderSpell.Form.LIGHTNING
 
 
 ## The fan a spray of water will cover, laid on the ground in front of the spider

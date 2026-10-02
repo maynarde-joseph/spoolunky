@@ -5,13 +5,13 @@
 [resource]
 script = ExtResource("1_spell")
 id = "fire"
-display_name = "Fire Geyser"
-description = "A geyser of fire out of the ground under the cross. It throws what it catches up into the air and burns it — and silk burns: the more of a thing is wrapped, the harder it burns. Every web and line in the column burns away, dropping what the web held; a wet web stands, and catches what the geyser throws into it."
+display_name = "Fire Breath"
+description = "Fire out of your jaws along the cross, for a moment after you let go — longer and further the longer you hold — and you can sweep it while it lasts. Silk burns: the more of a thing is wrapped, the harder it burns, and any web or line the flame touches goes up, dropping what the web held. A wet web stands, and what it holds burns in it."
 form = 3
 order = 4
-cooldown = 7.0
-size = Vector2(0.8, 1.4)
-duration = Vector2(0.5, 0.5)
-power = Vector2(0.35, 0.5)
+cooldown = 6.0
+size = Vector2(3.5, 5)
+duration = Vector2(0.6, 1.4)
+power = Vector2(0.4, 0.45)
 sigil = 3
 colour = Color(1, 0.45, 0.12, 1)

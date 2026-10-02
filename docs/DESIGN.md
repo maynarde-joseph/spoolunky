@@ -469,7 +469,7 @@ keys, its reach, its wind-up and its kind of limit.
 **Right mouse casts whatever is in hand, and the number keys pick what is in
 hand** — 1 is always the web, and 2 to 6 are the five spells in the loadout
 (§3.3); the wheel turns through them too. A tap casts at once; holding winds it
-up — a bigger web, a taller geyser, a wider spray, a longer stun — over the same
+up — a bigger web, a longer breath of fire, a wider spray, a longer stun — over the same
 second the web always took.
 
 **Every spell but the web is drawn in a magic circle.** Thin line art in the
@@ -479,8 +479,9 @@ lightning, five for water, eight for wind, seven for the pullback — that draws
 itself in as the
 key goes down, turns
 while you hold, and flares and fades as the spell leaves through it. Where it is
-drawn is the aim made visible. Fire's lies on the ground the geyser will come up
-out of, as wide as the column. Lightning's lies on the ground where it will
+drawn is the aim made visible. Fire's hangs in front of the spider's jaws on the
+line the breath will take, and the breath goes through the middle of it.
+Lightning's lies on the ground where it will
 strike, as wide as the strike, and a second opens over it, face down, as the bolt
 comes out of it. Water's and wind's lie under the
 spider's feet — water's with the fan it will cover laid out on the ground ahead,
@@ -491,8 +492,8 @@ its ball of silk over the spider's back: it is thrown silk, not magic.
 
 **One aim for all of them.** The crosshair is the only aiming there is, and it
 is the same for everything: silk goes from the spider to whatever the cross is
-on, at where the creature under it will be; lightning comes down on it, and fire
-comes up out of the ground under it; water and wind go the way it points. Giving each spell its own way of aiming was
+on, at where the creature under it will be; fire is breathed at it; lightning
+comes down on it; water and wind go the way it points. Giving each spell its own way of aiming was
 weighed and left: a second aim is a second thing to learn and get wrong in a
 fight, and what each spell actually needed was not another aim but to show,
 before you let go, what it will do from the aim there already is — which is
@@ -504,7 +505,7 @@ what the circles are for.
 | **Douse** | Apprentice, 1 point | water sprayed in a fan in front of the spider, 4–7 body heights out and 35° either side. What the spray catches is soaked and stung (4–7% of its health), fliers included, and the ground stays wet for 8–12 s: whatever stands on it stays soaked. Wet wings do not lift. With Wet Silk learned, a web the spray reaches is wet too, and a wet web does not burn | 6 s |
 | **Gust** | Apprentice, 1 point | wind blown down a lane in front of the spider, a body height or so either side of its middle and 25–60% of silk's reach long — the longer the wind-up, the further, aimed the way water was when water went out along the ground. Everything loose in it is shoved on down the lane and stung (5–8%) — into a web, if one is in the way, which catches it. A boss stands its ground and only takes the sting. With Waterspout learned, over ground Douse left wet it lifts the water into a **whirl**: it runs on the way the wind blew, stops at the first thing it reaches, and holds it there for 2.5–4 s, round and round, wearing it down | 6 s |
 | **Summon Lightning** | Adept, 1 point | strikes where you point, and stuns what it reaches for 2.5–4 s — going nowhere, biting nothing, fighting nothing — and takes 10–15% of its health. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight. With Live Silk learned, a web it reaches is live for twice the stun after, and strikes what touches it as hard; a line carries nothing until Live Lines, and a strike aimed at one comes down on the floor under it | 7 s |
-| **Fire Geyser** | Journeyman, 2 points | a geyser of fire out of the ground under the cross — under the creature, the web or the line it is on, or where it meets the floor. The ground glows for a moment, then a column 1.6–2.8 body heights across bursts up five body heights tall, throws everything in it about three body heights into the air and burns it. Silk burns: a fifth of its harm (35–50% of a creature's health) to something bare, all of it to something wrapped all the way or held in a web. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line in the column burns away. No ground under the cross, nothing cast | 7 s |
+| **Fire Breath** | Journeyman, 2 points | fire breathed out of the spider's jaws at whatever the cross is on, for 0.6–1.4 s after you let go, 3.5–5 body heights out — or to the first wall — and opening a little on the way. It follows the cross while it lasts, so it is swept: across a creature, along a line, through the web holding what you want burned. What is in it burns for as long as it is: 40–45% of a creature's health a second if it is wrapped all the way or held in a web, a fifth of that if it is bare. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line it touches burns away | 6 s |
 | **Pullback** | Apprentice, 1 point | every web you have in reach comes off its anchors and flies back to you, folding up as it comes and taking the frame it was walked round on with it — the feathers coming home to a blade dancer. What it passes through takes the silk one shot of that web would put on it — enough, and it is wrapped where it stands — and what the web held lands at your feet, bundled. Nothing in reach, nothing cast and no wait spent | 10 s |
 
 **Spells are learned, in the tree** (§3.3): with points that ranks hand out, in
@@ -515,14 +516,15 @@ and for how long, and the slots still empty, which say where to fill them.
 **They work off each other.** This is the part that makes the spells more than a
 row of buttons:
 
-* **Fire burns silk.** Every web and every line in a geyser's column goes up, the
+* **Fire burns silk.** Every web and every line the breath touches goes up, the
   spider's own as much as any — the one it is standing on included — and a web
   takes the frame it was walked round on with it. What a web was holding drops
-  out of it, but burned first as hard as fire burns anything: a geyser under a
-  full web is the hardest burn there is, and the catch you lose is an easier one
-  the next time. Aimed at a line, the geyser comes up under the line rather than
-  at the wall behind it, so a line can be cut on purpose — yours, to drop
-  something on the end of it, or one a creature is crossing.
+  out of it, but burned first as hard as fire burns anything: fire into a full web
+  is the hardest burn there is, and the catch you lose is an easier one the next
+  time. Swept across a line, the flame cuts it, so a line can be cut on purpose —
+  yours, to drop something on the end of it, or one a creature is crossing. The
+  breath is the one spell that is aimed up close and swept, so it is the one that
+  burns exactly the silk you mean and none of the rest.
 * **Lightning runs through webs, and stays in them** (Live Silk). A strike that
   reaches a web runs through it, into every web whose silk touches it and down
   every wire from it, and stuns everything they hold. Strike the web you are standing next to and
@@ -550,9 +552,9 @@ row of buttons:
 * **Water keeps silk from fire, and keeps lightning in it** (Wet Silk). A web the
   spray reached is wet for as long as the ground is: fire passes it by, burning
   what it holds without taking the web, and lightning stays in it twice as long.
-  So a wet web over a geyser is a net: what the geyser throws up goes into it, and
-  sticks. With Sodden Silk the water weighs it down, and it holds half as hard
-  again while it is wet.
+  So a catch can be roasted where it hangs: douse the web, then breathe on what it
+  holds. With Sodden Silk the water weighs it down, and it holds half as hard again
+  while it is wet.
 * **Wind drives prey into silk.** A gust shoves what it reaches away from the
   spider, and a web in the way catches it as if it had flown in — so a web put up
   behind something is a web that thing can be blown into.
@@ -614,8 +616,8 @@ standing on whatever it needs:
 |---|---|
 | Apprentice | **Douse**, **Gust**, **Pullback** (spells, 1 point each); **Quick Silk** — silk waits a quarter less |
 | Adept | **Summon Lightning** (1); **Wet Silk** — Douse wets your webs (needs Douse); **Waterspout** — wind over wet ground is a whirl (needs Douse and Gust); **Long Recall** — the Pullback sweeps and wraps half as hard again (needs Pullback) |
-| Journeyman | **Fire Geyser** (2); **Live Silk** — lightning stays in a web (needs Lightning); **Deluge** — Douse a third further and wet half as long again; **Gale** — Gust a quarter further, shoving and stinging half as hard again |
-| Master | **Sodden Silk** — a wet web holds half as hard again (needs Wet Silk); **Thunderhead** — lightning a third wider, harder and longer; **Eruption** — the geyser a third wider and hotter; **Steady Hands** — every wait 15% shorter |
+| Journeyman | **Fire Breath** (2); **Live Silk** — lightning stays in a web (needs Lightning); **Deluge** — Douse a third further and wet half as long again; **Gale** — Gust a quarter further, shoving and stinging half as hard again |
+| Master | **Sodden Silk** — a wet web holds half as hard again (needs Wet Silk); **Thunderhead** — lightning a third wider, harder and longer; **Inferno** — the breath a third further and hotter; **Steady Hands** — every wait 15% shorter |
 | Grand | **Live Lines** — lightning runs along your lines (2, needs Live Silk); **Archweaver** — every wait a quarter shorter (2) |
 
 There are twenty-one points of it and ten to spend, so a rank is a choice, and
@@ -2344,11 +2346,12 @@ Done: what makes it fun turned out to be spells and how they work off silk, so t
 game leans on them. Movement that reads the keys right on walls, round curves and
 after a grapple; lines that are rails to hang from and zip along rather than
 tightropes to walk; a click on a web that grapples to it; Douse and Gust, and the
-whirl that only the two of them together make; the Fire Geyser in place of the
-Firebolt; every spell but the web and the Pullback doing harm; and ranks earned by
-catching and eating, opening rows of a spell tree whose points buy spells, second
-tiers, interactions and shorter waits, with five spells on the keys (§3.3).
-Evolving by chance is parked, its code kept.
+whirl that only the two of them together make, Gust blown down a lane the way
+water used to go; Fire Breath in place of the Firebolt — by way of a geyser,
+which aimed too much like lightning; every spell but the web and the Pullback
+doing harm; and ranks earned by catching and eating, opening rows of a spell tree
+whose points buy spells, second tiers, interactions and shorter waits, with five
+spells on the keys (§3.3). Evolving by chance is parked, its code kept.
 Left: more interactions between spells and silk, a reason for the loadout's limit
 to bite, and the tree's numbers played and tuned.
 
@@ -2438,9 +2441,9 @@ the *shape* is fun.
   three orb shots whole and one at nothing — and the same number goes for a bolt, a
   web left standing and a web thrown over it. Hostiles wear their health over their
   heads, with a thin bar of how much of them is wrapped under it.
-* **Fire is what hurts, and silk is what burns.** The Fire Geyser comes up under
-  what you point at and takes a fifth of its harm off something bare and all of
-  it off something wrapped all the way or held in a web. So the loop is wrap, burn, wrap: the silk
+* **Fire is what hurts, and silk is what burns.** Fire Breath takes a fifth of its
+  harm off something bare and all of it off something wrapped all the way or held
+  in a web. So the loop is wrap, burn, wrap: the silk
   you put on first is what makes the fire count, and the fire is what makes the
   last of the silk take.
 * **One size, the whole way, every spell from the start.** In the wood the spider

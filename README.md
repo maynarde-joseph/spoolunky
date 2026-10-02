@@ -13,7 +13,7 @@ You are a spider wizard. The thrown web is the first spell, and what you catch a
 eat earns the rest: experience makes rank — Apprentice Spooder up to Grand
 Spooder — and every rank opens a row of the **spell tree** and two points to
 spend in it. A call that brings your webs flying back, a spray of water, a gust
-of wind, lightning and a geyser of fire, each with a second tier; the ways they
+of wind, lightning and a breath of fire, each with a second tier; the ways they
 work off your silk and each other — webs that will not burn, webs left live,
 lightning run along your lines, wind over wet ground lifting a whirl; and shorter
 waits. Five spells ride on your keys beside the web.
@@ -370,13 +370,13 @@ up. Everything else is learned:
   Adept, Journeyman, Master, Grand Spooder.
 * **Each rank opens its row of the tree and two points.** **E** opens the tree. A
   point buys a skill in a row you have reached: a **spell** (Douse, Gust and the
-  Pullback for an Apprentice; Summon Lightning for an Adept; the Fire Geyser for a
-  Journeyman), a spell's **second tier** (Deluge, Gale, Thunderhead, Eruption, Long
+  Pullback for an Apprentice; Summon Lightning for an Adept; Fire Breath for a
+  Journeyman), a spell's **second tier** (Deluge, Gale, Thunderhead, Inferno, Long
   Recall), an **interaction**, or a **shorter wait**. There are twenty-one points
   of it and ten to earn, so what you learn is the kind of spider you are.
 * **The interactions are where it gets interesting.** **Wet Silk**: Douse wets
-  your webs, and a wet web stands in fire — a wet web over a geyser catches what
-  it throws up — and keeps lightning twice as long. **Sodden Silk**: a wet web
+  your webs, and a wet web stands in fire — breathe on what it holds and only that
+  burns — and keeps lightning twice as long. **Sodden Silk**: a wet web
   holds half as hard again. **Waterspout**: wind over wet ground lifts a whirl that
   holds the first thing it reaches. **Live Silk**: lightning stays in a web, and
   the web strikes whatever touches it. **Live Lines**: lightning runs along your
@@ -663,14 +663,14 @@ to put silk on it. Each hostile has a bite and one move of its own:
 **Catching them is like catching a monster.** Everything has health, shown over a
 hostile's head with a thin bar of how much of it is wrapped under it. The lower its
 health, the more of the way each hit of silk gets you — at full health a blade rat
-takes three orb shots; with nothing left, one. The **Fire Geyser** is what wears
-it down — fire out of the ground under what you point at, throwing it into the
-air — and silk burns: it takes a fifth of its harm off something bare, and all of
-it off something wrapped all the way or hanging in a web. So the loop is wrap,
-burn, wrap. The silk goes up with it — a web or a line in the column burns away,
-and what the web held drops out — so a web is somewhere to burn a thing once, not
-a place to keep it while you do. Unless it is wet: a web you have doused stands in
-the fire, and catches what the geyser throws up into it.
+takes three orb shots; with nothing left, one. **Fire Breath** is what wears it
+down — a jet of fire out of your jaws that you sweep across what you look at —
+and silk burns: it takes a fifth of its harm off something bare, and all of it off
+something wrapped all the way or hanging in a web. So the loop is wrap, burn,
+wrap. The silk goes up with it — a web or a line the flame touches burns away, and
+what the web held drops out — so a web is somewhere to burn a thing once, not a
+place to keep it while you do. Unless it is wet: a web you have doused stands in
+the flame while what it holds burns.
 
 And two bosses, named across the foot of the screen with their health and wrap:
 **the Rat King**, sealed in the Barrow, which whirls and cuts every thread round
@@ -881,9 +881,10 @@ five and the tree on **E** — the strip that shows the keys, and what each spel
 after the interaction that lets it. Lightning run down a wire to a
 wasp across the room and left live in the web, a spray that leaves the ground and
 the silk wet, a gust that blows a beetle into a web, the whirl wind lifts off wet
-ground holding the first thing it reaches, acid water, a geyser that burns harder
-the more silk is on what it throws and burns the silk with it — but not a wet web,
-which catches what it throws — webs called back through what is in their way, the magic circles
+ground holding the first thing it reaches, acid water, a breath of fire swept from
+one creature to the next that burns harder the more silk is on what it touches and
+burns the silk with it — but not a wet web — webs called back through what is in
+their way, the magic circles
 each spell is drawn in, the number keys, and the whole book opened at once:
 
 ```sh
