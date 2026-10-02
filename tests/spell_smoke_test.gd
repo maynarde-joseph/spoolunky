@@ -31,10 +31,9 @@ func _sections() -> Array[Callable]:
 		_test_what_opens_a_spell,
 		_test_the_strip,
 		_test_a_lean_spider_casts_sooner,
-		_test_venom_spit,
 		_test_water_spiral,
 		_test_a_whirl_fills_a_web,
-		_test_venom_in_the_water,
+		_test_acid_water,
 		_test_summon_lightning,
 		_test_lightning_runs_through_silk,
 		_test_lightning_and_water,
@@ -224,89 +223,6 @@ func _test_a_lean_spider_casts_sooner() -> void:
 		"which waits a fifth less (%.2fs against %.2fs)" % [builder._cooldown_span, plain])
 
 
-# --- venom ----------------------------------------------------------------
-
-## A glob thrown like silk, that doses what it hits and softens it from the
-## inside while you do something else.
-func _test_venom_spit() -> void:
-	var venom := spells.by_id("venom")
-	if not check(venom != null and venom.form == SpiderSpell.Form.VENOM,
-			"there is venom in the book"):
-		return
-	check(not spells.is_open(venom), "shut to a spiderling")
-	check(spells.opens_with(venom).contains("Paralytic Bite"),
-		"a paralytic bite would open it sooner (%s)" % spells.opens_with(venom))
-	grow_to_tier(venom.unlock_stage)
-	check(spells.is_open(venom), "a %s can spit it"
-		% spider.growth.stages[venom.unlock_stage].display_name)
-	check(spells.cycle(1) and spells.current() == venom, "Q takes it in hand")
-
-	var slab := add_slab(Vector3(-60, 0.0, -60), Vector3(16, 0.5, 16))
-	await physics_frame
-	stand_on(slab.global_position + Vector3(0, 0.25, 3.0))
-	await physics_frame
-	clear_prey_near(spider.global_position, 8.0, null)
-	var wasp := spawn("wasp", spider.global_position + Vector3(0.0, 0.1, -2.0))
-	if not check(wasp != null, "a wasp to spit at"):
-		return
-	wasp.move_speed = 0.0
-	wasp.aggression = 0.0
-	await physics_frame
-	aim_at(wasp.global_position)
-
-	# By the key, the way a player does it: held, it winds up.
-	send_action(spider.input_shoot)
-	await run_frames(4)
-	# The glow and the framing are drawn, so they move on drawn frames, not
-	# physics ones.
-	await process_frame
-	await process_frame
-	check(spells.charging, "right mouse winds it up")
-	check(spells._held != null and spells._held.visible,
-		"with a glow of it over the spider's back")
-	check(builder.framing_held, "framed the way a throw is")
-	# Aimed again at the last moment, the way a player keeps the cross on it.
-	aim_at(wasp.global_position)
-	release_action(spider.input_shoot)
-	await process_frame
-	check(not spells.charging, "letting go spits it")
-	check(spells.cooling(venom), "and starts its own wait (%.1fs)" % spells.cooldown_left(venom))
-	check(not spells.cooling(spells.by_id("silk")), "which leaves the web ready")
-	var dosed: bool = await wait_until(func() -> bool: return wasp.is_poisoned(), 120)
-	if not check(dosed, "the glob lands on the wasp and doses it"):
-		return
-	check(wasp.venom > venom.duration.x * 0.8,
-		"for about as long as a tap's dose (%.1fs)" % wasp.venom)
-	var soft := wasp.bound
-	await run_frames(60)
-	check(wasp.bound > soft, "which softens it from the inside (%d%% -> %d%%)"
-		% [roundi(soft * 100.0), roundi(wasp.bound * 100.0)])
-	check(not spells.cast_now(venom), "and a second glob waits for the wait")
-
-	# Fangs make every dose a fanged one.
-	check(is_equal_approx(spells.venom_strength(), 1.0), "a plain dose without fangs")
-	for step in ["paralytic", "digestive", "hunting_fangs"]:
-		traits.take(traits.by_id(step))
-	check(traits.has_fangs(), "fangs grown")
-	check(is_equal_approx(spells.venom_strength(), Prey.FANG_VENOM),
-		"and the dose is fanged now (%.1f)" % spells.venom_strength())
-	check(traits.by_id("hunting_fangs").effect_line().contains("fanged venom"),
-		"which the fangs' card says")
-	spells.forget_waits()
-	clear_prey_near(spider.global_position, 8.0, wasp)
-	var second := spawn("wasp", spider.global_position + Vector3(1.2, 0.1, -2.0))
-	if not check(second != null, "another wasp"):
-		return
-	second.move_speed = 0.0
-	second.aggression = 0.0
-	await physics_frame
-	aim_at(second.global_position)
-	check(spells.cast_now(venom), "spat")
-	var fanged: bool = await wait_until(func() -> bool: return second.is_poisoned(), 120)
-	check(fanged and is_equal_approx(second.venom_strength, Prey.FANG_VENOM),
-		"and it lands fanged (%.1f)" % second.venom_strength)
-
-
 # --- water ----------------------------------------------------------------
 
 ## A whirl of water on the floor where the cross is: it draws in what is loose,
@@ -420,14 +336,13 @@ func _test_a_whirl_fills_a_web() -> void:
 		% [stuck, catch.size()])
 
 
-## Venom goes into the water, and from the water into everything it holds — and
-## a spider with Digestive Flood needs no venom to go in: its water eats.
-func _test_venom_in_the_water() -> void:
+## A spider with Digestive Flood has acid water: everything its whirl has hold
+## of is dosed.
+func _test_acid_water() -> void:
 	var spiral := spells.by_id("spiral")
-	var venom := spells.by_id("venom")
-	if spiral == null or venom == null:
+	if spiral == null:
 		return
-	grow_to_tier(maxi(spiral.unlock_stage, venom.unlock_stage))
+	grow_to_tier(spiral.unlock_stage)
 	var slab := add_slab(Vector3(-90, 0.0, -90), Vector3(30, 0.5, 30))
 	await physics_frame
 	stand_on(slab.global_position + Vector3(0, 0.25, 3.5))
@@ -435,29 +350,6 @@ func _test_venom_in_the_water() -> void:
 	var centre := slab.global_position + Vector3(0, 0.25, 0)
 	var radius := spiral.size_at(0.0) * spider.stage().body_height
 	clear_prey_near(centre, radius * 4.0, null)
-	var beetle := spawn("beetle", centre + Vector3(radius * 0.5, 0.2, 0.0))
-	if not check(beetle != null, "a beetle to drown in it"):
-		return
-	beetle.aggression = 0.0
-	await physics_frame
-	aim_at(centre)
-	spells.select("spiral")
-	check(spells.cast_now(spiral), "a whirl")
-	var whirl := _first_whirl()
-	await run_frames(20)
-	check(whirl != null and whirl.held().has(beetle) and not beetle.is_poisoned(),
-		"holding a beetle that has had no venom")
-	spells.select("venom")
-	aim_at(centre + Vector3(-radius * 0.4, 0.0, radius * 0.2))
-	check(spells.cast_now(venom), "venom spat into the water")
-	var dosed: bool = await wait_until(func() -> bool: return beetle.is_poisoned(), 120)
-	check(whirl != null and is_instance_valid(whirl) and whirl.venomous,
-		"the water takes the venom")
-	check(dosed, "and doses the beetle it holds, which the glob never touched")
-
-	# Acid water: the spider's own.
-	await wait_until(func() -> bool: return _first_whirl() == null, 900)
-	spells.forget_waits()
 	for step in ["paralytic", "digestive"]:
 		traits.take(traits.by_id(step))
 	check(traits.acid_water(), "a digestive flood makes the spider's water acid")
@@ -470,9 +362,9 @@ func _test_venom_in_the_water() -> void:
 	await physics_frame
 	spells.select("spiral")
 	aim_at(centre)
-	check(spells.cast_now(spiral), "another whirl")
+	check(spells.cast_now(spiral), "a whirl")
 	var eaten: bool = await wait_until(func() -> bool: return ant.is_poisoned(), 60)
-	check(eaten, "and its water doses what it holds, with no venom spat in")
+	check(eaten, "and its water doses what it holds")
 
 
 func _first_whirl() -> WaterSpiral:

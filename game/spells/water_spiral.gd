@@ -14,8 +14,6 @@ extends Node3D
 ##
 ## * **Silk.** It carries things round and in, and whatever it carries through a
 ##   web is caught by the web the ordinary way — so a whirl beside a web fills it.
-## * **Venom.** A glob that lands in it goes into the water, and everything it
-##   holds is dosed for as long as it spins.
 ## * **Lightning.** Everything in it is wet, and water carries a strike to all of
 ##   it — see [LightningStrike].
 ## * **Digestive Flood.** The spider's water eats what it holds: everything in it
@@ -55,12 +53,10 @@ const STREAK_ALPHA := 0.6
 var radius := 1.0
 var life := 5.0
 
-## Whether venom has gone into it, and how hard that venom works.
-var venomous := false
-var venom_strength := 1.0
-
-## Whether its water eats what it holds. The spider's, from Digestive Flood.
+## Whether its water eats what it holds, and how hard. The spider's, from
+## Digestive Flood.
 var acid := false
+var venom_strength := 1.0
 
 var colour := Color(0.36, 0.74, 0.9, 1.0)
 
@@ -104,7 +100,7 @@ func _physics_process(delta: float) -> void:
 		for creature in held():
 			creature.soak(SOAK)
 			creature.sweep(carry_at(creature.global_position))
-			if venomous or acid:
+			if acid:
 				creature.poison(1.5, venom_strength)
 	_update_view(delta)
 
@@ -134,15 +130,6 @@ func held() -> Array[Prey]:
 		if holds(creature.global_position):
 			found.append(creature)
 	return found
-
-
-## Venom has gone in: everything it holds is dosed from now on, at
-## [param strength] if that is harder than what it has.
-func poison(strength := 1.0) -> void:
-	venomous = true
-	venom_strength = maxf(venom_strength, strength)
-	if _streaks != null:
-		_streaks.albedo_color = Color(0.46, 0.86, 0.3, STREAK_ALPHA)
 
 
 ## How fast, and which way, it carries something at [param point]: round, in
@@ -215,8 +202,6 @@ func _build_view() -> void:
 	spray.material_override = _streaks
 	spray.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_view.add_child(spray)
-	if venomous:
-		poison(venom_strength)
 
 
 func _update_view(delta: float) -> void:

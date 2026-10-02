@@ -460,7 +460,7 @@ rest are the same verb with other things behind it, so they share the web's
 keys, its reach, its wind-up and its kind of limit.
 
 **Right mouse casts whatever is in hand, and Q takes the next one in hand.** A
-tap casts at once; holding winds it up — a bigger web, a bigger glob, a wider
+tap casts at once; holding winds it up — a bigger web, a hotter bolt, a wider
 whirl, a longer stun — over the same second the web always took. While it winds
 up it glows over the spider's back in its own colour, and a spell that lands on
 an area puts a ring where it will land, as wide as it will be.
@@ -468,7 +468,6 @@ an area puts a ring where it will land, as wide as it will be.
 | Spell | Opens at | Or with | What it does | Wait |
 |---|---|---|---|---|
 | **Silk** | the start | — | the thrown web: it sticks where it lands and wraps what it lands on | 3.5 s |
-| **Venom Spit** | Fern Spinner | Paralytic Bite | a glob thrown like silk; what it hits is dosed, and softens from the inside for 6–10 s | 4 s |
 | **Water Spiral** | Huntsman | Digestive Flood | a whirl on the floor where you point, for 5–8 s: it carries anything loose round and in, soaks it and holds it turning. Wet wings do not lift | 9 s |
 | **Summon Lightning** | Root Weaver | Wing Buds | strikes where you point, and stuns what it reaches for 2.5–4 s: going nowhere, biting nothing, fighting nothing. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight | 7 s |
 | **Firebolt** | Glade Widow | — | a bolt thrown like silk that bursts where it lands and burns every creature in the burst. Silk burns: a fifth of its harm to something bare, all of it to something wrapped all the way or held in a web. What it takes is health, and a creature low on health is an easier catch (§12) | 5 s |
@@ -491,8 +490,6 @@ four buttons:
 * **Water carries lightning.** A strike on a whirl reaches everything the whirl
   holds, and anything wet takes it twice as hard — twice as long stunned, twice
   the fight gone — and passes it on to anything wet near it.
-* **Venom goes into water.** A glob that lands in a whirl doses everything the
-  whirl holds, for as long as it turns.
 * **A whirl fills a web.** It carries what it holds round and in, and anything it
   carries through a web is caught by the web the ordinary way.
 
@@ -503,9 +500,9 @@ some of those changes reach the spells:
 |---|---|
 | Hollow Frame | every wait a fifth shorter, silk's included |
 | Paralytic Bite | every stun lasts half as long again |
-| Digestive Flood | acid water: a whirl doses what it holds with no venom spat in |
+| Digestive Flood | acid water: a whirl doses what it holds |
 | Storm Rider | a strike jumps on twice more, to whatever is nearest, wet or dry |
-| Hunting Fangs | every dose is fanged, over twice as strong |
+| Hunting Fangs | acid water's dose is fanged, over twice as strong |
 
 Bulk needs no line of its own: every spell is sized in body heights, so a bigger
 spider casts bigger.
@@ -2125,9 +2122,10 @@ caught in, and the valley remembering what you did to it.
 Done: traits come from what you eat, by chance — likelier up the ladder, never
 locked out by bad luck, and certain from anything two sizes past your bite —
 and anything you can hold, you can eat (§3.1). Spells: the thrown web is the
-first, then Venom Spit, Water Spiral and Summon Lightning, opened by growing or
-by traits, working off each other and off the silk, and changed by what you
-have become (§3.2).
+first, then Water Spiral and Summon Lightning, opened by growing or by traits,
+working off each other and off the silk, and changed by what you have become
+(§3.2). Venom Spit was one of them, and went: a dose you threw and then waited on
+was a weak thing to spend a turn on.
 Left: more spells and more traits to feed them — a water line to go with the
 spiral, for a start.
 

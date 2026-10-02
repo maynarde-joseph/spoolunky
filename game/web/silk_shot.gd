@@ -57,7 +57,7 @@ const SPEED := 26.0
 @export var lifetime := 2.0
 
 ## What the bead is drawn in, and how brightly it glows. Silk's own by default;
-## a glob of venom is thrown by the same code and only looks different.
+## a bolt of fire is thrown by the same code and only looks different.
 @export var colour := Color(0.10, 0.11, 0.14, 1.0)
 @export var glow := 0.9
 

@@ -344,8 +344,6 @@ func cast_now(spell: SpiderSpell, wound := 0.0) -> bool:
 ## What each form does. Returns whether it went, and where.
 func _cast_form(spell: SpiderSpell, wound: float) -> Dictionary:
 	match spell.form:
-		SpiderSpell.Form.VENOM:
-			return _spit(spell, wound)
 		SpiderSpell.Form.SPIRAL:
 			return _whirl(spell, wound)
 		SpiderSpell.Form.LIGHTNING:
@@ -356,35 +354,7 @@ func _cast_form(spell: SpiderSpell, wound: float) -> Dictionary:
 	return {"cast": false}
 
 
-# --- venom --------------------------------------------------------------
-
-## A glob of venom, thrown the way silk is: at the creature under the cross, led
-## if it is moving, and straight on if nothing is — the same bolt, drawn green.
-## What it hits is dosed (see [method Prey.poison]) and softens from the inside
-## for as long as the dose lasts, while you do something else.
-##
-## A dose does not stack; a second one tops the first back up. Fangs make it a
-## fanged dose, which works a good deal harder.
-func _spit(spell: SpiderSpell, wound: float) -> Dictionary:
-	var from := _view.aim_origin()
-	var heading := _view.aim_forward()
-	var quarry := _builder.shot_target() if _builder != null else null
-	if quarry != null:
-		var lead := _builder.shot_lead(quarry) - from
-		if lead.length_squared() > 0.000001:
-			heading = lead.normalized()
-	var glob := SilkShot.fire(from, heading, body_height(), exclusions())
-	glob.name = "VenomGlob"
-	glob.catch_radius = spell.size_at(wound) * body_height()
-	glob.colour = spell.colour
-	glob.glow = 0.8
-	glob.glows_own = true
-	glob.limit_to(cast_reach())
-	glob.landed.connect(_on_glob_landed.bind(spell, spell.duration_at(wound), venom_strength()))
-	glob.add_to_group("spell_effects")
-	glob.launch_from(_host(), from)
-	return {"cast": true, "at": from + heading * cast_reach()}
-
+# --- lightning and water --------------------------------------------------
 
 ## Lightning comes down on what the cross is on — a creature, a web, the floor.
 ## Aimed at open air, it comes down through it to whatever is underneath.
@@ -486,28 +456,9 @@ func _on_fire_landed(at: Vector3, _normal: Vector3, struck: Node3D, _heading: Ve
 		notice.emit("Fire — %d burned" % burned.size())
 
 
-## How hard a dose works: fanged, with fangs.
+## How hard a dose of the spider's acid water works: fanged, with fangs.
 func venom_strength() -> float:
 	return Prey.FANG_VENOM if _traits != null and _traits.has_fangs() else 1.0
-
-
-func _on_glob_landed(at: Vector3, _normal: Vector3, struck: Node3D, _heading: Vector3,
-		spell: SpiderSpell, dose: float, strength: float) -> void:
-	SpellFlash.burst(_host(), at, spell.colour, body_height() * 0.5)
-	# Into water, it goes into all of it: everything a whirl holds is dosed for as
-	# long as it turns.
-	for node in get_tree().get_nodes_in_group(WaterSpiral.GROUP):
-		var whirl := node as WaterSpiral
-		if whirl != null and whirl.spinning() and whirl.holds(at):
-			whirl.poison(strength)
-			notice.emit("Venom in the water — everything it holds is dosed")
-	var prey := struck as Prey
-	if prey == null or not is_instance_valid(prey):
-		return
-	if prey.poison(dose, strength):
-		notice.emit("Venom in the %s — it softens for %ds" % [prey.species, roundi(dose)])
-	else:
-		notice.emit("The %s is past venom" % prey.species)
 
 
 # --- where a spell goes --------------------------------------------------
@@ -586,7 +537,7 @@ func _update_held() -> void:
 	_held_material.albedo_color = spell.colour
 	_held_material.emission = spell.colour
 	# Lit from inside, but not so bright that its colour washes out to white:
-	# the colour is how you tell a glob of venom from a ball of silk.
+	# the colour is how you tell a bolt of fire from a ball of silk.
 	_held_material.emission_energy_multiplier = lerpf(0.25, 0.9, charge)
 
 

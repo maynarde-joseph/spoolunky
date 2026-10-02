@@ -12,8 +12,8 @@ foxes, and what is not eaten goes home and breeds.
 What you eat changes what you are: every meal is a chance to take something from
 it — wings, armour, venom — and the bigger it was next to you, the better the
 odds. And what you are decides what you can cast: the thrown web is the first
-spell, and venom, a whirl of water, lightning and fire open as you grow, each
-working off the others and off your silk.
+spell, and a whirl of water, lightning and fire open as you grow, each working
+off the others and off your silk.
 
 The project opens somewhere else now, though: **the Hollow Wood**, a prototype of a
 second shape for the game. A stretch of old forest floor under the sky with ruins
@@ -834,8 +834,8 @@ godot --headless --script res://tests/creature_smoke_test.gd
 A fifth casts every spell in the sandbox: the web as the first of them, what
 opens the rest, the strip that shows them, and what each does — to what it lands
 on, and to the other spells and the silk it meets. Lightning run down a wire to a
-wasp across the room, a whirl filling a web, venom poured into water, fire that
-burns harder the more silk is on what it hits, and the whole book opened at once:
+wasp across the room, a whirl filling a web, acid water, fire that burns harder
+the more silk is on what it hits, and the whole book opened at once:
 
 ```sh
 godot --headless --script res://tests/spell_smoke_test.gd

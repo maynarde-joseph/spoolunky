@@ -6,7 +6,7 @@ extends Resource
 ##
 ## The thrown web was the first spell before there was a word for it: point,
 ## press, and something leaves the spider and does its work where it lands. The
-## rest are the same verb with other things behind it — venom, water, lightning —
+## rest are the same verb with other things behind it — water, lightning, fire —
 ## so they share the web's keys, its reach, its wind-up and its kind of limit: a
 ## wait, never a bill.
 ##
@@ -24,8 +24,6 @@ extends Resource
 enum Form {
 	## The thrown web, cast by the web builder exactly as it always was.
 	SILK,
-	## A glob thrown like silk that doses what it hits.
-	VENOM,
 	## A whirl of water where you point, that drags what is near it round and in.
 	SPIRAL,
 	## Lightning, called down where you point.
@@ -62,11 +60,11 @@ enum Form {
 @export var cooldown := 6.0
 
 ## How wide it reaches, in body heights, from a tap to a full wind-up. The radius
-## of a strike or a whirl; the size of a glob.
+## of a strike, a whirl or a burst of fire.
 @export var size := Vector2(1.5, 3.0)
 
 ## How long what it leaves behind lasts, in seconds, from a tap to a full wind-up:
-## a dose, a whirl, a stun.
+## a whirl, a stun.
 @export var duration := Vector2(2.5, 4.0)
 
 ## How much of a creature's health it takes, from a tap to a full wind-up, when

@@ -90,7 +90,7 @@ const BRANCH_NAMES := ["Bulk", "Flight", "Venom"]
 
 ## Fangs that work without a web. Anything inside your bite power can be
 ## drained where it stands, instead of having to be held first — and every dose
-## of venom you spit is a fanged one.
+## your acid water gives is a fanged one.
 @export var fangs := false
 
 
@@ -101,7 +101,7 @@ const BRANCH_NAMES := ["Bulk", "Flight", "Venom"]
 @export var cast_scale := 1.0
 
 ## The spider's water eats what it holds: everything a Water Spiral has hold of is
-## dosed with venom, without a glob having to go in.
+## dosed with venom.
 @export var acid_water := false
 
 ## Multiplies how long anything stays stunned.
