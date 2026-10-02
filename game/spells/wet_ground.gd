@@ -12,8 +12,7 @@ extends Node3D
 
 const GROUP := "wet_ground"
 
-## How wide the fan opens either side of its middle, in degrees. Douse's and Gust's
-## alike, so wind blown the way water was thrown covers the same ground.
+## How wide the fan opens either side of its middle, in degrees.
 const SPREAD := 35.0
 
 ## How long a creature stays soaked once it is off it, in seconds.
@@ -100,21 +99,23 @@ func holds(point: Vector3, margin := 0.0) -> bool:
 	return rise >= -reach * 0.5 - margin and rise <= reach * 0.15 + margin * 2.0
 
 
-## The nearest of it to [param from] that a fan of wind blown from there along
-## [param toward], out to [param far], passes over — or null if the wind misses it.
-func met_by(from: Vector3, toward: Vector3, far: float) -> Variant:
+## The nearest of it to [param from] that a lane of wind blown from there along
+## [param toward], out to [param far] and [param half_width] either side, passes
+## over — or null if the wind misses it.
+func met_by(from: Vector3, toward: Vector3, far: float, half_width: float) -> Variant:
 	if not is_wet():
 		return null
 	var flat := Vector3(toward.x, 0.0, toward.z)
 	if flat.length_squared() < 0.000001:
 		return null
 	flat = flat.normalized()
+	var side := flat.cross(Vector3.UP).normalized()
 	var best: Variant = null
 	var best_gap := INF
-	for ring in range(1, 13):
-		var out := far * float(ring) / 12.0
-		for side in [-0.66, -0.33, 0.0, 0.33, 0.66]:
-			var point := from + flat.rotated(Vector3.UP, deg_to_rad(SPREAD * side)) * out
+	for step in range(1, 13):
+		var out := far * float(step) / 12.0
+		for across: float in [-1.0, -0.5, 0.0, 0.5, 1.0]:
+			var point := from + flat * out + side * half_width * across
 			point.y = apex.y
 			if holds(point) and out < best_gap:
 				best_gap = out

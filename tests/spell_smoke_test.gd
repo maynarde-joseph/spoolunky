@@ -518,9 +518,10 @@ func _test_number_keys() -> void:
 
 ## Every spell but silk is drawn in a magic circle while it winds up — fire on the
 ## ground the geyser will come up out of, lightning on the ground where it will
-## strike, water under the spider's feet — and leaves through it: the circle flares
-## and fades as the spell goes, lightning draws a second one over the strike, and a
-## wind-up given up fades the same way.
+## strike, water and wind under the spider's feet, with the fan or the strip they
+## will cover ahead — and leaves through it: the circle flares and fades as the
+## spell goes, lightning draws a second one over the strike, and a wind-up given up
+## fades the same way.
 func _test_spells_leave_through_circles() -> void:
 	spells.open_all = true
 	spider.require_captured_mouse = false
@@ -622,6 +623,26 @@ func _test_spells_leave_through_circles() -> void:
 	release_action(spider.input_shoot)
 	await run_frames(2)
 	check(circle.is_fading(), "and a wind-up given up fades out")
+	await wait_until(func() -> bool: return _circles().is_empty(), 90)
+
+	# Wind: under the spider's feet too, with the strip it will blow down ahead.
+	spells.take(3)
+	var gust := spells.current()
+	send_action(spider.input_shoot)
+	await run_frames(2)
+	await process_frame
+	circles = _circles()
+	if check(gust.form == SpiderSpell.Form.GUST and circles.size() == 1,
+			"winding up wind draws one circle (%d)" % circles.size()):
+		var below := circles[0].global_position - spider.global_position
+		check(Vector2(below.x, below.z).length() < height * 0.1 and below.y < 0.0,
+			"under the spider's feet")
+	check(absf(spells.path_shown() - spells.lane_reach(gust, spells.charge)) < height * 0.2,
+		"with the strip it will blow down laid out ahead (%.2f m)" % spells.path_shown())
+	check(is_zero_approx(spells.fan_shown()), "and no fan")
+	spells.cancel_cast()
+	release_action(spider.input_shoot)
+	await run_frames(2)
 
 
 ## The magic circles standing now.
@@ -764,8 +785,10 @@ func _test_douse() -> void:
 		"and burns the dry one")
 
 
-## Wind blown in a fan in front of the spider: everything loose in it is shoved away
-## and stung, a boss only stung, and what it blows into a web the web catches.
+## Wind blown down a lane in front of the spider, further the longer it is wound
+## up: everything loose in it is shoved on down the lane and stung, a boss only
+## stung, and what it blows into a web the web catches; beside the lane, or past its
+## end, the wind does nothing.
 func _test_gust() -> void:
 	var gust := spells.by_id("gust")
 	if not check(gust != null and gust.form == SpiderSpell.Form.GUST, "there is Gust in the book"):
@@ -778,19 +801,27 @@ func _test_gust() -> void:
 	stand_on(start)
 	await physics_frame
 	var height := spider.stage().body_height
-	var far := spells.fan_reach(gust, 0.0)
+	var far := spells.lane_reach(gust, 0.0)
+	var wide := spells.lane_wide(gust, 0.0)
+	check(far > height * 3.0 and spells.lane_reach(gust, 1.0) > far * 1.5,
+		"a tap blows it %.1f m down the lane, a full wind-up %.1f m, %.1f m either side"
+		% [far, spells.lane_reach(gust, 1.0), wide])
 	var ahead := Vector3.FORWARD
+	var side := Vector3.RIGHT
 	clear_prey_near(start + ahead * far * 0.5, far * 2.0, null)
 	var blown := spawn("beetle", start + ahead * far * 0.4 + Vector3(0.0, 0.2, 0.0))
-	var boss := spawn("beetle", start + ahead * far * 0.6 + Vector3.RIGHT * far * 0.2
+	var boss := spawn("beetle", start + ahead * far * 0.6 + side * wide * 0.5
 		+ Vector3(0.0, 0.2, 0.0))
-	var aside := spawn("fly", start + Vector3.RIGHT * far * 0.9 + Vector3.UP * 0.2)
-	if not check(blown != null and boss != null and aside != null,
-			"a beetle in the way, one that fears nothing, and a fly to one side"):
+	var aside := spawn("fly", start + ahead * far * 0.5 + side * (wide + height * 2.0)
+		+ Vector3.UP * 0.2)
+	var beyond := spawn("beetle", start + ahead * (far + height * 3.0) + Vector3(0.0, 0.2, 0.0))
+	if not check(blown != null and boss != null and aside != null and beyond != null,
+			"a beetle in the way, one that fears nothing, a fly beside the lane and a beetle "
+			+ "past its end"):
 		return
 	boss.kind = boss.kind.duplicate()
 	boss.kind.boss = true
-	for creature in [blown, boss, aside]:
+	for creature in [blown, boss, aside, beyond]:
 		creature.aggression = 0.0
 		creature.move_speed = 0.0
 	await physics_frame
@@ -805,7 +836,8 @@ func _test_gust() -> void:
 	check(blown.health() < 1.0, "and stung (%d%% left)" % roundi(blown.health() * 100.0))
 	check(boss.global_position.distance_to(boss_was) < height * 0.3 and boss.health() < 1.0,
 		"a boss stands its ground, and only takes the sting")
-	check(is_equal_approx(aside.health(), 1.0), "and the fly to one side is left alone")
+	check(is_equal_approx(aside.health(), 1.0), "the fly beside the lane is left alone")
+	check(is_equal_approx(beyond.health(), 1.0), "and so is the beetle past its end")
 
 	# Blown into a web, it is caught.
 	spells.forget_waits()

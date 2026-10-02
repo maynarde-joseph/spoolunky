@@ -1,15 +1,16 @@
 class_name Gust
 extends Node3D
 
-## A gust of wind, blown out in front of the spider.
+## A gust of wind, blown down a lane in front of the spider.
 ##
-## It shoves everything loose in its fan away from the spider, and stings it on the
-## way. Anything it blows into one of your webs, the web catches — so wind is how
-## you drive prey into silk. A boss stands its ground and only takes the sting.
+## It shoves everything loose in the lane on down it, away from the spider, and
+## stings it on the way. Anything it blows into one of your webs, the web catches —
+## so wind is how you drive prey into silk. A boss stands its ground and only takes
+## the sting.
 ##
-## Over wet ground it does more: the spider's spells lift the water into a whirl
-## that runs on the way the wind blew, and stops at the first thing it reaches and
-## holds it there — see [WetGround] and [WaterSpiral].
+## Over wet ground it does more: with Waterspout learned, the spider's spells lift
+## the water into a whirl that runs on down the lane, and stops at the first thing
+## it reaches and holds it there — see [WetGround] and [WaterSpiral].
 
 const GROUP := "gusts"
 
@@ -24,18 +25,20 @@ const THROW := 0.45
 ## walker over a kerb and into a web, not enough to make it a launch.
 const LIFT := 0.15
 
-## How far up and down its fan reaches, as shares of its reach. Tall, so it takes
-## fliers too.
-const REACH_UP := 0.6
-const REACH_DOWN := 0.5
+## How far up and down the lane reaches, as shares of how long it is: tall enough
+## to take a flier low over the ground.
+const REACH_UP := 0.4
+const REACH_DOWN := 0.3
 
 ## How long its streaks are on screen, in seconds.
 const SHOWN := 0.5
 
-## Where it blows from, which way, and how far, in metres.
+## Where it blows from, which way, how far, and how wide either side of its middle,
+## in metres.
 var apex := Vector3.ZERO
 var heading := Vector3.FORWARD
 var reach := 2.0
+var wide := 0.5
 
 ## How hard it shoves, in metres a second, and how much of a creature's health it
 ## takes on the way.
@@ -54,11 +57,12 @@ var _streaks: MeshInstance3D
 
 
 ## Blows one under [param host] from [param from] along [param toward], laid flat,
-## out to [param far] metres, shoving at [param strength] metres a second and
-## taking [param sting] of a creature's health. It has blown by the time this
-## returns, so what it reached can be read straight off it.
-static func blow(host: Node, from: Vector3, toward: Vector3, far: float, strength: float,
-		sting: float, tint := Color(0.82, 0.94, 0.9, 1.0)) -> Gust:
+## out to [param far] metres and [param half_width] either side, shoving at
+## [param strength] metres a second and taking [param sting] of a creature's
+## health. It has blown by the time this returns, so what it reached can be read
+## straight off it.
+static func blow(host: Node, from: Vector3, toward: Vector3, far: float, half_width: float,
+		strength: float, sting: float, tint := Color(0.82, 0.94, 0.9, 1.0)) -> Gust:
 	var flat := Vector3(toward.x, 0.0, toward.z)
 	if host == null or flat.length_squared() < 0.000001 or far <= 0.0:
 		return null
@@ -66,6 +70,7 @@ static func blow(host: Node, from: Vector3, toward: Vector3, far: float, strengt
 	gust.name = "Gust"
 	gust.heading = flat.normalized()
 	gust.reach = far
+	gust.wide = maxf(half_width, 0.01)
 	gust.push = strength
 	gust.harm = sting
 	gust.colour = tint
@@ -79,15 +84,31 @@ static func blow(host: Node, from: Vector3, toward: Vector3, far: float, strengt
 	return gust
 
 
-## Whether [param point] is in its fan, within [param margin].
+## Whether [param point] is in the lane running from [param from] along
+## [param toward], flat across the ground, out to [param far] metres and
+## [param half_width] either side — with [param margin] to spare all round.
+static func in_lane(point: Vector3, from: Vector3, toward: Vector3, far: float,
+		half_width: float, margin := 0.0) -> bool:
+	var ahead := Vector2(toward.x, toward.z)
+	if ahead.length_squared() < 0.000001:
+		return false
+	ahead = ahead.normalized()
+	var off := Vector2(point.x - from.x, point.z - from.z)
+	var along := off.dot(ahead)
+	if along < -margin or along > far + margin:
+		return false
+	return absf(off.cross(ahead)) <= half_width + margin
+
+
+## Whether [param point] is in its lane, within [param margin].
 func reaches(point: Vector3, margin := 0.0) -> bool:
-	if not WetGround.in_fan(point, apex, heading, reach, margin):
+	if not in_lane(point, apex, heading, reach, wide, margin):
 		return false
 	var rise := point.y - apex.y
 	return rise >= -reach * REACH_DOWN - margin and rise <= reach * REACH_UP + margin
 
 
-## Shoves and stings everything loose it reaches, away from the spider.
+## Shoves and stings everything loose it reaches, on down the lane.
 func _blow() -> void:
 	for node in get_tree().get_nodes_in_group("prey"):
 		var creature := node as Prey
@@ -96,14 +117,10 @@ func _blow() -> void:
 			continue
 		if not reaches(creature.global_position, creature.hit_radius()):
 			continue
-		var away := creature.global_position - apex
-		away.y = 0.0
-		var outward := away.normalized() if away.length_squared() > 0.000001 else heading
-		var along := (outward * 0.6 + heading * 0.4).normalized()
 		if harm > 0.0:
 			creature.wound(harm)
 			stung.append(creature)
-		if creature.shove(along * push + Vector3.UP * push * LIFT, THROW):
+		if creature.shove(heading * push + Vector3.UP * push * LIFT, THROW):
 			shoved.append(creature)
 
 
@@ -118,15 +135,16 @@ func _process(delta: float) -> void:
 		_paint.albedo_color.a = 0.6 * (1.0 - share)
 
 
-## A spray of streaks across the fan, blowing outward as they fade.
+## Streaks down the lane, side by side across it, blowing on as they fade.
 func _build_view() -> void:
 	var strands := WebGeometry.StrandSet.new()
 	var width := maxf(reach * 0.01, 0.004)
+	var side := heading.cross(Vector3.UP).normalized()
 	for i in 9:
-		var turn := deg_to_rad(lerpf(-WetGround.SPREAD, WetGround.SPREAD, float(i) / 8.0))
-		var along := heading.rotated(Vector3.UP, turn)
-		var start := along * reach * randf_range(0.1, 0.3) + Vector3.UP * reach * randf_range(0.02, 0.2)
-		strands.add(start, start + along * reach * randf_range(0.35, 0.55), width)
+		var across := lerpf(-wide, wide, float(i) / 8.0) * randf_range(0.8, 1.0)
+		var start := side * across + heading * reach * randf_range(0.05, 0.3) \
+			+ Vector3.UP * wide * randf_range(0.05, 0.4)
+		strands.add(start, start + heading * reach * randf_range(0.3, 0.5), width)
 	_paint = StandardMaterial3D.new()
 	_paint.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_paint.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
