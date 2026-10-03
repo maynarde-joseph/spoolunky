@@ -25,6 +25,9 @@ extends Node3D
 ##   reaches everything the whirl holds. A puddle it reaches is a lightning rod: the
 ##   strike runs into the water and out round it, [constant ROD] times as wide as it
 ##   struck, wet or dry.
+## * **Lava.** A pool of it that the strike reaches erupts — a column of fire out of
+##   it — and the strike goes out round it as fire, as wide as through water:
+##   everything in the ring is stunned and burned. See [Lava].
 ## * **Storm Rider.** It jumps on from what it struck to what is near, wet or not
 ##   — see [member arcs].
 ##
@@ -46,8 +49,13 @@ const FLASH := 3.0
 const LIVE_FOR := 2.0
 
 ## How wide the ring is that a puddle it reaches sends it out in, round the puddle's
-## middle, as so many times its own radius.
+## middle, as so many times its own radius — and lava, erupting.
 const ROD := 2.0
+
+## How hard lava it erupts burns what is in the ring, worth this much of a
+## creature's health: all of it to something wrapped, a fifth to something bare —
+## see [method Prey.burn].
+const FIRE_ROD := 0.5
 
 ## How far above the strike the bolt comes down from, in radii — and in metres,
 ## at the least.
@@ -77,11 +85,14 @@ var lines := false
 var colour := Color(0.98, 0.92, 0.55, 1.0)
 
 ## What it stunned, the webs it ran through, the lines it ran along to get to
-## them, and the puddles it ran out through, in the order it reached them.
+## them, the puddles it ran out through, and the lava it erupted and what that
+## burned, in the order it reached them.
 var shocked: Array[Prey] = []
 var charged: Array[WebStructure] = []
 var ran_along: Array[WebStrand] = []
 var through_water: Array[WetGround] = []
+var erupted: Array[Lava] = []
+var set_alight: Array[Prey] = []
 
 ## Where it went, as pairs of points, for drawing.
 var _paths: Array = []
@@ -159,6 +170,22 @@ func discharge() -> void:
 			var rise := off.dot(wet.up)
 			if absf(rise) <= ring and (off - wet.up * rise).length() <= ring + creature.hit_radius():
 				_shock(creature, wet.centre)
+
+	# Lava it reaches erupts: a column of fire, and the strike out round it as fire.
+	for node in get_tree().get_nodes_in_group(Lava.GROUP):
+		var pool := node as Lava
+		if pool == null or pool.is_queued_for_deletion() or not pool.holds(at, radius):
+			continue
+		erupted.append(pool)
+		_paths.append([at, pool.centre])
+		var ring := maxf(radius * ROD, pool.radius + radius)
+		for creature in creatures:
+			if not pool.in_ring(creature.global_position, ring, creature.hit_radius()):
+				continue
+			_shock(creature, pool.centre)
+			if creature.burn(FIRE_ROD) > 0.0 and not set_alight.has(creature):
+				set_alight.append(creature)
+		pool.erupt(ring)
 
 	# Water: a whirl it lands in, or near enough to touch, carries it to all it holds.
 	for node in get_tree().get_nodes_in_group(WaterSpiral.GROUP):

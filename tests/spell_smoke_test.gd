@@ -46,6 +46,7 @@ func _sections() -> Array[Callable]:
 		_test_live_silk_and_lines,
 		_test_lightning_and_water,
 		_test_lightning_rod,
+		_test_fire_rod,
 		_test_storm_and_paralysis,
 		_test_fire_breath,
 		_test_fire_burns_silk,
@@ -2205,6 +2206,47 @@ func _test_lightning_rod() -> void:
 	check(strike != null and strike.through_water.has(wet), "it runs into the water")
 	check(near.is_stunned(), "and out round it: the beetle near it is stunned, dry as it is")
 	check(not far.is_stunned(), "the one further off than the ring is not")
+
+
+## Lightning that reaches lava erupts it: a column of fire out of the pool, and the
+## strike out round it as fire, twice as wide as it struck — everything in the ring
+## stunned and burned. The lava is spent by it; further off than the ring, nothing.
+func _test_fire_rod() -> void:
+	var lightning := _learned("lightning", 2)
+	spider.require_captured_mouse = false
+	var slab := add_slab(Vector3(180, 0.0, -60), Vector3(40, 0.5, 40))
+	await physics_frame
+	var floor_y := slab.global_position.y + 0.25
+	var start := slab.global_position + Vector3(0, 0.25, 8.0)
+	stand_on(start)
+	await run_frames(20)
+	var height := spider.stage().body_height
+	var spot := Vector3(start.x, floor_y, start.z) + Vector3.FORWARD * height * 6.0
+	clear_prey_near(spot, height * 30.0, null)
+	var radius := lightning.size_at(0.0) * height
+	var pool := Lava.melt(level, spot, Vector3.UP, height * 0.6, 20.0, 0.1)
+	var near := spawn("beetle", spot + Vector3.RIGHT * radius * 1.6 + Vector3.UP * 0.2)
+	var far := spawn("beetle", spot + Vector3.RIGHT * radius * 2.8 + Vector3.UP * 0.2)
+	if not check(pool != null and near != null and far != null,
+			"a pool of lava, a beetle near it and one further off"):
+		return
+	for beetle in [near, far]:
+		beetle.aggression = 0.0
+		beetle.move_speed = 0.0
+	await physics_frame
+	check(is_equal_approx(near.health(), 1.0) and is_equal_approx(far.health(), 1.0),
+		"neither standing in it")
+	aim_at(spot)
+	await physics_frame
+	check(spells.cast_now(lightning), "lightning on the lava")
+	var strike := _last_strike()
+	check(strike != null and strike.erupted.has(pool), "it erupts")
+	check(near.is_stunned() and strike.set_alight.has(near) and near.health() < 0.9,
+		"and goes out round it as fire: the beetle near it is stunned and burned (%d%% left)"
+		% roundi(near.health() * 100.0))
+	check(not far.is_stunned() and is_equal_approx(far.health(), 1.0),
+		"the one further off than the ring is not")
+	check(not pool.molten(), "and the lava is spent")
 
 
 ## A level can hand the spider the whole book at once: every spell known and on a

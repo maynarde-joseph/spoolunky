@@ -403,8 +403,10 @@ up. Everything else is learned:
   for lightning. **Fire turns water to lava**: breathe on a puddle and it turns to
   lava where it lies, burning whatever stands in it for a few seconds. **A puddle is
   a lightning rod**: strike one and the charge runs out round it, twice as wide,
-  wet or dry. Which comes first decides: each is the second spell acting on what
-  the first left behind — and some pairs have nothing, rather than a bigger number.
+  wet or dry. **Lightning erupts lava**: strike a pool of it and it goes up in a
+  column of fire, the strike running out round it as fire, stunning and burning.
+  Which comes first decides: each is the second spell acting on what the first
+  left behind — and some pairs have nothing, rather than a bigger number.
 * **Five on the keys.** The web is always on 1 and five spells ride on 2 to 6. A
   spell learned goes on the next free key; the tree takes one off or puts one on.
 

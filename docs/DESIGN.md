@@ -562,6 +562,13 @@ row of buttons:
   strike that reaches one runs into the water and out round it, twice as wide as
   it struck, stunning everything in the ring, wet or dry. Spit puddles across a
   path, then the strike.
+* **Lightning erupts lava: the fire rod.** Fire and lightning have nothing to say
+  to each other directly — two ways of hurting — but lava gives them one: a strike
+  that reaches a pool of it erupts it in a column of fire, and the strike goes out
+  round it as fire, as wide as through water. Everything in the ring is stunned and
+  burned (fire worth half a creature's health, as fire burns: all of it to
+  something wrapped, a fifth to something bare), and the lava is spent. Spit,
+  breathe, strike: three spells for the biggest single thing any of them do.
 * **Water keeps silk from fire, and keeps lightning in it** (Wet Silk). A web
   water was spat through is wet for as long as a puddle is: fire passes it by, burning
   what it holds without taking the web, and lightning stays in it twice as long.
@@ -610,7 +617,8 @@ knowing both spells.
 | Wind + pullback | — | none: the wind leaves webs where they stand | — |
 | Wind + clay | — | none of its own; what a pillar throws is loose in the air, so a gust carries it on | — |
 | Wind + fire | — | none: wind does not carry a breath of fire | — |
-| Lightning + fire | — | none: two ways of hurting, and a live web burns like any other | — |
+| Lava + lightning | lava, then lightning | the fire rod: a column of fire, and the strike out round it as fire, stunning and burning | — |
+| Lightning + fire | — | none directly: lava is where they meet | — |
 | Fire + pullback | — | none: fire takes a web on its way back as readily as one standing | — |
 | Pullback + clay | — | none: a pillar already throws webs | — |
 | Clay + water, lightning or fire | — | none: clay is a thing to build with | — |
