@@ -17,6 +17,17 @@ extends StaticBody3D
 ## Then it stands for a while — as solid as any wall, something to climb, to tie
 ## silk to, to put between you and a charge — and sinks back into the ground, and
 ## any silk tied to it comes down with it.
+##
+## Water changes it, and which came first decides how:
+##
+## * **Raised out of a puddle, it is mud.** It drinks the puddle and comes up dark
+##   and wet, and what it carries up it does not throw: it holds it fast on its top,
+##   going nowhere, for a few seconds — something a thrown web does not have to
+##   lead. The spider standing there is thrown as ever: mud grips what it caught,
+##   not the one who raised it.
+## * **Water on it slumps it.** A drop of the spider's water that lands on a pillar
+##   already standing softens it: it sinks back at once, and leaves a wide puddle
+##   round where it stood.
 
 const GROUP := "clay_pillars"
 
@@ -50,8 +61,15 @@ const ROOT := 0.3
 ## its radius.
 const TIED := 0.15
 
-## The clay: wet earth, brown and matte.
+## The clay: wet earth, brown and matte; and mud, darker, with a wet shine.
 const CLAY := Color(0.45, 0.31, 0.2, 1.0)
+const MUD := Color(0.29, 0.2, 0.13, 1.0)
+
+## How long mud holds what it carried up, in seconds.
+const MIRE := 4.0
+
+## How wide the puddle a slumped pillar leaves is, as so many times its half-width.
+const SLUMP := 2.5
 
 ## Where it comes up from, which way, how wide it is from the middle to the middle
 ## of a face, and how tall it stands, in metres.
@@ -76,10 +94,15 @@ var body := 0.25
 
 var colour := Color(0.62, 0.42, 0.26, 1.0)
 
-## Everything it came up under, everything of that it threw, whether it threw the
-## spider, and the webs it flung. All known by the time it is raised.
+## Whether it came up out of a puddle, as mud.
+var muddy := false
+
+## Everything it came up under, everything of that it threw — or, as mud, held fast
+## on its top — whether it threw the spider, and the webs it flung. All but what it
+## threw or held known by the time it is raised.
 var struck: Array[Prey] = []
 var thrown: Array[Prey] = []
+var mired: Array[Prey] = []
 var spider_thrown := false
 var flung: Array[WebNet] = []
 
@@ -132,6 +155,12 @@ static func raise(host: Node, at: Vector3, normal: Vector3, wide: float, height:
 	pillar.colour = tint
 	pillar.collision_layer = GameLayers.WORLD
 	pillar.collision_mask = 0
+	# Out of a puddle, the clay drinks it and comes up as mud.
+	for node in host.get_tree().get_nodes_in_group(WetGround.GROUP):
+		var wet := node as WetGround
+		if wet != null and not wet.is_queued_for_deletion() and wet.holds(at, wide):
+			wet.dry()
+			pillar.muddy = true
 	# After the creatures it carries have moved, so where it puts them is where
 	# they are.
 	pillar.process_physics_priority = 100
@@ -157,6 +186,18 @@ func rising() -> bool:
 ## Whether it is going back into the ground.
 func sinking() -> bool:
 	return _sinking >= 0.0
+
+
+## Water landed on it: it softens and sinks back now, leaving a puddle
+## [constant SLUMP] times its half-width round its foot if it stands out of the
+## floor, wet for [param seconds], in [param tint]. False if it was already going.
+func slump(seconds: float, tint := Color(0.36, 0.74, 0.9, 1.0)) -> bool:
+	if sinking() or is_queued_for_deletion():
+		return false
+	_sink()
+	if axis.dot(Vector3.UP) >= 0.7:
+		WetGround.puddle(get_parent(), base, axis, radius * SLUMP, seconds, tint)
+	return true
 
 
 ## Whether [param point] is where it is coming up, or has come up: inside it, to
@@ -215,8 +256,9 @@ func _strike(spider: SpiderPlayer) -> void:
 			continue
 		struck.append(creature)
 		# Stunned before it is thrown, so it rides up rather than fighting the clay,
-		# and for as long as it is in the air and a moment after it lands.
-		creature.stun(RISE + _flight() + STUN)
+		# and for as long as it is in the air and a moment after it lands. Mud throws
+		# nothing: up, and held there.
+		creature.stun(RISE + (STUN if muddy else _flight() + STUN))
 		if harm > 0.0:
 			creature.wound(harm)
 		if creature.is_loose() and not creature.is_boss() and not creature.is_held():
@@ -258,8 +300,17 @@ func _gravity() -> float:
 	return maxf(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8), 0.1)
 
 
-## Up: everything it carried is thrown off the top, up and out past its edge.
+## Up: everything it carried is thrown off the top, up and out past its edge — or,
+## as mud, held fast where it is.
 func _let_fly() -> void:
+	if muddy:
+		for rider in _riders:
+			if is_instance_valid(rider) and not rider.eaten:
+				rider.hold_at(rider.global_position, MIRE)
+				mired.append(rider)
+		_riders.clear()
+		_across.clear()
+		return
 	var speed := sqrt(2.0 * _gravity() * HOP * body)
 	for i in _riders.size():
 		var rider := _riders[i]
@@ -336,7 +387,7 @@ func _holds(point: Vector3, margin: float) -> bool:
 # --- what you can see ----------------------------------------------------
 
 ## A square block of brown clay, straight up, with a burst of dust where it comes
-## up.
+## up — or of mud, darker and wet.
 func _build() -> void:
 	_shape = BoxShape3D.new()
 	_collider = CollisionShape3D.new()
@@ -345,8 +396,8 @@ func _build() -> void:
 	add_child(_collider)
 	_mesh = BoxMesh.new()
 	var paint := StandardMaterial3D.new()
-	paint.albedo_color = CLAY
-	paint.roughness = 1.0
+	paint.albedo_color = MUD if muddy else CLAY
+	paint.roughness = 0.35 if muddy else 1.0
 	_view = MeshInstance3D.new()
 	_view.name = "Block"
 	_view.mesh = _mesh

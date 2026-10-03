@@ -51,6 +51,7 @@ func _sections() -> Array[Callable]:
 		_test_steam,
 		_test_pullback,
 		_test_clay_pillar,
+		_test_mud,
 		_test_the_whole_book_open,
 	]
 
@@ -2191,6 +2192,80 @@ func _test_clay_pillar() -> void:
 		"it comes out of it level (%s)" % (str(ledge.axis) if ledge != null else "—"))
 	check(ledge != null and ledge.face.dot(Vector3.UP) > 0.99, "with a level top to stand on")
 	wall.free()
+
+
+## Water and clay, either way round. A pillar raised out of a puddle drinks it and
+## comes up as mud, darker: what it carries up it holds fast on its top instead of
+## throwing, and lets go a few seconds later. Water spat on a pillar already standing
+## slumps it: it sinks back at once, and leaves a wide puddle where it stood.
+func _test_mud() -> void:
+	var earth := _learned("earth", 2)
+	var douse := _learned("douse", 2)
+	spider.require_captured_mouse = false
+	var slab := add_slab(Vector3(180, 0.0, -60), Vector3(40, 0.5, 40))
+	await physics_frame
+	var floor_y := slab.global_position.y + 0.25
+	var start := slab.global_position + Vector3(0, 0.25, 8.0)
+	stand_on(start)
+	await run_frames(20)
+	var height := spider.stage().body_height
+	var spot := start + Vector3.FORWARD * height * 6.0
+	clear_prey_near(spot, height * 30.0, null)
+	var wet := WetGround.puddle(level, Vector3(spot.x, floor_y, spot.z), Vector3.UP,
+		height * 0.6, 20.0)
+	var beetle := spawn("beetle", spot + Vector3(0.0, 0.2, 0.0))
+	if not check(wet != null and beetle != null, "a beetle standing in a puddle"):
+		return
+	beetle.aggression = 0.0
+	beetle.move_speed = 0.0
+	await run_frames(20)
+	aim_at(beetle.global_position)
+	await physics_frame
+	check(spells.cast_now(earth), "a pillar raised under it")
+	var mud := _last_pillar()
+	if not check(mud != null and mud.muddy and not wet.is_wet(),
+			"it drinks the puddle and comes up as mud"):
+		return
+	var paint := (mud.get_node("Block") as MeshInstance3D).material_override as StandardMaterial3D
+	check(paint != null and paint.albedo_color.v < ClayPillar.CLAY.v, "darker than clay")
+	await run_frames(40)
+	var top := floor_y + mud.tall
+	check(mud.thrown.is_empty() and mud.mired.has(beetle) and beetle.is_held(),
+		"the beetle is carried up and held fast, not thrown")
+	check(absf(beetle.global_position.y - top) < height,
+		"there on its top (%.2f m up, the pillar %.2f m)" % [beetle.global_position.y - floor_y,
+		mud.tall])
+	await run_frames(60)
+	check(beetle.is_held() and absf(beetle.global_position.y - top) < height,
+		"and still there a second later")
+	var free: bool = await wait_until(func() -> bool: return not beetle.is_held(),
+		roundi(ClayPillar.MIRE * 60.0) + 30)
+	check(free, "let go after %.0f s" % ClayPillar.MIRE)
+
+	# Water on a pillar already standing slumps it.
+	spells.forget_waits()
+	clear_prey_near(spot, height * 30.0, null)
+	var dry_spot := Vector3(spot.x, floor_y, spot.z) + Vector3.LEFT * height * 8.0
+	aim_at(dry_spot)
+	await physics_frame
+	check(spells.cast_now(earth), "a pillar raised on dry ground")
+	var standing := _last_pillar()
+	if not check(standing != null and not standing.muddy and standing != mud, "clay, not mud"):
+		return
+	await run_frames(30)
+	var base := standing.base
+	var half := standing.radius
+	aim_at(base + Vector3.UP * standing.tall * 0.5 + standing.face * half)
+	await physics_frame
+	check(spells.cast_now(douse), "water spat on it")
+	var slumped: bool = await wait_until(func() -> bool:
+		return not is_instance_valid(standing) or standing.sinking(), 120)
+	check(slumped, "it slumps back into the ground")
+	var pool := _puddle_at(base)
+	check(pool != null and pool.radius >= half * ClayPillar.SLUMP * 0.95,
+		"leaving a wide puddle where it stood (%.2f m to its rim, %.2f m to a face of the pillar)"
+		% [pool.radius if pool != null else 0.0, half])
+	await _spat()
 
 
 ## The newest pillar of clay standing, or null.

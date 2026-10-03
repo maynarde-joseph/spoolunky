@@ -78,11 +78,12 @@ var colour := Color(0.36, 0.74, 0.9, 1.0)
 ## How many drops it threw.
 var thrown := 0
 
-## Everything it soaked, the webs and lines it wet, and the puddles it left, in the
-## order it reached them.
+## Everything it soaked, the webs and lines it wet, the puddles it left and the clay
+## pillars it slumped, in the order it reached them.
 var soaked: Array[Prey] = []
 var wet_webs: Array[WebStructure] = []
 var puddles: Array[WetGround] = []
+var slumped: Array[ClayPillar] = []
 
 var _drops: Array[Drop] = []
 var _fall := 10.0
@@ -229,6 +230,12 @@ func _fly(drop: Drop, was: Vector3, now: Vector3, space: PhysicsDirectSpaceState
 		_splash_on(struck, end)
 		return true
 	if not ground.is_empty():
+		var pillar := ground.get("collider") as ClayPillar
+		if pillar != null:
+			_splash(end)
+			if pillar.slump(lasts, colour) and not slumped.has(pillar):
+				slumped.append(pillar)
+			return true
 		_come_down(end, ground["normal"])
 		return true
 	return false

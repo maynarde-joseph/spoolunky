@@ -560,12 +560,14 @@ func splash_wide(spell: SpiderSpell, wound: float) -> float:
 	return puddle_wide(spell, wound) * (WaterSpit.SCATTER + 1.0)
 
 
-func _on_spit_landed(_spit: WaterSpit, soaked: Array[Prey], webs: int, _puddles: int) -> void:
+func _on_spit_landed(spit: WaterSpit, soaked: Array[Prey], webs: int, _puddles: int) -> void:
 	var said := PackedStringArray()
 	if not soaked.is_empty():
 		said.append("%d soaked" % soaked.size())
 	if webs > 0:
 		said.append("%d web%s wet — it will not burn" % [webs, "" if webs == 1 else "s"])
+	if spit != null and not spit.slumped.is_empty():
+		said.append("the clay slumps into mud")
 	if not said.is_empty():
 		notice.emit("Douse — " + ", ".join(said))
 
@@ -762,12 +764,15 @@ func _raise(spell: SpiderSpell, wound: float) -> Dictionary:
 		return {"cast": false}
 	var said := PackedStringArray()
 	if not pillar.struck.is_empty():
-		said.append("%d thrown" % pillar.struck.size())
+		said.append("%d %s" % [pillar.struck.size(), "stuck fast" if pillar.muddy else "thrown"])
 	if pillar.spider_thrown:
 		said.append("up you go")
 	if not pillar.flung.is_empty():
 		said.append("%d web%s flung" % [pillar.flung.size(), "" if pillar.flung.size() == 1 else "s"])
-	if not said.is_empty():
+	if pillar.muddy:
+		notice.emit("Mud Pillar — " + ", ".join(said) if not said.is_empty()
+			else "Mud Pillar — out of the puddle")
+	elif not said.is_empty():
 		notice.emit("Clay Pillar — " + ", ".join(said))
 	return {"cast": true, "at": at}
 
