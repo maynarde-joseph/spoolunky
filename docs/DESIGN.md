@@ -4,12 +4,12 @@
 > of a wild valley. You end the biggest thing in it, with the wyvern that hunts
 > the whole valley hanging in your web. The only way up is to eat.
 
-**Where it stands now.** The game opens in the Colosseum (§4), an arena built from
-a kit of pieces. The valley that pitch describes and the Hollow Wood after it (§12)
-are gone, the spider is held at one size — there is no growing for now (§3) — and
-what the game around the colosseum is going to be is still being decided. What
-follows keeps the reasoning for everything still in the game, and for what was
-tried.
+**Where it stands now.** The game opens in the Colosseum (§4), one of six ruined
+places built from a kit of pieces. The valley that pitch describes and the Hollow
+Wood after it (§12) are gone, the spider is held at one size — there is no growing
+for now (§3) — and what the game around these places is going to be is still being
+decided. What follows keeps the reasoning for everything still in the game, and for
+what was tried.
 
 ---
 
@@ -723,31 +723,59 @@ needs the spells it is between).
 
 ## 4. The world
 
-### The Colosseum — where it starts now
+### The places — where it starts now
 
-The game opens in an arena: a square of sand thirty-six metres across, walled four
-high with columns along the foot of the wall, and a gate in the middle of each
-side. Behind the wall the stands go up in three tiers, four metres a tier, with
-stairs up each, to a rim of open windows twelve metres up. Each gate leads through
-a cut in the stands to a shut door in the outside wall — four ways out to places
-not built yet. Nothing lives in it.
+The game opens in a ruined Roman arena, and five more places stand beside it, each
+a scene of its own: a roofless Gothic cathedral, the courtyard of a burned castle, a
+broken aqueduct over a river, a watchtower on a hill with its top gone, and a
+square walled temple — the first thing built, kept for a dungeon. All of them are
+abandoned and open to the sky, with room to move in and things to climb and string
+silk between, and each has a sky of its own: a hot afternoon, rain coming, dusk, a
+bright morning, wind. Nothing lives in any of them yet.
 
-It is built from a kit rather than from the project's own solids: seventy-five
+* **The Colosseum** — an oval of sand forty-eight metres by thirty-two inside a
+  wall with a gate at each end and side, two tiers of seats, an open walk round
+  behind them, and three storeys of arches with an attic over them. The outside
+  wall has fallen along the south the way Rome's did, and the floor has given way
+  in the middle over the passages beneath, a maze four metres down.
+* **The Cathedral** — nave, aisles, transept and apse; rows of piers twelve high and
+  upper walls to twenty-two, held up by flying buttresses; a west front with a rose
+  window between two towers, one of them broken. Roofless, some piers fallen, a
+  stretch of aisle wall down.
+* **The Castle** — curtain walls with a walk along their tops, round towers at the
+  corners, a gatehouse with its portcullis stuck halfway, a keep fallen open at one
+  corner, and a breach in the west wall with rubble sloping into it.
+* **The Aqueduct** — two rows of arches and a channel on top twenty-two metres up,
+  broken over the river by a gap of sixteen metres: the length of a grapple, with
+  water under it for anyone who falls short.
+* **The Watchtower** — three terraces up a hill and a hollow tower thirty-six metres
+  high on top, its floors gone but for ledges on alternate sides, and a bridge from
+  it that broke in the middle.
+* **The Temple** — a square court walled four high with three tiers of stands round
+  it and a gate in each side.
+
+If the four elemental dungeons happen, these suggest themselves: the cathedral's
+spires for lightning, the burned castle for fire, the aqueduct for water and the
+windy tower for wind, with the colosseum as where it starts.
+
+They are built from a kit rather than from the project's own solids: seventy-five
 pieces in `Pieces/` — walls with and without doors and windows, corners, pillars
 and columns, stairs, ramps, railings, floor tiles, blocks — on a two-metre grid.
 The kit is used at its own scale, a metre to a unit, against a spider seven tenths
 of a metre tall: a wall is nearly six spiders high and a door four. With no growing
 there is one body to build for, so every gap, ledge and room can be sized to what
 that body does — and since a spider climbs everything, height never stops it;
-distance, a surface it cannot hold and a shut door are what can.
+distance, a surface it cannot hold and a shut door are what can. The aqueduct's gap
+and the tower's broken bridge are both inside a grapple's reach on purpose.
 
 Each piece is made solid as it is imported (`tools/kit_import.gd`): centred on its
 origin, base on the ground, and a collider the shape of its mesh on the world
-layer, so everything that can be seen can be stood on and silked. The bulk — each
-tier of the stands — is a `KitBlock`, the kit's own wall stretched to size with a
-box to stand on, so a building is a few dozen nodes and still wears the kit's
-look. `Colosseum` places everything and the bake saves it as a scene of real nodes
-to move about in the editor.
+layer, so everything that can be seen can be stood on and silked. Most of every
+place is `KitBlock`s — a piece at any size, its mesh stretched and its collider
+built from the same stretched faces, so an arch is the kit's doorway at the size of
+a storey and still a way through. Each place's class places everything, with the
+ruin laid out from a fixed seed, and the bake saves it as a scene of real nodes to
+move about in the editor.
 
 It is white until the kit's palette texture is added; the pieces point at it and
 take their colours from it when it is there.
@@ -2471,13 +2499,13 @@ spell — the Clay Pillar — makes the loadout's limit bite.
 Left: more interactions between spells and silk, a second tier for the pillar,
 and the tree's numbers played and tuned.
 
-**Milestone 9 — The Colosseum** *(started)*
+**Milestone 9 — The places** *(started)*
 Done: the hunting ground, the Hollow Wood and the gym taken out, with the props
 and the bakes that only they used; a kit of pieces brought in and made solid on
-import; and the colosseum built from it, which the game opens. The spider is held
-at one size.
-Left: what the game around it is — where the four ways out lead, and what lives
-in the arena.
+import, and blocks that take any piece to any size; and six ruined places built
+from it — the colosseum the game opens in, a cathedral, a castle, an aqueduct, a
+watchtower, and the temple that was built first. The spider is held at one size.
+Left: what the game around them is — how they join, and what lives in them.
 
 ---
 

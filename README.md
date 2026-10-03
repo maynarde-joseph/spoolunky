@@ -14,11 +14,15 @@ work off your silk and each other — webs that will not burn, webs left live,
 lightning run along your lines, wind over a puddle lifting a whirl; and shorter
 waits. Five spells ride on your keys beside the web.
 
-The project opens in **the Colosseum**, where the game will start: an arena built
-from the kit of pieces in `Pieces/`, with stands going up in tiers round the sand
-and a way out in the middle of each side to a door that does not open yet. Nothing
-lives in it. The levels that came before — the hunting ground, the Hollow Wood and
-the gym — are gone, and what the game around the colosseum is going to be is still
+The project opens in **the Colosseum**, where the game will start: a great oval
+arena of stacked arches, long abandoned, built from the kit of pieces in `Pieces/`.
+Five more places are built from the same kit, each a scene of its own to open and
+walk about in — a roofless **cathedral**, the courtyard of a burned **castle**, a
+broken **aqueduct** over a river, a **watchtower** on a hill with its top broken
+off, and a square walled **temple**. All of them are ruins, open to the sky, with
+room to move and things to climb and string silk between. Nothing lives in any of
+them yet. The levels that came before — the hunting ground, the Hollow Wood and
+the gym — are gone, and what the game around these places is going to be is still
 being decided. The spider is one size, a Huntsman, with every spell from the start.
 
 The design notes — the loop, the spells and how they work off each other, the trap
@@ -49,18 +53,21 @@ game/
              mind every creature in it has
   rig/       bodies: bones, meshes skinned to them, and the motion that poses them
   ui/        HUD
-  world/     the colosseum, the kit's pieces placed by name and stretched into
-             blocks, the paints, day and night, places, and the shrines, marks,
-             shortcuts, lair and training posts
+  world/     the places built from the kit and what they share, the kit's
+             pieces placed by name and stretched into blocks, the paints, day and
+             night, zones, and the shrines, marks, shortcuts, lair and training
+             posts
 Pieces/      the kit: walls, pillars, stairs and the rest, as .fbx
-tools/       the import that makes each piece solid, the bake that turns the
-             colosseum into a scene, and the tab check
+tools/       the import that makes each piece solid, the bake that turns each
+             place into a scene, and the tab check
 tests/       seven headless suites and screenshot tools
   support/   what the suites share: the verdict, and the arena a web check runs in
 addons/character-controller/   the movement template the spider is built on
 ```
 
-The project opens the colosseum, `game/world/colosseum.tscn`. The sandbox the
+The project opens the colosseum, `game/world/colosseum.tscn`. Each of the other
+places is a scene beside it in `game/world/` — open one in the editor and press
+**F6** to play it. The sandbox the
 web, spell and combat suites run in is the character-controller example level
 (`addons/character-controller/example/main/level.tscn`), with the spider, a HUD, a
 `Webs` container and a prey spawner dropped into it. A `Devices` container is made
@@ -630,31 +637,67 @@ up in the build wheel — the library scans that folder. The fields that matter
 most are `shape` (strand or net), `trigger` (passive, alert, snare or lure),
 `unlock_stage`, the three silk costs, and `hold_strength` / `durability`.
 
-## The Colosseum
+## The places
 
-`game/world/colosseum.tscn` is what the project opens, and where the game will
-start: an arena built from the kit in `Pieces/`. A square of sand thirty-six metres
-across, walled four high, with columns along the foot of the wall and in the
-corners, and a gate in the middle of each side. Behind the wall the stands go up in
-three tiers, four metres a tier, with stairs climbing each one, to a rim of open
-windows twelve metres up. Each gate leads through a cut in the stands to a shut
-door in the outside wall — four ways to somewhere not built yet. Outside is grass.
+Each place is built by a class of its own in `game/world/` and saved as a scene
+beside it. They are all ruins under open sky, and all the same kit, much of it
+stretched: an arch is the kit's doorway at the size of a storey, a seat row its
+stairs the length of a wall, a pier its column three times as tall. Everything in
+them is solid. You start somewhere with a view in, at one size with every spell,
+and the HUD names the place as you arrive. Fall out of the world and you are put
+back where you started.
 
-You start on the sand, back from the south gate, facing in. The spider is a
-Huntsman the whole way through — eating neither grows it nor passes anything on —
-with every spell and every interaction known from the start; the tiers and the
-shorter waits are still earned, rank by rank. Nothing lives here yet. Walk in and
-the HUD names the place.
-
-Everything in it is solid: climb the wall, string silk between the columns — four
-metres apart, inside a strand's reach — walk the tiers, look out over the rim. Fall
-out of the world and you are put back on the sand.
+* **The Colosseum** (`colosseum.tscn`, a hot late afternoon) — what the game
+  opens. An oval of sand forty-eight metres by thirty-two, walled four high with a
+  gate at each end and in each side; two tiers of seats behind the wall, cut
+  through at every gate; a walk all the way round behind them, open to the sky now
+  its vaults are gone; and the outside wall, three storeys of arches and an attic,
+  twenty-two metres up, a column between every two arches. Along the south the
+  outside wall has fallen the way Rome's did, storey by storey to nothing, with the
+  stone in heaps. And the floor has given way in the middle: four metres down are
+  the passages the beasts were kept in, their walls standing up to where the floor
+  was. You start on the sand at the west end, looking down the arena.
+* **The Cathedral** (`cathedral.tscn`, a grey sky about to rain) — a nave twelve
+  metres wide between two rows of piers twelve high, an aisle behind each row, and
+  the upper walls going on to twenty-two metres, every bay a window, held up from
+  outside by flying buttresses with pinnacles on their piers. The transept crosses
+  it, and the choir ends in a rounded apse. The west front is a great door, a rose
+  window and a gable between two towers: the south one stands to its belfry and
+  spire, the north one broke off halfway. The roof is gone, some piers lie across
+  the nave, and a stretch of the north aisle wall has fallen outward. You start
+  just inside the great door.
+* **The Castle** (`castle.tscn`, dusk) — a courtyard forty-four by thirty-six
+  inside curtain walls nine high with a walk along the top behind battlements, a
+  round tower at each corner — two roofed, two broken off — and the gatehouse in
+  the south wall with its portcullis stuck partway down. The keep is three hollow
+  storeys with most of its floors gone and its south-west corner fallen away. The
+  west wall is breached, with rubble sloping up into the gap from both sides; stairs
+  climb to the wall-walk. You start just inside the gate.
+* **The Aqueduct** (`aqueduct.tscn`, a bright morning) — eighty metres of arches
+  fourteen high with smaller arches on them and the channel on top, twenty-two
+  metres up and walled low either side: a path along the sky. Two spans have fallen
+  into the river, leaving a gap of sixteen metres over the water — inside a
+  grapple's reach. Further west the upper arches of one span are gone, a drop to the
+  lower arch and a climb back up. A long ramp runs down to the grass at the east
+  end; the ruined tower the water was gathered in stands at the west. You start on
+  the grass by the river.
+* **The Watchtower** (`watchtower.tscn`, high and windy) — three terraces stepped
+  up a hill with stairs up each, broken walls along their edges and a ring of
+  columns round the middle one, and on top a hollow round tower thirty-six metres
+  high, ragged where its top came off. Inside, what is left of each floor clings to
+  one side or the other. Two thirds of the way up, a stone bridge ran north to a
+  lone pillar and broke in the middle. You start on the grass below the stairs.
+* **The Temple** (`temple.tscn`, a clear afternoon) — the first thing built from
+  the kit, kept for a dungeon of its own: a square court of sand walled four high,
+  columns along the wall, a gate in each side, three tiers of stands with stairs up
+  each, and a rim of open windows. Each gate leads through a cut in the stands to a
+  shut door.
 
 It is all white for now, and will be until the kit's colours are in: every piece's
 material points at `Pieces/aap color palette.png`, which did not come with the
-pieces. Put that file in `Pieces/` and the kit takes its colours — the stands with
-it, because they are the kit's own wall stretched. The sand and the grass are the
-project's own paints.
+pieces. Put that file in `Pieces/` and the kit takes its colours — the stretched
+blocks with it, because they are the kit's own pieces. The ground, sand, paving and
+water are the project's own paints.
 
 ## The kit
 
@@ -675,10 +718,17 @@ stick silk to. The project's default for scenes names the same script, so a piec
 added later comes in the same way. Godot does not reimport when only the script
 changes, so after changing it, select the pieces and **Reimport**.
 
-`Kit` puts a piece down by name from code. `KitBlock` is a solid of any size in the
-look of one of the pieces — that piece's mesh stretched to fit, and a box to stand
-on — for the bulk of a building: each tier of the stands is one, where in walls it
-would be thirty. Change its `size` in the inspector and the block follows.
+`Kit` puts a piece down by name from code. `KitBlock` is any of the pieces at any
+size: its mesh stretched to fit, and a collider built from the same stretched faces
+— so a doorway made three times as tall is still a doorway you can walk through,
+and a wall forty metres long is one node. It is never scaled, because physics does
+not like a stretched body. Most of every place is blocks; change one's `size` or
+`piece` in the inspector and it follows.
+
+`Site` (`game/world/site.gd`) is what every place shares: its sky — a few moods, all
+holding the light down so the white kit shows its shape — ground out to where the
+haze takes it, the spider with its HUD, the place's name for the HUD, and the
+shapes places are laid out on and the rubble they are strewn with.
 
 ## What fights back
 
@@ -758,19 +808,21 @@ on it, and then fewer hares.
 
 ## Levels are scenes, not scripts
 
-`colosseum.tscn` holds its pieces as real nodes, so anything in it can be selected
-and moved in the editor. `Colosseum` (`game/world/colosseum.gd`) is the generator
-of record — it says where every piece goes — and `tools/bake_level.gd` runs it and
-saves the scene:
+Every place's scene holds its pieces as real nodes, so anything in it can be
+selected and moved in the editor. Its class — `Colosseum`, `Cathedral`, `Castle`,
+`Aqueduct`, `Watchtower`, `Temple` — is the generator of record, saying where every
+piece goes, and `tools/bake_level.gd` runs it and saves the scene. Name places to
+bake only those:
 
 ```sh
-godot --headless --path . --script res://tools/bake_level.gd -- --force
+godot --headless --path . --script res://tools/bake_level.gd -- --force castle aqueduct
 ```
 
 Without `--force` it leaves a scene that is already there alone, because building
 it again throws away anything moved by hand. Nothing is added to the tree while it
 builds, so nothing in the level runs on the way: what is saved is what the
-generator said and no more.
+generator said and no more. The ruins are laid out with a fixed seed, so building
+one again puts every fallen stone back where it was.
 
 One thing to know if you add to a level: **only `@export` properties survive being
 saved into a scene.** A value set in code on a plain `var` is there while the
@@ -808,18 +860,23 @@ back, in a plain box room:
 godot --headless --script res://tests/climb_smoke_test.gd
 ```
 
-A third checks the kit and the colosseum: that every piece comes in as a body on
-the world layer, centred on its origin with its base on the ground, and that a
-sheet is solid from both sides; that a block is the size it says, to look at and
-to stand on; that the game opens in the colosseum, with the spider a Huntsman with
-every spell open, on the sand where it was put and the HUD naming the place; that
-everything in it is solid; that the arena is walled all round, with a gate in each
-side that is a door's height and a way out behind it to a shut door; that the
-tiers step up four at a time with a flight of stairs up each, and there are windows
-in the rim; that the spider walks on the sand and stands in the ways out and on the
-grass outside; and that the training posts each stand a creature up — one that
-stands, one that runs, one that bites, none seeing past its leash — with a readout
-that says what a web would need:
+A third checks the kit and every place built from it: that every piece comes in
+as a body on the world layer, centred on its origin with its base on the ground,
+and that a sheet is solid from both sides; that a block is the size it says, to
+look at and to stand on, and a doorway made bigger is still a way through; that
+the game opens in the colosseum; that in every place the spider stands where it
+was put, a Huntsman with every spell open, under open sky, in a place the HUD
+names, among stone that is all solid; and then that each place is the shape it
+says — the colosseum walled with a gate at each end and side, its floor fallen
+into the passages and its outside wall fallen on the south, with the spider walking
+on the sand and standing in the passages; the cathedral roofless with its great
+door open and one tower broken; the castle's portcullis low enough to go under,
+its breach open and stairs to its walls; the aqueduct's channel high and walkable
+and broken by a gap a grapple can cross; the watchtower ragged at the top, its
+floors inside and its bridge broken; the temple's gates, tiers, stairs and rim —
+and that the training posts each stand a creature up, one that stands, one that
+runs and one that bites, none seeing past its leash, with a readout that says what
+a web would need:
 
 ```sh
 godot --headless --script res://tests/world_smoke_test.gd
@@ -938,9 +995,9 @@ xvfb-run -a godot --rendering-driver opengl3 --resolution 800x600 \
     --script res://tests/screenshot_creatures.gd
 ```
 
-And the colosseum from a set of named places — from above, the arena, from the
-rim, the south gate, the way out behind it, and from outside. Name them after `--`
-to render only those, for instance `-- arena from_the_rim`:
+And every place from a set of named views. Name a place after `--` to render only
+its views, and views after it to render only those, for instance `-- castle gate
+yard`; name nothing and every view of every place is rendered, which takes a while:
 
 ```sh
 xvfb-run -a godot --rendering-driver opengl3 --resolution 1280x720 \

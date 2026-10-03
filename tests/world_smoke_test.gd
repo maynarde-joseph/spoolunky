@@ -1,29 +1,38 @@
 extends TestSuite
 
-## Headless check on the colosseum, and on the kit it is built from.
+## Headless check on the places built from the kit, and on the kit itself.
 ##
 ##     godot --headless --script res://tests/world_smoke_test.gd
 ##
 ## A level's job is to be the right shape, so that is what is checked. Every piece
 ## of the kit comes in solid, on the world layer, centred on its origin with its
-## base on the ground, and a stretched block is the size it says. The colosseum
-## is what the game opens; the spider starts on the sand at one size with every
-## spell open; everything in it is something to stand on; the arena is walled all
-## round, with a gate in the middle of each side that you can walk through to a
-## door at the end of the way out that you cannot; the tiers are where they should
-## be, the aisles climb them, and there are windows in the rim to look out of. And
-## the spider can walk on the sand, in the ways out, and outside.
+## base on the ground, and a stretched block is the size it says and collides as the
+## shape it looks.
 ##
-## None of this looks at how it plays — that is what opening it is for.
+## Every place opens with the spider standing where it was put, at one size with
+## every spell open, under open sky, in a place the HUD names, among stone that is
+## all something to stand on. Then each is checked for what it is: the colosseum
+## walled round its sand with a gate in each end and side, the floor fallen into the
+## passages in the middle and the outside wall fallen on the south; the cathedral
+## roofless, its great door open, one tower whole and one broken; the castle's gate
+## low enough to walk under the portcullis, its breach open and its stairs reaching
+## the wall-walk; the aqueduct's channel walkable high up and broken by a gap a
+## grapple can cross; the watchtower ragged at the top with floors inside and a
+## broken bridge; and the temple walled with its gates, tiers, aisles and rim. The
+## game opens in the colosseum, and the spider can walk about in it.
+##
+## None of this looks at how it plays — that is what opening each one is for.
 ##
 ## The training dummies are checked here too, on posts stood up for the purpose:
-## they are part of the world rather than of any one creature, and the gym that
-## used to hold them is gone.
+## they are part of the world rather than of any one place.
 
 func run_checks() -> void:
 	_test_the_pieces()
 	await _test_a_block()
-	await _test_the_colosseum()
+	check(str(ProjectSettings.get_setting("application/run/main_scene")) == Colosseum.SCENE,
+		"the game opens in the colosseum")
+	for place in Site.PLACES:
+		await _test_place(place)
 	await _test_the_dummies()
 
 
@@ -117,36 +126,49 @@ func _open(mesh: Mesh) -> bool:
 	return uses.values().has(1)
 
 
-## A block is the size it says: its look stretched to fit and its box the same, so
-## what you see is what you stand on, and changing its size changes both.
+## A block is the size it says: its look stretched to fit and its collider the same
+## stretched shape, so what you see is what you stand on — a doorway made bigger is
+## still a doorway — and changing its size changes both.
 func _test_a_block() -> void:
 	var holder := Node3D.new()
-	var block := KitBlock.new()
-	block.size = Vector3(10.0, 3.0, 2.0)
-	holder.add_child(block)
+	var block := KitBlock.make(holder, "Block", "wall", Vector3(10.0, 3.0, 2.0), Transform3D.IDENTITY)
+	KitBlock.make(holder, "Door", "wall door", Vector3(8.0, 12.0, 2.0),
+		Transform3D(Basis.IDENTITY, Vector3(0.0, 0.0, 20.0)))
 	await stage(holder)
 	await run_frames(2)
-	var solid := _shape_of(block)
-	check(solid != null and solid.size.is_equal_approx(Vector3(10.0, 3.0, 2.0)),
-		"a block collides as the box it says it is (%s)" % (solid.size if solid != null else "none"))
+	check(_solid_box(block).size.is_equal_approx(Vector3(10.0, 3.0, 2.0)),
+		"a block collides as the size it says (%s)" % _solid_box(block).size)
 	var seen := _seen(block)
 	check(seen.size.is_equal_approx(Vector3(10.0, 3.0, 2.0)) and absf(seen.position.y) < 0.01,
 		"and looks it, standing on its origin (%s)" % seen)
 	var top := _reach(Vector3(3.0, 10.0, 0.0), Vector3(3.0, -1.0, 0.0))
 	check(absf(top - 7.0) < 0.05, "and you stand on its top (%.2f down)" % top)
+	# The kit's doorway is half its width and three quarters of its height; at eight
+	# by twelve that is a way through four wide and nine high.
+	check(_reach(Vector3(0.0, 4.0, 10.0), Vector3(0.0, 4.0, 30.0)) < 0.0,
+		"a doorway made bigger is still a way through")
+	check(_reach(Vector3(0.0, 10.5, 10.0), Vector3(0.0, 10.5, 30.0)) > 0.0
+			and _reach(Vector3(3.0, 4.0, 10.0), Vector3(3.0, 4.0, 30.0)) > 0.0,
+		"with wall over it and either side")
 	block.size = Vector3(4.0, 6.0, 4.0)
 	await run_frames(2)
-	check(_shape_of(block).size.is_equal_approx(Vector3(4.0, 6.0, 4.0))
+	check(_solid_box(block).size.is_equal_approx(Vector3(4.0, 6.0, 4.0))
 			and _seen(block).size.is_equal_approx(Vector3(4.0, 6.0, 4.0)),
 		"and a new size changes both")
 	close()
 
 
-func _shape_of(block: KitBlock) -> BoxShape3D:
+## The box round what a block collides as.
+func _solid_box(block: KitBlock) -> AABB:
 	for child in block.get_children(true):
-		if child is CollisionShape3D:
-			return (child as CollisionShape3D).shape as BoxShape3D
-	return null
+		var solid := child as CollisionShape3D
+		if solid != null and solid.shape is ConcavePolygonShape3D:
+			var faces := (solid.shape as ConcavePolygonShape3D).get_faces()
+			var box := AABB(faces[0], Vector3.ZERO)
+			for point in faces:
+				box = box.expand(point)
+			return box
+	return AABB()
 
 
 func _seen(block: KitBlock) -> AABB:
@@ -157,34 +179,37 @@ func _seen(block: KitBlock) -> AABB:
 	return AABB()
 
 
-# --- the colosseum ----------------------------------------------------------
+# --- the places -------------------------------------------------------------
 
-func _test_the_colosseum() -> void:
-	check(str(ProjectSettings.get_setting("application/run/main_scene")) == Colosseum.SCENE,
-		"the game opens in the colosseum")
-	var level := await open(Colosseum.SCENE)
+## What every place has to be: somewhere to start, standing, at one size with every
+## spell, under open sky, in a place the HUD names, among stone that is all solid —
+## and then what this one in particular has to be.
+func _test_place(place: String) -> void:
+	var builder := Site.builder(place)
+	if not check(builder != null, "%s has a builder" % place):
+		return
+	var constants := builder.get_script_constant_map()
+	var level := await open(constants["SCENE"])
 	if level == null:
 		return
 	var spider := root.get_tree().get_first_node_in_group("spider") as SpiderPlayer
-	if not check(spider != null, "the colosseum has a spider in it"):
+	if not check(spider != null, "%s: there is a spider in it" % place):
 		return
 	spider.require_captured_mouse = false
 	await run_frames(60)
-
-	# One size the whole way through, and every spell from the start: there is no
-	# growing, and nothing to find yet.
-	check(spider.growth.stage_index == 2 and not spider.growth.grows
-		and not spider.traits.evolving,
-		"the spider is a Huntsman and stays one (%s)" % spider.stage().display_name)
-	check(spider.spells.open_spells().size() == spider.spells.book.size(),
-		"with every spell open from the start (%d)" % spider.spells.open_spells().size())
+	var start: Vector3 = constants["START"]
+	check(spider.growth.stage_index == 2 and not spider.growth.grows and not spider.traits.evolving
+			and spider.spells.open_spells().size() == spider.spells.book.size(),
+		"%s: the spider is a Huntsman that stays one, with every spell open" % place)
+	check(spider.is_on_floor() and Vector2(spider.global_position.x - start.x,
+			spider.global_position.z - start.z).length() < 1.0,
+		"%s: and stands where it was put (%s)" % [place, spider.global_position])
+	check(_reach(spider.global_position + Vector3.UP, spider.global_position + Vector3.UP * 80.0) < 0.0,
+		"%s: under open sky" % place)
 	var here := Zone.at(root.get_tree(), spider.global_position)
-	check(here != null and here.display_name == "The Colosseum",
-		"and starts in the Colosseum (%s)" % (here.display_name if here != null else "nowhere"))
-	check(spider.is_on_floor() and spider.global_position.distance_to(Colosseum.START) < 1.0,
-		"standing on the sand where it was put (%s)" % spider.global_position)
-
-	# Everything is something to stand on.
+	check(here != null and here.display_name == constants["NAME"],
+		"%s: which the HUD calls %s (%s)" % [place, constants["NAME"],
+			here.display_name if here != null else "nothing"])
 	var bodies := 0
 	var loose := PackedStringArray()
 	for node in all_under(level):
@@ -194,103 +219,220 @@ func _test_the_colosseum() -> void:
 		bodies += 1
 		if body.collision_layer & GameLayers.WORLD == 0:
 			loose.append(body.name)
-	check(bodies > 150 and loose.is_empty(),
-		"all %d solids in it are on the world layer %s" % [bodies, loose])
+	check(bodies > 60 and loose.is_empty(),
+		"%s: all %d solids in it are on the world layer %s" % [place, bodies, loose])
+	match place:
+		"colosseum":
+			await _shape_colosseum(spider)
+		"cathedral":
+			_shape_cathedral()
+		"castle":
+			_shape_castle()
+		"aqueduct":
+			_shape_aqueduct(spider)
+		"watchtower":
+			_shape_watchtower(spider)
+		"temple":
+			_shape_temple()
+	release_all()
 
-	_test_the_walls()
-	_test_the_ways()
-	_test_the_stands()
-	await _test_walking(spider)
+
+## How high the first solid thing is straight down from high over [param at].
+func _top(at: Vector3) -> float:
+	var hit := _ray(Vector3(at.x, 120.0, at.z), Vector3(at.x, -20.0, at.z))
+	return (hit.position as Vector3).y if not hit.is_empty() else -INF
 
 
-## Walled all round: from the middle of the sand every way but through a gate, the
-## first thing you meet is the arena wall or a column in front of it.
-func _test_the_walls() -> void:
+## The oval's radius at [param bearing] degrees from east towards south.
+func _radius(across: float, deep: float, bearing: float) -> float:
+	var turn := deg_to_rad(bearing)
+	return 1.0 / sqrt(pow(cos(turn) / across, 2.0) + pow(sin(turn) / deep, 2.0))
+
+
+func _shape_colosseum(spider: SpiderPlayer) -> void:
+	# Walled all round the sand but at the gates, which are at the ends and sides.
 	var open_sides := PackedStringArray()
-	for degrees in range(15, 360, 30):
-		var way := Vector3.FORWARD.rotated(Vector3.UP, deg_to_rad(degrees))
-		var reach := _reach(Vector3(0.0, 2.0, 0.0), Vector3(0.0, 2.0, 0.0) + way * 60.0)
-		if reach < 0.0 or reach > Colosseum.ARENA * sqrt(2.0) + 0.1:
-			open_sides.append("%d°" % degrees)
-	check(open_sides.is_empty(), "the arena is walled all round %s" % open_sides)
-
-	var columns := 0
-	for node in all_under(current_scene):
-		if node.scene_file_path == Kit.path_of("pillar3"):
-			columns += 1
-	check(columns == Colosseum.COLUMNS.size() * 8 + 4,
-		"with columns along the foot of the wall and in the corners (%d)" % columns)
-
-
-## A gate in the middle of each side, low enough to walk through and no higher
-## than a door, and through it a way out to a door at the far end that is shut.
-func _test_the_ways() -> void:
-	for side in Colosseum.SIDES:
-		var facing: Vector3 = Colosseum.SIDES[side]
-		var through := _reach(Vector3(0.0, 1.5, 0.0), facing * 60.0 + Vector3(0.0, 1.5, 0.0))
-		# The door itself is set into the middle of the outside wall's thickness.
-		check(through > Colosseum.RIM - 1.05 and through < Colosseum.RIM,
-			"%s: through the gate to a shut door at the end of the way out (%.1f)"
-			% [side, through])
-		var lintel := _reach(Vector3(0.0, 3.5, 0.0), facing * 60.0 + Vector3(0.0, 3.5, 0.0))
-		check(absf(lintel - Colosseum.ARENA) < 0.2,
-			"%s: and the gate is a door's height, with wall over it (%.1f)" % [side, lintel])
-
-
-## The tiers step up four at a time, the aisles climb them, and the rim has windows
-## in it to look out of and wall under them to lean on.
-func _test_the_stands() -> void:
-	var wrong := PackedStringArray()
-	for side in Colosseum.SIDES:
-		var facing: Vector3 = Colosseum.SIDES[side]
-		for k in Colosseum.TIERS:
-			var middle := Colosseum.frame(facing, 6.0,
-				Colosseum.ARENA + Colosseum.TIER * (k + 0.5), 0.0).origin
-			var down := _reach(middle + Vector3.UP * 40.0, middle + Vector3.DOWN)
-			var height := 40.0 - down
-			if absf(height - Colosseum.TIER * (k + 1)) > 0.05:
-				wrong.append("%s %d at %.1f" % [side, k + 1, height])
-	check(wrong.is_empty(), "the tiers are four, eight and twelve high on every side %s" % wrong)
-
-	var flights := 0
-	for side in Colosseum.SIDES:
-		var facing: Vector3 = Colosseum.SIDES[side]
-		for k in Colosseum.TIERS:
-			var foot := Colosseum.frame(facing, Colosseum.AISLE,
-				Colosseum.ARENA - Colosseum.TIER + Colosseum.TIER * k + 1.0, 0.0).origin
-			var step := 40.0 - _reach(foot + Vector3.UP * 40.0, foot + Vector3.DOWN)
-			if step > Colosseum.TIER * k + 0.1 and step < Colosseum.TIER * k + 2.1:
-				flights += 1
-	check(flights == Colosseum.SIDES.size() * Colosseum.TIERS,
-		"and a flight of stairs climbs each one (%d)" % flights)
-
-	var top := Colosseum.TIER * Colosseum.TIERS
-	var inside := Vector3(0.0, 0.0, Colosseum.RIM - 3.0)
-	var out := Vector3(0.0, 0.0, Colosseum.RIM + 10.0)
-	check(_reach(inside + Vector3.UP * (top + 2.0), out + Vector3.UP * (top + 2.0)) < 0.0,
-		"there is a window in the rim to look out of")
-	check(_reach(inside + Vector3.UP * (top + 0.5), out + Vector3.UP * (top + 0.5)) > 0.0,
-		"and wall under it to lean on")
-
-
-## The spider walks on the sand, and stands in the ways out and on the grass
-## outside — everywhere it can get to is somewhere to stand.
-func _test_walking(spider: SpiderPlayer) -> void:
+	for bearing in range(20, 360, 30):
+		var way := Vector3(cos(deg_to_rad(bearing)), 0.0, sin(deg_to_rad(bearing)))
+		var wall := _radius(Colosseum.ARENA.x, Colosseum.ARENA.y, bearing)
+		var reach := _reach(Vector3(0.0, 2.0, 0.0), way * 80.0 + Vector3(0.0, 2.0, 0.0))
+		if reach < 0.0 or reach > wall + 0.6 or reach < wall - 1.5:
+			open_sides.append("%d° at %.1f against %.1f" % [bearing, reach, wall])
+	check(open_sides.is_empty(), "colosseum: the sand is walled all round %s" % open_sides)
+	var shut := PackedStringArray()
+	for bearing in [0.0, 90.0, 180.0, 270.0]:
+		var way := Vector3(cos(deg_to_rad(bearing)), 0.0, sin(deg_to_rad(bearing)))
+		var wall := _radius(Colosseum.ARENA.x, Colosseum.ARENA.y, bearing)
+		var reach := _reach(Vector3(0.0, 1.5, 0.0), way * 80.0 + Vector3(0.0, 1.5, 0.0))
+		if reach >= 0.0 and reach < wall + 2.0:
+			shut.append("%d°" % bearing)
+	check(shut.is_empty(), "colosseum: but for a gate at each end and side, and a way out %s" % shut)
+	# The floor has given way over the passages, four metres down.
+	var pit := _top(Vector3(0.0, 0.0, 0.0))
+	check(absf(pit + Colosseum.PIT_DEPTH) < 0.1, "colosseum: the middle has fallen into the passages (%.2f)" % pit)
+	check(absf(_top(Vector3(0.0, 0.0, Colosseum.PIT.y * 0.45))) < 0.1,
+		"colosseum: whose walls stand up to where the floor was")
+	# The seats rise behind the wall.
+	var seats := Colosseum.ring(Colosseum.PODIUM.x, Colosseum.TIER)[18]
+	var seat := _top(seats["middle"])
+	check(seat > Colosseum.PODIUM.y - 0.1 and seat < Colosseum.PODIUM.y + Colosseum.TIER + 0.1,
+		"colosseum: the seats rise behind the wall (%.1f)" % seat)
+	# Whole on the north, fallen on the south.
+	var facade := Colosseum.ring(Colosseum.PODIUM.x + Colosseum.TIER * Colosseum.TIERS + Colosseum.WALK,
+		Colosseum.FACADE)
+	var north := _top(facade[Colosseum.SEGMENTS * 3 / 4]["middle"])
+	var south := _top(facade[Colosseum.SEGMENTS / 4]["middle"])
+	check(north > Colosseum.STOREY * Colosseum.STOREYS - 0.1,
+		"colosseum: the outside wall stands three storeys and more on the north (%.1f)" % north)
+	check(south < Colosseum.STOREY, "colosseum: and has fallen on the south (%.1f)" % south)
+	# And the spider walks on the sand, and stands in the walk round, outside and down
+	# in the passages.
 	var from := spider.global_position
 	Input.action_press("move_forward")
 	await run_frames(90)
 	Input.action_release("move_forward")
 	var moved := Vector2(spider.global_position.x - from.x, spider.global_position.z - from.z).length()
-	check(moved > 1.5 and spider.is_on_floor(),
-		"the spider walks on the sand (%.1fm)" % moved)
-
-	for spot in [Vector3(0.0, 0.8, Colosseum.ARENA + 6.0), Vector3(0.0, 0.8, Colosseum.RIM + 8.0)]:
+	check(moved > 1.5 and spider.is_on_floor(), "colosseum: the spider walks on the sand (%.1fm)" % moved)
+	var walk := Colosseum.ring(Colosseum.PODIUM.x + Colosseum.TIER * Colosseum.TIERS, Colosseum.WALK)
+	for spot in [(walk[Colosseum.SEGMENTS * 3 / 4]["middle"] as Vector3) + Vector3.UP * 0.8,
+			Vector3(0.0, 0.8, -Colosseum.ARENA.y - 22.0), Vector3(0.0, -Colosseum.PIT_DEPTH + 0.8, 0.0)]:
 		spider.global_position = spot
 		spider.velocity = Vector3.ZERO
 		await run_frames(40)
 		check(spider.is_on_floor() and absf(spider.global_position.y - spot.y) < 0.6,
-			"and stands at %s (%s)" % [spot, spider.global_position])
-	release_all()
+			"colosseum: and stands at %s (%s)" % [spot, spider.global_position])
+
+
+func _shape_cathedral() -> void:
+	check(_reach(Vector3(0.0, 2.0, 0.0), Vector3(0.0, 80.0, 0.0)) < 0.0
+			and _reach(Vector3(Cathedral.CROSSING + Cathedral.BAY, 2.0, 0.0),
+				Vector3(Cathedral.CROSSING + Cathedral.BAY, 80.0, 0.0)) < 0.0,
+		"cathedral: nothing over the nave or the crossing")
+	var through := _ray(Vector3(Cathedral.WEST - 20.0, 3.0, 0.0), Vector3(Cathedral.CHOIR + 30.0, 3.0, 0.0))
+	check(not through.is_empty() and (through.position as Vector3).x > Cathedral.WEST + 10.0,
+		"cathedral: the great door is open, and up the nave to the far end")
+	var piers := 0
+	for node in all_under(current_scene):
+		var block := node as KitBlock
+		if block != null and block.piece == "pillar3" and block.get_parent().name == "Piers":
+			piers += 1
+	check(piers >= 20, "cathedral: with the piers down it in rows (%d)" % piers)
+	var wide := Cathedral.AISLE + 1.0
+	var tower_x := Cathedral.WEST - 1.5 + wide * 0.5
+	var south := _top(Vector3(tower_x, 0.0, Cathedral.NAVE + wide * 0.5))
+	var north := _top(Vector3(tower_x, 0.0, -Cathedral.NAVE - wide * 0.5))
+	check(south > 40.0, "cathedral: the south tower stands to its spire (%.1f)" % south)
+	check(north > 15.0 and north < 20.0, "cathedral: and the north one broke off halfway (%.1f)" % north)
+
+
+func _shape_castle() -> void:
+	var gate := Vector3(0.0, 0.0, Castle.YARD.y - 8.0)
+	check(_reach(gate + Vector3.UP * 1.5, gate + Vector3(0.0, 1.5, 50.0)) < 0.0,
+		"castle: there is a way out under the portcullis")
+	var bars := _reach(gate + Vector3.UP * 5.0, gate + Vector3(0.0, 5.0, 50.0))
+	check(bars > 0.0 and absf(bars - (8.0 + Castle.WALL.x * 0.5)) < 0.6,
+		"castle: which is stuck partway down the gate (%.1f)" % bars)
+	var breach := Vector3(-Castle.YARD.x + 8.0, 3.0, (Castle.BREACH.x + Castle.BREACH.y) * 0.5)
+	check(_reach(breach, breach + Vector3(-50.0, 0.0, 0.0)) < 0.0,
+		"castle: the west wall is breached")
+	var wall := _reach(Vector3(-Castle.YARD.x + 8.0, 3.0, -6.0), Vector3(-Castle.YARD.x - 50.0, 3.0, -6.0))
+	check(wall > 0.0 and absf(wall - 8.0) < 0.2, "castle: and stands either side of the breach (%.1f)" % wall)
+	var landing := _top(Vector3(-Castle.YARD.x + 0.6, 0.0, -10.0))
+	var walk := _top(Vector3(-Castle.YARD.x - 1.0, 0.0, -10.0))
+	check(absf(landing - Castle.WALL.y) < 0.6 and absf(walk - Castle.WALL.y) < 0.1,
+		"castle: and stairs climb to the walk along its top (%.1f, %.1f)" % [landing, walk])
+	var roofed := _top(Vector3(-Castle.YARD.x - Castle.WALL.x * 0.5, 0.0, -Castle.YARD.y - Castle.WALL.x * 0.5))
+	var broken := _top(Vector3(Castle.YARD.x + Castle.WALL.x * 0.5, 0.0, -Castle.YARD.y - Castle.WALL.x * 0.5))
+	check(roofed > Castle.TOWER.y + 2.0 and broken < Castle.TOWER.y - 2.0,
+		"castle: one tower still roofed and another broken off (%.1f, %.1f)" % [roofed, broken])
+
+
+func _shape_aqueduct(spider: SpiderPlayer) -> void:
+	var top := Aqueduct.LOWER.x + Aqueduct.UPPER.x + Aqueduct.CHANNEL
+	var channel := _top(Vector3(-20.0, 0.0, 0.0))
+	check(absf(channel - top) < 0.1, "aqueduct: a channel to walk along %.0f metres up (%.1f)" % [top, channel])
+	var west_end := Aqueduct.FALLEN[0] - Aqueduct.SPAN * 0.5
+	var east_end := Aqueduct.FALLEN[Aqueduct.FALLEN.size() - 1] + Aqueduct.SPAN * 0.5
+	# A little back from the broken edges, which have stone heaped on them.
+	check(absf(_top(Vector3(west_end - 2.5, 0.0, 0.0)) - top) < 0.1
+			and absf(_top(Vector3(east_end + 2.5, 0.0, 0.0)) - top) < 0.1
+			and _top(Vector3((west_end + east_end) * 0.5, 0.0, 0.0)) < 0.0,
+		"aqueduct: broken over the river")
+	var reach := spider.web_builder.silk_reach()
+	check(east_end - west_end < reach,
+		"aqueduct: by a gap a grapple can cross (%.0fm against %.1f)" % [east_end - west_end, reach])
+	check(absf(_top(Vector3(Aqueduct.BROKEN_TOP[0], 0.0, 0.0)) - Aqueduct.LOWER.x) < 0.1,
+		"aqueduct: and dropping to the lower arches where the upper ones fell")
+	check(_top(Vector3(Aqueduct.HALF + 2.0, 0.0, 0.0)) > top - 3.0
+			and _top(Vector3(Aqueduct.HALF + 28.0, 0.0, 0.0)) < 4.0,
+		"aqueduct: with a ramp down to the grass at the east end")
+
+
+func _shape_watchtower(spider: SpiderPlayer) -> void:
+	var foot := Watchtower.base()
+	var tops: Array[float] = []
+	for segment in Site.oval(Watchtower.RADIUS - Watchtower.THICK * 0.5,
+			Watchtower.RADIUS - Watchtower.THICK * 0.5, Watchtower.SEGMENTS):
+		tops.append(_top(segment["middle"]))
+	var lowest: float = tops.min()
+	var highest: float = tops.max()
+	check(lowest > foot + Watchtower.STOREY * 4.0 - 0.1
+			and highest > foot + Watchtower.STOREY * 5.0 - 0.1 and highest > lowest + 1.0,
+		"watchtower: a tower over thirty metres, ragged at the top (%.0f to %.0f)" % [lowest, highest])
+	var floor_top := _top(Vector3(0.0, 0.0, Watchtower.RADIUS - Watchtower.THICK - 1.0))
+	check(absf(floor_top - (foot + Watchtower.STOREY * (Watchtower.STOREYS - 1))) < 0.1,
+		"watchtower: with what is left of its floors inside (%.1f)" % floor_top)
+	var height := foot + Watchtower.STOREY * Watchtower.BRIDGE_STOREY
+	var from := -Watchtower.RADIUS
+	var to := Watchtower.PILLAR + 2.5
+	var half := (from - to - Watchtower.BRIDGE_GAP) * 0.5
+	check(absf(_top(Vector3(0.0, 0.0, from - half * 0.5)) - height) < 0.1
+			and absf(_top(Vector3(0.0, 0.0, to + half * 0.5)) - height) < 0.1,
+		"watchtower: and a bridge from it to the pillar")
+	check(_top(Vector3(0.0, 0.0, (from + to) * 0.5)) < height - 10.0
+			and Watchtower.BRIDGE_GAP < spider.web_builder.silk_reach(),
+		"watchtower: broken in the middle, by a gap a grapple can cross")
+
+
+## The temple: walled all round with a gate in the middle of each side, tiers up
+## behind the wall four at a time with a flight of stairs up each, and windows in the
+## rim to look out of over wall to lean on.
+func _shape_temple() -> void:
+	var open_sides := PackedStringArray()
+	for degrees in range(15, 360, 30):
+		var way := Vector3.FORWARD.rotated(Vector3.UP, deg_to_rad(degrees))
+		var reach := _reach(Vector3(0.0, 2.0, 0.0), Vector3(0.0, 2.0, 0.0) + way * 60.0)
+		if reach < 0.0 or reach > Temple.ARENA * sqrt(2.0) + 0.1:
+			open_sides.append("%d°" % degrees)
+	check(open_sides.is_empty(), "temple: walled all round %s" % open_sides)
+	for side in Temple.SIDES:
+		var facing: Vector3 = Temple.SIDES[side]
+		var through := _reach(Vector3(0.0, 1.5, 0.0), facing * 60.0 + Vector3(0.0, 1.5, 0.0))
+		var lintel := _reach(Vector3(0.0, 3.5, 0.0), facing * 60.0 + Vector3(0.0, 3.5, 0.0))
+		check(through > Temple.RIM - 1.05 and through < Temple.RIM and absf(lintel - Temple.ARENA) < 0.2,
+			"temple: %s gate a door's height, and through it a way out to a shut door (%.1f, %.1f)"
+			% [side, through, lintel])
+	var wrong := PackedStringArray()
+	var flights := 0
+	for side in Temple.SIDES:
+		var facing: Vector3 = Temple.SIDES[side]
+		for k in Temple.TIERS:
+			var middle := Site.frame(facing, 6.0, Temple.ARENA + Temple.TIER * (k + 0.5), 0.0).origin
+			if absf(_top(middle) - Temple.TIER * (k + 1)) > 0.05:
+				wrong.append("%s %d" % [side, k + 1])
+			var foot := Site.frame(facing, Temple.AISLE,
+				Temple.ARENA - Temple.TIER + Temple.TIER * k + 1.0, 0.0).origin
+			var step := _top(foot)
+			if step > Temple.TIER * k + 0.1 and step < Temple.TIER * k + 2.1:
+				flights += 1
+	check(wrong.is_empty() and flights == Temple.SIDES.size() * Temple.TIERS,
+		"temple: tiers four, eight and twelve high, with stairs up each %s (%d)" % [wrong, flights])
+	var top := Temple.TIER * Temple.TIERS
+	var inside := Vector3(0.0, 0.0, Temple.RIM - 3.0)
+	var out := Vector3(0.0, 0.0, Temple.RIM + 10.0)
+	check(_reach(inside + Vector3.UP * (top + 2.0), out + Vector3.UP * (top + 2.0)) < 0.0
+			and _reach(inside + Vector3.UP * (top + 0.5), out + Vector3.UP * (top + 0.5)) > 0.0,
+		"temple: a window in the rim to look out of, over wall to lean on")
 
 
 # --- training dummies -------------------------------------------------------
