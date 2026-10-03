@@ -16,10 +16,6 @@ extends EditorScenePostImport
 
 const DIR := "res://Pieces/"
 
-## How close two corners have to be to count as the same corner, for telling an
-## open mesh from a closed one.
-const WELD := 0.0001
-
 
 func _post_import(scene: Node) -> Object:
 	if not get_source_file().begins_with(DIR):
@@ -52,7 +48,7 @@ func _post_import(scene: Node) -> Object:
 		# A piece that is a sheet — a floor tile, a wall with no back, a corner made
 		# of planes — has a back you can walk into, so it has to stop you from both
 		# faces. A closed one only ever meets you from the front.
-		shape.backface_collision = is_open(view.mesh)
+		shape.backface_collision = Kit.is_open(view.mesh)
 		var solid := CollisionShape3D.new()
 		solid.name = String(view.name) + "Shape"
 		solid.shape = shape
@@ -61,28 +57,6 @@ func _post_import(scene: Node) -> Object:
 		solid.owner = body
 	scene.free()
 	return body
-
-
-## Whether [param mesh] has an edge only one face uses — a hole in its skin, so
-## that some of it is a sheet rather than the outside of a solid.
-static func is_open(mesh: Mesh) -> bool:
-	var uses := {}
-	var faces := mesh.get_faces()
-	for i in range(0, faces.size(), 3):
-		for j in 3:
-			var a := _corner(faces[i + j])
-			var b := _corner(faces[i + (j + 1) % 3])
-			var edge := a + "|" + b if a < b else b + "|" + a
-			uses[edge] = int(uses.get(edge, 0)) + 1
-	for count in uses.values():
-		if count == 1:
-			return true
-	return false
-
-
-static func _corner(point: Vector3) -> String:
-	var snapped := point.snappedf(WELD)
-	return "%.4f,%.4f,%.4f" % [snapped.x, snapped.y, snapped.z]
 
 
 func _views_under(node: Node, found: Array[MeshInstance3D]) -> void:

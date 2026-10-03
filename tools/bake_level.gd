@@ -1,19 +1,20 @@
 extends SceneTree
 
-## Builds the colosseum from its generator and saves it as a scene of real nodes.
+## Builds places from their generators and saves each as a scene of real nodes.
 ##
-##     godot --headless --path . --script res://tools/bake_level.gd
+##     godot --headless --path . --script res://tools/bake_level.gd -- colosseum castle
 ##
-## [Colosseum] is the generator of record: it says where every piece goes. This runs
-## it once and saves what it made to [constant Colosseum.SCENE], which is what the
-## game opens, and from then on what you move things about in, in the editor. So it
-## leaves a scene that is already there alone unless told otherwise, because building
-## it again throws away anything moved by hand:
+## Each place in [constant Site.PLACES] has a class that says where every piece goes
+## — the generator of record — and a scene it is saved to, which is what the game
+## opens and what you move things about in, in the editor. Name places after `--`
+## to bake only those; name none and every place is baked. A place that already has
+## a scene is left alone unless told otherwise, because building it again throws
+## away anything moved by hand:
 ##
-##     godot --headless --path . --script res://tools/bake_level.gd -- --force
+##     godot --headless --path . --script res://tools/bake_level.gd -- --force castle
 ##
-## Nothing is added to the tree while it builds, so nothing in the level runs: the
-## spider does not set itself up and the tiers do not fit their looks, and what is
+## Nothing is added to the tree while a place builds, so nothing in it runs: the
+## spider does not set itself up and the blocks do not fit their looks, and what is
 ## saved is exactly what the generator said and no more.
 
 
@@ -22,16 +23,38 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var path := Colosseum.SCENE
-	if ResourceLoader.exists(path) and not OS.get_cmdline_user_args().has("--force"):
-		print("%s is already baked — nothing to do." % path)
-		print("  Pass --force to build it again from the script, which throws away")
-		print("  anything that has been moved by hand.")
-		quit(0)
-		return
+	var args := OS.get_cmdline_user_args()
+	var force := args.has("--force")
+	var wanted: Array[String] = []
+	for arg in args:
+		if not arg.begins_with("-"):
+			wanted.append(arg)
+	if wanted.is_empty():
+		wanted.assign(Site.PLACES.keys())
+	var failed := 0
+	for place in wanted:
+		if not Site.PLACES.has(place):
+			printerr("no such place: %s (try %s)" % [place, ", ".join(Site.PLACES.keys())])
+			failed += 1
+			continue
+		if not _bake(place, force):
+			failed += 1
+	quit(1 if failed > 0 else 0)
+
+
+func _bake(place: String, force: bool) -> bool:
+	var builder := Site.builder(place)
+	if builder == null:
+		printerr("no builder for %s" % place)
+		return false
+	var path: String = builder.get_script_constant_map()["SCENE"]
+	if ResourceLoader.exists(path) and not force:
+		print("%s is already baked — left alone. Pass --force to build it again, which" % path)
+		print("  throws away anything that has been moved by hand.")
+		return true
 	var level := Node3D.new()
-	level.name = "Colosseum"
-	Colosseum.build(level)
+	level.name = builder.get_global_name()
+	builder.call("build", level)
 	_own(level, level)
 	var nodes := _count(level)
 	var scene := PackedScene.new()
@@ -41,10 +64,9 @@ func _run() -> void:
 	level.free()
 	if err != OK:
 		printerr("could not bake %s: %d" % [path, err])
-		quit(1)
-		return
+		return false
 	print("baked %s — %d nodes, editable" % [path, nodes])
-	quit(0)
+	return true
 
 
 ## A node is only saved into a scene if the scene's root owns it. An instance of

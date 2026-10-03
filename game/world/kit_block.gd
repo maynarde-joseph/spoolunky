@@ -2,13 +2,19 @@
 class_name KitBlock
 extends StaticBody3D
 
-## A solid of any size in the look of one of the kit's pieces: that piece's mesh
-## stretched to fit, and a box to collide with.
+## One of the kit's pieces at any size: its mesh stretched to fit, and a collider
+## of the same stretched shape — a doorway made three times as tall is still a
+## doorway you can walk through, and a wall made forty metres long is one node.
 ##
-## For the bulk of a building. The kit is built on a wall four metres long, and a
-## tier of seating forty metres long and twelve high would be thirty of them —
-## this is one node, and changing its size in the inspector changes the tier. The
-## look is the piece's own, so the bulk takes the kit's colours with the rest of it.
+## For anything the kit does not have at the size a building wants: the bulk of a
+## tier of seating, a pier as tall as a cathedral's, a tower a column's shape but
+## ten times its width. A piece placed as it is stays an instance of its own file;
+## a block is for the ones that are not. Change its size in the inspector and it
+## follows, and since the look is the piece's own it takes the kit's colours with
+## the rest of it.
+##
+## Nothing is scaled. Physics does not like a stretched body, so the block stays at
+## scale one and its collider is built from the stretched faces instead.
 
 ## Which piece in `Pieces/` to stretch, by file name.
 @export var piece := "wall":
@@ -24,6 +30,19 @@ extends StaticBody3D
 
 var _view: MeshInstance3D = null
 var _solid: CollisionShape3D = null
+
+
+## A block of [param piece], [param block_size] big, under [param parent] at
+## [param where].
+static func make(parent: Node, part_name: String, look: String, block_size: Vector3,
+		where: Transform3D) -> KitBlock:
+	var block := KitBlock.new()
+	block.name = part_name
+	block.piece = look
+	block.size = block_size
+	block.transform = where
+	parent.add_child(block, true)
+	return block
 
 
 func _init() -> void:
@@ -44,13 +63,11 @@ func _fit() -> void:
 		add_child(_view, false, INTERNAL_MODE_FRONT)
 		_solid = CollisionShape3D.new()
 		_solid.name = "Solid"
-		_solid.shape = BoxShape3D.new()
 		add_child(_solid, false, INTERNAL_MODE_FRONT)
-	(_solid.shape as BoxShape3D).size = size
-	_solid.position = Vector3(0.0, size.y * 0.5, 0.0)
 	var look := Kit.look_of(piece)
 	if look.is_empty():
 		_view.mesh = null
+		_solid.shape = null
 		return
 	var native: Vector3 = look["size"]
 	# A side the piece has no depth on — a floor tile — stays as thin as it was.
@@ -58,5 +75,14 @@ func _fit() -> void:
 		size.x / native.x if native.x > 0.001 else 1.0,
 		size.y / native.y if native.y > 0.001 else 1.0,
 		size.z / native.z if native.z > 0.001 else 1.0)
-	_view.mesh = look["mesh"]
-	_view.transform = Transform3D(Basis.from_scale(stretch), Vector3.ZERO) * (look["where"] as Transform3D)
+	var mesh: Mesh = look["mesh"]
+	var where := Transform3D(Basis.from_scale(stretch), Vector3.ZERO) * (look["where"] as Transform3D)
+	_view.mesh = mesh
+	_view.transform = where
+	var faces := mesh.get_faces()
+	for i in faces.size():
+		faces[i] = where * faces[i]
+	var shape := ConcavePolygonShape3D.new()
+	shape.set_faces(faces)
+	shape.backface_collision = look["open"]
+	_solid.shape = shape
