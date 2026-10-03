@@ -1,0 +1,1495 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/grass.tres" id="1_e5tm1"]
+[ext_resource type="Material" path="res://game/world/materials/stone_dark.tres" id="2_vqga7"]
+[ext_resource type="Script" path="res://game/world/kit_block.gd" id="3_bkd2a"]
+[ext_resource type="Script" path="res://game/world/zone.gd" id="4_mk0n4"]
+[ext_resource type="PackedScene" path="res://game/player/spider.tscn" id="5_5v40h"]
+[ext_resource type="Script" path="res://game/player/spider.gd" id="6_0x6pd"]
+[ext_resource type="Environment" path="res://addons/character-controller/example/main/underwater.tres" id="7_q5ddc"]
+[ext_resource type="PackedScene" path="res://game/ui/hud.tscn" id="8_7fedc"]
+[ext_resource type="Script" path="res://game/ui/hud.gd" id="9_y5fe1"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_wawb2"]
+sky_top_color = Color(0.42, 0.46, 0.52, 1)
+sky_horizon_color = Color(0.62, 0.64, 0.66, 1)
+ground_bottom_color = Color(0.4, 0.44, 0.4, 1)
+ground_horizon_color = Color(0.58, 0.6, 0.6, 1)
+sun_angle_max = 18.0
+
+[sub_resource type="Sky" id="Sky_opjq6"]
+sky_material = SubResource("ProceduralSkyMaterial_wawb2")
+
+[sub_resource type="Environment" id="Environment_4lhvw"]
+background_mode = 2
+sky = SubResource("Sky_opjq6")
+ambient_light_source = 2
+ambient_light_color = Color(0.68, 0.7, 0.76, 1)
+ambient_light_energy = 0.5
+tonemap_mode = 2
+tonemap_exposure = 0.85
+ssao_enabled = true
+fog_enabled = true
+fog_light_color = Color(0.6, 0.62, 0.66, 1)
+fog_density = 0.004
+fog_sky_affect = 0.1
+
+[sub_resource type="BoxMesh" id="BoxMesh_t1dxp"]
+size = Vector3(2000, 1, 2000)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_02qf2"]
+size = Vector3(2000, 1, 2000)
+
+[sub_resource type="BoxMesh" id="BoxMesh_5dve3"]
+size = Vector3(76, 0.1, 23)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pxjv1"]
+size = Vector3(76, 0.1, 23)
+
+[sub_resource type="BoxMesh" id="BoxMesh_m6svm"]
+size = Vector3(10, 0.1, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_c66pa"]
+size = Vector3(10, 0.1, 10)
+
+[node name="Cathedral" type="Node3D" unique_id=128152676]
+
+[node name="Sky" type="WorldEnvironment" parent="." unique_id=744925160]
+environment = SubResource("Environment_4lhvw")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1740546231]
+transform = Transform3D(-0.8320503, -0.52181804, 0.18814418, 0, 0.33918172, 0.94072086, -0.5547002, 0.7827271, -0.28221625, 20, 100, -30)
+light_color = Color(0.9, 0.92, 1, 1)
+light_energy = 0.45
+shadow_enabled = true
+directional_shadow_max_distance = 160.0
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=1804467805]
+collision_mask = 0
+
+[node name="Earth1" type="MeshInstance3D" parent="Ground" unique_id=569467000]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = ExtResource("1_e5tm1")
+mesh = SubResource("BoxMesh_t1dxp")
+
+[node name="Earth1Shape" type="CollisionShape3D" parent="Ground" unique_id=1964105285]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_02qf2")
+
+[node name="Church" type="Node3D" parent="." unique_id=109567489]
+
+[node name="Floor" type="StaticBody3D" parent="Church" unique_id=1589972168]
+collision_mask = 0
+
+[node name="FloorTop1" type="MeshInstance3D" parent="Church/Floor" unique_id=2010726303]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, -0.04, 0)
+material_override = ExtResource("2_vqga7")
+mesh = SubResource("BoxMesh_5dve3")
+
+[node name="FloorTop1Shape" type="CollisionShape3D" parent="Church/Floor" unique_id=922472087]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, -0.04, 0)
+shape = SubResource("BoxShape3D_pxjv1")
+
+[node name="TranseptFloorNorth" type="StaticBody3D" parent="Church" unique_id=1260404969]
+collision_mask = 0
+
+[node name="TranseptFloorNorthTop1" type="MeshInstance3D" parent="Church/TranseptFloorNorth" unique_id=1364991812]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, -0.04, -16.5)
+material_override = ExtResource("2_vqga7")
+mesh = SubResource("BoxMesh_m6svm")
+
+[node name="TranseptFloorNorthTop1Shape" type="CollisionShape3D" parent="Church/TranseptFloorNorth" unique_id=1834230995]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, -0.04, -16.5)
+shape = SubResource("BoxShape3D_c66pa")
+
+[node name="TranseptFloorSouth" type="StaticBody3D" parent="Church" unique_id=412954561]
+collision_mask = 0
+
+[node name="TranseptFloorSouthTop1" type="MeshInstance3D" parent="Church/TranseptFloorSouth" unique_id=797655368]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, -0.04, 16.5)
+material_override = ExtResource("2_vqga7")
+mesh = SubResource("BoxMesh_m6svm")
+
+[node name="TranseptFloorSouthTop1Shape" type="CollisionShape3D" parent="Church/TranseptFloorSouth" unique_id=379406913]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, -0.04, 16.5)
+shape = SubResource("BoxShape3D_c66pa")
+
+[node name="Piers" type="Node3D" parent="Church" unique_id=1402093571]
+
+[node name="NorthPier1" type="StaticBody3D" parent="Church/Piers" unique_id=315426273]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="NorthPier2" type="StaticBody3D" parent="Church/Piers" unique_id=969665190]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="NorthPier3" type="StaticBody3D" parent="Church/Piers" unique_id=900942417]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="NorthPier4" type="StaticBody3D" parent="Church/Piers" unique_id=684114852]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="NorthPier5" type="StaticBody3D" parent="Church/Piers" unique_id=1505862175]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="NorthPier6" type="StaticBody3D" parent="Church/Piers" unique_id=968027517]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="NorthPier7" type="StaticBody3D" parent="Church/Piers" unique_id=941672229]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(2, 14, 2)
+
+[node name="NorthPier8" type="StaticBody3D" parent="Church/Piers" unique_id=1700104181]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="NorthPier9" type="StaticBody3D" parent="Church/Piers" unique_id=2061323260]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 0, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(2, 14, 2)
+
+[node name="NorthPier10" type="StaticBody3D" parent="Church/Piers" unique_id=1590710005]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="NorthPier11" type="StaticBody3D" parent="Church/Piers" unique_id=106864503]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="SouthPier12" type="StaticBody3D" parent="Church/Piers" unique_id=1898224711]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 7.695292, 1.4)
+
+[node name="SouthPier13" type="StaticBody3D" parent="Church/Piers" unique_id=375679250]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="SouthPier14" type="StaticBody3D" parent="Church/Piers" unique_id=1964345172]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="SouthPier15" type="StaticBody3D" parent="Church/Piers" unique_id=866865179]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="SouthPier16" type="StaticBody3D" parent="Church/Piers" unique_id=767040464]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="SouthPier17" type="StaticBody3D" parent="Church/Piers" unique_id=684542005]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="SouthPier18" type="StaticBody3D" parent="Church/Piers" unique_id=1278404782]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(2, 14, 2)
+
+[node name="SouthPier19" type="StaticBody3D" parent="Church/Piers" unique_id=1411631695]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="SouthPier20" type="StaticBody3D" parent="Church/Piers" unique_id=259577727]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 0, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(2, 14, 2)
+
+[node name="SouthPier21" type="StaticBody3D" parent="Church/Piers" unique_id=1680277226]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 7.5753136, 1.4)
+
+[node name="SouthPier22" type="StaticBody3D" parent="Church/Piers" unique_id=557968445]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="UpperWalls" type="Node3D" parent="Church" unique_id=1011261460]
+
+[node name="NorthBeam1" type="StaticBody3D" parent="Church/UpperWalls" unique_id=335264263]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.5, 12, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(5, 1, 1.2)
+
+[node name="NorthBeam2" type="StaticBody3D" parent="Church/UpperWalls" unique_id=71371379]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 12, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(5, 1, 1.2)
+
+[node name="NorthBeam3" type="StaticBody3D" parent="Church/UpperWalls" unique_id=1783054197]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, 12, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(5, 1, 1.2)
+
+[node name="NorthClerestory3" type="StaticBody3D" parent="Church/UpperWalls" unique_id=772262411]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, 13, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 9, 1)
+
+[node name="NorthBeam4" type="StaticBody3D" parent="Church/UpperWalls" unique_id=544398376]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 12, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(5, 1, 1.2)
+
+[node name="NorthBeam6" type="StaticBody3D" parent="Church/UpperWalls" unique_id=991423338]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.5, 12, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(5, 1, 1.2)
+
+[node name="NorthBeam9" type="StaticBody3D" parent="Church/UpperWalls" unique_id=908848106]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, 12, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(5, 1, 1.2)
+
+[node name="NorthClerestory9" type="StaticBody3D" parent="Church/UpperWalls" unique_id=1483372698]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, 13, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 9, 1)
+
+[node name="NorthBeam10" type="StaticBody3D" parent="Church/UpperWalls" unique_id=79453399]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.5, 12, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(5, 1, 1.2)
+
+[node name="NorthClerestory10" type="StaticBody3D" parent="Church/UpperWalls" unique_id=508136275]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.5, 13, -6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 9, 1)
+
+[node name="SouthBeam3" type="StaticBody3D" parent="Church/UpperWalls" unique_id=1106593943]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 12, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(5, 1, 1.2)
+
+[node name="SouthClerestory3" type="StaticBody3D" parent="Church/UpperWalls" unique_id=78203625]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 13, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 9, 1)
+
+[node name="SouthBeam4" type="StaticBody3D" parent="Church/UpperWalls" unique_id=1652790673]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.5, 12, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(5, 1, 1.2)
+
+[node name="SouthClerestory4" type="StaticBody3D" parent="Church/UpperWalls" unique_id=937265570]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.5, 13, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 9, 1)
+
+[node name="SouthBeam5" type="StaticBody3D" parent="Church/UpperWalls" unique_id=577020742]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.5, 12, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(5, 1, 1.2)
+
+[node name="SouthClerestory5" type="StaticBody3D" parent="Church/UpperWalls" unique_id=485322505]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.5, 13, 6)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 9, 1)
+
+[node name="Aisles" type="Node3D" parent="Church" unique_id=337876114]
+
+[node name="NorthWall2" type="StaticBody3D" parent="Church/Aisles" unique_id=1513428448]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.5, 0, -12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="NorthStump3" type="StaticBody3D" parent="Church/Aisles" unique_id=566435510]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 0, -12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(5, 2.2441943, 1)
+
+[node name="Rubble3" type="StaticBody3D" parent="Church/Aisles" unique_id=1315734924]
+transform = Transform3D(0.950308, 0.30121565, 0.078637876, -0.29014438, 0.948524, -0.12695849, -0.1128318, 0.097833335, 0.9887859, -13.028377, -0.04105763, -15.845723)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.88741565, 0.3786118, 1.1475662)
+
+[node name="Rubble4" type="StaticBody3D" parent="Church/Aisles" unique_id=755979237]
+transform = Transform3D(-0.7954072, 0.18777727, -0.5762526, 0.1270302, 0.9813268, 0.14443344, 0.5926134, 0.041681923, -0.8044078, -14.957874, -0.10164723, -15.729188)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.7938774, 0.43395138, 0.70417047)
+
+[node name="Rubble5" type="StaticBody3D" parent="Church/Aisles" unique_id=881576966]
+transform = Transform3D(0.63536346, -0.046984747, -0.77078253, 0.32786915, 0.92012495, 0.21417744, 0.6991532, -0.38879633, 0.6000186, -12.467528, -0.41523546, -15.716178)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.3617527, 1.1517551, 1.0228053)
+
+[node name="Rubble6" type="StaticBody3D" parent="Church/Aisles" unique_id=559467587]
+transform = Transform3D(-0.9744587, -0.2093829, 0.08117337, -0.19833276, 0.97197133, 0.1262373, -0.105330124, 0.10691369, -0.9886733, -11.245231, -0.14007902, -15.607232)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.9361125, 0.72601914, 0.42209706)
+
+[node name="Rubble7" type="StaticBody3D" parent="Church/Aisles" unique_id=987423800]
+transform = Transform3D(0.8974214, 0.24056557, 0.36981475, -0.20072684, 0.9691086, -0.14330845, -0.39286575, 0.054376334, 0.91798675, -11.656995, -0.10723052, -18.26974)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.1903256, 0.5321077, 0.9431912)
+
+[node name="Rubble8" type="StaticBody3D" parent="Church/Aisles" unique_id=1455343637]
+transform = Transform3D(0.743554, 0.20294943, -0.63713336, -0.1590804, 0.9791606, 0.1262455, 0.64947736, 0.0074850842, 0.7603441, -9.727726, -0.32844394, -13.974234)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.9875689, 1.0869993, 0.8544837)
+
+[node name="Rubble9" type="StaticBody3D" parent="Church/Aisles" unique_id=1312336271]
+transform = Transform3D(0.16089371, 0.11796631, -0.9798965, 0.325631, 0.9308936, 0.16553389, 0.93170685, -0.34571803, 0.11136144, -11.901874, -0.08615178, -18.450348)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.8220445, 0.63086945, 1.872776)
+
+[node name="Rubble10" type="StaticBody3D" parent="Church/Aisles" unique_id=975942349]
+transform = Transform3D(-0.40708202, 0.4051926, 0.81859833, 0.2899719, 0.90718675, -0.30484182, -0.8661412, 0.11327487, -0.4867939, -13.670484, -0.1793669, -17.846659)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.8167022, 0.7518033, 1.7977262)
+
+[node name="NorthStump4" type="StaticBody3D" parent="Church/Aisles" unique_id=294752668]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, 0, -12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(5, 2.2663107, 1)
+
+[node name="Rubble12" type="StaticBody3D" parent="Church/Aisles" unique_id=2039750014]
+transform = Transform3D(0.41172823, -0.26361153, 0.8723467, -0.05453508, 0.94840544, 0.31233478, -0.90967345, -0.17617054, 0.3761092, -9.846919, -0.099756055, -15.592461)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.6912104, 0.9482494, 1.8234338)
+
+[node name="Rubble13" type="StaticBody3D" parent="Church/Aisles" unique_id=949221422]
+transform = Transform3D(0.9992397, 0.036571413, -0.013508865, -0.038753305, 0.96957946, -0.2416896, 0.0042589875, 0.24202935, 0.97025955, -5.676068, -0.15571535, -13.058452)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.0914984, 0.6524613, 1.4190899)
+
+[node name="Rubble14" type="StaticBody3D" parent="Church/Aisles" unique_id=112113228]
+transform = Transform3D(0.5075569, -0.19945505, -0.8382146, 0.06380951, 0.9788674, -0.19428568, 0.85925215, 0.04512499, 0.5095581, -10.317034, -0.08923633, -15.644272)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.4254473, 0.767854, 1.3947386)
+
+[node name="Rubble15" type="StaticBody3D" parent="Church/Aisles" unique_id=1901882654]
+transform = Transform3D(0.2309665, 0.01785237, -0.9727979, -0.104831554, 0.9944678, -0.0066395807, 0.9672977, 0.103513435, 0.23156023, -4.8191586, -0.16923788, -15.73595)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.91899645, 0.83466554, 0.931548)
+
+[node name="Rubble16" type="StaticBody3D" parent="Church/Aisles" unique_id=1316074601]
+transform = Transform3D(-0.04629777, -0.25448662, 0.9659674, -0.20855716, 0.9481564, 0.23979837, -0.97691375, -0.19035731, -0.09697254, -7.945622, -0.29627213, -19.089777)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.63972324, 0.96207786, 0.8926006)
+
+[node name="Rubble17" type="StaticBody3D" parent="Church/Aisles" unique_id=1324476403]
+transform = Transform3D(-0.9771557, -0.20566854, 0.053546496, -0.20968206, 0.9740547, -0.08515262, -0.034644, -0.0944351, -0.99492806, -9.2246275, -0.16940038, -18.4692)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.6563109, 1.0308923, 0.9542725)
+
+[node name="Rubble18" type="StaticBody3D" parent="Church/Aisles" unique_id=65370118]
+transform = Transform3D(-0.045266714, -0.008746505, -0.99893665, -0.24641185, 0.9691615, 0.0026803282, 0.96810746, 0.24627115, -0.046026, -9.25128, -0.3507827, -16.394814)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.92329156, 1.3624659, 0.8049391)
+
+[node name="Rubble19" type="StaticBody3D" parent="Church/Aisles" unique_id=1653797243]
+transform = Transform3D(0.6647952, -0.13029712, 0.7355746, -0.05698261, 0.9729574, 0.22384584, -0.7448492, -0.1907266, 0.63939273, -7.8252907, -0.14430197, -17.289093)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.4180142, 0.82209253, 1.3185072)
+
+[node name="NorthStump5" type="StaticBody3D" parent="Church/Aisles" unique_id=685894771]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0, -12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(5, 1.6301832, 1)
+
+[node name="Rubble21" type="StaticBody3D" parent="Church/Aisles" unique_id=833627746]
+transform = Transform3D(-0.28505507, -0.1939598, -0.93868166, -0.16160081, 0.9750186, -0.15239383, 0.94479036, 0.10825108, -0.30927804, -3.9195228, -0.19770597, -16.269651)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2582581, 0.98087186, 1.0034744)
+
+[node name="Rubble22" type="StaticBody3D" parent="Church/Aisles" unique_id=1626111240]
+transform = Transform3D(0.22579786, 0.33377475, 0.91521025, -0.17041126, 0.9385204, -0.30023256, -0.9591534, -0.08817025, 0.2687949, -2.3561444, -0.059238907, -15.670605)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.1376356, 0.31203946, 0.8563474)
+
+[node name="Rubble23" type="StaticBody3D" parent="Church/Aisles" unique_id=643490144]
+transform = Transform3D(-0.6029364, -0.10896076, -0.79031336, -0.11208616, 0.99237305, -0.051307373, 0.78987616, 0.057648115, -0.6105508, -5.144826, -0.14567809, -14.158444)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8897238, 0.7534271, 1.2876201)
+
+[node name="Rubble24" type="StaticBody3D" parent="Church/Aisles" unique_id=965585568]
+transform = Transform3D(-0.616146, -0.2694243, -0.74011797, -0.025679475, 0.946047, -0.32301033, 0.7872132, -0.1800157, -0.5898218, -1.2322831, -0.16591324, -16.592184)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.1179018, 0.7979318, 1.2550999)
+
+[node name="Rubble25" type="StaticBody3D" parent="Church/Aisles" unique_id=732174160]
+transform = Transform3D(-0.067903295, -0.27256435, -0.95973843, -0.24466667, 0.93713385, -0.24883406, 0.9672266, 0.21791933, -0.1303219, -1.2293909, -0.070924416, -19.078136)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.5899363, 0.339007, 0.83479893)
+
+[node name="Rubble26" type="StaticBody3D" parent="Church/Aisles" unique_id=1992000023]
+transform = Transform3D(-0.966062, 0.11122036, 0.23313989, 0.09977228, 0.99317706, -0.06037278, -0.23826386, -0.035062954, -0.9705673, -0.33130598, -0.12925346, -18.348358)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.4391667, 1.1599381, 1.4308813)
+
+[node name="Rubble27" type="StaticBody3D" parent="Church/Aisles" unique_id=1804890159]
+transform = Transform3D(0.9710646, -0.02651216, 0.2373409, 0.1047864, 0.94034433, -0.32368547, -0.21460058, 0.3391896, 0.9159132, -5.6981897, -0.11052457, -15.225063)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.9859978, 0.46133578, 1.9938366)
+
+[node name="Rubble28" type="StaticBody3D" parent="Church/Aisles" unique_id=1233260382]
+transform = Transform3D(-0.98145056, -0.059009537, 0.18240789, 0.003440188, 0.94587785, 0.32450455, -0.19168444, 0.3191127, -0.9281294, -0.2463808, -0.25848174, -16.42689)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.1252941, 1.2304056, 1.5611393)
+
+[node name="NorthWall6" type="StaticBody3D" parent="Church/Aisles" unique_id=196976030]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, -12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="NorthWall7" type="StaticBody3D" parent="Church/Aisles" unique_id=1767850858]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 0, -12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="NorthWall8" type="StaticBody3D" parent="Church/Aisles" unique_id=973790090]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 0, -12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="NorthWall9" type="StaticBody3D" parent="Church/Aisles" unique_id=970827434]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.5, 0, -12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="NorthWall10" type="StaticBody3D" parent="Church/Aisles" unique_id=1879984695]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.5, 0, -12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="NorthWall13" type="StaticBody3D" parent="Church/Aisles" unique_id=2104300645]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, 0, -12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="NorthWall14" type="StaticBody3D" parent="Church/Aisles" unique_id=783410429]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.5, 0, -12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="SouthWall2" type="StaticBody3D" parent="Church/Aisles" unique_id=399170161]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.5, 0, 12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="SouthWall3" type="StaticBody3D" parent="Church/Aisles" unique_id=1735542371]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 0, 12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="SouthWall4" type="StaticBody3D" parent="Church/Aisles" unique_id=1238768317]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, 0, 12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="SouthWall5" type="StaticBody3D" parent="Church/Aisles" unique_id=553445861]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0, 12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="SouthWall6" type="StaticBody3D" parent="Church/Aisles" unique_id=1351144677]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, 12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="SouthWall7" type="StaticBody3D" parent="Church/Aisles" unique_id=552022081]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 0, 12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="SouthWall8" type="StaticBody3D" parent="Church/Aisles" unique_id=1558807083]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 0, 12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="SouthWall9" type="StaticBody3D" parent="Church/Aisles" unique_id=1052536106]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.5, 0, 12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="SouthWall10" type="StaticBody3D" parent="Church/Aisles" unique_id=54013351]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.5, 0, 12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="SouthWall13" type="StaticBody3D" parent="Church/Aisles" unique_id=948501135]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, 0, 12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="SouthWall14" type="StaticBody3D" parent="Church/Aisles" unique_id=1680139028]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.5, 0, 12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(5, 10, 1)
+
+[node name="Buttresses" type="Node3D" parent="Church" unique_id=996484477]
+
+[node name="NorthButtress1" type="StaticBody3D" parent="Church/Buttresses" unique_id=1788002614]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="NorthPinnacle2" type="StaticBody3D" parent="Church/Buttresses" unique_id=36792339]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 12, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="NorthFlyer3" type="StaticBody3D" parent="Church/Buttresses" unique_id=1311210648]
+transform = Transform3D(1, 0, 0, 0, 0.76068664, -0.64911926, 0, 0.64911926, 0.76068664, -20, 10.5, -13)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8, 9.859513, 0.8)
+
+[node name="NorthButtress4" type="StaticBody3D" parent="Church/Buttresses" unique_id=667432844]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="NorthPinnacle5" type="StaticBody3D" parent="Church/Buttresses" unique_id=1542587634]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 12, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="NorthFlyer6" type="StaticBody3D" parent="Church/Buttresses" unique_id=1089094007]
+transform = Transform3D(1, 0, 0, 0, 0.76068664, -0.64911926, 0, 0.64911926, 0.76068664, -15, 10.5, -13)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8, 9.859513, 0.8)
+
+[node name="NorthButtress7" type="StaticBody3D" parent="Church/Buttresses" unique_id=1778392097]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="NorthPinnacle8" type="StaticBody3D" parent="Church/Buttresses" unique_id=2085431750]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 12, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="NorthFlyer9" type="StaticBody3D" parent="Church/Buttresses" unique_id=760049238]
+transform = Transform3D(1, 0, 0, 0, 0.76068664, -0.64911926, 0, 0.64911926, 0.76068664, -10, 10.5, -13)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8, 9.859513, 0.8)
+
+[node name="NorthButtress10" type="StaticBody3D" parent="Church/Buttresses" unique_id=46959464]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="NorthPinnacle11" type="StaticBody3D" parent="Church/Buttresses" unique_id=1030428528]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 12, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="NorthFlyer12" type="StaticBody3D" parent="Church/Buttresses" unique_id=1280504740]
+transform = Transform3D(1, 0, 0, 0, 0.76068664, -0.64911926, 0, 0.64911926, 0.76068664, -5, 10.5, -13)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8, 9.859513, 0.8)
+
+[node name="NorthButtress13" type="StaticBody3D" parent="Church/Buttresses" unique_id=1009408460]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="NorthPinnacle14" type="StaticBody3D" parent="Church/Buttresses" unique_id=42916786]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="NorthFlyer15" type="StaticBody3D" parent="Church/Buttresses" unique_id=2083146758]
+transform = Transform3D(1, 0, 0, 0, 0.76068664, -0.64911926, 0, 0.64911926, 0.76068664, 0, 10.5, -13)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8, 9.859513, 0.8)
+
+[node name="NorthButtress16" type="StaticBody3D" parent="Church/Buttresses" unique_id=1362298409]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="NorthPinnacle17" type="StaticBody3D" parent="Church/Buttresses" unique_id=640211380]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 12, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="NorthButtress18" type="StaticBody3D" parent="Church/Buttresses" unique_id=1862034412]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="NorthPinnacle19" type="StaticBody3D" parent="Church/Buttresses" unique_id=1579129751]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 12, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="NorthButtress20" type="StaticBody3D" parent="Church/Buttresses" unique_id=391886055]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="NorthPinnacle21" type="StaticBody3D" parent="Church/Buttresses" unique_id=1802205212]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 12, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="NorthButtress22" type="StaticBody3D" parent="Church/Buttresses" unique_id=1441233868]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="NorthPinnacle23" type="StaticBody3D" parent="Church/Buttresses" unique_id=2091389684]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 12, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="NorthFlyer24" type="StaticBody3D" parent="Church/Buttresses" unique_id=1674194208]
+transform = Transform3D(1, 0, 0, 0, 0.76068664, -0.64911926, 0, 0.64911926, 0.76068664, 20, 10.5, -13)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8, 9.859513, 0.8)
+
+[node name="NorthButtress25" type="StaticBody3D" parent="Church/Buttresses" unique_id=738893]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="NorthPinnacle26" type="StaticBody3D" parent="Church/Buttresses" unique_id=1489224884]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 12, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="NorthFlyer27" type="StaticBody3D" parent="Church/Buttresses" unique_id=177596377]
+transform = Transform3D(1, 0, 0, 0, 0.76068664, -0.64911926, 0, 0.64911926, 0.76068664, 40, 10.5, -13)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8, 9.859513, 0.8)
+
+[node name="NorthButtress28" type="StaticBody3D" parent="Church/Buttresses" unique_id=670063112]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="NorthPinnacle29" type="StaticBody3D" parent="Church/Buttresses" unique_id=810740495]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 12, -14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="NorthFlyer30" type="StaticBody3D" parent="Church/Buttresses" unique_id=1131409045]
+transform = Transform3D(1, 0, 0, 0, 0.76068664, -0.64911926, 0, 0.64911926, 0.76068664, 45, 10.5, -13)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8, 9.859513, 0.8)
+
+[node name="SouthButtress31" type="StaticBody3D" parent="Church/Buttresses" unique_id=1097924425]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="SouthPinnacle32" type="StaticBody3D" parent="Church/Buttresses" unique_id=1686752151]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 12, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="SouthButtress33" type="StaticBody3D" parent="Church/Buttresses" unique_id=756830262]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="SouthPinnacle34" type="StaticBody3D" parent="Church/Buttresses" unique_id=91307355]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 12, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="SouthFlyer35" type="StaticBody3D" parent="Church/Buttresses" unique_id=1097350884]
+transform = Transform3D(1, 0, 0, 0, 0.76068664, 0.64911926, 0, -0.64911926, 0.76068664, -15, 10.5, 13)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8, 9.859513, 0.8)
+
+[node name="SouthButtress36" type="StaticBody3D" parent="Church/Buttresses" unique_id=505767945]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="SouthPinnacle37" type="StaticBody3D" parent="Church/Buttresses" unique_id=298623925]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 12, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="SouthButtress38" type="StaticBody3D" parent="Church/Buttresses" unique_id=1761839113]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="SouthPinnacle39" type="StaticBody3D" parent="Church/Buttresses" unique_id=1921560186]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 12, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="SouthFlyer40" type="StaticBody3D" parent="Church/Buttresses" unique_id=711881890]
+transform = Transform3D(1, 0, 0, 0, 0.76068664, 0.64911926, 0, -0.64911926, 0.76068664, -5, 10.5, 13)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8, 9.859513, 0.8)
+
+[node name="SouthButtress41" type="StaticBody3D" parent="Church/Buttresses" unique_id=1271252515]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="SouthPinnacle42" type="StaticBody3D" parent="Church/Buttresses" unique_id=916468095]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="SouthButtress43" type="StaticBody3D" parent="Church/Buttresses" unique_id=1336335994]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="SouthPinnacle44" type="StaticBody3D" parent="Church/Buttresses" unique_id=165168559]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 12, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="SouthButtress45" type="StaticBody3D" parent="Church/Buttresses" unique_id=729336996]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="SouthPinnacle46" type="StaticBody3D" parent="Church/Buttresses" unique_id=1894465990]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 12, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="SouthFlyer47" type="StaticBody3D" parent="Church/Buttresses" unique_id=797116155]
+transform = Transform3D(1, 0, 0, 0, 0.76068664, 0.64911926, 0, -0.64911926, 0.76068664, 10, 10.5, 13)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8, 9.859513, 0.8)
+
+[node name="SouthButtress48" type="StaticBody3D" parent="Church/Buttresses" unique_id=1122002504]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="SouthPinnacle49" type="StaticBody3D" parent="Church/Buttresses" unique_id=1924091443]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 12, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="SouthFlyer50" type="StaticBody3D" parent="Church/Buttresses" unique_id=483303194]
+transform = Transform3D(1, 0, 0, 0, 0.76068664, 0.64911926, 0, -0.64911926, 0.76068664, 15, 10.5, 13)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8, 9.859513, 0.8)
+
+[node name="SouthButtress51" type="StaticBody3D" parent="Church/Buttresses" unique_id=1512327193]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="SouthPinnacle52" type="StaticBody3D" parent="Church/Buttresses" unique_id=2077920772]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 12, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="SouthFlyer53" type="StaticBody3D" parent="Church/Buttresses" unique_id=1458180498]
+transform = Transform3D(1, 0, 0, 0, 0.76068664, 0.64911926, 0, -0.64911926, 0.76068664, 20, 10.5, 13)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8, 9.859513, 0.8)
+
+[node name="SouthButtress54" type="StaticBody3D" parent="Church/Buttresses" unique_id=752886734]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="SouthPinnacle55" type="StaticBody3D" parent="Church/Buttresses" unique_id=1098789756]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 12, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="SouthButtress56" type="StaticBody3D" parent="Church/Buttresses" unique_id=1136288568]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2, 12, 3)
+
+[node name="SouthPinnacle57" type="StaticBody3D" parent="Church/Buttresses" unique_id=1147115740]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 12, 14)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(1.2, 3, 1.2)
+
+[node name="SouthFlyer58" type="StaticBody3D" parent="Church/Buttresses" unique_id=399125277]
+transform = Transform3D(1, 0, 0, 0, 0.76068664, 0.64911926, 0, -0.64911926, 0.76068664, 45, 10.5, 13)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8, 9.859513, 0.8)
+
+[node name="Transept" type="Node3D" parent="Church" unique_id=723513470]
+
+[node name="NorthEnd" type="StaticBody3D" parent="Church/Transept" unique_id=1766592181]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, -22)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(11, 16, 1.2)
+
+[node name="NorthSide2" type="StaticBody3D" parent="Church/Transept" unique_id=692361380]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 25, 0, -16.5)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(10, 12, 1)
+
+[node name="NorthSide3" type="StaticBody3D" parent="Church/Transept" unique_id=1173510132]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 35, 0, -16.5)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(10, 12, 1)
+
+[node name="SouthEnd" type="StaticBody3D" parent="Church/Transept" unique_id=2105644180]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 22)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(11, 16, 1.2)
+
+[node name="SouthSide5" type="StaticBody3D" parent="Church/Transept" unique_id=142553690]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 25, 0, 16.5)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(10, 12, 1)
+
+[node name="SouthSide6" type="StaticBody3D" parent="Church/Transept" unique_id=370152786]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 35, 0, 16.5)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(10, 12, 1)
+
+[node name="Apse" type="Node3D" parent="Church" unique_id=394742686]
+
+[node name="NorthAisleEnd" type="StaticBody3D" parent="Church/Apse" unique_id=118911341]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 45.5, 0, -9.25)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(6.5, 10, 1)
+
+[node name="SouthAisleEnd" type="StaticBody3D" parent="Church/Apse" unique_id=1842354149]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 45.5, 0, 9.25)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(6.5, 10, 1)
+
+[node name="Apse1" type="StaticBody3D" parent="Church/Apse" unique_id=1739648925]
+transform = Transform3D(0.95105654, 0, -0.30901703, 0, 1, 0, 0.30901703, 0, 0.95105654, 46.763355, 0, -5.427051)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(4.108203, 18, 1)
+
+[node name="Apse2" type="StaticBody3D" parent="Church/Apse" unique_id=852062058]
+transform = Transform3D(0.5877857, 0, -0.80901664, 0, 1, 0, 0.80901664, 0, 0.5877857, 49.616524, 0, -3.3541021)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(4.1082053, 18, 1)
+
+[node name="Apse3" type="StaticBody3D" parent="Church/Apse" unique_id=2084154932]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 50.70634, 0, 0)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(4.108204, 18, 1)
+
+[node name="Apse4" type="StaticBody3D" parent="Church/Apse" unique_id=1526948350]
+transform = Transform3D(-0.5877857, 0, -0.80901664, 0, 1, 0, 0.80901664, 0, -0.5877857, 49.616524, 0, 3.3541021)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(4.1082053, 18, 1)
+
+[node name="Apse5" type="StaticBody3D" parent="Church/Apse" unique_id=510158073]
+transform = Transform3D(-0.95105654, 0, -0.30901703, 0, 1, 0, 0.30901703, 0, -0.95105654, 46.763355, 0, 5.427051)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(4.108203, 18, 1)
+
+[node name="WestFront" type="Node3D" parent="Church" unique_id=326312667]
+
+[node name="GreatDoor" type="StaticBody3D" parent="Church/WestFront" unique_id=612530710]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -25.75, 0, 0)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall door"
+size = Vector3(12, 14, 1.5)
+
+[node name="RoseFrame" type="StaticBody3D" parent="Church/WestFront" unique_id=152387684]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -25.75, 14, 0)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(12, 10, 1.5)
+
+[node name="RoseWindow" type="StaticBody3D" parent="Church/WestFront" unique_id=1490446927]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, -25.5, 19, 0)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "torus"
+size = Vector3(4.8, 0.5, 4.8)
+
+[node name="Gable" type="StaticBody3D" parent="Church/WestFront" unique_id=1557929571]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.75, 24, 0)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone2"
+size = Vector3(1.5, 5, 12)
+
+[node name="Towers" type="Node3D" parent="Church" unique_id=1385467353]
+
+[node name="NorthTower" type="StaticBody3D" parent="Church/Towers" unique_id=1702077825]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.25, 0, -9.25)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(6.5, 18, 6.5)
+
+[node name="Rubble2" type="StaticBody3D" parent="Church/Towers" unique_id=185899008]
+transform = Transform3D(0.79558367, 0.020646349, -0.6054918, 0.23230536, 0.9126329, 0.33635616, 0.5595363, -0.40825847, 0.72127956, -32.04632, -0.11736087, -12.172645)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.9068806, 0.54824173, 1.2907434)
+
+[node name="Rubble3" type="StaticBody3D" parent="Church/Towers" unique_id=554096720]
+transform = Transform3D(0.7509411, -0.24141735, -0.6146585, 0.183616, 0.970409, -0.1568168, 0.6343285, 0.0048990324, 0.7730481, -31.924744, -0.30159098, -14.776057)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.8436546, 0.78007567, 0.66515887)
+
+[node name="Rubble4" type="StaticBody3D" parent="Church/Towers" unique_id=1692123528]
+transform = Transform3D(0.92783785, -0.15750422, 0.3380967, 0.035589036, 0.9397141, 0.3401041, -0.37128207, -0.3035289, 0.87750775, -25.343033, -0.1647035, -16.376156)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.45338464, 0.91918355, 1.5967257)
+
+[node name="Rubble5" type="StaticBody3D" parent="Church/Towers" unique_id=798260458]
+transform = Transform3D(-0.8295668, -0.23907815, 0.5046391, -0.294862, 0.95499444, -0.03227934, -0.47421023, -0.17557676, -0.86272675, -26.951115, -0.29225227, -10.583435)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8992729, 0.735583, 2.0239227)
+
+[node name="Rubble6" type="StaticBody3D" parent="Church/Towers" unique_id=28791382]
+transform = Transform3D(-0.7585488, -0.16806169, 0.62957054, -0.09226828, 0.9841352, 0.15154049, -0.6450507, 0.05686146, -0.76202124, -27.71136, -0.28484723, -12.760491)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(2.1877496, 1.631855, 1.9371417)
+
+[node name="Rubble7" type="StaticBody3D" parent="Church/Towers" unique_id=1790074644]
+transform = Transform3D(0.29396275, -0.21305731, -0.9317685, 0.15818521, 0.9722415, -0.17240614, 0.9426364, -0.09671101, 0.3195053, -30.460653, -0.35492957, -16.42581)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.7294927, 0.96282345, 2.2284803)
+
+[node name="Rubble8" type="StaticBody3D" parent="Church/Towers" unique_id=1690146664]
+transform = Transform3D(0.5117737, 0.14107236, -0.8474587, 0.3100133, 0.8896403, 0.33530873, 0.8012362, -0.43432564, 0.41156018, -31.981, -0.2605178, -15.483835)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.6711491, 0.78080165, 1.5151352)
+
+[node name="Rubble9" type="StaticBody3D" parent="Church/Towers" unique_id=240641161]
+transform = Transform3D(0.50117, -0.301194, -0.8112403, 0.13736854, 0.9532755, -0.26906443, 0.8543761, 0.023408115, 0.51912767, -33.070023, -0.35715908, -16.161982)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(2.0906057, 1.2641823, 2.1822639)
+
+[node name="Rubble10" type="StaticBody3D" parent="Church/Towers" unique_id=1386687757]
+transform = Transform3D(-0.30643034, 0.30257392, -0.90252393, 0.19881548, 0.9475686, 0.25017226, 0.93089896, -0.102775365, -0.35052016, -24.752377, -0.19130714, -12.467168)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.8656967, 0.6315849, 0.9357438)
+
+[node name="Rubble11" type="StaticBody3D" parent="Church/Towers" unique_id=2138263275]
+transform = Transform3D(0.23508321, -0.07304112, -0.96922696, 0.30884567, 0.9511066, 0.003234053, 0.92160195, -0.3001018, 0.24614763, -33.32901, -0.16760695, -11.478679)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.5855561, 0.67867094, 1.3733745)
+
+[node name="Rubble12" type="StaticBody3D" parent="Church/Towers" unique_id=107717084]
+transform = Transform3D(0.29367885, 0.2516236, 0.92219216, -8.300552e-05, 0.96473956, -0.2632064, -0.9559042, 0.0772216, 0.28334448, -33.50455, -0.22880228, -15.398869)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(2.0515053, 0.57866645, 0.6467003)
+
+[node name="Rubble13" type="StaticBody3D" parent="Church/Towers" unique_id=1258045408]
+transform = Transform3D(0.8926135, 0.021898434, -0.45029068, 0.075207114, 0.9775901, 0.19662537, 0.44450548, -0.2093755, 0.87096316, -30.008955, -0.28945717, -13.12874)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.4048834, 1.2258482, 1.554821)
+
+[node name="Rubble14" type="StaticBody3D" parent="Church/Towers" unique_id=1270263030]
+transform = Transform3D(0.8741819, 0.096097365, 0.47599497, -0.12256835, 0.9921502, 0.024798622, -0.46987545, -0.08002043, 0.87909824, -31.313543, -0.14447595, -15.629761)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(2.1672754, 1.0895927, 2.075689)
+
+[node name="Rubble15" type="StaticBody3D" parent="Church/Towers" unique_id=1308456581]
+transform = Transform3D(0.5183867, 0.22896531, 0.82392365, -0.14690827, 0.9730089, -0.1779655, -0.842433, -0.028786235, 0.53803176, -29.728062, -0.08911997, -14.525109)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.8816173, 0.34570205, 1.7525673)
+
+[node name="SouthTower" type="StaticBody3D" parent="Church/Towers" unique_id=1423969564]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.25, 0, 9.25)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(6.5, 30, 6.5)
+
+[node name="Belfry1" type="StaticBody3D" parent="Church/Towers" unique_id=1984740298]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.25, 30, 12)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(6.5, 8, 1)
+
+[node name="Belfry2" type="StaticBody3D" parent="Church/Towers" unique_id=1153476027]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -20.5, 30, 9.25)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(6.5, 8, 1)
+
+[node name="Belfry3" type="StaticBody3D" parent="Church/Towers" unique_id=1373292845]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -23.25, 30, 6.5)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(6.5, 8, 1)
+
+[node name="Belfry4" type="StaticBody3D" parent="Church/Towers" unique_id=324980983]
+transform = Transform3D(1.1924881e-08, 0, -1, 0, 1, 0, 1, 0, 1.1924881e-08, -26, 30, 9.25)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "wall window1"
+size = Vector3(6.5, 8, 1)
+
+[node name="Spire" type="StaticBody3D" parent="Church/Towers" unique_id=1557639778]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.25, 38, 9.25)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "cone3"
+size = Vector3(6.5, 14, 6.5)
+
+[node name="Ruin" type="Node3D" parent="." unique_id=983282713]
+
+[node name="FallenPier1" type="StaticBody3D" parent="Ruin" unique_id=222823229]
+transform = Transform3D(-3.7855173e-08, 0.8660254, 0.5, -1, -4.371139e-08, 0, 2.1855694e-08, -0.5, 0.8660254, -11.196152, 0.7000002, 0)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="FallenPier2" type="StaticBody3D" parent="Ruin" unique_id=703078227]
+transform = Transform3D(-4.1075268e-08, 0.9396926, -0.34202012, -1, -4.371139e-08, 0, -1.4950174e-08, 0.34202012, 0.9396926, 3.361844, 0.7000002, 0.4478793)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 12, 1.4)
+
+[node name="FallenPier3" type="StaticBody3D" parent="Ruin" unique_id=1032865503]
+transform = Transform3D(-1.1313341e-08, 0.25881907, 0.9659258, -1, -4.371139e-08, 0, 4.222196e-08, -0.9659258, 0.25881907, 15.835314, 0.70000017, 13.346666)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+piece = "pillar3"
+size = Vector3(1.4, 9, 1.4)
+
+[node name="Rubble4" type="StaticBody3D" parent="Ruin" unique_id=71649376]
+transform = Transform3D(0.82050014, -0.28421995, -0.49598244, 0.22355649, 0.95807743, -0.17919303, 0.5261198, 0.03614781, 0.84964186, -10.049103, -0.1509417, 0.9573552)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.7000424, 0.9403462, 0.98896146)
+
+[node name="Rubble5" type="StaticBody3D" parent="Ruin" unique_id=425875873]
+transform = Transform3D(-0.07601835, -0.0030452143, -0.9971017, 0.11949041, 0.9927611, -0.012141824, 0.98992085, -0.1200671, -0.075104184, -9.739504, -0.2765744, 2.650836)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.9353508, 0.7351049, 1.4933935)
+
+[node name="Rubble6" type="StaticBody3D" parent="Ruin" unique_id=1320845669]
+transform = Transform3D(-0.49331304, -0.244066, -0.8349096, -0.22959153, 0.9623262, -0.14565721, 0.83900535, 0.11983358, -0.5307635, -11.720957, -0.08831919, 1.0189507)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.3509438, 0.8290889, 0.6299581)
+
+[node name="Rubble7" type="StaticBody3D" parent="Ruin" unique_id=215416353]
+transform = Transform3D(0.10820509, 0.31813014, -0.94185185, -0.074113585, 0.94735944, 0.31147587, 0.99136204, 0.036100738, 0.12608689, -9.150635, -0.1621819, -0.08185434)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2066151, 0.7009001, 1.1717292)
+
+[node name="Rubble8" type="StaticBody3D" parent="Ruin" unique_id=1950518914]
+transform = Transform3D(-0.20674095, 0.054740712, 0.9768632, 0.17155428, 0.9849936, -0.01888899, -0.96323794, 0.16367993, -0.2130295, -9.160232, -0.14854719, 0.33672875)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.41060472, 1.0987315, 1.2758011)
+
+[node name="Rubble9" type="StaticBody3D" parent="Ruin" unique_id=426885437]
+transform = Transform3D(0.9810293, 0.0015048608, -0.1938537, 0.06176174, 0.94543785, 0.319895, 0.18375802, -0.3257991, 0.92740923, 5.3702316, -0.26160508, -2.2423213)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.683626, 0.7729384, 1.5796229)
+
+[node name="Rubble10" type="StaticBody3D" parent="Ruin" unique_id=1066222233]
+transform = Transform3D(0.06009456, -0.14698395, 0.9873117, 0.12592395, 0.98231363, 0.13857529, -0.99021804, 0.115998566, 0.07754051, 3.229694, -0.07737653, -1.4947401)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.1566567, 0.45386535, 0.57436454)
+
+[node name="Rubble11" type="StaticBody3D" parent="Ruin" unique_id=812062705]
+transform = Transform3D(-0.8117353, 0.09559034, -0.5761495, 0.11263173, 0.99361765, 0.0061669853, 0.5730619, -0.059886754, -0.817321, 4.3790507, -0.15259634, -3.0161307)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.4489769, 0.84157586, 0.5047675)
+
+[node name="Rubble12" type="StaticBody3D" parent="Ruin" unique_id=383378922]
+transform = Transform3D(0.7676704, 0.046742857, 0.639138, -0.26913437, 0.928637, 0.25534287, -0.5815917, -0.36803317, 0.7254672, 3.0906162, -0.32632554, -3.1197562)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.9011297, 0.8373989, 1.4102689)
+
+[node name="Rubble13" type="StaticBody3D" parent="Ruin" unique_id=1112387197]
+transform = Transform3D(0.098920316, -0.083922274, 0.9915502, 0.022880556, 0.9963658, 0.08204722, -0.9948323, 0.014571084, 0.10048101, 4.2421894, -0.17646767, -3.0273657)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2042726, 0.9396957, 1.135508)
+
+[node name="Rubble14" type="StaticBody3D" parent="Ruin" unique_id=486076177]
+transform = Transform3D(-0.772675, 0.21129517, -0.5986048, 0.24254419, 0.9697005, 0.029209958, 0.5866393, -0.12261831, -0.8005118, 20.80036, -0.1485337, 2.919576)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.40425622, 0.4090653, 0.5683402)
+
+[node name="Rubble15" type="StaticBody3D" parent="Ruin" unique_id=772235309]
+transform = Transform3D(0.5565789, -0.0558033, 0.8289185, 0.29992685, 0.94395137, -0.13783906, -0.7747669, 0.3253332, 0.5421203, 20.835464, -0.17169894, 3.1518657)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.7312653, 0.86221904, 1.1956904)
+
+[node name="Rubble16" type="StaticBody3D" parent="Ruin" unique_id=1793245049]
+transform = Transform3D(0.46286067, -0.237834, -0.8539291, 0.23363367, 0.9620034, -0.14129661, 0.8550879, -0.13410597, 0.5008396, 21.086754, -0.27682236, 2.0637977)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.0472302, 0.99402195, 0.99026203)
+
+[node name="Rubble17" type="StaticBody3D" parent="Ruin" unique_id=972160765]
+transform = Transform3D(0.13507892, 0.09463142, 0.9863056, 0.018326702, 0.9950199, -0.09797744, -0.9906653, 0.031310413, 0.13267192, 18.63295, -0.19437443, 1.7918792)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.42273805, 0.5093828, 1.0442357)
+
+[node name="Rubble18" type="StaticBody3D" parent="Ruin" unique_id=388579097]
+transform = Transform3D(-0.944024, -0.24732785, 0.21828339, -0.26055762, 0.96487373, -0.033591624, -0.20230775, -0.088586695, -0.97530717, 18.489834, -0.18718569, 4.034504)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.658875, 0.9777832, 1.0347538)
+
+[node name="Rubble19" type="StaticBody3D" parent="Ruin" unique_id=588929659]
+transform = Transform3D(-0.62717444, 0.16121022, 0.76201284, -0.048100945, 0.9684617, -0.24447566, -0.7773922, -0.18998241, -0.59964, 31.656376, -0.18376034, 14.9677725)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.3918723, 1.0898426, 0.9532714)
+
+[node name="Rubble20" type="StaticBody3D" parent="Ruin" unique_id=276589402]
+transform = Transform3D(-0.2043112, -0.17301232, -0.96349555, -0.28322175, 0.9526093, -0.11099976, 0.93703914, 0.2502044, -0.24362962, 29.565634, -0.049294967, 15.1978245)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.001448, 0.30567154, 0.77867043)
+
+[node name="Rubble21" type="StaticBody3D" parent="Ruin" unique_id=715247358]
+transform = Transform3D(-0.62665385, -0.3402056, -0.701117, -0.23617426, 0.9402751, -0.24516216, 0.74264836, 0.011953965, -0.6695748, 28.811136, -0.21841204, 15.114717)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.3716118, 1.0211009, 0.5378113)
+
+[node name="Rubble22" type="StaticBody3D" parent="Ruin" unique_id=792328688]
+transform = Transform3D(-0.8429294, -0.34290192, 0.41459405, -0.2666755, 0.9355497, 0.2315835, -0.4672838, 0.08464648, -0.88004595, 30.57369, -0.2411176, 12.628512)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.4228474, 1.033977, 0.82429975)
+
+[node name="Rubble23" type="StaticBody3D" parent="Ruin" unique_id=502299170]
+transform = Transform3D(-0.05442343, -0.2361339, -0.97019523, 0.004692665, 0.97156405, -0.23673029, 0.9985069, -0.017436475, -0.05176775, 31.666769, -0.055566393, 14.962755)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.48049, 0.45974964, 0.54700756)
+
+[node name="Rubble24" type="StaticBody3D" parent="Ruin" unique_id=1644855310]
+transform = Transform3D(0.6875909, -0.22510773, 0.6903225, 0.2676448, 0.96235937, 0.0472307, -0.67497027, 0.15228581, 0.7219585, 40.086563, -0.091483295, -7.066008)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.3593007, 0.53554016, 1.3942443)
+
+[node name="Rubble25" type="StaticBody3D" parent="Ruin" unique_id=562639715]
+transform = Transform3D(-0.10810861, -0.24943027, -0.96233934, 0.17525385, 0.9480709, -0.2654199, 0.9785697, -0.19734786, -0.058781013, 39.589424, -0.08366805, -7.7864633)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(0.61420655, 0.6351124, 0.83198315)
+
+[node name="Rubble26" type="StaticBody3D" parent="Ruin" unique_id=1573321097]
+transform = Transform3D(0.9145193, 0.19741794, -0.35310143, -0.30472866, 0.91025496, -0.2803149, 0.26607314, 0.3639535, 0.8926046, 40.39982, -0.10162141, -8.390755)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.0278414, 0.84658265, 0.44560733)
+
+[node name="Rubble27" type="StaticBody3D" parent="Ruin" unique_id=1205987314]
+transform = Transform3D(-0.221302, -0.018780962, 0.97502446, -0.31794676, 0.94657344, -0.053931672, -0.92191935, -0.32194105, -0.21544994, 39.43923, -0.10049963, -8.733741)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.2856917, 0.9087698, 0.64148015)
+
+[node name="Rubble28" type="StaticBody3D" parent="Ruin" unique_id=673287866]
+transform = Transform3D(-0.77350295, -0.087441735, 0.62773174, -0.22691777, 0.96298844, -0.14547007, -0.5917783, -0.254965, -0.7647165, 38.192257, -0.2230376, -7.890739)
+collision_mask = 0
+script = ExtResource("3_bkd2a")
+size = Vector3(1.247359, 0.91766965, 0.44563287)
+
+[node name="TheCathedral" type="Node3D" parent="." unique_id=2043954734]
+script = ExtResource("4_mk0n4")
+display_name = "The Cathedral"
+built_for = Vector2(0, 0)
+bounds = AABB(-60, -6, -30, 120, 46, 60)
+
+[node name="Webs" type="Node3D" parent="." unique_id=384868141]
+
+[node name="Player" type="CharacterBody3D" parent="." unique_id=552802219 instance=ExtResource("5_5v40h")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -22, 0.8, 0)
+collision_layer = 2
+floor_snap_length = 0.5
+script = ExtResource("6_0x6pd")
+grows_by_eating = false
+start_stage = 2
+all_spells_open = true
+underwater_env = ExtResource("7_q5ddc")
+abilities_path = Array[NodePath]([NodePath("Crouch Ability 3D"), NodePath("Sprint Ability 3D"), NodePath("Walk Ability 3D"), NodePath("Jump Ability 3D"), NodePath("Fly Ability 3D"), NodePath("Swim Ability 3D")])
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=834373403 instance=ExtResource("8_7fedc")]
+script = ExtResource("9_y5fe1")
