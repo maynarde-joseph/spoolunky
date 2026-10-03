@@ -22,7 +22,9 @@ extends Node3D
 ##   it to the webs at their other ends.
 ## * **Water.** Anything wet takes it twice as hard — twice the stun and twice the
 ##   hurt — and passes it on to anything wet near it, and a strike on a whirl
-##   reaches everything the whirl holds.
+##   reaches everything the whirl holds. A puddle it reaches is a lightning rod: the
+##   strike runs into the water and out round it, [constant ROD] times as wide as it
+##   struck, wet or dry.
 ## * **Storm Rider.** It jumps on from what it struck to what is near, wet or not
 ##   — see [member arcs].
 ##
@@ -42,6 +44,10 @@ const FLASH := 3.0
 
 ## How long a web it reaches stays live, as so many times the stun.
 const LIVE_FOR := 2.0
+
+## How wide the ring is that a puddle it reaches sends it out in, round the puddle's
+## middle, as so many times its own radius.
+const ROD := 2.0
 
 ## How far above the strike the bolt comes down from, in radii — and in metres,
 ## at the least.
@@ -70,11 +76,12 @@ var lines := false
 
 var colour := Color(0.98, 0.92, 0.55, 1.0)
 
-## What it stunned, the webs it ran through, and the lines it ran along to get to
-## them, in the order it reached them.
+## What it stunned, the webs it ran through, the lines it ran along to get to
+## them, and the puddles it ran out through, in the order it reached them.
 var shocked: Array[Prey] = []
 var charged: Array[WebStructure] = []
 var ran_along: Array[WebStrand] = []
+var through_water: Array[WetGround] = []
 
 ## Where it went, as pairs of points, for drawing.
 var _paths: Array = []
@@ -137,6 +144,21 @@ func discharge() -> void:
 	for creature in creatures:
 		if creature.global_position.distance_to(at) <= radius + creature.hit_radius():
 			_shock(creature, at)
+
+	# A puddle it reaches is a lightning rod: into the water and out round it, wet or
+	# dry, twice as wide as it struck.
+	for node in get_tree().get_nodes_in_group(WetGround.GROUP):
+		var wet := node as WetGround
+		if wet == null or wet.is_queued_for_deletion() or not wet.holds(at, radius):
+			continue
+		through_water.append(wet)
+		_paths.append([at, wet.centre])
+		var ring := maxf(radius * ROD, wet.radius + radius)
+		for creature in creatures:
+			var off := creature.global_position - wet.centre
+			var rise := off.dot(wet.up)
+			if absf(rise) <= ring and (off - wet.up * rise).length() <= ring + creature.hit_radius():
+				_shock(creature, wet.centre)
 
 	# Water: a whirl it lands in, or near enough to touch, carries it to all it holds.
 	for node in get_tree().get_nodes_in_group(WaterSpiral.GROUP):

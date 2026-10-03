@@ -6,7 +6,7 @@
 script = ExtResource("1_spell")
 id = "lightning"
 display_name = "Summon Lightning"
-description = "Lightning, called down where you point. It stuns and hurts what it strikes, runs through your silk to what your webs hold, and water carries it further — twice as hard."
+description = "Lightning, called down where you point. It stuns and hurts what it strikes, runs through your silk to what your webs hold, and water carries it further — twice as hard. Strike a puddle and it runs out round it, twice as wide."
 form = 2
 order = 3
 cooldown = 7.0

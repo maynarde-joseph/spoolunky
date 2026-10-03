@@ -45,6 +45,7 @@ func _sections() -> Array[Callable]:
 		_test_a_struck_web_stays_live,
 		_test_live_silk_and_lines,
 		_test_lightning_and_water,
+		_test_lightning_rod,
 		_test_storm_and_paralysis,
 		_test_fire_breath,
 		_test_fire_burns_silk,
@@ -2157,6 +2158,53 @@ func _ground_under(from: Vector3) -> float:
 	var hit := spider.get_world_3d().direct_space_state.intersect_ray(
 		PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 50.0, GameLayers.WORLD))
 	return (hit["position"] as Vector3).y if not hit.is_empty() else -INF
+
+
+## A puddle is a lightning rod: a strike that reaches it runs into the water and out
+## round it, twice as wide as it struck, stunning what is there wet or dry. Without
+## the puddle the same strike leaves them be, and further off than the ring nothing.
+func _test_lightning_rod() -> void:
+	var lightning := _learned("lightning", 2)
+	spider.require_captured_mouse = false
+	var slab := add_slab(Vector3(-180, 0.0, 60), Vector3(40, 0.5, 40))
+	await physics_frame
+	var floor_y := slab.global_position.y + 0.25
+	var start := slab.global_position + Vector3(0, 0.25, 8.0)
+	stand_on(start)
+	await run_frames(20)
+	var height := spider.stage().body_height
+	var spot := Vector3(start.x, floor_y, start.z) + Vector3.FORWARD * height * 6.0
+	clear_prey_near(spot, height * 30.0, null)
+	var radius := lightning.size_at(0.0) * height
+	var near := spawn("beetle", spot + Vector3.RIGHT * radius * 1.6 + Vector3.UP * 0.2)
+	var far := spawn("beetle", spot + Vector3.RIGHT * radius * 2.8 + Vector3.UP * 0.2)
+	if not check(near != null and far != null, "a beetle near where it strikes and one further off"):
+		return
+	for beetle in [near, far]:
+		beetle.aggression = 0.0
+		beetle.move_speed = 0.0
+	await physics_frame
+	aim_at(spot)
+	await physics_frame
+	check(spells.cast_now(lightning), "lightning on dry ground")
+	check(not near.is_stunned() and not far.is_stunned(),
+		"leaves both be: they are out of its reach (%.2f m out, it strikes %.2f m)"
+		% [radius * 1.6, radius])
+	await run_frames(10)
+
+	spells.forget_waits()
+	var wet := WetGround.puddle(level, spot, Vector3.UP, height * 0.6, 20.0)
+	if not check(wet != null, "a puddle where it strikes"):
+		return
+	await physics_frame
+	check(not near.is_wet(), "the near beetle dry, out of the puddle")
+	aim_at(spot)
+	await physics_frame
+	check(spells.cast_now(lightning), "lightning on the puddle")
+	var strike := _last_strike()
+	check(strike != null and strike.through_water.has(wet), "it runs into the water")
+	check(near.is_stunned(), "and out round it: the beetle near it is stunned, dry as it is")
+	check(not far.is_stunned(), "the one further off than the ring is not")
 
 
 ## A level can hand the spider the whole book at once: every spell known and on a

@@ -401,9 +401,10 @@ up. Everything else is learned:
 * **Some come with the spells**, nothing to learn once you know both. **A wet web
   soaks**: called back or flung, a web Douse left wet soaks what it passes, ready
   for lightning. **Fire turns water to lava**: breathe on a puddle and it turns to
-  lava where it lies, burning whatever stands in it for a few seconds. Which comes
-  first decides: each is the second spell acting on what the first left behind —
-  and some pairs have nothing, rather than a bigger number.
+  lava where it lies, burning whatever stands in it for a few seconds. **A puddle is
+  a lightning rod**: strike one and the charge runs out round it, twice as wide,
+  wet or dry. Which comes first decides: each is the second spell acting on what
+  the first left behind — and some pairs have nothing, rather than a bigger number.
 * **Five on the keys.** The web is always on 1 and five spells ride on 2 to 6. A
   spell learned goes on the next free key; the tree takes one off or puts one on.
 
