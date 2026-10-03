@@ -188,9 +188,10 @@ func discharge() -> void:
 		pool.erupt(ring)
 
 	# Water: a whirl it lands in, or near enough to touch, carries it to all it holds.
+	# Not a spiral of fire: that is no water.
 	for node in get_tree().get_nodes_in_group(WaterSpiral.GROUP):
 		var whirl := node as WaterSpiral
-		if whirl == null or not whirl.spinning():
+		if whirl == null or not whirl.spinning() or whirl.fiery:
 			continue
 		var offset := at - whirl.global_position
 		if not whirl.holds(at) and Vector2(offset.x, offset.z).length() > whirl.radius + radius:

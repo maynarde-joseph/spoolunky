@@ -508,7 +508,7 @@ what the circles are for.
 |---|---|---|---|
 | **Silk** | from the start | the thrown web: it sticks where it lands and wraps what it lands on | 3.5 s |
 | **Douse** | Apprentice, 1 point | water spat at the cross: 6–12 drops out of the spider's jaws over a tenth of a second, the first straight at it — at where a creature will be, if it is a creature — and the rest coming down round it, out to five puddles' width, on a lob that is half a second to over a second in the air, each drop landing a little after the last. A drop that hits a creature soaks it and stings it (4–7% of its health, once however many drops it takes), fliers included — wet wings do not lift. Where drops come down on the ground they leave **puddles**, 0.3–0.4 body heights to the rim, that stay wet for 8–12 s: whatever stands in one stays soaked. A drop that lands in a puddle makes it bigger, up to twice as wide; one that hits a wall only splashes. Silk does not stop a drop, but with Wet Silk learned every web and line one goes through is wet, and a wet web does not burn | 6 s |
-| **Gust** | Apprentice, 1 point | wind blown down a lane in front of the spider, a body height or so either side of its middle and 25–60% of silk's reach long — the longer the wind-up, the further, aimed the way water was when water went out along the ground. Everything loose in it is shoved on down the lane and stung (5–8%) — into a web, if one is in the way, which catches it. A boss stands its ground and only takes the sting. With Waterspout learned, over a puddle Douse left it lifts the water into a **whirl** — one, off the puddle nearest the spider, and every puddle in the lane dries: it runs on the way the wind blew, stops at the first thing it reaches, and holds it there for 2.5–4 s, round and round, wearing it down | 6 s |
+| **Gust** | Apprentice, 1 point | wind blown down a lane in front of the spider, a body height or so either side of its middle and 25–60% of silk's reach long — the longer the wind-up, the further, aimed the way water was when water went out along the ground. Everything loose in it is shoved on down the lane and stung (5–8%) — into a web, if one is in the way, which catches it. A boss stands its ground and only takes the sting. With Waterspout learned, over a puddle Douse left it lifts the water into a **whirl** — one, off the puddle nearest the spider, and every puddle in the lane dries: it runs on the way the wind blew, stops at the first thing it reaches, and holds it there for 2.5–4 s, round and round, wearing it down; over lava, a **spiral of fire** that holds and burns instead | 6 s |
 | **Summon Lightning** | Adept, 1 point | strikes where you point, and stuns what it reaches for 2.5–4 s — going nowhere, biting nothing, fighting nothing — and takes 10–15% of its health. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight. With Live Silk learned, a web it reaches is live for twice the stun after, and strikes what touches it as hard; a line carries nothing until Live Lines, and a strike aimed at one comes down on the floor under it. A strike that reaches a puddle runs out round it, twice as wide | 7 s |
 | **Fire Breath** | Journeyman, 2 points | fire breathed out of the spider's jaws at whatever the cross is on, for 0.6–1.4 s after you let go, 3.5–5 body heights out — or to the first wall — and opening a little on the way. It follows the cross while it lasts, so it is swept: across a creature, along a line, through the web holding what you want burned. What is in it burns for as long as it is: 40–45% of a creature's health a second if it is wrapped all the way or held in a web, a fifth of that if it is bare. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line it touches burns away, and a puddle it reaches turns to lava | 6 s |
 | **Pullback** | Apprentice, 1 point | every web you have in reach comes off its anchors and flies back to you whole, in the shape it was spun in, taking the frame it was walked round on down with it — the feathers coming home to a blade dancer. What it passes through takes the silk one shot of that web would put on it — enough, and it is wrapped where it stands — and what the web held lands at your feet, bundled. Nothing in reach, nothing cast and no wait spent | 10 s |
@@ -591,6 +591,13 @@ row of buttons:
   the ground, then blow over it, and the water rises into a whirl that runs on
   with the wind and holds the first thing it reaches, going nowhere — something
   held is something a thrown web does not have to lead.
+* **Wind over lava is a spiral of fire** (Waterspout too: the same wind lifting the
+  same pool). It runs and holds the way a whirl of water does, but burns what it
+  holds instead of soaking it — four tenths of its health a second as fire burns —
+  and lightning does not run through it the way it runs through water. Wind and
+  fire have nothing to say to each other directly (a gust blown through the breath
+  carried the flame down the lane for a while, which read as nothing a player
+  would expect); lava is where they meet.
 
 **Every pair, in one place.** Each interaction is the second spell acting on what
 the first left behind — a web, a puddle, a breath still burning — so the order is
@@ -609,6 +616,7 @@ knowing both spells.
 | Silk + pullback | web, then pullback | called back whole, wrapping what it passes | — |
 | Silk + clay | web, then clay | flung up off its anchors; silk tied to a pillar comes down when it goes | — |
 | Water + wind | puddle, then wind | a whirl that holds the first thing it reaches | Waterspout |
+| Lava + wind | lava, then wind | a spiral of fire that holds and burns the first thing it reaches | Waterspout |
 | Water + lightning | wet, then lightning | twice as hard, and on to anything wet near; a puddle is a lightning rod, sending it out round itself twice as wide | — |
 | Water + fire | puddle, then fire | lava, burning whatever stands in it | — |
 | Water + pullback | wet web, then pullback | soaks what it passes | Wet Silk |
@@ -616,7 +624,7 @@ knowing both spells.
 | Wind + lightning | — | none | — |
 | Wind + pullback | — | none: the wind leaves webs where they stand | — |
 | Wind + clay | — | none of its own; what a pillar throws is loose in the air, so a gust carries it on | — |
-| Wind + fire | — | none: wind does not carry a breath of fire | — |
+| Wind + fire | — | none directly: lava is where they meet | — |
 | Lava + lightning | lava, then lightning | the fire rod: a column of fire, and the strike out round it as fire, stunning and burning | — |
 | Lightning + fire | — | none directly: lava is where they meet | — |
 | Fire + pullback | — | none: fire takes a web on its way back as readily as one standing | — |

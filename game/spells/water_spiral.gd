@@ -17,6 +17,10 @@ extends Node3D
 ## * **Lightning.** What it holds is wet, and water carries a strike twice as hard;
 ##   a strike on the whirl itself reaches what it holds — see [LightningStrike].
 ## * **Digestive Flood.** The spider's water eats what it holds: it is dosed.
+##
+## Lifted off lava rather than water, it is a spiral of fire: it runs and holds the
+## same, but burns what it holds instead of soaking it — see [method ignite] and
+## [Lava].
 
 ## Said when it is spent, with what it held, if it held anything.
 signal spent(whirl: WaterSpiral, held: Array[Prey])
@@ -68,6 +72,11 @@ var harm := 0.1
 ## Digestive Flood.
 var acid := false
 var venom_strength := 1.0
+
+## Whether it is a spiral of fire, lifted off lava: it burns what it holds, this
+## much of a creature's health a second as fire burns, rather than soaking it.
+var fiery := false
+var heat := 0.0
 
 var colour := Color(0.36, 0.74, 0.9, 1.0)
 
@@ -136,6 +145,21 @@ func _physics_process(delta: float) -> void:
 		queue_free()
 		return
 	_update_view(delta)
+
+
+## Makes it a spiral of fire, lifted off lava: from now on it burns what it holds,
+## [param burn] of a creature's health a second as fire burns (see
+## [method Prey.burn]), instead of soaking it, and it is the colour of [param tint].
+func ignite(burn: float, tint := Color(1.0, 0.42, 0.1, 1.0)) -> void:
+	fiery = true
+	heat = maxf(burn, 0.0)
+	acid = false
+	colour = tint
+	name = "FireSpiral"
+	if _water != null:
+		_water.albedo_color = Color(tint.r, tint.g, tint.b, _water.albedo_color.a)
+	if _streaks != null:
+		_streaks.albedo_color = Color(1.0, 0.82, 0.4, _streaks.albedo_color.a)
 
 
 ## Whether it is still going. Spent, it sinks away and touches nothing.
@@ -222,21 +246,26 @@ func _catch_first() -> void:
 		caught = creature
 		_hold_left = hold_for * (BOSS_HOLD if creature.is_boss() else 1.0)
 		global_position = _floor_under(creature.global_position)
-		# Held and soaked from the moment it is caught, not from the next step.
+		# Held and soaked from the moment it is caught, not from the next step —
+		# or, fiery, burning from the next.
 		creature.hold_at(eye(), 0.1)
-		creature.soak(SOAK)
+		if not fiery:
+			creature.soak(SOAK)
 		return
 
 
-## Round and round: what it caught is kept at its eye, soaked and worn down, until
-## the hold runs out or there is nothing left to hold.
+## Round and round: what it caught is kept at its eye, soaked — or burned — and
+## worn down, until the hold runs out or there is nothing left to hold.
 func _hold(delta: float) -> void:
 	if not is_instance_valid(caught) or caught.eaten or not caught.is_loose():
 		_let_go()
 		return
 	_hold_left -= delta
 	caught.hold_at(eye(), maxf(delta * 2.0, 0.05))
-	caught.soak(SOAK)
+	if fiery:
+		caught.burn(heat * delta)
+	else:
+		caught.soak(SOAK)
 	caught.wound(harm / hold_for * delta)
 	if acid:
 		caught.poison(1.5, venom_strength)

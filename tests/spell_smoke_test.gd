@@ -47,6 +47,7 @@ func _sections() -> Array[Callable]:
 		_test_lightning_and_water,
 		_test_lightning_rod,
 		_test_fire_rod,
+		_test_fire_spiral,
 		_test_storm_and_paralysis,
 		_test_fire_breath,
 		_test_fire_burns_silk,
@@ -2247,6 +2248,64 @@ func _test_fire_rod() -> void:
 	check(not far.is_stunned() and is_equal_approx(far.health(), 1.0),
 		"the one further off than the ring is not")
 	check(not pool.molten(), "and the lava is spent")
+
+
+## Wind over lava, once Waterspout is learned, lifts it into a spiral of fire: it
+## runs on the way the wind blew, holds the first thing it reaches and burns it, and
+## the lava is spent. Before Waterspout, wind over lava is only wind; and lightning
+## does not run through fire as it does through a whirl of water.
+func _test_fire_spiral() -> void:
+	var gust := _learned("gust", 2)
+	spider.require_captured_mouse = false
+	var slab := add_slab(Vector3(-180, 0.0, -60), Vector3(40, 0.5, 40))
+	await physics_frame
+	var start := slab.global_position + Vector3(0, 0.25, 12.0)
+	stand_on(start)
+	await run_frames(20)
+	var height := spider.stage().body_height
+	var far := spells.lane_reach(gust, 0.0)
+	var ahead := Vector3.FORWARD
+	var spot := start + ahead * far * 0.3
+	clear_prey_near(start + ahead * far, far * 3.0, null)
+	var pool := Lava.melt(level, spot, Vector3.UP, height * 0.6, 20.0, 0.1)
+	var beetle := spawn("beetle", spot + ahead * (height * 3.0) + Vector3(0.0, 0.2, 0.0))
+	if not check(pool != null and beetle != null, "lava in the wind's lane, and a beetle past it"):
+		return
+	beetle.aggression = 0.0
+	beetle.move_speed = 0.0
+	beetle.struggle_stamina = 30.0
+	await physics_frame
+	aim_at(start + ahead * far * 2.0 + Vector3.DOWN * 0.25)
+	check(spells.cast_now(gust), "wind blown over it, before Waterspout is learned")
+	check(_whirls().is_empty() and pool.molten(), "lifts nothing, and the lava stays")
+	await run_frames(20)
+	spells.forget_waits()
+	spider.spell_tree.grant("waterspout")
+	beetle.global_position = spot + ahead * (height * 3.0) + Vector3(0.0, 0.2, 0.0)
+	await physics_frame
+	check(spells.cast_now(gust), "and with it learned, wind blown over it")
+	var spiral := _first_whirl()
+	if not check(spiral != null and spiral.fiery, "lifts it into a spiral of fire"):
+		return
+	check(not pool.molten(), "and the lava is spent")
+	check(spiral.heading.dot(ahead) > 0.99, "running on the way the wind blew")
+	var spiral_id := spiral.get_instance_id()
+	var got: bool = await wait_until(func() -> bool:
+		var going := instance_from_id(spiral_id) as WaterSpiral
+		return going != null and going.caught == beetle, 240)
+	if not check(got, "it stops at the first thing it reaches"):
+		return
+	var was := beetle.health()
+	await run_frames(40)
+	check(beetle.is_held() and beetle.health() < was,
+		"holds it, and burns it (%d%% left)" % roundi(beetle.health() * 100.0))
+	check(not beetle.is_wet(), "not soaking it: it is fire, not water")
+	# At its edge, too small to reach the beetle at its middle by itself: through a
+	# whirl of water that would still reach what it holds.
+	var edge := spiral.eye() + ahead.cross(Vector3.UP).normalized() * spiral.radius * 0.8
+	var strike := LightningStrike.call_down(level, edge, height * 0.05, 2.0)
+	check(strike != null and not beetle.is_stunned(),
+		"and a strike on it does not run through to what it holds, as it would through water")
 
 
 ## A level can hand the spider the whole book at once: every spell known and on a

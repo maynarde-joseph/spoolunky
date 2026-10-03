@@ -395,7 +395,8 @@ up. Everything else is learned:
   through your webs and they are wet, and a wet web stands in fire — breathe on what it holds and only that
   burns — and keeps lightning twice as long. **Sodden Silk**: a wet web
   holds half as hard again. **Waterspout**: wind over a puddle lifts a whirl that
-  holds the first thing it reaches. **Live Silk**: lightning stays in a web, and
+  holds the first thing it reaches — and wind over lava, a spiral of fire that
+  holds it and burns it. **Live Silk**: lightning stays in a web, and
   the web strikes whatever touches it. **Live Lines**: lightning runs along your
   lines to every web they tie together.
 * **Some come with the spells**, nothing to learn once you know both. **A wet web

@@ -52,6 +52,10 @@ const SPIRAL_BODIES := Vector2(1.3, 1.6)
 const PILLAR_BODIES := 0.6
 const PILLAR_RING := 1.6
 
+## How hard a spiral of fire a gust lifts off lava burns what it holds, as so much of
+## a creature's health a second as fire burns.
+const SPIRAL_HEAT := 0.4
+
 ## How far in front of the spider fire's circle hangs, and water's, in body heights:
 ## on the line the breath or the spit will take, so it leaves through the middle of
 ## it.
@@ -595,11 +599,16 @@ func _blow(spell: SpiderSpell, wound: float) -> Dictionary:
 	# Only with Waterspout learned does wind take the water up at all.
 	var whirl := _lift_water(spell, wound, from, heading, far, wide) \
 		if knows(&"waterspout") else null
+	# And lava, the same way: a spiral of fire.
+	var spiral := _lift_lava(spell, wound, from, heading, far, wide) \
+		if knows(&"waterspout") else null
 	var said := PackedStringArray()
 	if not gust.shoved.is_empty():
 		said.append("%d blown back" % gust.shoved.size())
 	if whirl != null:
 		said.append("the water whirls up")
+	if spiral != null:
+		said.append("the lava spirals up in fire")
 	if not said.is_empty():
 		notice.emit("Gust — " + ", ".join(said))
 	return {"cast": true, "at": from + heading * far * 0.5}
@@ -639,6 +648,39 @@ func _lift_water(spell: SpiderSpell, wound: float, from: Vector3, heading: Vecto
 	return whirl
 
 
+## The lava a gust takes up, the way [method _lift_water] takes up water: one
+## spiral of fire, off the pool nearest the spider, running on down the lane and
+## burning what it holds — and every pool in the lane spent. Null if the lane
+## crosses no lava.
+func _lift_lava(spell: SpiderSpell, wound: float, from: Vector3, heading: Vector3,
+		far: float, wide: float) -> WaterSpiral:
+	var met: Array[Lava] = []
+	var nearest: Lava = null
+	var nearest_out := INF
+	for node in get_tree().get_nodes_in_group(Lava.GROUP):
+		var pool := node as Lava
+		if pool == null or pool.is_queued_for_deletion() or not pool.met_by(from, heading, far, wide):
+			continue
+		met.append(pool)
+		var out := (pool.centre - from).dot(heading)
+		if out < nearest_out:
+			nearest_out = out
+			nearest = pool
+	if nearest == null:
+		return null
+	var height := body_height()
+	var spiral := WaterSpiral.send(_host(), nearest.centre, heading,
+		lerpf(SPIRAL_BODIES.x, SPIRAL_BODIES.y, wound) * height,
+		maxf(far - nearest_out, 0.0) + far * 0.5, WaterSpiral.PACE * height,
+		duration_of(spell, wound), power_of(spell, wound) * 2.0)
+	for pool in met:
+		pool.cool()
+	if spiral != null:
+		spiral.ignite(SPIRAL_HEAT, nearest.colour)
+		spiral.spent.connect(_on_whirl_spent)
+	return spiral
+
+
 ## Which way a gust of wind goes: flat along the ground, from the spider to what
 ## the cross is on — or the way the cross looks, if it is on the sky or at the
 ## spider's feet.
@@ -673,10 +715,11 @@ func feet_ground() -> Vector3:
 		.get("point", _spider.global_position)
 
 
-func _on_whirl_spent(_whirl: WaterSpiral, held: Array[Prey]) -> void:
+func _on_whirl_spent(whirl: WaterSpiral, held: Array[Prey]) -> void:
 	for creature in held:
 		if is_instance_valid(creature) and not creature.eaten:
-			notice.emit("The %s was held in the whirl" % creature.species)
+			notice.emit("The %s was held in the %s" % [creature.species,
+				"fire spiral" if whirl != null and whirl.fiery else "whirl"])
 			return
 
 
