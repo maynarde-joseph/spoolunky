@@ -6,7 +6,7 @@
 script = ExtResource("1_spell")
 id = "earth"
 display_name = "Clay Pillar"
-description = "A square pillar of clay, raised where you point. What stands there is stunned and thrown off its top; stand there yourself and you go up higher than you can jump. A web it comes up under is flung. It stands for ten seconds. Out of a puddle it comes up as mud and holds what it lifts; water on it slumps it; fire bakes it hard."
+description = "A square pillar of clay, raised where you point. What stands there is stunned and thrown off its top; stand there yourself and you go up higher than you can jump. A web it comes up under is flung. It stands for ten seconds."
 form = 6
 order = 6
 cooldown = 5.0

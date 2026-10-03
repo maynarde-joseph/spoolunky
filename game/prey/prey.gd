@@ -758,9 +758,9 @@ func is_shoved() -> bool:
 	return shoved > 0.0
 
 
-## Held for [param seconds] — round and round in a whirl of water, or stuck fast in
-## mud — at [param point], going nowhere and doing nothing. A hunter held gives up
-## the chase. Does not stack; the longer of the two, at the last place it was held.
+## Held by a whirl of water for [param seconds]: round and round at [param point],
+## going nowhere and doing nothing. A hunter held gives up the chase. Does not
+## stack; the longer of the two, at the last place it was held.
 func hold_at(point: Vector3, seconds: float) -> void:
 	if eaten or seconds <= 0.0 or not is_loose():
 		return
