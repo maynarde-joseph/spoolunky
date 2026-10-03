@@ -111,16 +111,18 @@ const ROOM_KEPT := 250
 
 @export var acceleration := 14.0
 
-## How much of a grapple's travel survives the landing. The rest went into the
-## surface, which is where speed aimed at stone belongs.
-@export_range(0.0, 1.0, 0.05) var grapple_carry := 0.8
+## How much of a grapple's travel along the surface survives the landing: none. A
+## grapple takes you to the point and you stop there. It used to keep most of it,
+## which slid a grapple to the floor ahead on past the point it was sent to — the
+## spider not stopping where it was sent.
+@export_range(0.0, 1.0, 0.05) var grapple_carry := 0.0
 
 ## How fast speed above a walk bleeds off, per second.
 ##
 ## Deliberately far gentler than [member deceleration], which exists to stop you
-## the moment you let go of a key. Applied to a landing, that erases the arrival
-## in four frames — which is why keeping momentum on a grapple needed this as
-## well as keeping it: without a skid there is nothing for the momentum to be.
+## the moment you let go of a key: speed that came from somewhere else — off the end
+## of a line, out of a fall — is a skid you can use, not something wiped out in four
+## frames.
 @export var skid_damping := 1.6
 @export var deceleration := 18.0
 
@@ -900,13 +902,9 @@ func _grapple_limit(speed: float) -> float:
 func _arrive() -> void:
 	var point := grapple_target
 	var normal := grapple_normal
-	# Keep what was running *along* the surface; drop what was running into it.
-	#
-	# Arriving used to stop dead, which made every grapple a full stop and every
-	# journey a series of them. A glancing arrival now lands you moving and a
-	# head-on one still stops, because head-on into stone is a stop — the part of
-	# the momentum that is honest to keep is the part the wall is not in the way
-	# of.
+	# What was running into the surface goes, and of what was running along it,
+	# only [member grapple_carry] — none, as the game ships: the grapple takes you
+	# to the point, and you stop there.
 	var travel := _spider.velocity
 	var along := travel - normal * travel.dot(normal)
 	_spider.velocity = along * grapple_carry
@@ -921,8 +919,8 @@ func _arrive() -> void:
 
 ## Takes hold of the nearest line in reach — the one you are looking at, if any —
 ## or lets go of the one you are hanging from. Returns true if anything happened.
-## This is Q; a grapple onto a line takes hold of it too, with [method clip_on]. Only
-## a line with room to hang from is taken: see [method room_to_hang].
+## This is Q, and the only way onto a line: the grapple takes you to places, not
+## onto silk. Only a line with room to hang from is taken: see [method room_to_hang].
 func toggle_ride() -> bool:
 	if mode == Mode.RIDING:
 		_launch_off_line()
@@ -932,6 +930,11 @@ func toggle_ride() -> bool:
 		notice.emit("No line in reach to hang from")
 		return false
 	return clip_on(strand, _spider.global_position)
+
+
+## The line Q would take hold of now, or null: what the readout offers.
+func line_to_take() -> WebStrand:
+	return _find_ridable() if mode != Mode.RIDING else null
 
 
 ## The best line to take hold of: near enough to reach, and roughly the way the
@@ -964,8 +967,7 @@ func _find_ridable() -> WebStrand:
 
 ## Hangs the spider from [param strand] at the point of it nearest [param at] that
 ## has room for the body, carrying whatever speed it had along the line into the zip.
-## What Q does, what a grapple onto a line ends in, and what the line grapple does
-## with the line it has just laid. Returns false, and says so, if there is no line
+## What Q does, and what the line grapple does with the line it has just laid. Returns false, and says so, if there is no line
 ## to hang from, or no room to hang from it: only a ride that works is offered.
 func clip_on(strand: WebStrand, at: Vector3) -> bool:
 	if strand == null or not is_instance_valid(strand) or _spider == null:

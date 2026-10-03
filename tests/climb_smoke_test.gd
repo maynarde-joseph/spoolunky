@@ -56,7 +56,7 @@ func run_checks() -> void:
 	await _test_the_line_grapple()
 	await _test_only_rides_that_work()
 	await _test_sloppy_normals()
-	await _test_momentum_survives_a_grapple()
+	await _test_a_grapple_stops_where_it_lands()
 	await _test_a_steady_view()
 
 
@@ -1286,21 +1286,18 @@ func _test_a_steady_view() -> void:
 
 # --- scaffolding --------------------------------------------------------
 
-## A grapple keeps what it was carrying along the surface, and a skid is where
-## that momentum lives.
+## A grapple takes you to the point and you stop there, whichever way you came in.
 ##
-## Arriving used to zero the velocity, which made every grapple a full stop. The
-## three pieces are all needed: keep the tangential part on arrival, let speed
-## above a walk bleed gently rather than being clamped, and let a jump carry what
-## you already had. Any one of them alone is invisible.
-func _test_momentum_survives_a_grapple() -> void:
+## It used to keep what it was carrying along the surface, so a grapple to the floor
+## ahead slid you on past the point you sent it to. Speed you have some other way —
+## off the end of a line, out of a fall — still bleeds off in a skid rather than
+## being clamped away, and a jump out of that skid still carries it.
+func _test_a_grapple_stops_where_it_lands() -> void:
 	release_all()
 	var climb := _spider.climb
-	check(climb.grapple_carry > 0.0,
-		"some of a grapple's travel survives the landing (%.0f%%)"
-		% (climb.grapple_carry * 100.0))
+	check(is_zero_approx(climb.grapple_carry), "nothing of a grapple's travel survives the landing")
 	check(climb.skid_damping < climb.deceleration * 0.5,
-		"and speed above a walk bleeds slower than a stop (%.1f against %.1f)"
+		"speed above a walk still bleeds slower than a stop (%.1f against %.1f)"
 		% [climb.skid_damping, climb.deceleration])
 
 	# Head-on into a floor: all of the travel is into the stone, so all of it
@@ -1315,20 +1312,21 @@ func _test_momentum_survives_a_grapple() -> void:
 		"straight down onto a floor still stops dead (%.2f m/s)"
 		% _spider.velocity.length())
 
-	# Glancing along it: the travel is mostly sideways, so most of it is kept.
+	# Glancing along it: stopped there too, not slid on past the point.
 	climb.release()
 	_spider.velocity = Vector3(9.0, -2.0, 0.0)
 	climb.grapple_target = Vector3(1.0, -ROOM_HALF.y, 0.0)
 	climb.grapple_normal = Vector3.UP
 	climb._arrive()
-	var kept := _spider.velocity.length()
-	check(kept > 5.0, "but skimming across it lands you running (%.2f m/s)" % kept)
-	check(absf(_spider.velocity.y) < 0.01,
-		"with the part aimed at the stone gone (%.3f downward)" % _spider.velocity.y)
-	check(kept < 9.0, "and a little lost to the landing (%.2f of 9.00)" % kept)
+	check(_spider.velocity.length() < 0.5,
+		"and skimming across it stops you at the point as well (%.2f m/s)"
+		% _spider.velocity.length())
 
-	# The skid lasts long enough to be a thing you can use. Walk speed is about
-	# 2.4, so this measures how long it takes to come back down toward it.
+	# Speed come by another way skids, long enough to be a thing you can use. Walk
+	# speed is about 2.4, so this measures how long it takes to come back down
+	# toward it.
+	_spider.velocity = Vector3(7.0, 0.0, 0.0)
+	climb.tangent_velocity = _spider.velocity
 	var fast := _spider.velocity.length()
 	await run_frames(12)
 	var after := _spider.climb.tangent_velocity.length()
@@ -1524,8 +1522,9 @@ func _test_grappling_a_long_way() -> void:
 ## across, which the surface probe found as its top one frame and its side the next.
 ## And a grapple's own line, under the spider when it landed, stood it on the thread
 ## instead of on the wall it had grappled to, where A and D did nothing at all. Now
-## only a bridge has anything to stand on. A line is something to hang from:
-## grappling to one takes you onto it, hanging, without spinning another.
+## only a bridge has anything to stand on. A line is something to hang from, and Q
+## is what takes hold of it: the grapple goes straight through it to the wall
+## behind, because it takes you to places, not onto silk.
 func _test_lines_are_rails() -> void:
 	var builder := _spider.web_builder
 	builder.stop()
@@ -1575,7 +1574,8 @@ func _test_lines_are_rails() -> void:
 			and _spider.global_position.y < eye - 0.1,
 		"put on top of it, you fall straight through to the floor")
 
-	# Grappled to, it takes you onto it, hanging.
+	# Grappled at, the pull goes straight through it to the wall behind; Q takes
+	# hold of it.
 	_spider.global_position = Vector3(-2.0, -ROOM_HALF.y + 0.6, -1.0)
 	_spider.velocity = Vector3.ZERO
 	await run_frames(20)
@@ -1586,14 +1586,22 @@ func _test_lines_are_rails() -> void:
 	await run_frames(2)
 	builder._update_aim()
 	check(builder.aimed_line() == line, "the crosshair picks the line out")
-	var lines_before := _silk_count()
 	builder.place()
-	var on: bool = await wait_until(func() -> bool: return _spider.climb.is_riding(), 180)
-	check(on and _spider.climb.holding_line() == line,
-		"and grappling to it takes you onto it, hanging")
-	check(_silk_count() == lines_before,
-		"without spinning a second line to get there (%d)" % _silk_count())
-	check(_spider.global_position.y < eye, "under it, not on top")
+	var landed: bool = await wait_until(func() -> bool:
+		return not _spider.climb.is_grappling() and _spider.climb.is_attached(), 180)
+	check(landed and not _spider.climb.is_riding()
+		and _spider.climb.surface_normal.dot(Vector3.LEFT) > 0.9,
+		"and the grapple goes straight through it, onto the wall behind (normal %.2v)"
+		% _spider.climb.surface_normal)
+	# The grapple left its own line behind it, nearer than this one: off with it.
+	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
+		if is_instance_valid(node) and node != line:
+			node.queue_free()
+	await physics_frame
+	check(_spider.climb.line_to_take() == line, "from where Q would take it")
+	check(_spider.climb.toggle_ride() and _spider.climb.holding_line() == line,
+		"and Q takes hold of it")
+	check(_spider.global_position.y < eye, "hanging under it, not on top")
 	Input.action_press("move_jump")
 	await run_frames(3)
 	Input.action_release("move_jump")
@@ -1712,8 +1720,8 @@ func _test_the_line_grapple() -> void:
 ## every single frame until the spider next touched something else.
 ## Only a ride that works is offered. A line is ridden hanging under it, so a line
 ## with no room under it for the body — laid along the floor, or too short to be a
-## ride — is not taken by Q, is not where a grapple aimed at it stops, and the line
-## grapple lays it but does not hang you from it. A line that does have room is
+## ride — is not taken by Q, and the line grapple lays it but does not hang you from
+## it. A line that does have room is
 ## taken where the body fits: out of the floor, even from a line that starts on it.
 func _test_only_rides_that_work() -> void:
 	var climb := _spider.climb
@@ -1802,8 +1810,8 @@ func _test_only_rides_that_work() -> void:
 		"the line grapple aimed at the floor lays a line, and does not hang you from it")
 	climb.toggle_grapple_style()
 
-	# And the pull aimed at a line it could not hang you from goes on through to the
-	# floor behind it, as if the line were not there.
+	# And the pull aimed at a line goes on through to the floor behind it, as if the
+	# line were not there.
 	climb.release()
 	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
 		if is_instance_valid(node):

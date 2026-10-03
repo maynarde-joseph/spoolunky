@@ -1195,18 +1195,35 @@ func _test_the_cross_on_a_line() -> void:
 	builder._update_aim()
 	check(not builder.aim_valid, "with nothing behind it for the cross to land on")
 	check(builder.aimed_line() == high, "the cross on it picks it all the same")
-	var hud := level.get_node_or_null("HUD") as SpiderHUD
-	if hud != null:
-		await process_frame
-		check(hud.problem_label.text.begins_with("Line in reach"),
-			"the readout offers it as a ride (%s)" % hud.problem_label.text)
+	# The pull takes you to places, not onto silk, and there is no place behind it.
 	builder.place()
-	var on: bool = await wait_until(func() -> bool: return spider.climb.is_riding(), 240)
-	check(on and spider.climb.holding_line() == high,
-		"and left mouse takes you up onto it, hanging")
-	spider.climb.release()
+	await run_frames(10)
+	check(not spider.climb.is_riding() and not spider.climb.is_grappling(),
+		"left mouse does not take you onto it: the grapple takes you to places, not onto silk")
 	high.queue_free()
 	await physics_frame
+
+	# Low and near, where Q reaches it: the readout offers it to Q.
+	var hud := level.get_node_or_null("HUD") as SpiderHUD
+	stand_on(start)
+	await run_frames(20)
+	var by := start + Vector3.FORWARD * height * 3.0 + Vector3.UP * height * 2.5
+	var close := WebStrand.spin(pattern_named("frame_line"), by + Vector3.LEFT * height * 4.0,
+		by + Vector3.RIGHT * height * 4.0, 1.0)
+	if check(close != null, "a line near enough for Q"):
+		close.place_in(webs)
+		await physics_frame
+		aim_at(by)
+		await physics_frame
+		await process_frame
+		await process_frame
+		check(builder.aimed_line() == close and spider.climb.line_to_take() == close,
+			"the cross on it, and Q would take it")
+		if hud != null:
+			check(hud.problem_label.text == "Line in reach — Q to hang from it",
+				"and the readout says so (%s)" % hud.problem_label.text)
+		close.queue_free()
+		await physics_frame
 
 	# Along the floor, the cross on it all the same: no room to hang from it, so the
 	# readout offers no ride.

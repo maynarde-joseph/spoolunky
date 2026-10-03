@@ -26,9 +26,9 @@ Shift                  sprint — it runs out, and it runs out faster the
 walk into a wall       climb it — walls and ceilings are floors to you
 silk is sticky         a web holds you; jump to come off it
 
-Left Mouse             grapple there, trailing a line — three at a time,
-                       and a fourth takes the oldest down. On a line, it
-                       takes you onto the line, hanging
+Left Mouse             grapple there and stop, trailing a line — three at
+                       a time, and a fourth takes the oldest down. It goes
+                       through lines: Q is what takes hold of one
 Q                      take hold of the nearest line you can hang from,
                        or let go
 on a line              W/S zip along it, toward or away from where you look
@@ -946,9 +946,10 @@ func _refresh_build_panel() -> void:
 		# right mouse will do: which spell is in hand, and for silk which web.
 		_refresh_in_hand(builder)
 		var line := builder.aimed_line()
-		# Only a line there is room to hang from is offered: see SpiderClimb.room_to_hang.
-		if line != null and _spider.climb.has_room_to_hang(line, builder.aimed_line_point(line)):
-			problem_label.text = "Line in reach — left mouse to get on it"
+		# Offered only if Q would take it: in reach, and with room to hang from it —
+		# see SpiderClimb.room_to_hang.
+		if line != null and _spider.climb.line_to_take() == line:
+			problem_label.text = "Line in reach — Q to hang from it"
 			return
 		var web := builder.aimed_web()
 		if web == null:

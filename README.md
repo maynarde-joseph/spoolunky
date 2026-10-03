@@ -90,7 +90,7 @@ one kept to what the keys do today.
 | **Ctrl** | drop onto a dragline (from a wall or ceiling) |
 | **Ctrl** / **Space** | lower / raise yourself on the line |
 | **Right Mouse** | let go of the line |
-| **Left Mouse** | **go there, trailing silk** — moving and building are the same act |
+| **Left Mouse** | **go there and stop, trailing silk** — moving and building are the same act. It goes through lines; **Q** is what takes hold of one |
 | **G** | **grapple style** — the **pull** takes you there; the **line** lays a line from your feet to where you point and hangs you from it, ready to zip along |
 | **Q** | take hold of the nearest line with room to hang from — hang from it and zip along it with **W**/**S**, toward or away from where you look. **Q** or **Space** lets go |
 | **Left Mouse** *on something you've caught* | put a line on it and drag it instead — same click, read the only way that makes sense |
@@ -157,10 +157,11 @@ keys and you brake to a stop. Run off either end and you come off carrying the
 speed, onto whatever the end is tied to. **Q** takes hold of the nearest line in
 reach, or lets go; **Space** lets go too.
 
-You can also **grapple straight onto a line** from a distance: that takes you
-onto it, hanging, rather than stringing another line to reach it. A route you
-built once is a route you can take. The cross picks out the line you see it on,
-whatever is behind it — a floor a long way off, or nothing but sky.
+The **grapple goes straight through lines** to whatever is behind them: it takes
+you to a place and stops you there, and **Q** is how you get onto a line. The
+readout under the cross says **Q to hang from it** when the line you're looking at
+is one Q would take. The cross still picks out the line you see it on, whatever is
+behind it — that's what spells aim at, and what the line grapple ties its line to.
 
 A *web* is still a floor: **silk is sticky**, a web keeps hold of you the way a
 wall does until you **jump off**, and it's about half again quicker underfoot
@@ -190,9 +191,8 @@ Look at any ring and press **F**.
 Any line — a grapple's, a frame's, a bridge — can be hung from and zipped along,
 as long as there's room under it for you: a stretch of at least three body heights
 where the spider fits hanging. A line laid along the floor, run tight into a wall
-or only a step long isn't offered as a ride at all — **Q** passes it over, a
-grapple aimed at it goes on to whatever is behind, and the line grapple lays it
-without hanging you from it. You take hold where there's room, so a line that
+or only a step long isn't offered as a ride at all — **Q** passes it over, and the line
+grapple lays it without hanging you from it. You take hold where there's room, so a line that
 starts at your feet catches you just up it, not inside the floor.
 Arrive on a line already moving and you keep it. Letting go on purpose gives a
 kick to clear the edge; running off the end doesn't, so the wall the line is tied

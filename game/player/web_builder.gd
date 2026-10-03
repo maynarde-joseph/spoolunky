@@ -237,9 +237,8 @@ var _launch_anchored := false
 ## start once it lands.
 var _launched_from := Vector3.ZERO
 
-## A line the current grapple is aimed at, to be ridden on arrival instead of
-## having fresh silk laid out to it.
-var _pending_ride: WebStrand = null
+## A line the line grapple is aimed at, to lay its line to.
+var _line_target: WebStrand = null
 
 ## Rings of silk the player could weave into, and what they were built from.
 var _loops: Array = []
@@ -1099,25 +1098,23 @@ func place() -> void:
 	if current_pattern() == null:
 		return
 	_update_aim()
-	# A line under the cross is taken whatever is behind it, or with nothing behind
-	# it at all — strung across open air, there is no surface for the cross to find,
-	# and none is needed to take hold of silk that is already there.
-	_pending_ride = aimed_line()
-	if _pending_ride != null and _climb != null and not _climb.shoots_lines() \
-			and not _climb.has_room_to_hang(_pending_ride, aimed_line_point(_pending_ride)):
-		# No room to hang from it, so it is not a ride: the grapple goes on through to
-		# whatever is behind it, as if it were not there.
-		_pending_ride = null
-	if problem != Problem.NONE and (_pending_ride == null or problem == Problem.LOCKED):
-		_pending_ride = null
+	# The pull takes you to a place, not onto silk: it reads straight through a line
+	# to whatever is behind it, and Q is what takes hold of a line. A line grabbing
+	# the click was how a grapple at the wall behind one ended up zipping on along
+	# the line instead. The line grapple does lay its line to a line under the cross,
+	# whatever is behind it or with nothing behind it at all: strung across open
+	# air, there is no surface for the cross to find, and none is needed to tie silk
+	# to silk.
+	_line_target = aimed_line() if _climb != null and _climb.shoots_lines() else null
+	if problem != Problem.NONE and (_line_target == null or problem == Problem.LOCKED):
+		_line_target = null
 		notice.emit(problem_text())
 		return
 
 	_launched_from = _line_start()
 	_launch_anchored = _anchored()
-	if _pending_ride != null:
-		# Joining a line rather than laying one: no new silk, you just take hold.
-		aim_point = aimed_line_point(_pending_ride)
+	if _line_target != null:
+		aim_point = aimed_line_point(_line_target)
 		aim_normal = Vector3.UP
 	if not building and _climb != null and _climb.shoots_lines():
 		_shoot_line()
@@ -1138,7 +1135,7 @@ func place() -> void:
 ## one. Fired from the air, the near end is where you are, and you are hanging from
 ## it — silk is sticky, and a line that left you falling would be no line at all.
 func _shoot_line() -> void:
-	_pending_ride = null
+	_line_target = null
 	var from := _climb.feet() if _launch_anchored else _launched_from
 	if from.distance_to(aim_point) < 0.01:
 		return
@@ -1161,13 +1158,6 @@ func _on_grappled(_point: Vector3, _normal: Vector3) -> void:
 ## Landed. The line behind is the silk dragged on the way, which is all there
 ## is to building now — no anchor list to keep in your head, no mode to be in.
 func _arrive_at(point: Vector3) -> void:
-	if _pending_ride != null:
-		var line := _pending_ride
-		_pending_ride = null
-		# You joined a line rather than laying one, so no new silk: you arrive
-		# hanging from it, and W zips you along it.
-		if is_instance_valid(line) and _climb != null and _climb.clip_on(line, point):
-			return
 	if building:
 		# The scripted run: saved designs and the test suite still walk an
 		# explicit ring and weave it with finish().

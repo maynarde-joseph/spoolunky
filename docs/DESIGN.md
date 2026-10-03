@@ -1119,8 +1119,8 @@ to — needs that verb first.
 **Left mouse does it**, which is the part worth keeping. The button already
 means "silk connects me to that", and what it does has always depended on what
 you pointed at rather than on a mode you were in: a surface pulls you over to
-it, a line takes you onto it, hanging. Something you have already caught is the third
-reading, and the only sensible one — hauling yourself across a room to stand
+it — through any line in the way, since Q is what takes hold of a line. Something
+you have already caught is the other reading, and the only sensible one — hauling yourself across a room to stand
 next to a thing that is wrapped up and going nowhere is not what the click
 meant. A long shot pays out the whole distance and then winds back in, so
 firing at something across the room harpoons it rather than yanking it to your
@@ -1186,16 +1186,19 @@ traversal on a line is its own state, the way a person goes along a zip line:
   whatever the end is tied to, which takes hold at once. Let go on purpose — Q or
   Space — and you get a little lift and a moment before anything takes hold, the
   way a jump does.
-* **Getting on is asked for, or aimed.** Q takes hold of the nearest line in
-  reach, the one you are looking at by preference. Grappling at a line takes you
-  onto it, hanging, without stringing a second line to reach it — the difference
-  between joining the network and extending it.
+* **Getting on is asked for.** Q takes hold of the nearest line in reach, the one
+  you are looking at by preference, and the readout under the cross says so when
+  the line you are looking at is the one Q would take. The grapple goes straight
+  through a line to whatever is behind it: it takes you to places, not onto silk.
+  It used to take you onto a line it was aimed at, and the line pick is generous
+  — a crosshair's width, up to two body heights — so a grapple at the wall behind
+  a line would end on the line instead, zipping on with the grapple's speed.
 * **Only a ride that works is offered.** A line counts as one if a body-sized ball,
   hung where the spider hangs, can be swept along under it for at least three body
   heights without meeting the world. A line laid along the floor, tight to a wall
   or a step long fails, and is no ride at all: Q passes it over, the readout under
-  the cross offers nothing, a grapple aimed at it goes on through to what is
-  behind, and the line grapple lays it but does not hang you from it. A line that
+  the cross offers nothing, and the line grapple lays it but does not hang you from
+  it. A line that
   passes is taken where the body fits — a line laid from your feet catches you a
   little way up it, not inside the floor. The ride itself is the same as ever.
 
@@ -1204,10 +1207,9 @@ A bridge, the one strand spun to be walked, keeps its plank.
 A *web* is still a floor: silk is sticky, it keeps hold of you the way a wall does
 until you jump, and it is about half again quicker underfoot than the floor.
 
-Grappling at a line you already have puts you *on* it rather than stringing a
-second line to it. That is the difference between extending the network and
-joining it, and it is what makes a web of lines feel like somewhere to get
-about rather than a pile of rope.
+Q puts you on a line you already have; the grapple lays the road. Joining the
+network and extending it are two keys, so a click meant for the wall behind a line
+is never taken for the other.
 
 ### Webs are placed, not enclosed
 
@@ -1846,31 +1848,30 @@ What changes is that going somewhere is two things — putting the road down, an
 zipping along it — and the second is where you can be caught. The line is still one of
 your three (§5), and still a wire a spell can run down.
 
-### A grapple keeps what it was carrying
+### A grapple stops where it lands
 
-Arriving used to zero the velocity, which made every grapple a **full stop** and
-every journey a series of them. Three things had to change together, and any one
-alone is invisible:
+The grapple takes you to the point you sent it to, and **you stop there**. For a
+while it kept what it had been carrying along the surface — 80% of it, so a
+glancing arrival landed you running, for chaining one grapple into the next — but
+a grapple to the floor ahead then slid on past the point it was sent to, and that
+read as the spider not stopping where it was told. `grapple_carry` is the knob,
+and it is nought.
 
-* **On arrival** the part of the travel running *along* the surface is kept (at
-  80%); the part running *into* it is dropped. So a glancing arrival lands you
-  running and a head-on one still stops — head-on into stone is a stop, and the
-  honest momentum to keep is the part the wall is not in the way of.
+Two pieces of that stayed, because they are about speed come by some other way —
+off the end of a line, out of a fall:
+
 * **Above a walk, speed bleeds rather than being clamped.** `deceleration` is
-  18/s because it exists to stop you the moment you release a key; applied to a
-  landing that erases the arrival in 0.12s. A skid at 1.6/s lasts 1.4s, which is
-  long enough to be a thing you use. Steering *against* it still brakes hard.
-* **A jump carries what you already had.** `_leap` built its velocity from
-  scratch, which threw away the half of chaining that matters: grapple, land
-  running, jump, grapple again.
+  18/s because it exists to stop you the moment you release a key; a skid at
+  1.6/s lasts long enough to be a thing you use. Steering *against* it still
+  brakes hard.
+* **A jump carries what you already had**, so a skid jumped out of goes with you.
 
 **Why not swinging instead.** The obvious alternative — click an anchor and swing
 from it — is already in the game twice: `Ctrl` drops you onto a dragline and you
 swing on it, and `Q` hangs you from any line to zip along it.
 What the grapple has that a swing does not is that **every click leaves a road**
 (§5). A swing anchored at one end leaves silk dangling from nothing, which turns
-the best property of the traversal into litter. The grapple's problem was never
-its shape; it was that it ended in a full stop.
+the best property of the traversal into litter.
 
 ### Zip lines
 Any line can be hung from and zipped along — see *Silk is the road network*.
@@ -2139,7 +2140,7 @@ hold in their head on the first screen.
 | **Space** | Jump. Also the way off a web, which is sticky, and off a line you are hanging from |
 | **Shift** | **Sprint**, out of a pool of a few seconds that fills back up while you walk. It costs more per size class of whatever is on your line, which is what makes hauling something home at a run a decision rather than the obvious move (§2) |
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
-| **Left Mouse** | **Go there, trailing a line.** A surface pulls you over; a line takes you onto it, hanging; something you already caught comes to you instead. A creature still on its feet is none of those, so the aim reads straight through it to whatever is behind (§2). As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5) |
+| **Left Mouse** | **Go there, trailing a line, and stop there.** A surface pulls you over — through any line in the way, since Q is what takes hold of a line; something you already caught comes to you instead. A creature still on its feet is none of those, so the aim reads straight through it to whatever is behind (§2). As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5) |
 | **G** | **Grapple style**: the pull above, or the line — a line from your feet to where you point, with you hanging from it, ready to zip along (*Two grapples*, §7) |
 | **Right Mouse** | **Cast what is in hand** — the web, to start with (§3.2). With the web in hand: |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
