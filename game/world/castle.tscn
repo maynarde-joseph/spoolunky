@@ -1,0 +1,1333 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://game/world/materials/grass.tres" id="1_blb1p"]
+[ext_resource type="Material" path="res://game/world/materials/ruin.tres" id="2_3a5ih"]
+[ext_resource type="Script" path="res://game/world/kit_block.gd" id="3_86icr"]
+[ext_resource type="PackedScene" path="res://Pieces/box.fbx" id="4_esg6i"]
+[ext_resource type="Script" path="res://game/world/zone.gd" id="5_ml2v3"]
+[ext_resource type="PackedScene" path="res://game/player/spider.tscn" id="6_km40u"]
+[ext_resource type="Script" path="res://game/player/spider.gd" id="7_r6cvf"]
+[ext_resource type="Environment" path="res://addons/character-controller/example/main/underwater.tres" id="8_nu77d"]
+[ext_resource type="PackedScene" path="res://game/ui/hud.tscn" id="9_mr2rv"]
+[ext_resource type="Script" path="res://game/ui/hud.gd" id="10_pplkw"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_ovw0o"]
+sky_top_color = Color(0.28, 0.32, 0.5, 1)
+sky_horizon_color = Color(0.9, 0.6, 0.44, 1)
+ground_bottom_color = Color(0.38, 0.34, 0.3, 1)
+ground_horizon_color = Color(0.7, 0.54, 0.46, 1)
+sun_angle_max = 18.0
+
+[sub_resource type="Sky" id="Sky_43hpt"]
+sky_material = SubResource("ProceduralSkyMaterial_ovw0o")
+
+[sub_resource type="Environment" id="Environment_8wntr"]
+background_mode = 2
+sky = SubResource("Sky_43hpt")
+ambient_light_source = 2
+ambient_light_color = Color(0.52, 0.46, 0.56, 1)
+ambient_light_energy = 0.36
+tonemap_mode = 2
+tonemap_exposure = 0.85
+ssao_enabled = true
+fog_enabled = true
+fog_light_color = Color(0.74, 0.55, 0.46, 1)
+fog_density = 0.003
+fog_sky_affect = 0.1
+
+[sub_resource type="BoxMesh" id="BoxMesh_t1dxp"]
+size = Vector3(2000, 1, 2000)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_02qf2"]
+size = Vector3(2000, 1, 2000)
+
+[sub_resource type="BoxMesh" id="BoxMesh_6mk47"]
+size = Vector3(44, 0.1, 36)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_lik16"]
+size = Vector3(44, 0.1, 36)
+
+[node name="Castle" type="Node3D" unique_id=573407240]
+
+[node name="Sky" type="WorldEnvironment" parent="." unique_id=1621697100]
+environment = SubResource("Environment_8wntr")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1418644566]
+transform = Transform3D(-0.3713907, 0.21787928, -0.9025506, 0, 0.9720768, 0.23466316, 0.9284767, 0.08715171, -0.36102024, -100, 26, -40)
+light_color = Color(1, 0.66, 0.42, 1)
+light_energy = 0.85
+shadow_enabled = true
+directional_shadow_max_distance = 160.0
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=1528144491]
+collision_mask = 0
+
+[node name="Earth1" type="MeshInstance3D" parent="Ground" unique_id=1038971542]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = ExtResource("1_blb1p")
+mesh = SubResource("BoxMesh_t1dxp")
+
+[node name="Earth1Shape" type="CollisionShape3D" parent="Ground" unique_id=552162698]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_02qf2")
+
+[node name="Castle" type="Node3D" parent="." unique_id=1386984243]
+
+[node name="Yard" type="StaticBody3D" parent="Castle" unique_id=2034988564]
+collision_mask = 0
+
+[node name="YardTop1" type="MeshInstance3D" parent="Castle/Yard" unique_id=672863937]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.04, 0)
+material_override = ExtResource("2_3a5ih")
+mesh = SubResource("BoxMesh_6mk47")
+
+[node name="YardTop1Shape" type="CollisionShape3D" parent="Castle/Yard" unique_id=1645509061]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.04, 0)
+shape = SubResource("BoxShape3D_lik16")
+
+[node name="Walls" type="Node3D" parent="Castle" unique_id=138150638]
+
+[node name="North" type="StaticBody3D" parent="Castle/Walls" unique_id=1453031191]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(44, 9, 3)
+
+[node name="NorthMerlon1" type="StaticBody3D" parent="Castle/Walls" unique_id=467199588]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.705883, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon2" type="StaticBody3D" parent="Castle/Walls" unique_id=946235742]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.117647, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon3" type="StaticBody3D" parent="Castle/Walls" unique_id=684060164]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.529411, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon4" type="StaticBody3D" parent="Castle/Walls" unique_id=1309590771]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.941176, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon5" type="StaticBody3D" parent="Castle/Walls" unique_id=1597360619]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.3529415, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon6" type="StaticBody3D" parent="Castle/Walls" unique_id=1582534955]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.7647057, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon7" type="StaticBody3D" parent="Castle/Walls" unique_id=1930240019]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.17647, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon8" type="StaticBody3D" parent="Castle/Walls" unique_id=844569208]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5882359, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon9" type="StaticBody3D" parent="Castle/Walls" unique_id=193294801]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon10" type="StaticBody3D" parent="Castle/Walls" unique_id=396218211]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5882359, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon11" type="StaticBody3D" parent="Castle/Walls" unique_id=710762496]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.17647, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon12" type="StaticBody3D" parent="Castle/Walls" unique_id=1870042989]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.7647057, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon13" type="StaticBody3D" parent="Castle/Walls" unique_id=456179393]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.35294, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon14" type="StaticBody3D" parent="Castle/Walls" unique_id=393180697]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.941177, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon15" type="StaticBody3D" parent="Castle/Walls" unique_id=878969734]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.529411, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon16" type="StaticBody3D" parent="Castle/Walls" unique_id=527511040]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.117645, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="NorthMerlon17" type="StaticBody3D" parent="Castle/Walls" unique_id=281855561]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.705883, 9, -20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="East" type="StaticBody3D" parent="Castle/Walls" unique_id=1284855261]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 23.5, 0, 0)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(36, 9, 3)
+
+[node name="EastMerlon1" type="StaticBody3D" parent="Castle/Walls" unique_id=488985827]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 24.7, 9, -16.714285)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="EastMerlon2" type="StaticBody3D" parent="Castle/Walls" unique_id=289144794]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 24.7, 9, -14.142857)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="EastMerlon3" type="StaticBody3D" parent="Castle/Walls" unique_id=2073603941]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 24.7, 9, -11.571428)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="EastMerlon4" type="StaticBody3D" parent="Castle/Walls" unique_id=895259746]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 24.7, 9, -9)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="EastMerlon5" type="StaticBody3D" parent="Castle/Walls" unique_id=40893699]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 24.7, 9, -6.4285717)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="EastMerlon6" type="StaticBody3D" parent="Castle/Walls" unique_id=699420153]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 24.7, 9, -3.8571424)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="EastMerlon7" type="StaticBody3D" parent="Castle/Walls" unique_id=2094910448]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 24.7, 9, -1.2857151)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="EastMerlon8" type="StaticBody3D" parent="Castle/Walls" unique_id=1104217495]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 24.7, 9, 1.2857151)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="EastMerlon9" type="StaticBody3D" parent="Castle/Walls" unique_id=1942123973]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 24.7, 9, 3.8571434)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="EastMerlon10" type="StaticBody3D" parent="Castle/Walls" unique_id=548204746]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 24.7, 9, 6.4285717)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="EastMerlon11" type="StaticBody3D" parent="Castle/Walls" unique_id=1144978781]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 24.7, 9, 9)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="EastMerlon12" type="StaticBody3D" parent="Castle/Walls" unique_id=137367308]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 24.7, 9, 11.571428)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="EastMerlon13" type="StaticBody3D" parent="Castle/Walls" unique_id=1093531861]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 24.7, 9, 14.142857)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="EastMerlon14" type="StaticBody3D" parent="Castle/Walls" unique_id=4380674]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 24.7, 9, 16.714287)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="SouthWest" type="StaticBody3D" parent="Castle/Walls" unique_id=362330862]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -13.75, 0, 19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(16.5, 9, 3)
+
+[node name="SouthWestMerlon1" type="StaticBody3D" parent="Castle/Walls" unique_id=1535990090]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -20.625, 9, 20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="SouthWestMerlon2" type="StaticBody3D" parent="Castle/Walls" unique_id=518708373]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -17.875, 9, 20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="SouthWestMerlon3" type="StaticBody3D" parent="Castle/Walls" unique_id=1333276235]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -15.125, 9, 20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="SouthWestMerlon4" type="StaticBody3D" parent="Castle/Walls" unique_id=1291554237]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -12.375, 9, 20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="SouthWestMerlon5" type="StaticBody3D" parent="Castle/Walls" unique_id=658438651]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -9.625, 9, 20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="SouthWestMerlon6" type="StaticBody3D" parent="Castle/Walls" unique_id=76038557]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -6.875, 9, 20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="SouthEast" type="StaticBody3D" parent="Castle/Walls" unique_id=1072445410]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 13.75, 0, 19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(16.5, 9, 3)
+
+[node name="SouthEastMerlon1" type="StaticBody3D" parent="Castle/Walls" unique_id=433087588]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 6.875, 9, 20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="SouthEastMerlon2" type="StaticBody3D" parent="Castle/Walls" unique_id=1695151359]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 9.625, 9, 20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="SouthEastMerlon3" type="StaticBody3D" parent="Castle/Walls" unique_id=842579553]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 12.375, 9, 20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="SouthEastMerlon4" type="StaticBody3D" parent="Castle/Walls" unique_id=1588566472]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 15.125, 9, 20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="SouthEastMerlon5" type="StaticBody3D" parent="Castle/Walls" unique_id=1765845734]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 17.875, 9, 20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="SouthEastMerlon6" type="StaticBody3D" parent="Castle/Walls" unique_id=1108386654]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 20.625, 9, 20.7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="WestNorth" type="StaticBody3D" parent="Castle/Walls" unique_id=1224317307]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -23.5, 0, -7.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(21, 9, 3)
+
+[node name="WestNorthMerlon1" type="StaticBody3D" parent="Castle/Walls" unique_id=104012110]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -24.7, 9, -16.6875)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="WestNorthMerlon2" type="StaticBody3D" parent="Castle/Walls" unique_id=288485980]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -24.7, 9, -14.0625)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="WestNorthMerlon3" type="StaticBody3D" parent="Castle/Walls" unique_id=1817154666]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -24.7, 9, -11.4375)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="WestNorthMerlon4" type="StaticBody3D" parent="Castle/Walls" unique_id=1504379924]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -24.7, 9, -8.8125)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="WestNorthMerlon5" type="StaticBody3D" parent="Castle/Walls" unique_id=1998195190]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -24.7, 9, -6.1875)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="WestNorthMerlon6" type="StaticBody3D" parent="Castle/Walls" unique_id=1193155473]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -24.7, 9, -3.5625)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="WestNorthMerlon7" type="StaticBody3D" parent="Castle/Walls" unique_id=361942730]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -24.7, 9, -0.9375)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="WestNorthMerlon8" type="StaticBody3D" parent="Castle/Walls" unique_id=562066116]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -24.7, 9, 1.6875)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="WestSouth" type="StaticBody3D" parent="Castle/Walls" unique_id=880562767]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -23.5, 0, 14.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(7, 9, 3)
+
+[node name="WestSouthMerlon1" type="StaticBody3D" parent="Castle/Walls" unique_id=460846540]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -24.7, 9, 12.75)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="WestSouthMerlon2" type="StaticBody3D" parent="Castle/Walls" unique_id=2074072165]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -24.7, 9, 16.25)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2, 1.4, 0.6)
+
+[node name="BreachStump" type="StaticBody3D" parent="Castle/Walls" unique_id=2038411512]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -23.5, 0, 7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(8, 2, 3)
+
+[node name="BreachSlopeOut" type="StaticBody3D" parent="Castle/Walls" unique_id=1109857859]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -27, 0, 7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "ramp"
+size = Vector3(8, 2, 4)
+
+[node name="Rubble62" type="StaticBody3D" parent="Castle/Walls" unique_id=693469744]
+transform = Transform3D(-0.64176846, 0.2227644, -0.73383194, 0.12231382, 0.974366, 0.18881282, 0.7570817, 0.031416327, -0.6525645, -28.212543, -0.38742346, 4.7219486)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.1614622, 1.097223, 1.6080322)
+
+[node name="Rubble63" type="StaticBody3D" parent="Castle/Walls" unique_id=542793596]
+transform = Transform3D(-0.93613774, 0.32849962, -0.125436, 0.31023848, 0.93951553, 0.14513, 0.16552421, 0.0969466, -0.9814291, -27.508066, -0.11428587, 6.0864716)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.1408265, 0.5410513, 1.050077)
+
+[node name="Rubble64" type="StaticBody3D" parent="Castle/Walls" unique_id=513516107]
+transform = Transform3D(-0.6962525, -0.31415826, -0.64539677, -0.31199226, 0.94221115, -0.1220614, 0.64644665, 0.11637325, -0.7540318, -27.903803, -0.41861653, 9.498946)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.771098, 1.1704806, 1.4754831)
+
+[node name="Rubble65" type="StaticBody3D" parent="Castle/Walls" unique_id=1490910046]
+transform = Transform3D(0.9689721, -0.22229314, 0.10806852, 0.18854022, 0.9474626, 0.25839365, -0.15983, -0.23000099, 0.95997596, -28.27265, -0.31043652, 6.8402066)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.4485059, 1.0217987, 0.78888917)
+
+[node name="Rubble66" type="StaticBody3D" parent="Castle/Walls" unique_id=965323358]
+transform = Transform3D(0.7182639, 0.21354902, 0.6621886, 0.023705587, 0.9436703, -0.330037, -0.69536674, 0.25275123, 0.672742, -25.07116, -0.060589753, 6.7178354)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.6553646, 0.31848916, 0.90189564)
+
+[node name="Rubble67" type="StaticBody3D" parent="Castle/Walls" unique_id=994577832]
+transform = Transform3D(-0.99355984, -0.026971884, -0.1100521, -0.054857846, 0.9643402, 0.25891808, 0.09914417, 0.2632878, -0.9596093, -27.452232, -0.35986, 6.703038)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.216596, 1.0420935, 1.5336713)
+
+[node name="Rubble68" type="StaticBody3D" parent="Castle/Walls" unique_id=1349333265]
+transform = Transform3D(0.64464843, 0.14579773, 0.75044745, -0.26777872, 0.96251917, 0.043027673, -0.7160467, -0.22869158, 0.659528, -30.591988, -0.07215627, 6.3526225)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.68855786, 0.31925723, 1.1816791)
+
+[node name="Rubble69" type="StaticBody3D" parent="Castle/Walls" unique_id=943602146]
+transform = Transform3D(0.9542841, 0.05923541, -0.29297277, -0.15281573, 0.9390692, -0.30789027, 0.2568837, 0.33858562, 0.9051908, -26.590155, -0.24949683, 8.504226)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.3194066, 0.99164236, 1.4045271)
+
+[node name="Rubble70" type="StaticBody3D" parent="Castle/Walls" unique_id=1360873684]
+transform = Transform3D(0.9523846, 0.28734684, 0.101957455, -0.24673831, 0.9227932, -0.29592708, -0.17911936, 0.25667956, 0.9497535, -30.325462, -0.30534378, 7.6841063)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.0427301, 1.2023778, 0.9180366)
+
+[node name="Rubble71" type="StaticBody3D" parent="Castle/Walls" unique_id=49841733]
+transform = Transform3D(0.9131597, 0.1906478, 0.36026758, -0.14402005, 0.97777253, -0.15237805, -0.3813103, 0.08725975, 0.9203196, -27.093674, -0.35956272, 6.83429)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.6462821, 1.0164158, 0.4117577)
+
+[node name="BreachSlopeIn" type="StaticBody3D" parent="Castle/Walls" unique_id=1988583296]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -20, 0, 7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "ramp"
+size = Vector3(8, 2, 4)
+
+[node name="Rubble73" type="StaticBody3D" parent="Castle/Walls" unique_id=165210341]
+transform = Transform3D(0.70504344, 0.17060046, -0.68833804, -0.14832745, 0.98463947, 0.09210974, 0.6934787, 0.037158065, 0.71951824, -21.29673, -0.21755503, 8.735666)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.5199659, 0.69901156, 0.57640314)
+
+[node name="Rubble74" type="StaticBody3D" parent="Castle/Walls" unique_id=1967910061]
+transform = Transform3D(0.27092317, -0.060157627, 0.96071935, -0.06774218, 0.9943793, 0.08136863, -0.9602144, -0.08712587, 0.2653252, -18.449577, -0.11242767, 5.1564)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.3322479, 0.35242537, 0.74202085)
+
+[node name="Rubble75" type="StaticBody3D" parent="Castle/Walls" unique_id=530342019]
+transform = Transform3D(0.4530326, 0.07324327, 0.8884801, -0.0076211714, 0.99690115, -0.07829513, -0.8914614, 0.028698992, 0.45218694, -18.47853, -0.16025689, 10.282164)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.4809709, 0.93597645, 1.2707995)
+
+[node name="Rubble76" type="StaticBody3D" parent="Castle/Walls" unique_id=472088956]
+transform = Transform3D(0.50697595, 0.11804254, -0.85383916, 0.2657468, 0.92091966, 0.2851063, 0.819972, -0.3714471, 0.4355147, -17.469517, -0.18719238, 8.683323)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.7215451, 0.5766529, 0.53726006)
+
+[node name="Rubble77" type="StaticBody3D" parent="Castle/Walls" unique_id=598928420]
+transform = Transform3D(-0.9728303, 0.1242616, -0.19534642, 0.074514285, 0.9669135, 0.24397925, 0.21920034, 0.22279431, -0.949902, -20.882854, -0.1775314, 8.631274)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.7848058, 0.67247415, 1.4685807)
+
+[node name="Rubble78" type="StaticBody3D" parent="Castle/Walls" unique_id=757938051]
+transform = Transform3D(0.65576965, 0.23910646, -0.7160966, -0.28205308, 0.9574322, 0.06139727, 0.7002945, 0.16171479, 0.6952957, -18.60253, -0.2848968, 4.35149)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.7189914, 0.75557613, 1.6424869)
+
+[node name="Rubble79" type="StaticBody3D" parent="Castle/Walls" unique_id=28468548]
+transform = Transform3D(-0.8843364, -0.15655427, -0.43981808, -0.26636544, 0.9429052, 0.19994813, 0.38340405, 0.29397374, -0.875546, -18.618088, -0.11710359, 8.722612)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.0719851, 0.99692976, 1.0421014)
+
+[node name="Rubble80" type="StaticBody3D" parent="Castle/Walls" unique_id=609236393]
+transform = Transform3D(0.7452983, 0.027297854, 0.666172, -0.23928203, 0.94354916, 0.22903937, -0.6223138, -0.33010566, 0.70975757, -17.22302, -0.119853325, 7.480501)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.4293265, 1.1966965, 1.4106731)
+
+[node name="Rubble81" type="StaticBody3D" parent="Castle/Walls" unique_id=135946858]
+transform = Transform3D(-0.81568515, 0.26710272, -0.5131411, 0.14809738, 0.9538822, 0.26110494, 0.55921805, 0.13698459, -0.8176248, -17.471346, -0.36466902, 3.960441)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.6756039, 1.0580812, 0.50369835)
+
+[node name="Rubble82" type="StaticBody3D" parent="Castle/Walls" unique_id=24848180]
+transform = Transform3D(-0.6124364, 0.099313155, -0.78425664, 0.11004644, 0.9931282, 0.039826557, 0.78282267, -0.06191342, -0.61915696, -15.6398945, -0.111928105, 8.32496)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.3098596, 1.049232, 1.0267304)
+
+[node name="Towers" type="Node3D" parent="Castle" unique_id=708309113]
+
+[node name="NorthWestTower" type="StaticBody3D" parent="Castle/Towers" unique_id=1437768119]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.5, 0, -19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "cylinder3"
+size = Vector3(8, 14, 8)
+
+[node name="NorthWestMerlon1" type="StaticBody3D" parent="Castle/Towers" unique_id=1361454240]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -19.9, 14, -19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="NorthWestMerlon2" type="StaticBody3D" parent="Castle/Towers" unique_id=395328595]
+transform = Transform3D(0.58778524, 0, 0.809017, 0, 1, 0, -0.809017, 0, 0.58778524, -20.58754, 14, -17.383972)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="NorthWestMerlon3" type="StaticBody3D" parent="Castle/Towers" unique_id=2028324367]
+transform = Transform3D(0.95105654, 0, 0.309017, 0, 1, 0, -0.309017, 0, 0.95105654, -22.387539, 14, -16.076197)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="NorthWestMerlon4" type="StaticBody3D" parent="Castle/Towers" unique_id=1617210470]
+transform = Transform3D(0.95105654, 0, -0.309017, 0, 1, 0, 0.309017, 0, 0.95105654, -24.612461, 14, -16.076197)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="NorthWestMerlon5" type="StaticBody3D" parent="Castle/Towers" unique_id=1316628583]
+transform = Transform3D(0.58778524, 0, -0.809017, 0, 1, 0, 0.809017, 0, 0.58778524, -26.41246, 14, -17.383972)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="NorthWestMerlon6" type="StaticBody3D" parent="Castle/Towers" unique_id=809925205]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -27.1, 14, -19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="NorthWestMerlon7" type="StaticBody3D" parent="Castle/Towers" unique_id=1418085378]
+transform = Transform3D(-0.5877852, 0, -0.809017, 0, 1, 0, 0.809017, 0, -0.5877852, -26.41246, 14, -21.616028)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="NorthWestMerlon8" type="StaticBody3D" parent="Castle/Towers" unique_id=621769302]
+transform = Transform3D(-0.9510565, 0, -0.30901703, 0, 1, 0, 0.30901703, 0, -0.9510565, -24.612461, 14, -22.923803)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="NorthWestMerlon9" type="StaticBody3D" parent="Castle/Towers" unique_id=1688256723]
+transform = Transform3D(-0.95105654, 0, 0.30901697, 0, 1, 0, -0.30901697, 0, -0.95105654, -22.387539, 14, -22.923803)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="NorthWestMerlon10" type="StaticBody3D" parent="Castle/Towers" unique_id=1910972381]
+transform = Transform3D(-0.58778507, 0, 0.8090171, 0, 1, 0, -0.8090171, 0, -0.58778507, -20.58754, 14, -21.616028)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="NorthWestRoof" type="StaticBody3D" parent="Castle/Towers" unique_id=2058439236]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.5, 14, -19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "cone4"
+size = Vector3(6.4, 6, 6.4)
+
+[node name="NorthEastTower" type="StaticBody3D" parent="Castle/Towers" unique_id=1056403192]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.5, 0, -19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "cylinder3"
+size = Vector3(8, 7.368435, 8)
+
+[node name="Rubble14" type="StaticBody3D" parent="Castle/Towers" unique_id=1356314981]
+transform = Transform3D(-0.22948448, 0.032010235, -0.9727858, -0.09474527, 0.99397784, 0.0550584, 0.9686899, 0.10480191, -0.22506967, 29.536922, -0.5095221, -23.768583)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.6727757, 1.4152985, 0.7180126)
+
+[node name="Rubble15" type="StaticBody3D" parent="Castle/Towers" unique_id=216830620]
+transform = Transform3D(-0.6742054, 0.17365292, -0.7178382, 0.34120077, 0.9352572, -0.094212376, 0.6550032, -0.30844545, -0.689806, 27.931482, -0.041560072, -25.474253)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.78304297, 0.3285381, 1.7391255)
+
+[node name="Rubble16" type="StaticBody3D" parent="Castle/Towers" unique_id=262454621]
+transform = Transform3D(-0.8163853, -0.24886754, -0.5211334, -0.06867908, 0.93781793, -0.34026572, 0.5734093, -0.24199697, -0.7827127, 26.079891, -0.12814261, -28.397535)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.4733074, 0.48750517, 1.4628066)
+
+[node name="Rubble17" type="StaticBody3D" parent="Castle/Towers" unique_id=241351385]
+transform = Transform3D(-0.84179133, 0.16176438, -0.5149948, 0.008631355, 0.9579537, 0.28679317, 0.53973407, 0.23697491, -0.8077933, 29.095102, -0.13257918, -25.455442)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.8239753, 0.43383276, 1.4604374)
+
+[node name="Rubble18" type="StaticBody3D" parent="Castle/Towers" unique_id=212776501]
+transform = Transform3D(-0.95515, -0.063885145, 0.28914878, -0.14436324, 0.9530134, -0.2663167, -0.258549, -0.2961149, -0.9194935, 31.409712, -0.13861366, -21.692093)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.7257271, 0.86072516, 1.9073102)
+
+[node name="Rubble19" type="StaticBody3D" parent="Castle/Towers" unique_id=515177085]
+transform = Transform3D(0.6262641, 0.20972124, 0.75087297, -0.1478908, 0.97760826, -0.1497011, -0.76545507, -0.01729478, 0.64325684, 26.526773, -0.23428582, -24.276491)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.541861, 0.7244362, 1.8518406)
+
+[node name="Rubble20" type="StaticBody3D" parent="Castle/Towers" unique_id=65211143]
+transform = Transform3D(0.8212031, -0.07879324, 0.56516993, 0.22086741, 0.9571132, -0.18748868, -0.52615875, 0.2787939, 0.80338717, 26.327168, -0.181604, -23.626493)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.51127243, 1.0865273, 1.68051)
+
+[node name="Rubble21" type="StaticBody3D" parent="Castle/Towers" unique_id=592361580]
+transform = Transform3D(0.08216432, 0.022574129, -0.9963631, 0.050858226, 0.9983459, 0.026813036, 0.99532026, -0.052876335, 0.08088033, 28.026264, -0.1290945, -25.0508)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.4103812, 0.41581008, 0.63310057)
+
+[node name="Rubble22" type="StaticBody3D" parent="Castle/Towers" unique_id=1624647085]
+transform = Transform3D(-0.57552063, -0.20916322, -0.79058635, -0.18226357, 0.9752292, -0.12533183, 0.79721767, 0.07196402, -0.5993874, 26.578299, -0.2576326, -26.326548)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.4109049, 0.86701155, 1.708879)
+
+[node name="Rubble23" type="StaticBody3D" parent="Castle/Towers" unique_id=1566103922]
+transform = Transform3D(0.87217516, -0.07244013, 0.4838004, -0.10105104, 0.940967, 0.32306296, -0.47864297, -0.33065605, 0.81336796, 28.767605, -0.15750119, -29.519875)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.0834644, 1.1491308, 1.1741887)
+
+[node name="Rubble24" type="StaticBody3D" parent="Castle/Towers" unique_id=1790129343]
+transform = Transform3D(0.90022075, -0.3107179, 0.30505243, 0.23272447, 0.935447, 0.26604187, -0.36802435, -0.16850325, 0.9144205, 30.840605, -0.399734, -26.312387)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.9295458, 1.4075243, 2.0162563)
+
+[node name="Rubble25" type="StaticBody3D" parent="Castle/Towers" unique_id=209899240]
+transform = Transform3D(0.18037066, -0.28355956, 0.9418388, -0.31048676, 0.8921714, 0.32806724, -0.93330824, -0.3516022, 0.07288006, 31.603, -0.18374117, -27.012737)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.6783644, 0.5858716, 1.6470616)
+
+[node name="Rubble26" type="StaticBody3D" parent="Castle/Towers" unique_id=332956242]
+transform = Transform3D(0.93636346, 0.05363609, 0.3469102, -0.15993832, 0.9449071, 0.28560492, -0.3124792, -0.32291424, 0.893355, 30.135735, -0.29970807, -22.940609)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.7266083, 0.75789344, 1.5057318)
+
+[node name="Rubble27" type="StaticBody3D" parent="Castle/Towers" unique_id=1630557765]
+transform = Transform3D(0.9618774, 0.26852655, 0.05182046, -0.27250555, 0.9250931, 0.2644683, 0.02307802, -0.26850745, 0.96300113, 27.09496, -0.2668278, -26.635576)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.1820444, 0.94069934, 1.69441)
+
+[node name="SouthEastTower" type="StaticBody3D" parent="Castle/Towers" unique_id=95120990]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.5, 0, 19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "cylinder3"
+size = Vector3(8, 14, 8)
+
+[node name="SouthEastMerlon1" type="StaticBody3D" parent="Castle/Towers" unique_id=1323094489]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 27.1, 14, 19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="SouthEastMerlon2" type="StaticBody3D" parent="Castle/Towers" unique_id=2001131698]
+transform = Transform3D(0.58778524, 0, 0.809017, 0, 1, 0, -0.809017, 0, 0.58778524, 26.41246, 14, 21.616028)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="SouthEastMerlon3" type="StaticBody3D" parent="Castle/Towers" unique_id=1770794224]
+transform = Transform3D(0.95105654, 0, 0.309017, 0, 1, 0, -0.309017, 0, 0.95105654, 24.612461, 14, 22.923803)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="SouthEastMerlon4" type="StaticBody3D" parent="Castle/Towers" unique_id=1094802065]
+transform = Transform3D(0.95105654, 0, -0.309017, 0, 1, 0, 0.309017, 0, 0.95105654, 22.387539, 14, 22.923803)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="SouthEastMerlon5" type="StaticBody3D" parent="Castle/Towers" unique_id=1132667568]
+transform = Transform3D(0.58778524, 0, -0.809017, 0, 1, 0, 0.809017, 0, 0.58778524, 20.58754, 14, 21.616028)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="SouthEastMerlon6" type="StaticBody3D" parent="Castle/Towers" unique_id=2063778897]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 19.9, 14, 19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="SouthEastMerlon7" type="StaticBody3D" parent="Castle/Towers" unique_id=361497850]
+transform = Transform3D(-0.5877852, 0, -0.809017, 0, 1, 0, 0.809017, 0, -0.5877852, 20.58754, 14, 17.383972)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="SouthEastMerlon8" type="StaticBody3D" parent="Castle/Towers" unique_id=1880457181]
+transform = Transform3D(-0.9510565, 0, -0.30901703, 0, 1, 0, 0.30901703, 0, -0.9510565, 22.387539, 14, 16.076197)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="SouthEastMerlon9" type="StaticBody3D" parent="Castle/Towers" unique_id=98764712]
+transform = Transform3D(-0.95105654, 0, 0.30901697, 0, 1, 0, -0.30901697, 0, -0.95105654, 24.612461, 14, 16.076197)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="SouthEastMerlon10" type="StaticBody3D" parent="Castle/Towers" unique_id=1888921229]
+transform = Transform3D(-0.58778507, 0, 0.8090171, 0, 1, 0, -0.8090171, 0, -0.58778507, 26.41246, 14, 17.383972)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1, 1.4, 0.6)
+
+[node name="SouthEastRoof" type="StaticBody3D" parent="Castle/Towers" unique_id=1323517136]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.5, 14, 19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "cone4"
+size = Vector3(6.4, 6, 6.4)
+
+[node name="SouthWestTower" type="StaticBody3D" parent="Castle/Towers" unique_id=2006555089]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.5, 0, 19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "cylinder3"
+size = Vector3(8, 8.560634, 8)
+
+[node name="Rubble41" type="StaticBody3D" parent="Castle/Towers" unique_id=2041858929]
+transform = Transform3D(0.73474866, 0.20520799, 0.6465556, -0.2589697, 0.9658079, -0.012240045, -0.6269603, -0.15844496, 0.7627686, -31.354908, -0.07645225, 22.67933)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.5414643, 0.3836283, 2.1905222)
+
+[node name="Rubble42" type="StaticBody3D" parent="Castle/Towers" unique_id=215255176]
+transform = Transform3D(0.33700475, -0.08551021, 0.93761176, -0.107916914, 0.9857952, 0.12869298, -0.9352977, -0.14455432, 0.32298964, -33.59972, -0.3997338, 25.513943)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.5682757, 1.265562, 1.5691037)
+
+[node name="Rubble43" type="StaticBody3D" parent="Castle/Towers" unique_id=388329294]
+transform = Transform3D(0.8141104, -0.30786332, 0.4923865, 0.17420417, 0.9383265, 0.29865742, -0.553965, -0.15736434, 0.8175324, -28.355871, -0.28821787, 22.090084)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.8907528, 1.0658219, 1.5935901)
+
+[node name="Rubble44" type="StaticBody3D" parent="Castle/Towers" unique_id=718584787]
+transform = Transform3D(0.9870553, -0.13257997, -0.09024524, 0.12360725, 0.98741394, -0.09866577, 0.10219051, 0.086233616, 0.9910201, -27.004732, -0.114963725, 26.049416)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.9280474, 1.0201437, 0.66029227)
+
+[node name="Rubble45" type="StaticBody3D" parent="Castle/Towers" unique_id=1067078784]
+transform = Transform3D(0.1465207, -0.19850188, 0.9690866, 0.30263415, 0.94168186, 0.14713183, -0.94177717, 0.27172083, 0.19804935, -27.496016, -0.50189257, 25.580965)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.4348487, 1.4198365, 1.2131053)
+
+[node name="Rubble46" type="StaticBody3D" parent="Castle/Towers" unique_id=345292263]
+transform = Transform3D(0.98010355, 0.1563703, 0.12225129, -0.1628734, 0.9856163, 0.045084864, -0.113442935, -0.06409932, 0.9914746, -30.809786, -0.13944972, 24.768232)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.8740889, 0.98201334, 1.3232764)
+
+[node name="Rubble47" type="StaticBody3D" parent="Castle/Towers" unique_id=1692526668]
+transform = Transform3D(-0.05248528, -0.143365, -0.9882772, -0.13169754, 0.9819912, -0.13545893, 0.9898996, 0.12304408, -0.0704209, -28.562008, -0.24093555, 21.164223)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.7597881, 0.7868575, 1.0968453)
+
+[node name="Rubble48" type="StaticBody3D" parent="Castle/Towers" unique_id=1705383349]
+transform = Transform3D(-0.93831, -0.3062393, 0.16059834, -0.23979062, 0.91086423, 0.335897, -0.24914815, 0.27666554, -0.9281063, -29.650352, -0.11829692, 24.119282)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.1160066, 0.5310613, 1.9010527)
+
+[node name="Rubble49" type="StaticBody3D" parent="Castle/Towers" unique_id=69511617]
+transform = Transform3D(0.5748219, 0.09546377, 0.81269085, 0.13128786, 0.96954525, -0.20674968, -0.80767775, 0.2255407, 0.5447826, -28.455708, -0.26208776, 27.950712)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.85760474, 0.7783449, 1.1367632)
+
+[node name="Rubble50" type="StaticBody3D" parent="Castle/Towers" unique_id=966541640]
+transform = Transform3D(0.5989425, 0.17148504, -0.7822153, 0.023264747, 0.9726635, 0.23105082, 0.80045396, -0.1565842, 0.57857996, -29.838684, -0.16264236, 22.22047)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.6795042, 0.7073201, 2.1736398)
+
+[node name="Rubble51" type="StaticBody3D" parent="Castle/Towers" unique_id=362972963]
+transform = Transform3D(0.9764107, -0.16841625, 0.13512284, 0.15989487, 0.9845272, 0.07169272, -0.14510632, -0.04839609, 0.9882317, -32.692974, -0.07757556, 28.633715)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.3527411, 0.5400882, 1.1547304)
+
+[node name="Rubble52" type="StaticBody3D" parent="Castle/Towers" unique_id=865622320]
+transform = Transform3D(-0.23523471, -0.100776695, -0.9666999, 0.24444774, 0.9565049, -0.15919729, 0.9406965, -0.27375633, -0.20036851, -27.672878, -0.14882953, 23.971972)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.6486253, 0.42155123, 0.67006373)
+
+[node name="Rubble53" type="StaticBody3D" parent="Castle/Towers" unique_id=2135642696]
+transform = Transform3D(-0.32381138, -0.2756255, -0.9050839, -0.15547067, 0.9591225, -0.23645921, 0.93326044, 0.064145826, -0.35342643, -30.063765, -0.1503759, 24.966433)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.72404695, 0.4815094, 1.1374798)
+
+[node name="Rubble54" type="StaticBody3D" parent="Castle/Towers" unique_id=546612010]
+transform = Transform3D(0.95305526, -0.24344212, -0.18005998, 0.17268568, 0.9254589, -0.33720243, 0.24872737, 0.29027876, 0.9240525, -32.058846, -0.20497261, 27.25909)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.8922181, 0.83613884, 0.73338985)
+
+[node name="Gatehouse" type="Node3D" parent="Castle" unique_id=80533723]
+
+[node name="WestTower" type="StaticBody3D" parent="Castle/Gatehouse" unique_id=1807952575]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0, 21)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(5, 13, 8)
+
+[node name="EastTower" type="StaticBody3D" parent="Castle/Gatehouse" unique_id=945483427]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 0, 21)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(5, 13, 8)
+
+[node name="Arch" type="StaticBody3D" parent="Castle/Gatehouse" unique_id=883340841]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "wall door"
+size = Vector3(6, 11, 3)
+
+[node name="Portcullis" type="StaticBody3D" parent="Castle/Gatehouse" unique_id=53577405]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 19.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "ladder1"
+size = Vector3(3, 4, 0.3)
+
+[node name="Keep" type="Node3D" parent="Castle" unique_id=1062312775]
+
+[node name="North1" type="StaticBody3D" parent="Castle/Keep" unique_id=504279487]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -15.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(6, 7, 1)
+
+[node name="North2" type="StaticBody3D" parent="Castle/Keep" unique_id=669163033]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 7, -15.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "wall window1"
+size = Vector3(6, 7, 1)
+
+[node name="North3" type="StaticBody3D" parent="Castle/Keep" unique_id=1329231754]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 14, -15.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "wall window1"
+size = Vector3(6, 7, 1)
+
+[node name="North21" type="StaticBody3D" parent="Castle/Keep" unique_id=808337164]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, -15.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(6, 7, 1)
+
+[node name="North22" type="StaticBody3D" parent="Castle/Keep" unique_id=1633177190]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 7, -15.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "wall window1"
+size = Vector3(6, 7, 1)
+
+[node name="North23" type="StaticBody3D" parent="Castle/Keep" unique_id=1696601974]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 14, -15.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "wall window1"
+size = Vector3(6, 7, 1)
+
+[node name="East1" type="StaticBody3D" parent="Castle/Keep" unique_id=1870178666]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 17.5, 0, -13)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(6, 7, 1)
+
+[node name="East2" type="StaticBody3D" parent="Castle/Keep" unique_id=1143249336]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 17.5, 7, -13)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "wall window1"
+size = Vector3(6, 7, 1)
+
+[node name="East3" type="StaticBody3D" parent="Castle/Keep" unique_id=1285110801]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 17.5, 14, -13)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "wall window1"
+size = Vector3(6, 7, 1)
+
+[node name="East21" type="StaticBody3D" parent="Castle/Keep" unique_id=1255211744]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 17.5, 0, -7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(6, 7, 1)
+
+[node name="East22" type="StaticBody3D" parent="Castle/Keep" unique_id=1577836858]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 17.5, 7, -7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "wall window1"
+size = Vector3(6, 7, 1)
+
+[node name="East23" type="StaticBody3D" parent="Castle/Keep" unique_id=1278206197]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 17.5, 14, -7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "wall window1"
+size = Vector3(6, 7, 1)
+
+[node name="South1" type="StaticBody3D" parent="Castle/Keep" unique_id=1414932040]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -4.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(6, 3.4608853, 1)
+
+[node name="South21" type="StaticBody3D" parent="Castle/Keep" unique_id=84657747]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, -4.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(6, 7, 1)
+
+[node name="South22" type="StaticBody3D" parent="Castle/Keep" unique_id=624269560]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 7, -4.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "wall window1"
+size = Vector3(6, 7, 1)
+
+[node name="South23" type="StaticBody3D" parent="Castle/Keep" unique_id=1704269160]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 14, -4.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "wall window1"
+size = Vector3(6, 7, 1)
+
+[node name="West1" type="StaticBody3D" parent="Castle/Keep" unique_id=979090422]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 6.5, 0, -13)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "wall door"
+size = Vector3(6, 7, 1)
+
+[node name="West2" type="StaticBody3D" parent="Castle/Keep" unique_id=798489055]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 6.5, 7, -13)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "wall window1"
+size = Vector3(6, 7, 1)
+
+[node name="West3" type="StaticBody3D" parent="Castle/Keep" unique_id=1992602590]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 6.5, 14, -13)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "wall window1"
+size = Vector3(6, 7, 1)
+
+[node name="West21" type="StaticBody3D" parent="Castle/Keep" unique_id=865626236]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 6.5, 0, -7)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(6, 2.3480272, 1)
+
+[node name="Floor1" type="StaticBody3D" parent="Castle/Keep" unique_id=303252942]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 6.4, -12)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(10, 0.6, 6)
+
+[node name="Floor2" type="StaticBody3D" parent="Castle/Keep" unique_id=2042793188]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 13.4, -11.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(10, 0.6, 7)
+
+[node name="Rubble23" type="StaticBody3D" parent="Castle/Keep" unique_id=1252759273]
+transform = Transform3D(-0.4985479, -0.142841, 0.85501254, -0.03581394, 0.9888823, 0.14432299, -0.866122, 0.041330557, -0.4981209, 5.5507727, -0.09498345, 1.1604302)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.7353506, 0.47215623, 0.6272732)
+
+[node name="Rubble24" type="StaticBody3D" parent="Castle/Keep" unique_id=730167832]
+transform = Transform3D(0.8276609, 0.053453326, 0.55867714, -0.07386599, 0.9971697, 0.014022338, -0.5563463, -0.05287298, 0.82926667, 6.3397684, -0.042743687, -5.128186)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.0537411, 0.36834008, 0.4421356)
+
+[node name="Rubble25" type="StaticBody3D" parent="Castle/Keep" unique_id=1308418186]
+transform = Transform3D(0.7979868, 0.089624435, 0.5959736, -0.11825327, 0.9929426, 0.009014872, -0.5909596, -0.077669576, 0.80295336, 6.267475, -0.11477791, 0.6360469)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.75260323, 0.49207705, 1.9247811)
+
+[node name="Rubble26" type="StaticBody3D" parent="Castle/Keep" unique_id=985377593]
+transform = Transform3D(-0.97059894, -0.18334979, -0.15595017, -0.20025735, 0.97456884, 0.10056142, 0.13354625, 0.12883498, -0.98263264, 7.1183405, -0.28345945, 0.12091589)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.7765565, 0.8381241, 0.53974944)
+
+[node name="Rubble27" type="StaticBody3D" parent="Castle/Keep" unique_id=161266183]
+transform = Transform3D(0.9936541, -0.10505471, -0.040188767, 0.11204782, 0.95577335, 0.2719239, 0.009844463, -0.27470133, 0.96147925, 0.9112623, -0.2507025, -0.33962548)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.7380912, 0.90779126, 1.8805785)
+
+[node name="Rubble28" type="StaticBody3D" parent="Castle/Keep" unique_id=812822246]
+transform = Transform3D(-0.63982135, 0.27058345, 0.71931446, 0.06821602, 0.95227015, -0.29753673, -0.7654902, -0.14130159, -0.6277409, 2.1643066, -0.18437752, -0.014475942)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.8879974, 0.73158914, 0.86357963)
+
+[node name="Rubble29" type="StaticBody3D" parent="Castle/Keep" unique_id=552850591]
+transform = Transform3D(-0.8668857, -0.11776752, -0.48439646, -0.012086009, 0.9763741, -0.21574882, 0.49836037, -0.18117516, -0.84782815, 2.3522897, -0.33408496, -5.590418)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.378261, 1.1134362, 1.9201791)
+
+[node name="Rubble30" type="StaticBody3D" parent="Castle/Keep" unique_id=1188384014]
+transform = Transform3D(-0.10889588, -0.33369786, 0.93636924, 0.030526372, 0.9404042, 0.33868587, -0.99358433, 0.06546545, -0.092219554, 5.7804394, -0.21710023, -4.096982)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.9378643, 0.78295475, 0.81747484)
+
+[node name="Rubble31" type="StaticBody3D" parent="Castle/Keep" unique_id=130130608]
+transform = Transform3D(0.95557654, 0.04194912, 0.29174277, 0.051442135, 0.9508912, -0.30522072, -0.29021937, 0.30666962, 0.90649134, 4.158255, -0.15165207, 0.2155993)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.0547854, 0.42502835, 1.0432419)
+
+[node name="Rubble32" type="StaticBody3D" parent="Castle/Keep" unique_id=1478414689]
+transform = Transform3D(-0.3938568, 0.18573228, 0.9002113, 0.26412866, 0.9609353, -0.0827004, -0.88040495, 0.20519948, -0.42752814, 5.395037, -0.31674618, -4.8928566)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2658554, 0.92951804, 1.7844743)
+
+[node name="Rubble33" type="StaticBody3D" parent="Castle/Keep" unique_id=1365266451]
+transform = Transform3D(0.9258035, -0.25560966, 0.27848107, 0.29924423, 0.9457159, -0.12678494, -0.23095648, 0.20071179, 0.95203674, 6.0078564, -0.37821773, -0.2751335)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.3172957, 1.0483973, 1.9054925)
+
+[node name="Rubble34" type="StaticBody3D" parent="Castle/Keep" unique_id=1365375745]
+transform = Transform3D(0.9482756, 0.031056046, 0.3159252, -0.10175893, 0.97242457, 0.20984666, -0.30069643, -0.23114069, 0.92528677, 4.070619, -0.2098204, 0.83329296)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.2338905, 0.7106862, 1.5989364)
+
+[node name="Yard2" type="Node3D" parent="Castle" unique_id=1695183045]
+
+[node name="Well" type="StaticBody3D" parent="Castle/Yard2" unique_id=427881611]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 2)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "cube4"
+size = Vector3(3, 1.2, 3)
+
+[node name="WestStairs" type="StaticBody3D" parent="Castle/Yard2" unique_id=1887076057]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -17.5, 0, -10)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "stairs"
+size = Vector3(3, 9, 9)
+
+[node name="EastStairs" type="StaticBody3D" parent="Castle/Yard2" unique_id=909538097]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 17.5, 0, 10)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "stairs"
+size = Vector3(3, 9, 9)
+
+[node name="Crate3" type="StaticBody3D" parent="Castle/Yard2" unique_id=645698690 instance=ExtResource("4_esg6i")]
+transform = Transform3D(0.9999875, 0, 0.0050049513, 0, 1, 0, -0.0050049513, 0, 0.9999875, -19, 0, 15.5)
+collision_mask = 0
+
+[node name="Crate4" type="StaticBody3D" parent="Castle/Yard2" unique_id=2143346796 instance=ExtResource("4_esg6i")]
+transform = Transform3D(0.99982643, 0, -0.018631274, 0, 1, 0, 0.018631274, 0, 0.99982643, -17.5, 0, 16)
+collision_mask = 0
+
+[node name="Crate5" type="StaticBody3D" parent="Castle/Yard2" unique_id=1516801698 instance=ExtResource("4_esg6i")]
+transform = Transform3D(0.94878244, 0, 0.31593022, 0, 1, 0, -0.31593022, 0, 0.94878244, 19.5, 0, -3)
+collision_mask = 0
+
+[node name="Crate6" type="StaticBody3D" parent="Castle/Yard2" unique_id=1212798958 instance=ExtResource("4_esg6i")]
+transform = Transform3D(0.9963214, 0, -0.08569512, 0, 1, 0, 0.08569512, 0, 0.9963214, 19, 0, -0.8)
+collision_mask = 0
+
+[node name="Crate7" type="StaticBody3D" parent="Castle/Yard2" unique_id=367009547 instance=ExtResource("4_esg6i")]
+transform = Transform3D(0.9584059, 0, 0.28540865, 0, 1, 0, -0.28540865, 0, 0.9584059, -19.5, 0, -15)
+collision_mask = 0
+
+[node name="Barrel8" type="StaticBody3D" parent="Castle/Yard2" unique_id=256476301]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, 16.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "cylinder1"
+size = Vector3(1.2, 1.5, 1.2)
+
+[node name="Barrel9" type="StaticBody3D" parent="Castle/Yard2" unique_id=355704324]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, 15.2)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "cylinder1"
+size = Vector3(1.2, 1.5, 1.2)
+
+[node name="Barrel10" type="StaticBody3D" parent="Castle/Yard2" unique_id=1346152648]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 2)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "cylinder1"
+size = Vector3(1.2, 1.5, 1.2)
+
+[node name="Barrel11" type="StaticBody3D" parent="Castle/Yard2" unique_id=310599696]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -16.5)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "cylinder1"
+size = Vector3(1.2, 1.5, 1.2)
+
+[node name="Barrel12" type="StaticBody3D" parent="Castle/Yard2" unique_id=1688304686]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4, 0, -16)
+collision_mask = 0
+script = ExtResource("3_86icr")
+piece = "cylinder1"
+size = Vector3(1.2, 1.5, 1.2)
+
+[node name="Rubble14" type="StaticBody3D" parent="Castle/Yard2" unique_id=359927419]
+transform = Transform3D(0.79431194, 0.08829762, 0.60105914, -0.17330854, 0.9812023, 0.084888846, -0.58226514, -0.1715969, 0.7946834, -10.40614, -0.049813822, -7.121033)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.70132446, 0.32165846, 0.54716086)
+
+[node name="Rubble15" type="StaticBody3D" parent="Castle/Yard2" unique_id=305766789]
+transform = Transform3D(-0.8167929, 0.025400601, -0.5763715, -0.05906126, 0.99010026, 0.127331, 0.57389987, 0.13804428, -0.80720675, -9.006022, -0.056272518, -5.468799)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.0612953, 0.50199866, 0.53073096)
+
+[node name="Rubble16" type="StaticBody3D" parent="Castle/Yard2" unique_id=1725379945]
+transform = Transform3D(-0.99190223, -0.11317624, -0.057628423, -0.08876513, 0.94230735, -0.3227656, 0.09083309, -0.31503654, -0.94472283, -9.309049, -0.20771502, -6.304846)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.175493, 0.531587, 0.48234224)
+
+[node name="Rubble17" type="StaticBody3D" parent="Castle/Yard2" unique_id=674333487]
+transform = Transform3D(0.20004486, -0.0058730356, -0.9797691, 0.2955578, 0.95376164, 0.054628525, 0.9341454, -0.30050656, 0.19253093, -9.441137, -0.092115894, -7.057856)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.9125267, 0.38725862, 0.84540546)
+
+[node name="Rubble18" type="StaticBody3D" parent="Castle/Yard2" unique_id=325490495]
+transform = Transform3D(0.78509563, -0.110727504, -0.60939664, 0.11226303, 0.9930333, -0.035804067, 0.6091156, -0.04030309, 0.7920567, 8.705868, -0.1618413, 8.411496)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.0444578, 0.7246523, 0.89132035)
+
+[node name="Rubble19" type="StaticBody3D" parent="Castle/Yard2" unique_id=1381896730]
+transform = Transform3D(-0.30372855, 0.092543684, 0.94825345, 0.24698862, 0.96889526, -0.015446972, -0.9201879, 0.22951613, -0.31713837, 8.998051, -0.075911015, 9.295845)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.43429908, 0.41792715, 1.1204568)
+
+[node name="Rubble20" type="StaticBody3D" parent="Castle/Yard2" unique_id=522294061]
+transform = Transform3D(0.98695874, -0.084528126, 0.13699435, 0.12186927, 0.94836545, -0.29283243, -0.105168134, 0.30570891, 0.94629896, 8.498275, -0.15976015, 7.924069)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.74073744, 0.4522351, 1.1407907)
+
+[node name="Rubble21" type="StaticBody3D" parent="Castle/Yard2" unique_id=1539764069]
+transform = Transform3D(0.79136884, 0.21679191, 0.5716088, -0.16701204, 0.97610974, -0.1389842, -0.58808357, 0.014522217, 0.80866975, 8.359161, -0.069996215, 10.412128)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.0991518, 0.31405875, 0.9781947)
+
+[node name="Rubble22" type="StaticBody3D" parent="Castle/Yard2" unique_id=364966389]
+transform = Transform3D(-0.96881443, -0.23062159, -0.090621576, -0.24613315, 0.9378679, 0.2445862, 0.028584208, 0.2592636, -0.96538347, 13.690979, -0.2412718, 4.106785)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(0.44683805, 0.73069537, 0.6625594)
+
+[node name="Rubble23" type="StaticBody3D" parent="Castle/Yard2" unique_id=530695564]
+transform = Transform3D(0.61134005, 0.06639139, -0.78857815, 0.048697274, 0.99143016, 0.121222, 0.7898683, -0.112509474, 0.6028679, 14.531449, -0.054607216, 2.9702716)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.084214, 0.32234478, 1.1462805)
+
+[node name="Rubble24" type="StaticBody3D" parent="Castle/Yard2" unique_id=1744931415]
+transform = Transform3D(0.5349636, 0.13124824, 0.83461833, 0.22767164, 0.92892236, -0.29200828, -0.8136213, 0.34623277, 0.46705818, 14.252564, -0.12942074, 2.8891919)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.1027745, 0.33425462, 0.4346768)
+
+[node name="Rubble25" type="StaticBody3D" parent="Castle/Yard2" unique_id=186394497]
+transform = Transform3D(-0.9031713, -0.015209012, -0.42901084, 0.06913808, 0.98117214, -0.18033622, 0.42367622, -0.19253549, -0.88511497, 15.039604, -0.07244886, 4.3147054)
+collision_mask = 0
+script = ExtResource("3_86icr")
+size = Vector3(1.054104, 0.39751238, 1.1455564)
+
+[node name="TheCastle" type="Node3D" parent="." unique_id=739211560]
+script = ExtResource("5_ml2v3")
+display_name = "The Castle"
+built_for = Vector2(0, 0)
+bounds = AABB(-36, -6, -32, 72, 36, 64)
+
+[node name="Webs" type="Node3D" parent="." unique_id=2113698930]
+
+[node name="Player" type="CharacterBody3D" parent="." unique_id=2102208875 instance=ExtResource("6_km40u")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 14)
+collision_layer = 2
+floor_snap_length = 0.5
+script = ExtResource("7_r6cvf")
+grows_by_eating = false
+start_stage = 2
+all_spells_open = true
+underwater_env = ExtResource("8_nu77d")
+abilities_path = Array[NodePath]([NodePath("Crouch Ability 3D"), NodePath("Sprint Ability 3D"), NodePath("Walk Ability 3D"), NodePath("Jump Ability 3D"), NodePath("Fly Ability 3D"), NodePath("Swim Ability 3D")])
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1362268885 instance=ExtResource("9_mr2rv")]
+script = ExtResource("10_pplkw")
