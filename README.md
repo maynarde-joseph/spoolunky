@@ -400,10 +400,10 @@ up. Everything else is learned:
   lines to every web they tie together.
 * **Some come with the spells**, nothing to learn once you know both. **A wet web
   soaks**: called back or flung, a web Douse left wet soaks what it passes, ready
-  for lightning. **Fire boils water**: breathe on a puddle and it goes up as steam
-  that soaks and scalds whatever is in it, fliers included. Which comes first
-  decides: each is the second spell acting on what the first left behind — and
-  some pairs have nothing, rather than a bigger number.
+  for lightning. **Fire turns water to lava**: breathe on a puddle and it turns to
+  lava where it lies, burning whatever stands in it for a few seconds. Which comes
+  first decides: each is the second spell acting on what the first left behind —
+  and some pairs have nothing, rather than a bigger number.
 * **Five on the keys.** The web is always on 1 and five spells ride on 2 to 6. A
   spell learned goes on the next free key; the tree takes one off or puts one on.
 
@@ -908,7 +908,7 @@ whirl wind lifts out of a puddle holding the first thing it reaches, acid water,
 square pillar of clay that throws what stands on it — the spider included — and flings
 the web it comes up under, a breath of fire swept from
 one creature to the next that burns harder the more silk is on what it touches and
-burns the silk with it — but not a wet web — and boils a puddle into steam, webs
+burns the silk with it — but not a wet web — and turns a puddle to lava, webs
 called back through what is in their way, the magic circles
 each spell is drawn in, the number keys, and the whole book opened at once:
 

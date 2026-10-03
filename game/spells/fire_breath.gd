@@ -16,8 +16,8 @@ extends Node3D
 ## burned. A wet web does not: see [WetSilk]. It stands in the flame while what it
 ## holds burns, which is how a catch is roasted without losing the web it is in.
 ##
-## And water boils. A puddle it reaches goes up as a cloud of steam where it lay,
-## soaking and scalding whatever is in it, fliers included — see [Steam].
+## And water melts. A puddle it reaches turns to lava where it lies, burning
+## whatever stands in it — see [Lava].
 
 ## It has died down: everything it burned, and how many webs and lines went up.
 signal finished(breath: FireBreath, burned: Array[Prey], webs: int, lines: int)
@@ -36,13 +36,11 @@ const FLARE := 0.12
 ## How many points along it are tried against a web's silk, each frame.
 const SAMPLES := 24
 
-## How wide the steam off a puddle it boils is, as so many times the puddle; how
-## tall, in the caster's body heights; how long it hangs, in seconds; and how much it
-## scalds, as a share of what the flame burns a second.
-const STEAM_WIDE := 1.5
-const STEAM_TALL := 3.0
-const STEAM_LASTS := 4.0
-const STEAM_SCALD := 0.1
+## How long a puddle it turns to lava stays molten, in seconds, and how much of a
+## creature's health the lava takes a second, as a share of what the flame burns a
+## second.
+const LAVA_LASTS := 6.0
+const LAVA_HEAT := 0.25
 
 ## Where it comes out, which way it goes, and how far it could go, in metres.
 var origin := Vector3.ZERO
@@ -54,10 +52,8 @@ var reach := 2.0
 var lasts := 1.0
 var harm := 0.4
 
-## How wide it is at the jaws, from its middle, in metres, and how tall the one
-## breathing it is.
+## How wide it is at the jaws, from its middle, in metres.
 var mouth := 0.03
-var body := 0.25
 
 var colour := Color(1.0, 0.45, 0.12, 1.0)
 
@@ -66,11 +62,11 @@ var colour := Color(1.0, 0.45, 0.12, 1.0)
 var source: SpiderSpells = null
 
 ## Everything it has burned, first to last, how many webs and lines went up, and
-## the steam it boiled off puddles.
+## the lava it made of puddles.
 var burned: Array[Prey] = []
 var webs_burned := 0
 var lines_burned := 0
-var steamed: Array[Steam] = []
+var melted: Array[Lava] = []
 
 var _age := 0.0
 var _length := 0.0
@@ -101,7 +97,6 @@ static func breathe(host: Node, from: Vector3, toward: Vector3, far: float, seco
 	breath.lasts = maxf(seconds, 0.05)
 	breath.harm = hurt
 	breath.mouth = maxf(body * MOUTH, 0.005)
-	breath.body = maxf(body, 0.05)
 	breath.colour = tint
 	breath.source = follow
 	if follow != null:
@@ -150,7 +145,7 @@ func _physics_process(delta: float) -> void:
 	if burning():
 		_burn_creatures(delta)
 		_burn_silk()
-		_boil_water()
+		_melt_puddles()
 	elif _age >= lasts + FLARE:
 		finished.emit(self, burned, webs_burned, lines_burned)
 		queue_free()
@@ -219,9 +214,8 @@ func _burn_silk() -> void:
 			lines_burned += 1
 
 
-## Every puddle the flame reaches boils off: the ground dry, and a cloud of steam
-## rising where it lay.
-func _boil_water() -> void:
+## Every puddle the flame reaches turns to lava where it lies.
+func _melt_puddles() -> void:
 	if _length <= 0.0:
 		return
 	for node in get_tree().get_nodes_in_group(WetGround.GROUP):
@@ -233,10 +227,10 @@ func _boil_water() -> void:
 		if nearest.distance_to(wet.centre) > radius_at(along) + wet.radius:
 			continue
 		wet.dry()
-		var cloud := Steam.boil(get_parent(), wet.centre, wet.up, wet.radius * STEAM_WIDE,
-			body * STEAM_TALL, STEAM_LASTS, harm * STEAM_SCALD)
-		if cloud != null:
-			steamed.append(cloud)
+		var pool := Lava.melt(get_parent(), wet.centre, wet.up, wet.radius, LAVA_LASTS,
+			harm * LAVA_HEAT)
+		if pool != null:
+			melted.append(pool)
 
 
 ## Whether the flame touches any of [param web]'s silk.

@@ -48,7 +48,7 @@ func _sections() -> Array[Callable]:
 		_test_storm_and_paralysis,
 		_test_fire_breath,
 		_test_fire_burns_silk,
-		_test_steam,
+		_test_lava,
 		_test_pullback,
 		_test_clay_pillar,
 		_test_the_whole_book_open,
@@ -1780,10 +1780,10 @@ func _test_fire_burns_silk() -> void:
 		% roundi(roast.health() * 100.0))
 
 
-## Fire breathed over a puddle boils it off: the ground dry, and a cloud of steam
-## rising where it lay that soaks and scalds what is in it, a flier included. Fire on
-## dry ground boils nothing.
-func _test_steam() -> void:
+## Fire breathed over a puddle turns it to lava where it lies: whatever stands in it
+## burns, silk or none, after the breath has gone; whatever is beside it does not;
+## and it cools a few seconds later. Fire on dry ground melts nothing.
+func _test_lava() -> void:
 	var fire := _learned("fire", 2)
 	spider.require_captured_mouse = false
 	var slab := add_slab(Vector3(0, 0.0, -180), Vector3(40, 0.5, 40))
@@ -1799,44 +1799,49 @@ func _test_steam() -> void:
 	await process_frame
 	check(spells.cast_now(fire), "fire breathed on dry ground")
 	await wait_until(func() -> bool: return _last_breath() == null, 240)
-	check(_steam().is_empty(), "boils nothing")
+	check(_lava().is_empty(), "melts nothing")
 
 	spells.forget_waits()
 	var wet := WetGround.puddle(level, spot, Vector3.UP, height * 0.6, 20.0)
-	var fly := spawn("fly", spot + Vector3.UP * height * 2.0)
-	if not check(wet != null and fly != null, "a puddle, and a fly over it"):
+	var standing := spawn("beetle", spot + Vector3(0.0, 0.2, 0.0))
+	var beside := spawn("beetle", spot + Vector3.RIGHT * height * 2.5 + Vector3(0.0, 0.2, 0.0))
+	if not check(wet != null and standing != null and beside != null,
+			"a puddle, a beetle standing in it and one beside it"):
 		return
-	fly.move_speed = 0.0
-	fly.aggression = 0.0
+	for beetle in [standing, beside]:
+		beetle.aggression = 0.0
+		beetle.move_speed = 0.0
 	await physics_frame
-	check(not fly.is_wet(), "the fly dry to start with")
 	aim_at(spot)
 	await physics_frame
 	await process_frame
 	check(spells.cast_now(fire), "fire breathed on the puddle")
-	var boiled: bool = await wait_until(func() -> bool: return not _steam().is_empty(), 60)
-	if not check(boiled and not wet.is_wet(), "it boils off, the ground dry"):
+	var melted: bool = await wait_until(func() -> bool: return not _lava().is_empty(), 60)
+	if not check(melted and not wet.is_wet(), "it turns to lava, the water gone"):
 		return
-	var cloud := _steam()[0]
-	check(Vector2(cloud.base.x - spot.x, cloud.base.z - spot.z).length() < height * 0.2
-		and cloud.tall > height * 2.0, "and steam rises where it lay, %.2f m tall" % cloud.tall)
-	var soaked: bool = await wait_until(func() -> bool: return fly.is_wet(), 60)
-	check(soaked and cloud.soaked.has(fly), "the fly in it is soaked, two body heights up")
-	var hurt_at := fly.health()
+	var pool := _lava()[0]
+	check(Vector2(pool.centre.x - spot.x, pool.centre.z - spot.z).length() < height * 0.2
+		and is_equal_approx(pool.radius, wet.radius), "where the puddle lay, as wide")
+	await wait_until(func() -> bool: return _last_breath() == null, 240)
+	var standing_was := standing.health()
+	var beside_was := beside.health()
 	await run_frames(30)
-	check(fly.health() < hurt_at, "and scalded while it stays (%d%% left)"
-		% roundi(fly.health() * 100.0))
-	await wait_until(func() -> bool: return _steam().is_empty(), 400)
-	check(_steam().is_empty(), "and the steam thins away")
+	check(standing.health() < standing_was and pool.burned.has(standing),
+		"the beetle standing in it burns, the breath long gone (%d%% left)"
+		% roundi(standing.health() * 100.0))
+	check(is_equal_approx(beside.health(), beside_was), "the one beside it does not")
+	var cooled: bool = await wait_until(func() -> bool: return _lava().is_empty(),
+		roundi((FireBreath.LAVA_LASTS + Lava.FADE) * 60.0) + 60)
+	check(cooled, "and it cools a few seconds later")
 
 
-## The steam hanging now.
-func _steam() -> Array[Steam]:
-	var found: Array[Steam] = []
-	for node in spider.get_tree().get_nodes_in_group(Steam.GROUP):
-		var cloud := node as Steam
-		if cloud != null and not cloud.is_queued_for_deletion():
-			found.append(cloud)
+## The lava molten now.
+func _lava() -> Array[Lava]:
+	var found: Array[Lava] = []
+	for node in spider.get_tree().get_nodes_in_group(Lava.GROUP):
+		var pool := node as Lava
+		if pool != null and not pool.is_queued_for_deletion() and pool.molten():
+			found.append(pool)
 	return found
 
 

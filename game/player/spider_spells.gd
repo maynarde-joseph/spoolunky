@@ -728,8 +728,8 @@ func _on_breath_finished(breath: FireBreath, burned: Array[Prey], webs: int,
 		said.append("%d web%s burned away" % [webs, "" if webs == 1 else "s"])
 	if lines > 0:
 		said.append("%d line%s burned away" % [lines, "" if lines == 1 else "s"])
-	if breath != null and not breath.steamed.is_empty():
-		said.append("the water boils into steam")
+	if breath != null and not breath.melted.is_empty():
+		said.append("the water turns to lava")
 	if not said.is_empty():
 		notice.emit(" · ".join(said))
 

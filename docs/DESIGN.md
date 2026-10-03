@@ -510,7 +510,7 @@ what the circles are for.
 | **Douse** | Apprentice, 1 point | water spat at the cross: 6–12 drops out of the spider's jaws over a tenth of a second, the first straight at it — at where a creature will be, if it is a creature — and the rest coming down round it, out to five puddles' width, on a lob that is half a second to over a second in the air, each drop landing a little after the last. A drop that hits a creature soaks it and stings it (4–7% of its health, once however many drops it takes), fliers included — wet wings do not lift. Where drops come down on the ground they leave **puddles**, 0.3–0.4 body heights to the rim, that stay wet for 8–12 s: whatever stands in one stays soaked. A drop that lands in a puddle makes it bigger, up to twice as wide; one that hits a wall only splashes. Silk does not stop a drop, but with Wet Silk learned every web and line one goes through is wet, and a wet web does not burn | 6 s |
 | **Gust** | Apprentice, 1 point | wind blown down a lane in front of the spider, a body height or so either side of its middle and 25–60% of silk's reach long — the longer the wind-up, the further, aimed the way water was when water went out along the ground. Everything loose in it is shoved on down the lane and stung (5–8%) — into a web, if one is in the way, which catches it. A boss stands its ground and only takes the sting. With Waterspout learned, over a puddle Douse left it lifts the water into a **whirl** — one, off the puddle nearest the spider, and every puddle in the lane dries: it runs on the way the wind blew, stops at the first thing it reaches, and holds it there for 2.5–4 s, round and round, wearing it down | 6 s |
 | **Summon Lightning** | Adept, 1 point | strikes where you point, and stuns what it reaches for 2.5–4 s — going nowhere, biting nothing, fighting nothing — and takes 10–15% of its health. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight. With Live Silk learned, a web it reaches is live for twice the stun after, and strikes what touches it as hard; a line carries nothing until Live Lines, and a strike aimed at one comes down on the floor under it | 7 s |
-| **Fire Breath** | Journeyman, 2 points | fire breathed out of the spider's jaws at whatever the cross is on, for 0.6–1.4 s after you let go, 3.5–5 body heights out — or to the first wall — and opening a little on the way. It follows the cross while it lasts, so it is swept: across a creature, along a line, through the web holding what you want burned. What is in it burns for as long as it is: 40–45% of a creature's health a second if it is wrapped all the way or held in a web, a fifth of that if it is bare. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line it touches burns away, and a puddle it reaches boils into steam | 6 s |
+| **Fire Breath** | Journeyman, 2 points | fire breathed out of the spider's jaws at whatever the cross is on, for 0.6–1.4 s after you let go, 3.5–5 body heights out — or to the first wall — and opening a little on the way. It follows the cross while it lasts, so it is swept: across a creature, along a line, through the web holding what you want burned. What is in it burns for as long as it is: 40–45% of a creature's health a second if it is wrapped all the way or held in a web, a fifth of that if it is bare. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line it touches burns away, and a puddle it reaches turns to lava | 6 s |
 | **Pullback** | Apprentice, 1 point | every web you have in reach comes off its anchors and flies back to you whole, in the shape it was spun in, taking the frame it was walked round on down with it — the feathers coming home to a blade dancer. What it passes through takes the silk one shot of that web would put on it — enough, and it is wrapped where it stands — and what the web held lands at your feet, bundled. Nothing in reach, nothing cast and no wait spent | 10 s |
 | **Clay Pillar** | Adept, 1 point | a square pillar of brown clay comes up out of whatever the cross is on — up from a floor, out of a wall — 3–5 body heights tall and 0.6 from its middle to each face, a face turned to the camera the way an ice block comes up out of water, and stands for 10 s before it sinks back. Square rather than round so it is a thing to build with: flat faces to climb and stand behind, and a top as wide as it looks. With the cross on a creature, a web or a line, it comes up out of the ground under it. What stands where it comes up is stunned first, so it rides the pillar up rather than fighting it, then thrown off the top — two body heights over it and out past its edge — and comes down still stunned, hurt by 6–10% of its health. A boss stands its ground and only takes the stun and the hurt. The spider standing there is thrown up ahead of it, higher than twice a jump: a way up as well as a weapon. A web it comes up under is flung up off its anchors, wrapping what it passes the way a web called back does, and what it held comes down bundled where it ends up. While it stands it is as solid as any wall — to climb, to tie silk to, to stand behind — and silk tied to it comes down when it goes | 5 s |
 
@@ -571,12 +571,13 @@ row of buttons:
   behind something is a web that thing can be blown into. The web stays where it
   is: for a while the wind blew webs in its lane away with it, which took away the
   very web you had set up to blow things into.
-* **Fire over water is steam.** A breath of fire that reaches a puddle boils it
-  away, and a cloud of steam rises where it lay — half as wide again as the puddle,
-  three body heights tall, for 4 s. Everything in it is soaked, fliers included,
-  and scalded a little every moment it stays (a tenth of what the flame burns a
-  second, silk or none). Soaked carries lightning, so a strike into the steam
-  reaches all of it: spit, breathe, strike.
+* **Fire over water is lava.** A breath of fire that reaches a puddle turns it to
+  lava where it lies, as wide as the puddle was, molten for 6 s. Whatever stands in
+  it burns, silk or none — a quarter of what the flame burns a second — long after
+  the breath has gone; then it cools. It is a place the spider made, and it is what
+  the next spell finds there: lightning erupts it, and wind lifts it into a spiral
+  of fire (below). (For a while fire boiled a puddle into steam, which soaked and
+  scalded; lava is the stronger thing to build on.)
 * **Wind over water is a whirl** (Waterspout). Neither spell makes one alone. Wet
   the ground, then blow over it, and the water rises into a whirl that runs on
   with the wind and holds the first thing it reaches, going nowhere — something
@@ -600,7 +601,7 @@ knowing both spells.
 | Silk + clay | web, then clay | flung up off its anchors; silk tied to a pillar comes down when it goes | — |
 | Water + wind | puddle, then wind | a whirl that holds the first thing it reaches | Waterspout |
 | Water + lightning | wet, then lightning | twice as hard, and on to anything wet near | — |
-| Water + fire | puddle, then fire | steam that soaks and scalds what is in it | — |
+| Water + fire | puddle, then fire | lava, burning whatever stands in it | — |
 | Water + pullback | wet web, then pullback | soaks what it passes | Wet Silk |
 | Lightning + pullback | live web, then pullback | strikes what it passes | Live Silk |
 | Wind + lightning | — | none | — |

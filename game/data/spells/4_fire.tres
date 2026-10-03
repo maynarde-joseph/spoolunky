@@ -6,7 +6,7 @@
 script = ExtResource("1_spell")
 id = "fire"
 display_name = "Fire Breath"
-description = "Fire out of your jaws along the cross, for a moment after you let go — longer and further the longer you hold — and you can sweep it while it lasts. Silk burns: the more of a thing is wrapped, the harder it burns, and any web or line the flame touches goes up, dropping what the web held. A wet web stands, and what it holds burns in it. A puddle boils into steam."
+description = "Fire out of your jaws along the cross, for a moment after you let go — longer and further the longer you hold — and you can sweep it while it lasts. Silk burns: the more of a thing is wrapped, the harder it burns, and any web or line the flame touches goes up, dropping what the web held. A wet web stands, and what it holds burns in it. A puddle turns to lava."
 form = 3
 order = 4
 cooldown = 6.0
