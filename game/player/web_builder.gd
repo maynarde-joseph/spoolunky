@@ -697,7 +697,8 @@ func cancel_shot() -> void:
 ## The ball of silk the spider winds up while aiming, held over its back.
 ##
 ## A wizard holding a fireball: you can see the throw coming, and it grows and
-## brightens as the wind-up fills. That is the point — the second you spend
+## brightens as the wind-up fills, with silk's magic circle wrapped round it (see
+## [method SpiderSpells._update_circle]). That is the point — the second you spend
 ## winding up has a reading in the world as well as one on the HUD, so you can
 ## judge the throw without looking away from the fly.
 func _show_held(shown: bool) -> void:
@@ -711,16 +712,28 @@ func _show_held(shown: bool) -> void:
 func _update_held() -> void:
 	if _held == null or not _held.visible or _spider == null:
 		return
-	var height := _stage().body_height
-	var wide := ball_radius(charge)
-	# Over the spider's back, whichever way that faces: world up put the ball
-	# inside the wall or the ceiling the spider was stuck to, out of reach of the
-	# front legs that hold it.
-	var back := _climb.view_up() if _climb != null else Vector3.UP
-	_held.global_position = _spider.global_position + back * (height * 0.9 + wide)
-	_held.scale = Vector3.ONE * maxf(wide, 0.005)
+	_held.global_position = held_centre()
+	_held.scale = Vector3.ONE * maxf(ball_radius(charge), 0.005)
 	if _held_material != null:
-		_held_material.emission_energy_multiplier = lerpf(0.5, 2.2, charge)
+		# Brightening, but never so far that the circle wrapped round it — light on
+		# dark — washes out on it.
+		_held_material.emission_energy_multiplier = lerpf(0.25, 0.7, charge)
+
+
+## Where the middle of the ball of silk is while it is wound up: over the spider's
+## back, sitting on it however big it has grown.
+func held_centre() -> Vector3:
+	if _spider == null:
+		return global_position
+	return _spider.global_position + held_up() * (_stage().body_height * 0.9
+		+ ball_radius(charge))
+
+
+## Which way the spider's back faces, which the ball of silk sits over: world up
+## put the ball inside the wall or the ceiling the spider was stuck to, out of
+## reach of the front legs that hold it.
+func held_up() -> Vector3:
+	return _climb.view_up() if _climb != null else Vector3.UP
 
 
 ## Brings the camera in over the shoulder while winding up, and lets it back
@@ -741,6 +754,9 @@ func _build_held() -> void:
 	mesh.rings = 6
 	_held_material = WebGeometry.silk_material()
 	_held_material.albedo_color = Color(0.12, 0.13, 0.16, 1.0)
+	# Solid, unlike silk in a web: the half of the circle wrapped round the far side
+	# of the ball is behind it, and should look it.
+	_held_material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
 	_held = MeshInstance3D.new()
 	_held.name = "HeldSilk"
 	_held.mesh = mesh

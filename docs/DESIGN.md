@@ -472,10 +472,10 @@ hand** — 1 is always the web, and 2 to 6 are the five spells in the loadout
 up — a bigger web, a longer breath of fire, more drops of water, a longer stun — over
 the same second the web always took.
 
-**Every spell but the web is drawn in a magic circle.** Thin line art in the
+**Every spell is drawn in a magic circle.** Thin line art in the
 spell's colour — two rings with marks like writing between them, and an inner
-ring with the spell's own star in it: three points for fire, four for
-lightning, five for water, eight for wind, seven for the pullback — that draws
+ring with the spell's own star in it: six points for the web, three for fire, four
+for lightning, five for water, eight for wind, seven for the pullback — that draws
 itself in as the
 key goes down, turns
 while you hold, and flares and fades as the spell leaves through it. Where it is
@@ -487,8 +487,11 @@ will strike, as wide as the strike, and a second opens over it, face down, as th
 bolt comes out of it. Wind's lies under the spider's feet, with the strip it will
 blow down laid out on the ground ahead. The
 pullback's is drawn round the spider, with a thin line out to every web it will
-call in. The web keeps
-its ball of silk over the spider's back: it is thrown silk, not magic.
+call in. The web's is wrapped round the ball of silk it winds up over the
+spider's back: its lines bent onto the ball, so the circle is curved, capping it
+like a band of writing round a globe — growing with it, rolling round it while you
+hold, and flaring off it as the web is thrown. The ball under it is solid and dark
+enough that the circle reads on it, light on dark.
 
 **One aim for all of them.** The crosshair is the only aiming there is, and it
 is the same for everything: silk goes from the spider to whatever the cross is

@@ -13,7 +13,9 @@ extends Node3D
 ## it came from, and a wind-up always has something in the world to read.
 ##
 ## It lies flat in its own XZ plane and faces along its own up: see [method facing].
-## Looks only — nothing in the game reads it.
+## Or it is wrapped round a ball — the ball of silk a web is wound up in — with its
+## lines bent onto it, so it is curved, capping the ball and rolling round it while
+## it is held: see [method wrap]. Looks only — nothing in the game reads it.
 
 ## How long it takes to draw itself in, and to fade once it is let go, in seconds.
 const FORM := 0.18
@@ -36,6 +38,24 @@ const BAND := 0.86
 const INNER := 0.58
 const HEART := 0.16
 
+## How far round a ball a wrapped circle reaches from its middle, in radians: its
+## rim a little short of the ball's equator, so it caps the ball.
+const WRAP := 1.35
+
+## How far a wrapped circle stands off its ball, as a share of the ball's radius:
+## on it, not in it.
+const WRAP_LIFT := 1.06
+
+## How far a wrapped circle's middle leans off the top of its ball, in radians, and
+## how fast the lean goes round, in radians a second: it rolls round the ball while
+## its band and star turn on it.
+const LEAN := 0.45
+const LEAN_TURN := 1.7
+
+## How long a bent stroke is cut into pieces, as a share of the radius, so it
+## follows the ball round rather than cutting through it.
+const PIECE := 0.08
+
 var radius := 1.0
 var colour := Color(0.8, 0.85, 1.0, 1.0)
 
@@ -43,8 +63,13 @@ var colour := Color(0.8, 0.85, 1.0, 1.0)
 ## for lightning and so on, so two circles side by side can be told apart.
 var points := 6
 
+## Whether it is wrapped round a ball rather than drawn flat. Its radius is then the
+## ball's, and its middle is the ball's middle.
+var wrapped := false
+
 var _age := 0.0
 var _let_go := -1.0
+var _lean: Node3D
 var _band: MeshInstance3D
 var _star: MeshInstance3D
 var _paint: StandardMaterial3D
@@ -54,13 +79,27 @@ var _paint: StandardMaterial3D
 ## the middle to the rim, in [param tint], with a [param star_points]-pointed star.
 static func draw(host: Node, where: Transform3D, wide: float, tint: Color,
 		star_points := 6) -> MagicCircle:
+	return _make(host, where, wide, tint, star_points, false)
+
+
+## Wraps one round a ball under [param host]: the ball's middle at [param centre]
+## and [param wide] metres from there to its surface, the circle capping the top of
+## it as [param up] has it, in [param tint], with a [param star_points]-pointed star.
+static func wrap(host: Node, centre: Vector3, up: Vector3, wide: float, tint: Color,
+		star_points := 6) -> MagicCircle:
+	return _make(host, facing(centre, up), wide * WRAP_LIFT, tint, star_points, true)
+
+
+static func _make(host: Node, where: Transform3D, wide: float, tint: Color, star_points: int,
+		bent: bool) -> MagicCircle:
 	if host == null:
 		return null
 	var circle := MagicCircle.new()
 	circle.name = "MagicCircle"
-	circle.radius = maxf(wide, 0.02)
+	circle.radius = maxf(wide, 0.005 if bent else 0.02)
 	circle.colour = tint
 	circle.points = maxi(star_points, 3)
+	circle.wrapped = bent
 	circle.add_to_group("spell_effects")
 	host.add_child(circle)
 	circle.global_transform = where
@@ -83,6 +122,9 @@ func _ready() -> void:
 	_paint.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_paint.vertex_color_use_as_albedo = true
 	_paint.albedo_color = Color(1.0, 1.0, 1.0, 0.0)
+	_lean = Node3D.new()
+	_lean.name = "Lean"
+	add_child(_lean)
 	_band = _part("Band", _draw_band())
 	_star = _part("Star", _draw_star())
 	_show(0.0)
@@ -92,6 +134,9 @@ func _process(delta: float) -> void:
 	_age += delta
 	_band.rotate_y(TURN.x * delta)
 	_star.rotate_y(TURN.y * delta)
+	if wrapped:
+		var going := _age * LEAN_TURN
+		_lean.basis = Basis(Vector3(cos(going), 0.0, sin(going)), LEAN)
 	if _let_go < 0.0:
 		_show(clampf(_age / FORM, 0.0, 1.0))
 		return
@@ -111,6 +156,16 @@ func hold(where: Transform3D, wide: float) -> void:
 		return
 	radius = maxf(wide, 0.02)
 	global_transform = where
+	_show(clampf(_age / FORM, 0.0, 1.0))
+
+
+## A wrapped one kept round its ball while it is held: the ball's middle at
+## [param centre], [param up] the top of it, and [param wide] metres to its surface.
+func hold_round(centre: Vector3, up: Vector3, wide: float) -> void:
+	if _let_go >= 0.0:
+		return
+	radius = maxf(wide * WRAP_LIFT, 0.005)
+	global_transform = facing(centre, up)
 	_show(clampf(_age / FORM, 0.0, 1.0))
 
 
@@ -137,11 +192,41 @@ func _show(formed: float) -> void:
 func _part(part_name: String, strands: WebGeometry.StrandSet) -> MeshInstance3D:
 	var part := MeshInstance3D.new()
 	part.name = part_name
-	part.mesh = WebGeometry.build_mesh(strands, colour.lerp(Color.WHITE, 0.2))
+	part.mesh = WebGeometry.build_mesh(_bend(strands) if wrapped else strands,
+		colour.lerp(Color.WHITE, 0.2))
 	part.material_override = _paint
 	part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(part)
+	_lean.add_child(part)
 	return part
+
+
+## [param strands], drawn flat, bent onto a ball of radius one round the middle: a
+## point some way out from the middle goes that far times [constant WRAP] round the
+## ball from its top, the way it was facing. Long strokes are cut into pieces first,
+## so they bend with the ball.
+static func _bend(strands: WebGeometry.StrandSet) -> WebGeometry.StrandSet:
+	var bent := WebGeometry.StrandSet.new()
+	for i in strands.size():
+		var a := strands.starts[i]
+		var b := strands.ends[i]
+		var pieces := maxi(1, ceili(a.distance_to(b) / PIECE))
+		var last := _on_ball(a)
+		for step in range(1, pieces + 1):
+			var next := _on_ball(a.lerp(b, float(step) / float(pieces)))
+			bent.add(last, next, strands.widths[i])
+			last = next
+	return bent
+
+
+## Where the flat point [param flat] goes on a ball of radius one capped from its top.
+static func _on_ball(flat: Vector3) -> Vector3:
+	var across := Vector2(flat.x, flat.z)
+	var out := across.length()
+	if out < 0.000001:
+		return Vector3.UP
+	var turned := out * WRAP
+	across /= out
+	return Vector3(across.x * sin(turned), cos(turned), across.y * sin(turned))
 
 
 ## The outer band: two rings, and marks between them like a line of writing.
@@ -215,5 +300,7 @@ static func _at(turn: float, across: float) -> Vector3:
 	return Vector3(cos(turn) * across, 0.0, sin(turn) * across)
 
 
+## How wide its lines are, as a share of its radius. Twice as wide wrapped round a
+## ball: a ball is small, and the lines are seen across it at a slant.
 func _width() -> float:
-	return maxf(LINE, LINE_LEAST / maxf(radius, 0.02))
+	return maxf(LINE, LINE_LEAST / maxf(radius, 0.02)) * (2.0 if wrapped else 1.0)

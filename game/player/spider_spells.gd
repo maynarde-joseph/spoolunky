@@ -851,16 +851,32 @@ func _host() -> Node:
 ## hang in front of the spider's jaws on the line the breath or the spit will take,
 ## water's with where it will come down laid on the ground; lightning's lies on what
 ## it will strike; wind's lies under the spider's feet with the strip it will blow
-## down. Silk has no circle: it is the ball of silk, wound up by the builder.
+## down. Silk's is wrapped round the ball of silk the builder winds up over the
+## spider's back — bent onto it, rolling round it as it grows — and flares off it
+## as the web is thrown.
 func _update_circle() -> void:
 	var spell := current()
-	var held := charging and spell != null and spell.form != SpiderSpell.Form.SILK \
-		and _spider != null and _view != null
+	var silk := _builder != null and _builder.aiming and _spider != null
+	var held := silk or (charging and spell != null and spell.form != SpiderSpell.Form.SILK
+		and _spider != null and _view != null)
 	if not held:
 		# Given up, or gone: either way it fades rather than vanishing.
 		if _circle != null and is_instance_valid(_circle):
 			_circle.release()
 		_circle = null
+		return
+	if _circle != null and is_instance_valid(_circle) and _circle.wrapped != silk:
+		_circle.release()
+		_circle = null
+	if silk:
+		var ball := _builder.ball_radius(_builder.charge)
+		if _circle == null or not is_instance_valid(_circle):
+			var thread := hand()[0] if not hand().is_empty() else null
+			_circle = MagicCircle.wrap(_host(), _builder.held_centre(), _builder.held_up(), ball,
+				thread.colour if thread != null else Color.WHITE,
+				thread.sigil if thread != null else 6)
+		else:
+			_circle.hold_round(_builder.held_centre(), _builder.held_up(), ball)
 		return
 	var place := circle_at(spell, charge)
 	if _circle == null or not is_instance_valid(_circle):
