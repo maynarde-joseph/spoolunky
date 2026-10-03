@@ -1847,8 +1847,8 @@ func _last_breath() -> FireBreath:
 
 ## Every web in reach comes flying back: what it holds lands at the spider's feet,
 ## bundled; what it passes through takes silk; a web out of reach stays; a web
-## lightning left live strikes what it passes; and with no web in reach nothing is
-## cast and nothing waits.
+## lightning left live strikes what it passes, and a wet one soaks it; and with no
+## web in reach nothing is cast and nothing waits.
 func _test_pullback() -> void:
 	var pullback := spells.by_id("pullback")
 	if not check(pullback != null and pullback.form == SpiderSpell.Form.PULLBACK,
@@ -1946,6 +1946,24 @@ func _test_pullback() -> void:
 	check(spells.cast_now(pullback), "called back")
 	var struck: bool = await wait_until(func() -> bool: return beetle.is_stunned(), 300)
 	check(struck, "and it strikes the beetle as it passes through")
+	await wait_until(func() -> bool:
+		return spider.get_tree().get_nodes_in_group(WebPull.GROUP).is_empty(), 300)
+
+	# A wet web soaks what it passes: wet, and ready for lightning.
+	spells.forget_waits()
+	var soaking := _spin(centre + lift + Vector3(height * 6.0, 0, -height * 4.0), half)
+	if not check(soaking != null, "a web Douse left wet"):
+		return
+	WetSilk.soak(soaking, 10.0)
+	var dry := spawn("beetle", (soaking as WebNet).signal_point().lerp(spider.global_position, 0.5))
+	if not check(dry != null and not dry.is_wet(), "a dry beetle in its way"):
+		return
+	dry.move_speed = 0.0
+	dry.aggression = 0.0
+	await physics_frame
+	check(spells.cast_now(pullback), "called back")
+	var soaked: bool = await wait_until(func() -> bool: return dry.is_wet(), 300)
+	check(soaked, "and the beetle it passes through is soaked")
 	await wait_until(func() -> bool:
 		return spider.get_tree().get_nodes_in_group(WebPull.GROUP).is_empty(), 300)
 

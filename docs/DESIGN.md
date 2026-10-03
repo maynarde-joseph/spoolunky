@@ -548,6 +548,10 @@ row of buttons:
 * **A live web comes back live.** Called back with lightning still in it, a web
   strikes everything it passes through on the way in. Strike your webs, then call
   them back through whatever stands between you and them.
+* **A wet web comes back wet.** Called back — or blown down a lane, or flung off a
+  pillar — a web Douse left wet soaks everything it passes through, fliers
+  included, so what it passed is wet for the strike after. Wet and live at once, it
+  soaks first and strikes as hard as water makes a strike.
 * **Webs are ammunition.** Every web put up is one the Pullback can throw back
   through something: spin them round a room, and the room is a trap that closes
   on you, with whatever wandered in the way.

@@ -6,8 +6,9 @@ extends Node3D
 ## It comes off its anchors and flies straight in, whole — the shape it was spun in,
 ## not folded up — with whatever it was holding still in it. Everything loose it passes through on the
 ## way takes silk — as much as one shot of that web would put on it, so a strong
-## web dragged through a weak thing takes it outright — and a web that lightning
-## left live strikes what it passes through as well. When it reaches the spider it
+## web dragged through a weak thing takes it outright — a wet web soaks what it
+## passes through, and a web that lightning left live strikes it as well, twice as
+## hard for being soaked if the web is both. When it reaches the spider it
 ## is gone, and what it held lands at the spider's feet, bundled: the same bargain
 ## as taking a web down by hand, from across the room.
 ##
@@ -131,9 +132,10 @@ func _goal() -> Vector3:
 
 
 ## Everything loose within [member sweep] of this frame's stretch takes its silk,
-## once each.
+## once each — and its water, and its charge, if the web carries them.
 func _strike_along(from: Vector3, to: Vector3) -> void:
 	var charge := WebCharge.of(web)
+	var wet := WetSilk.is_wet(web)
 	for node in get_tree().get_nodes_in_group("prey"):
 		var creature := node as Prey
 		if creature == null or not is_instance_valid(creature) or not creature.is_loose() \
@@ -143,6 +145,9 @@ func _strike_along(from: Vector3, to: Vector3) -> void:
 		if near.distance_to(creature.global_position) > sweep + creature.hit_radius():
 			continue
 		hit.append(creature)
+		# Soaked first, so a web that is wet and live strikes as hard as water makes it.
+		if wet:
+			creature.soak(WetGround.SOAK)
 		if charge != null:
 			creature.shock(charge.stun, charge.harm)
 		var wrapped := creature.bind(creature.bind_share(web.hold_strength()) * share)

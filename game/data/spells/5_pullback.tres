@@ -6,7 +6,7 @@
 script = ExtResource("1_spell")
 id = "pullback"
 display_name = "Pullback"
-description = "Every web you have in reach comes flying back to you. What it passes through is wrapped the way a shot of that web would wrap it — and struck, if lightning left the web live — and what it held lands at your feet, bundled."
+description = "Every web you have in reach comes flying back to you. What it passes through is wrapped the way a shot of that web would wrap it — soaked if the web is wet, struck if lightning left it live — and what it held lands at your feet, bundled."
 form = 4
 order = 5
 cooldown = 10.0

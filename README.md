@@ -402,6 +402,8 @@ up. Everything else is learned:
   blows webs**: a web in the gust's lane comes off its anchors and flies on down
   it, wrapping what it passes, and drops what it held bundled where the wind ends
   — while a web just past the end stays put and catches what the wind blows in.
+  **A wet web soaks**: called back, blown or flung, a web Douse left wet soaks what
+  it passes, ready for lightning.
 * **Five on the keys.** The web is always on 1 and five spells ride on 2 to 6. A
   spell learned goes on the next free key; the tree takes one off or puts one on.
 
