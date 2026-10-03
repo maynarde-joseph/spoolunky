@@ -610,6 +610,38 @@ row of buttons:
   with the wind and holds the first thing it reaches, going nowhere — something
   held is something a thrown web does not have to lead.
 
+**Every pair, in one place.** Each interaction is the second spell acting on what
+the first left behind — a web, a puddle, a pillar, a breath still burning — so the
+order is part of it: water then clay is mud, clay then water is a slump. A pair
+interacts only the way round that makes sense, and some pairs not at all: better
+nothing than a combination that is only a bigger number. Those that need a skill
+say so; the rest come with knowing both spells.
+
+| Pair | First, then | What happens | Needs |
+|---|---|---|---|
+| Silk + water | web, then water | a wet web: fire passes it by, lightning stays twice as long; heavy, it holds harder | Wet Silk; Sodden Silk |
+| Silk + wind | web, then wind | blown off its anchors and down the lane, wrapping what it passes; a web past the lane's end catches what the wind blows in | — |
+| Silk + lightning | web, then lightning | a live web, striking what touches it; down your lines too | Live Silk; Live Lines |
+| Silk + fire | web, then fire | burns away, what it held burned as it goes | — |
+| Silk + pullback | web, then pullback | called back whole, wrapping what it passes | — |
+| Silk + clay | web, then clay | flung up off its anchors; silk tied to a pillar comes down when it goes | — |
+| Water + wind | puddle, then wind | a whirl that holds the first thing it reaches | Waterspout |
+| Water + lightning | wet, then lightning | twice as hard, and on to anything wet near | — |
+| Water + fire | puddle, then fire | steam that soaks and scalds what is in it | — |
+| Water + pullback | wet web, then pullback | soaks what it passes | Wet Silk |
+| Water + clay | puddle, then clay | a mud pillar, holding what it lifts | — |
+| Clay + water | pillar, then water | slumps into a wide puddle | — |
+| Wind + fire | breath, then wind | the flame goes the length of the lane | — |
+| Lightning + pullback | live web, then pullback | strikes what it passes | Live Silk |
+| Lightning + clay | pillar, then lightning | a lightning rod: out round its foot, twice as wide | — |
+| Fire + clay | pillar, then fire | baked: stands 30 s, and water no longer slumps it | — |
+| Wind + lightning | — | none of its own; a live web blown down a lane strikes what it passes | — |
+| Wind + pullback | — | none: both move webs, one away and one home | — |
+| Wind + clay | — | none of its own; what a pillar throws is loose in the air, so a gust carries it on | — |
+| Lightning + fire | — | none: two ways of hurting, and a live web burns like any other | — |
+| Fire + pullback | — | none: fire takes a web on its way back as readily as one standing | — |
+| Pullback + clay | — | none: a pillar already throws webs | — |
+
 **And off what you have become.** A trait is a change to the animal (§3.1) —
 parked, but a trait a boss hands over still counts — and some of those changes
 reach the spells:
