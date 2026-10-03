@@ -25,9 +25,11 @@ const FADE := 0.35
 const TURN := Vector2(0.6, -1.1)
 
 ## How wide its lines are, as a share of its radius, and never thinner than this
-## many metres.
+## many metres — or, wrapped round a ball, this many: a ball is small, and the
+## floor a circle on the ground needs would make its lines fat.
 const LINE := 0.018
 const LINE_LEAST := 0.003
+const WRAP_LINE_LEAST := 0.001
 
 ## How much brighter it burns for the moment the spell goes.
 const FLARE := 1.8
@@ -192,8 +194,9 @@ func _show(formed: float) -> void:
 func _part(part_name: String, strands: WebGeometry.StrandSet) -> MeshInstance3D:
 	var part := MeshInstance3D.new()
 	part.name = part_name
-	part.mesh = WebGeometry.build_mesh(_bend(strands) if wrapped else strands,
-		colour.lerp(Color.WHITE, 0.2))
+	var tint := colour.lerp(Color.WHITE, 0.2)
+	part.mesh = _ribbons(_bend(strands), tint) if wrapped \
+		else WebGeometry.build_mesh(strands, tint)
 	part.material_override = _paint
 	part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_lean.add_child(part)
@@ -216,6 +219,28 @@ static func _bend(strands: WebGeometry.StrandSet) -> WebGeometry.StrandSet:
 			bent.add(last, next, strands.widths[i])
 			last = next
 	return bent
+
+
+## [param strands] on a ball of radius one, drawn as flat ribbons lying on it: one
+## strip a stroke, rather than the crossed pair a flat circle's lines are drawn as.
+## On a ball the second of the pair stands straight out from it, and round the
+## ball's edge, seen side on, it is a thick fin rather than a line.
+static func _ribbons(strands: WebGeometry.StrandSet, tint: Color) -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in strands.size():
+		var a := strands.starts[i]
+		var b := strands.ends[i]
+		var out := ((a + b) * 0.5).normalized()
+		var side := (b - a).cross(out)
+		if side.length_squared() < 0.0000001:
+			continue
+		side = side.normalized() * strands.widths[i] * 0.5
+		for corner: Vector3 in [a - side, a + side, b + side, a - side, b + side, b - side]:
+			tool.set_color(tint)
+			tool.set_normal(out)
+			tool.add_vertex(corner)
+	return tool.commit()
 
 
 ## Where the flat point [param flat] goes on a ball of radius one capped from its top.
@@ -300,7 +325,8 @@ static func _at(turn: float, across: float) -> Vector3:
 	return Vector3(cos(turn) * across, 0.0, sin(turn) * across)
 
 
-## How wide its lines are, as a share of its radius. Twice as wide wrapped round a
-## ball: a ball is small, and the lines are seen across it at a slant.
+## How wide its lines are, as a share of its radius.
 func _width() -> float:
-	return maxf(LINE, LINE_LEAST / maxf(radius, 0.02)) * (2.0 if wrapped else 1.0)
+	if wrapped:
+		return maxf(LINE, WRAP_LINE_LEAST / maxf(radius, 0.005))
+	return maxf(LINE, LINE_LEAST / maxf(radius, 0.02))
