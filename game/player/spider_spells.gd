@@ -520,10 +520,17 @@ func _douse(spell: SpiderSpell, wound: float) -> Dictionary:
 
 
 ## Where a spit of water comes down: on whatever the cross is on — a creature, a
-## line, a web, the world — by the same pick everything else aims with. On open sky,
-## as far as silk reaches along the cross, and it falls on from there.
+## line, a web, the world — by the same pick everything else aims with. A creature
+## is spat at where it will be when the first drop comes down, as silk is thrown at
+## where it is going: a lob takes a moment. On open sky, as far as silk reaches
+## along the cross, and it falls on from there.
 func spit_target() -> Vector3:
-	return aim_target().get("point", _spider.global_position)
+	var target := aim_target()
+	var point: Vector3 = target.get("point", _spider.global_position)
+	var quarry := target.get("prey") as Prey
+	if quarry != null and is_instance_valid(quarry):
+		point += quarry.velocity * WaterSpit.flight_time(breath_origin(), point, body_height())
+	return point
 
 
 ## Which way a spit of water leaves the jaws: tipped up from the line to where it
@@ -1031,11 +1038,9 @@ func _update_splash() -> void:
 	_splash.visible = shown
 	if not shown:
 		return
-	var target := aim_target()
-	var up: Vector3 = target.get("normal", Vector3.UP)
+	var up: Vector3 = aim_target().get("normal", Vector3.UP)
 	var wide := splash_wide(spell, charge)
-	var lie := MagicCircle.facing(target.get("point", _spider.global_position)
-		+ up * body_height() * 0.03, up)
+	var lie := MagicCircle.facing(spit_target() + up * body_height() * 0.03, up)
 	_splash.global_transform = Transform3D(lie.basis * Basis.from_scale(Vector3(wide, 1.0,
 		wide)), lie.origin)
 	_splash_paint.albedo_color = Color(spell.colour.r, spell.colour.g, spell.colour.b, 0.28)

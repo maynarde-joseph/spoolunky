@@ -25,16 +25,25 @@ const GROUP := "water_spits"
 const DROPS := Vector2(6.0, 12.0)
 
 ## How fast it goes, in the caster's body heights a second, and the least and the
-## most time a drop spends in the air on the way, in seconds: close up it is spat,
-## further off it is lobbed.
-const PACE := 40.0
-const FLIGHT := Vector2(0.18, 0.8)
+## most time a drop spends in the air on the way, in seconds: always a lob you can
+## watch come down, never a flick that lands before you have seen it go.
+const PACE := 12.0
+const FLIGHT := Vector2(0.5, 1.3)
 
-## How hard a drop falls, in the caster's body heights a second, every second.
-const FALL := 40.0
+## How hard a drop falls, in the caster's body heights a second, every second: a
+## little softer than a stone, so the arc reads as water.
+const FALL := 24.0
 
 ## How far round the cross the drops come down, as a share of how wide a puddle is.
-const SCATTER := 3.0
+const SCATTER := 5.0
+
+## How long it takes for all the drops to leave the jaws, in seconds: a spray, not
+## a single slap.
+const SPRAY := 0.12
+
+## How much longer or shorter than the first drop's time in the air the rest of
+## them take, as shares of it: they come down one after another.
+const STAGGER := Vector2(0.85, 1.25)
 
 ## How big a drop is from its middle, in the caster's body heights: what it looks
 ## like, and how near it has to pass something to hit it.
@@ -128,9 +137,14 @@ static func spit(host: Node, from: Vector3, at: Vector3, count: int, body: float
 ## much longer or shorter.
 static func launch(from: Vector3, at: Vector3, body: float, stretch := 1.0) -> Vector3:
 	var gap := at - from
-	var flight := clampf(gap.length() / maxf(PACE * body, 0.01), FLIGHT.x, FLIGHT.y) \
-		* maxf(stretch, 0.1)
+	var flight := flight_time(from, at, body) * maxf(stretch, 0.1)
 	return gap / flight + Vector3.UP * FALL * body * flight * 0.5
+
+
+## How long a drop thrown from [param from] to [param at] is in the air, for a caster
+## [param body] metres tall, in seconds.
+static func flight_time(from: Vector3, at: Vector3, body: float) -> float:
+	return clampf(from.distance_to(at) / maxf(PACE * body, 0.01), FLIGHT.x, FLIGHT.y)
 
 
 ## Whether any drop is still in the air.
@@ -138,9 +152,9 @@ func flying() -> bool:
 	return not _drops.is_empty()
 
 
-## Every drop out at once: the first straight at [param at], the rest round it out
-## to [constant SCATTER] puddles' width, each a little quicker or slower than the
-## last so they come down one after another.
+## Every drop out within [constant SPRAY] of a second: the first straight at
+## [param at], the rest round it out to [constant SCATTER] puddles' width, each a
+## little quicker or slower than the last so they come down one after another.
 ##
 ## The rest are thrown at the ground round the cross, not at the cross itself:
 ## spat at a creature, or a web, the drops that miss it would otherwise sail on past
@@ -157,8 +171,12 @@ func _throw(from: Vector3, at: Vector3, count: int, body: float) -> void:
 		var drop := Drop.new()
 		drop.start = from
 		drop.at = from
-		drop.speed = launch(from, aim, body, lerpf(0.9, 1.1, fposmod(float(i) * 0.618, 1.0)))
+		drop.speed = launch(from, aim, body, lerpf(STAGGER.x, STAGGER.y,
+			fposmod(float(i) * 0.618, 1.0)))
+		# Not out of the jaws yet: it waits its turn, out of sight.
+		drop.age = -SPRAY * float(i) / float(maxi(count - 1, 1))
 		drop.view = _drop_view()
+		drop.view.visible = drop.age >= 0.0
 		_place(drop)
 		_drops.append(drop)
 	thrown = count
@@ -178,6 +196,9 @@ func _physics_process(delta: float) -> void:
 	for drop: Drop in _drops.duplicate():
 		var was := drop.at
 		drop.age += delta
+		if drop.age < 0.0:
+			continue
+		drop.view.visible = true
 		var now := drop.start + drop.speed * drop.age \
 			+ Vector3.DOWN * _fall * drop.age * drop.age * 0.5
 		if _fly(drop, was, now, space) or drop.age >= LIFE:

@@ -516,7 +516,9 @@ func _test_spells_leave_through_circles() -> void:
 	var slab := add_slab(Vector3(-30, 0.0, 150), Vector3(40, 0.5, 40))
 	await physics_frame
 	stand_on(slab.global_position + Vector3(0, 0.25, 6.0))
-	await physics_frame
+	# Settled on the slab first: the circles follow the spider, and one still falling
+	# onto it is a frame behind wherever they are looked at.
+	await run_frames(20)
 	var centre := slab.global_position + Vector3(0, 0.25, 0)
 	clear_prey_near(centre, 20.0, null)
 	var height := spider.stage().body_height
@@ -1020,6 +1022,13 @@ func _test_the_whirl() -> void:
 	if not check(not pools.is_empty() and _first_whirl() == null,
 			"puddles (%d), and no whirl yet" % pools.size()):
 		return
+	var lane_from := spells.feet_ground()
+	var lane_way := spells.lane_heading()
+	var crossed: Array[WetGround] = []
+	for pool in pools:
+		if pool.met_by(lane_from, lane_way, far, spells.lane_wide(gust, 0.0)):
+			crossed.append(pool)
+	check(not crossed.is_empty(), "%d of them in the wind's lane" % crossed.size())
 	check(spells.cast_now(gust), "wind blown over them, before Waterspout is learned")
 	check(_first_whirl() == null and pools[0].is_wet(), "lifts nothing, and the puddles stay wet")
 	spells.forget_waits()
@@ -1028,9 +1037,9 @@ func _test_the_whirl() -> void:
 	var whirl := _first_whirl()
 	if not check(whirl != null, "lifts the water into a whirl"):
 		return
-	check(_whirls().size() == 1, "one whirl, off %d puddles" % pools.size())
+	check(_whirls().size() == 1, "one whirl, off %d puddles" % crossed.size())
 	var still_wet := 0
-	for pool in pools:
+	for pool in crossed:
 		if pool.is_wet():
 			still_wet += 1
 	check(still_wet == 0, "and every puddle the wind crossed is dry (%d still wet)" % still_wet)
