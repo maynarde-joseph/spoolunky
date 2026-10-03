@@ -1,333 +1,30 @@
 extends TestSuite
 
-## Headless check on the hunting ground, on the gym, and on the Hollow Wood.
+## Headless check on the colosseum, and on the kit it is built from.
 ##
 ##     godot --headless --script res://tests/world_smoke_test.gd
 ##
-## A level's job is to be the right shape and to be alive, so that is what is
-## checked: the places are all there, none inside another, each a plausible size
-## for the bodies it was built for and every size with somewhere built for it;
-## there is a sun, a day going round and an ecosystem keeping it; every species
-## lives somewhere in it, every place but the camp grows food and has dens, and
-## the things that roam have haunts to roam between; the ground is under every
-## place and the Mere is water; the spider starts in the camp and the HUD says
-## so; and every prop it is furnished with is something to stand on. None of this
-## looks at how it plays — that is what opening it is for.
+## A level's job is to be the right shape, so that is what is checked. Every piece
+## of the kit comes in solid, on the world layer, centred on its origin with its
+## base on the ground, and a stretched block is the size it says. The colosseum
+## is what the game opens; the spider starts on the sand at one size with every
+## spell open; everything in it is something to stand on; the arena is walled all
+## round, with a gate in the middle of each side that you can walk through to a
+## door at the end of the way out that you cannot; the tiers are where they should
+## be, the aisles climb them, and there are windows in the rim to look out of. And
+## the spider can walk on the sand, in the ways out, and outside.
 ##
-## The Hollow Wood is checked for the shape the game wants now: a wood with places
-## in it, none inside another and the clearing you wake in safe while every other
-## place has something hostile in it; ground under all of them; a shrine lit at the
-## start and the rest cold; the structures open to walk into, and the two doors that
-## open from inside shut until their levers are touched; the Rat King sealed in the
-## Barrow; the wyrm's beat flyable end to end; and being driven off waking you back
-## at the clearing.
-
-const GROUND_PATH := "res://game/world/hunting_ground.tscn"
-const TESTBED_PATH := "res://game/world/testbed.tscn"
-const WOOD_PATH := "res://game/world/hollow_wood.tscn"
-
-## The Hollow Wood's places, and whether each is meant to have nothing hostile in it.
-const WOOD_PLACES := [
-	["The Shrine Clearing", true],
-	["The Ruined Court", false],
-	["The Graveyard", false],
-	["The Chapel", false],
-	["The Watchtower", false],
-	["The Belfry", true],
-	["The Barrow", false],
-	["The Mire", false],
-]
-
-## Ways into the structures that are open from the start, as two points in sight of
-## each other through the doorway: the chapel's great door, the crypt's door and
-## the barrow's.
-const WOOD_DOORWAYS := [
-	[Vector3(-92.0, 3.0, 20.0), Vector3(-104.0, 3.0, 20.0)],
-	[Vector3(124.0, 3.0, 14.0), Vector3(134.0, 3.0, 14.0)],
-	[Vector3(110.0, 4.5, -78.0), Vector3(110.0, 4.5, -92.0)],
-]
-
-
-## The places: what each is called, and the stretch of the tier table it is built
-## for, in body heights.
-const PLACES := [
-	["The Camp", 0.25, 0.4],
-	["The Fern Floor", 0.25, 0.7],
-	["The Rootways", 0.7, 2.0],
-	["The Bloom Glade", 1.2, 3.4],
-	["The Old Ruins", 2.0, 5.6],
-	["The Mere", 3.4, 9.0],
-	["Wyrm's Crag", 9.0, 9.0],
-]
-
+## None of this looks at how it plays — that is what opening it is for.
+##
+## The training dummies are checked here too, on posts stood up for the purpose:
+## they are part of the world rather than of any one creature, and the gym that
+## used to hold them is gone.
 
 func run_checks() -> void:
-	var ground := await open(GROUND_PATH)
-	if ground == null:
-		return
-
-	var spider := root.get_tree().get_first_node_in_group("spider") as SpiderPlayer
-	if not check(spider != null, "the hunting ground has a spider in it"):
-		return
-
-	_test_places()
-	_test_every_size_has_a_place()
-	_test_the_sky_and_the_clock(ground)
-	_test_life(ground)
-	_test_props()
-	await _test_the_ground(ground as Node3D)
-	await _test_the_spider_starts_in_camp(spider)
-	_test_the_other_key(ground, spider)
-	await _test_the_water(spider)
-	await _test_the_swimmers()
-
-	# Opening the gym drops the hunting ground: two full levels in the tree at once
-	# is more than a headless run needs to hold.
-	await _test_the_testbed()
-	await _test_the_hollow_wood()
-
-
-## The gym. Not the game, so what is checked is that it holds together: it
-## loads, the spider lands on its floor, every station is there with a sign on
-## it, and the three gates are the three sizes. A testbed that errors on load is
-## worse than no testbed, because you find out while looking for something else.
-func _test_the_testbed() -> void:
-	var bed := await open(TESTBED_PATH)
-	if bed == null:
-		return
-
-	var spider := root.get_tree().get_first_node_in_group("spider") as SpiderPlayer
-	if not check(spider != null, "with a spider in it"):
-		return
-
-	var stations := 0
-	var signs := 0
-	for node in all_under(bed):
-		if node is Label3D:
-			signs += 1
-			if not (node as Label3D).text.is_empty():
-				stations += 1
-	check(stations >= 10, "every station is signed, and there are %d of them" % stations)
-	check(signs == stations, "and no sign without words on it")
-
-	var gates := _thresholds()
-	var sizes: Array[float] = []
-	for gate in gates:
-		sizes.append(gate.opens_at)
-	sizes.sort()
-	check(gates.size() == 3, "the three gates are all here (%d)" % gates.size())
-	if gates.size() == 3:
-		check(is_equal_approx(sizes[0], 0.4) and is_equal_approx(sizes[1], 0.7)
-			and is_equal_approx(sizes[2], 1.2),
-			"at the sizes the tier table says (%.1f, %.1f, %.1f)"
-			% [sizes[0], sizes[1], sizes[2]])
-
-	# It has to hold the spider up, and it has to be small.
-	await run_frames(180)
-	check(spider.global_position.y > -4.0,
-		"the spider lands on the floor rather than through it (%.2f)"
-		% spider.global_position.y)
-	check(absf(spider.global_position.x) < 30.0 and absf(spider.global_position.z) < 24.0,
-		"and stays on it (%.0f, %.0f)" % [spider.global_position.x, spider.global_position.z])
-	# Something to pick up, in the group the pick actually searches.
-	var loose := root.get_tree().get_nodes_in_group("silk_devices").size()
-	check(loose >= 3, "with loose items lying about to be picked up (%d)" % loose)
-	var near := 0
-	for node in root.get_tree().get_nodes_in_group("silk_devices"):
-		var item := node as Node3D
-		if item != null and item.global_position.distance_to(SpiderTestbed.SPAWN) < 6.0:
-			near += 1
-	check(near >= 3, "within reach of where you start (%d of them)" % near)
-
-	await _test_the_dummies(bed)
-
-	var across := SpiderTestbed.FLOOR_HI - SpiderTestbed.FLOOR_LO
-	check(across.x < 60.0 and across.z < 50.0,
-		"the whole gym is %.0f by %.0f, which is the point of it" % [across.x, across.z])
-
-
-## The Hollow Wood. See the top of this file for what is being asked of it.
-func _test_the_hollow_wood() -> void:
-	var wood := await open(WOOD_PATH)
-	if wood == null:
-		return
-	var spider := root.get_tree().get_first_node_in_group("spider") as SpiderPlayer
-	if not check(spider != null, "the Hollow Wood has a spider in it"):
-		return
-	spider.require_captured_mouse = false
-	await run_frames(60)
-
-	# One size the whole way through, every spell from the start, and no mending
-	# but a shrine and a meal.
-	check(spider.growth.stage_index == 2 and not spider.growth.grows
-		and not spider.traits.evolving,
-		"the spider is a Huntsman and stays one, eating nothing into it (%s)"
-		% spider.stage().display_name)
-	check(spider.spells.open_spells().size() == spider.spells.book.size(),
-		"with every spell open from the start (%d)" % spider.spells.open_spells().size())
-	check(not spider.mends_on_its_own and spider.drink_heals > 0.0,
-		"and nothing mends it but a shrine and a meal")
-
-	# The places.
-	var zones := _zones()
-	check(zones.size() == WOOD_PLACES.size(),
-		"every place is here (%d of %d)" % [zones.size(), WOOD_PLACES.size()])
-	var overlaps := 0
-	for i in zones.size():
-		for j in range(i + 1, zones.size()):
-			if zones[i].bounds.intersection(zones[j].bounds).get_volume() > 0.001:
-				overlaps += 1
-	check(overlaps == 0, "and none is inside another (%d overlaps)" % overlaps)
-	var here := Zone.at(root.get_tree(), spider.global_position)
-	check(here != null and here.display_name == "The Shrine Clearing",
-		"you start in the Shrine Clearing (%s)" % (here.display_name if here != null
-		else "nowhere"))
-	var groundless := PackedStringArray()
-	for zone in zones:
-		var middle := zone.bounds.get_center()
-		var down := _ray(Vector3(middle.x, zone.bounds.end.y, middle.z),
-			Vector3(middle.x, zone.bounds.position.y, middle.z))
-		if down.is_empty():
-			groundless.append(zone.display_name)
-	check(groundless.is_empty(), "there is something to stand on in every place %s" % groundless)
-
-	# What lives where.
-	var marks: Array[HostileSpawn] = []
-	for node in root.get_tree().get_nodes_in_group("hostile_spawns"):
-		marks.append(node as HostileSpawn)
-	var unknown := 0
-	var buried := 0
-	for mark in marks:
-		if mark.species() == null or not mark.species().hostile:
-			unknown += 1
-		var below := _ray(mark.global_position, mark.global_position + Vector3.DOWN * 60.0)
-		if below.is_empty():
-			buried += 1
-	check(marks.size() >= 25, "something hostile at %d marks" % marks.size())
-	check(unknown == 0, "every one a hostile species (%d are not)" % unknown)
-	check(buried == 0, "and every one over ground, not under it (%d are not)" % buried)
-	for place in WOOD_PLACES:
-		var zone := _zone_named(place[0])
-		if zone == null:
-			check(false, "%s is here" % place[0])
-			continue
-		var count := 0
-		for mark in marks:
-			if zone.contains(mark.global_position):
-				count += 1
-		if place[1]:
-			check(count == 0, "%s is safe (%d marks)" % [place[0], count])
-		else:
-			check(count > 0, "%s has something hostile in it (%d)" % [place[0], count])
-
-	# Shrines: one lit, the clearing's; each somewhere to stand.
-	var shrines: Array[Shrine] = []
-	for node in root.get_tree().get_nodes_in_group("shrines"):
-		shrines.append(node as Shrine)
-	var lit: Array[String] = []
-	var unfloored := 0
-	for shrine in shrines:
-		if shrine.lit:
-			lit.append(shrine.display_name)
-		var wake := shrine.wake_transform().origin
-		if _ray(wake, wake + Vector3.DOWN * 2.0).is_empty():
-			unfloored += 1
-	check(shrines.size() == 5, "five shrines (%d)" % shrines.size())
-	check(lit == ["Shrine of the Clearing"], "and only the clearing's lit at the start (%s)" % [lit])
-	check(unfloored == 0, "each with a floor in front of it to wake on (%d without)" % unfloored)
-
-	# The structures, open to walk into; and the two doors that open from inside.
-	var blocked := 0
-	for way in WOOD_DOORWAYS:
-		if not _ray(way[0], way[1]).is_empty():
-			blocked += 1
-			note("blocked: %s -> %s at %s" % [way[0], way[1], _ray(way[0], way[1])["position"]])
-	check(blocked == 0, "the chapel, the crypt and the barrow can be walked into (%d blocked)"
-		% blocked)
-	var gates: Array[ShortcutGate] = []
-	for node in root.get_tree().get_nodes_in_group("shortcut_gates"):
-		gates.append(node as ShortcutGate)
-	check(gates.size() == 2, "two doors that open from inside (%d)" % gates.size())
-	var insides := {"Chapel Door": "The Chapel", "Tower Door": "The Watchtower"}
-	var through := {}
-	for gate in gates:
-		var side := Zone.at(root.get_tree(), gate.lever_at + Vector3.UP * 0.5)
-		check(side != null and side.display_name == insides.get(gate.display_name, ""),
-			"the %s's lever is inside, in %s"
-			% [gate.display_name, side.display_name if side != null else "nowhere"])
-		# Straight through the door, from outside it to the lever.
-		var outside := gate.lever_at + (gate.lever_at.direction_to(_door_middle(gate)) * Vector3(1, 0,
-			1)).normalized() * 12.0 + Vector3.UP * 1.5
-		var ray := [outside, gate.lever_at + Vector3.UP * 1.5]
-		through[gate] = ray
-		check(not _ray(ray[0], ray[1]).is_empty(), "and the %s is shut" % gate.display_name)
-		gate.pull()
-	await wait_until(func() -> bool:
-		for gate in gates:
-			if not gate.is_clear():
-				return false
-		return true, 240)
-	var still := 0
-	for gate in gates:
-		var ray: Array = through[gate]
-		if not _ray(ray[0], ray[1]).is_empty():
-			still += 1
-	check(still == 0, "and both open once their levers are touched (%d still shut)" % still)
-
-	# The Rat King, sealed in the Barrow.
-	var lairs := root.get_tree().get_nodes_in_group("boss_lairs")
-	if check(lairs.size() == 1, "one lair"):
-		var lair := lairs[0] as BossLair
-		check(lair.display_name == "The Barrow" and lair.keeper != null
-			and lair.keeper.species_id == "rat_king" and lair.keeper.creature != null,
-			"the Rat King keeps the Barrow")
-		check(lair.reward_trait == "wing_buds", "with something kept there for whoever beats it")
-		check(lair.contains(lair.keeper.global_position), "and it keeps to its hall")
-
-	# The wyrm's beat, flyable from end to end.
-	var wyrm: HostileSpawn = null
-	for mark in marks:
-		if mark.species_id == "hollow_wyrm":
-			wyrm = mark
-	if check(wyrm != null and wyrm.stays_beaten, "the Hollow Wyrm is here, and a boss"):
-		check(wyrm.route.size() >= 6, "walking a beat (%d points)" % wyrm.route.size())
-		var walled := 0
-		for i in wyrm.route.size():
-			var a := wyrm.route[i]
-			var b := wyrm.route[(i + 1) % wyrm.route.size()]
-			if not _ray(a, b).is_empty():
-				walled += 1
-				note("beat blocked: %s -> %s at %s" % [a, b, _ray(a, b)["position"]])
-		check(walled == 0, "each point of it in sight of the next (%d not)" % walled)
-		var places := {}
-		for point in wyrm.route:
-			var zone := Zone.at(root.get_tree(), point)
-			if zone != null:
-				places[zone.display_name] = true
-		check(places.has("The Ruined Court") and places.has("The Graveyard"),
-			"over the court and the graveyard (%s)" % ", ".join(places.keys()))
-
-	# Driven off anywhere, you wake at the shrine you lit.
-	var keeper := Checkpoints.of(wood)
-	if check(keeper != null and keeper.shrine != null, "something keeps track of where you wake"):
-		var ground := HollowWood.new()
-		spider.global_position = ground.on_ground(0.0, 50.0, 1.0)
-		ground.free()
-		await run_frames(5)
-		spider.take_bite(spider.max_stamina() + 1.0)
-		await wait_until(func() -> bool: return not keeper.is_waking(), 240)
-		await run_frames(10)
-		var woke := Zone.at(root.get_tree(), spider.global_position)
-		check(woke != null and woke.display_name == "The Shrine Clearing"
-			and is_equal_approx(spider.health, spider.max_stamina()),
-			"driven off in the court, you wake whole in the clearing (%s)"
-			% (woke.display_name if woke != null else "nowhere"))
-
-
-## The middle of a gate's door, from its pieces.
-func _door_middle(gate: ShortcutGate) -> Vector3:
-	var door := gate.get_node_or_null("Door") as Node3D
-	return door.global_position if door != null else gate.lever_at
+	_test_the_pieces()
+	await _test_a_block()
+	await _test_the_colosseum()
+	await _test_the_dummies()
 
 
 func _ray(from: Vector3, to: Vector3) -> Dictionary:
@@ -336,323 +33,290 @@ func _ray(from: Vector3, to: Vector3) -> Dictionary:
 	return world.direct_space_state.intersect_ray(query)
 
 
-## The places, none of them inside another. Overlapping bounds would make "which
-## place am I in" a coin toss, and the HUD's naming of them hangs off it.
-func _test_places() -> void:
-	var zones := _zones()
-	var names: Array[String] = []
-	for zone in zones:
-		names.append(zone.display_name)
-	note(", ".join(names))
-	if not check(zones.size() == PLACES.size(),
-			"the places are all here, and nothing else (%d of %d)" % [zones.size(), PLACES.size()]):
+## How far along [param from] to [param to] the first solid thing is, or -1 for
+## nothing in the way.
+func _reach(from: Vector3, to: Vector3) -> float:
+	var hit := _ray(from, to)
+	return from.distance_to(hit.position) if not hit.is_empty() else -1.0
+
+
+# --- the kit ----------------------------------------------------------------
+
+## Every piece in `Pieces/`, through the import: a body on the world layer with a
+## collider, its footprint centred on its origin and its base on the ground. That is
+## what makes a piece dropped at a point stand on that point, and anything you can
+## see something you can stand on and stick silk to.
+func _test_the_pieces() -> void:
+	var names := Kit.names()
+	if not check(names.size() >= 70, "the kit is here (%d pieces)" % names.size()):
 		return
-	for place in PLACES:
-		var zone := _zone_named(place[0])
-		if not check(zone != null, "%s is there" % place[0]):
-			continue
-		check(zone.bounds.get_volume() > 0.0,
-			"%s has somewhere to be (%.0f m3)" % [zone.display_name, zone.bounds.get_volume()])
-		check(is_equal_approx(zone.built_for.x, place[1]) and is_equal_approx(zone.built_for.y,
-			place[2]), "and is built for %.2f to %.2f" % [zone.built_for.x, zone.built_for.y])
-		# A forest to a spiderling is the point of the place, but a county is not.
-		var across := zone.body_lengths_across()
-		check(across > 20.0 and across < 1500.0,
-			"%s is %d body lengths across" % [zone.display_name, roundi(across)])
-	var overlaps := 0
-	for i in zones.size():
-		for j in range(i + 1, zones.size()):
-			if zones[i].bounds.intersects(zones[j].bounds):
-				overlaps += 1
-				note("%s overlaps %s" % [zones[i].display_name, zones[j].display_name])
-	check(overlaps == 0, "and none of them are inside each other (%d)" % overlaps)
-
-
-## Whatever size the spider is, somewhere is built for it.
-func _test_every_size_has_a_place() -> void:
-	var homeless: Array[String] = []
-	for stage in WebLibrary.default_stages():
-		var found := false
-		for zone in _zones():
-			if stage.body_height >= zone.built_for.x - 0.001 \
-					and stage.body_height <= zone.built_for.y + 0.001:
-				found = true
-		if not found:
-			homeless.append(stage.display_name)
-	check(homeless.is_empty(), "every size has a place built for it (%s without)"
-		% (", ".join(homeless) if not homeless.is_empty() else "none"))
-
-
-## One sun, a sky, a day going round and an ecosystem keeping it.
-func _test_the_sky_and_the_clock(ground: Node) -> void:
-	var suns := 0
-	var skies := 0
-	for node in all_under(ground):
-		if node is DirectionalLight3D:
-			suns += 1
-		if node is WorldEnvironment:
-			skies += 1
-	check(suns == 1 and skies == 1, "one sun and one sky (%d, %d)" % [suns, skies])
-	var clock := Ecosystem.of(ground)
-	check(clock != null and clock.running, "an ecosystem, keeping the day going round")
-	var day := ground.find_child("DayNight", true, false) as DayNight
-	check(day != null and day.moon != null and day.sun != null,
-		"and a day and night driving the sun, with a moon for after dark")
-
-
-## Every species lives somewhere here: a den of it in some place. Every place but
-## the camp grows something to eat and has something living in it, and nothing
-## lives in the camp. The things that roam have somewhere to roam to.
-func _test_life(ground: Node) -> void:
-	var dens: Array[Den] = []
-	var patches: Array[Forage] = []
-	var haunts: Array[Haunt] = []
-	for node in all_under(ground):
-		if node is Den:
-			dens.append(node)
-		elif node is Forage:
-			patches.append(node)
-		elif node is Haunt:
-			haunts.append(node)
-	var housed := {}
-	for den in dens:
-		housed[den.species_id] = true
-	var homeless: Array[String] = []
-	for kind in PreyLibrary.load_species():
-		if not housed.has(kind.id):
-			homeless.append(kind.id)
-	check(homeless.is_empty(), "every species has a den here (%d dens; %s without)"
-		% [dens.size(), ", ".join(homeless) if not homeless.is_empty() else "none"])
-	for place in PLACES:
-		var zone := _zone_named(place[0])
-		if zone == null:
-			continue
-		var living := 0
-		for den in dens:
-			if zone.contains(den.global_position):
-				living += 1
-		var growing := 0
-		for patch in patches:
-			if zone.contains(patch.global_position):
-				growing += 1
-		if place[0] == "The Camp":
-			check(living == 0, "nothing lives in the camp (%d dens)" % living)
-			continue
-		check(living > 0 and growing > 0, "%s has %d dens and %d patches of forage"
-			% [place[0], living, growing])
-	var roamers: Array[String] = []
-	for kind in PreyLibrary.load_species():
-		if not kind.roams:
-			continue
-		var places := 0
-		for haunt in haunts:
-			if haunt.welcomes(kind):
-				places += 1
-		if places < 2:
-			roamers.append("%s (%d)" % [kind.id, places])
-	check(roamers.is_empty(), "everything that roams has haunts to roam between (%s short)"
-		% (", ".join(roamers) if not roamers.is_empty() else "none"))
-	_note_life(dens)
-
-
-## How much there is: said, not checked.
-func _note_life(dens: Array[Den]) -> void:
-	var out := 0
-	for den in dens:
-		out += den.count()
-	note("%d dens, %d creatures out" % [dens.size(), out])
-
-
-## The ground is under every place: straight down from above the middle of each,
-## the first thing hit is the ground, at a height that place could have.
-func _test_the_ground(ground: Node3D) -> void:
-	await physics_frame
-	var space := ground.get_world_3d().direct_space_state
-	var missing: Array[String] = []
-	for place in PLACES:
-		var zone := _zone_named(place[0])
-		if zone == null:
-			continue
-		var middle := zone.bounds.get_center()
-		var query := PhysicsRayQueryParameters3D.create(Vector3(middle.x, 400.0, middle.z),
-			Vector3(middle.x, -100.0, middle.z), GameLayers.WORLD)
-		var hit := space.intersect_ray(query)
-		if hit.is_empty():
-			missing.append(place[0])
-	check(missing.is_empty(), "there is ground under every place (%s without)"
-		% (", ".join(missing) if not missing.is_empty() else "none"))
-	# And the hills rise round the edge, so the valley is a valley.
-	var rim := space.intersect_ray(PhysicsRayQueryParameters3D.create(
-		Vector3(0.0, 400.0, -360.0), Vector3(0.0, -100.0, -360.0), GameLayers.WORLD))
-	var floor_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(
-		Vector3(HuntingGround.GLADE.x, 400.0, HuntingGround.GLADE.y),
-		Vector3(HuntingGround.GLADE.x, -100.0, HuntingGround.GLADE.y), GameLayers.WORLD))
-	if check(not rim.is_empty() and not floor_hit.is_empty(), "the ground is there at the edge too"):
-		check(rim["position"].y > floor_hit["position"].y + 30.0,
-			"and the hills round it stand well over the valley floor (%.0f against %.0f)"
-			% [rim["position"].y, floor_hit["position"].y])
-
-
-## The spider is put in the camp, stays there on its floor, and the HUD says where
-## it is.
-func _test_the_spider_starts_in_camp(spider: SpiderPlayer) -> void:
-	await run_frames(240)
-	var here := Zone.at(root.get_tree(), spider.global_position)
-	check(here != null and here.display_name == "The Camp",
-		"it starts in the camp and stays there (%s)"
-		% (here.display_name if here != null else "nowhere"))
-	var under := HuntingGround.new()
-	var floor_y := under.ground_at(spider.global_position.x, spider.global_position.z)
-	under.free()
-	check(spider.global_position.y > floor_y - 1.0,
-		"standing on its floor rather than through it (%.2f, the ground at %.1f)"
-		% [spider.global_position.y, floor_y])
-	var hud := current_scene.get_node_or_null("HUD")
-	var named: Label = hud.get("_area_label") if hud != null else null
-	check(named != null and named.text == "The Camp", "and the HUD names the place (%s)"
-		% (named.text if named != null else "no label"))
-
-
-## Size is one key and not the only one. A gate no spider will ever be big
-## enough for still gives, if it went up the tree some other way.
-func _test_the_other_key(world: Node, spider: SpiderPlayer) -> void:
-	var traits := spider.traits
-	if not check(traits != null, "the spider has a tree to go up"):
-		return
-
-	# Far from everything, and sized past the end of the ladder, so the only
-	# thing that can open it is the trait.
-	var gate := Threshold.make(world as Node3D, Vector3(200.0, 200.0, 200.0),
-		Vector3(206.0, 200.4, 206.0), 999.0, "TestHatch", "wing_buds")
-	gate._physics_process(0.016)
-	check(not gate.open, "a gate past the end of the ladder stays shut")
-	check(not traits.has("wing_buds"), "with no trait to open it either")
-
-	traits.owned["wing_buds"] = true
-	gate._physics_process(0.016)
-	check(gate.open, "and gives to the trait instead of to the size")
-	traits.owned.erase("wing_buds")
-
-
-## The Mere is water, to a spider as much as anything: put in it, it swims.
-func _test_the_water(spider: SpiderPlayer) -> void:
-	var mere := _zone_named("The Mere")
-	if not check(mere != null, "there is a mere to have water in"):
-		return
-	var pools := 0
-	for node in root.get_tree().get_nodes_in_group("water"):
-		var pool := node as Area3D
-		if pool != null and pool.collision_layer & GameLayers.WATER != 0 \
-				and mere.bounds.has_point(pool.global_position):
-			pools += 1
-	check(pools > 0, "the Mere is full of water (%d bodies of it)" % pools)
-	var at := Vector3(HuntingGround.MERE.x - 30.0, HuntingGround.WATER_TOP - 2.0,
-		HuntingGround.MERE.y)
-	var top := Prey.water_top_at(spider, at)
-	check(is_equal_approx(top, HuntingGround.WATER_TOP),
-		"to the top, at %.1f (%.1f)" % [HuntingGround.WATER_TOP, top])
-	var was := spider.global_position
-	spider.global_position = at
-	spider.velocity = Vector3.ZERO
-	await run_frames(6)
-	check(not spider.climb.handles_movement(),
-		"and a spider put in it is swimming, not walking the bottom")
-	spider.global_position = was
-	spider.velocity = Vector3.ZERO
-	await run_frames(2)
-
-
-## Whatever swims in the Mere keeps all of itself under the top of it.
-func _test_the_swimmers() -> void:
-	var mere := _zone_named("The Mere")
-	if mere == null:
-		return
-	await run_frames(60)
-	var swimmers := 0
-	var highest := -INF
-	for node in root.get_tree().get_nodes_in_group("prey"):
-		var prey := node as Prey
-		if prey == null or not prey.swims or not mere.bounds.has_point(prey.global_position):
-			continue
-		swimmers += 1
-		highest = maxf(highest, prey.global_position.y + prey.hit_radius())
-	check(swimmers >= 4, "there are things in the Mere (%d)" % swimmers)
-	check(highest <= HuntingGround.WATER_TOP + 0.05,
-		"and none of them breaks the surface (the highest comes to %.2f, the water %.2f)"
-		% [highest, HuntingGround.WATER_TOP])
-
-
-## Every prop has its scene, and every one is something to stand on: a body on the
-## world layer with a shape to it.
-func _test_props() -> void:
-	var baked := 0
-	var solid := 0
-	var bad: Array[String] = []
-	for id in Props.ALL:
-		var scene := load(Props.path_of(id)) as PackedScene
-		if scene == null:
-			bad.append(id)
-			continue
-		baked += 1
-		var made := scene.instantiate()
-		var body := made as CollisionObject3D
+	var loose := PackedStringArray()
+	var off_centre := PackedStringArray()
+	var hollow := PackedStringArray()
+	var one_sided := PackedStringArray()
+	var sheets := 0
+	for piece in names:
+		var made := (load(Kit.path_of(piece)) as PackedScene).instantiate()
+		var body := made as StaticBody3D
+		if body == null or body.collision_layer != GameLayers.WORLD or body.collision_mask != 0:
+			loose.append(piece)
+		var box := AABB()
+		var first := true
 		var shapes := 0
-		for node in all_under(made):
-			if node is CollisionShape3D:
+		var sheet := false
+		var backed := true
+		for child in made.get_children():
+			var view := child as MeshInstance3D
+			if view != null and view.mesh != null:
+				var seen := view.transform * view.mesh.get_aabb()
+				box = seen if first else box.merge(seen)
+				first = false
+				sheet = sheet or _open(view.mesh)
+			var solid := child as CollisionShape3D
+			if solid != null and solid.shape != null:
 				shapes += 1
-		if body != null and body.collision_layer & GameLayers.WORLD != 0 and shapes > 0:
-			solid += 1
-		else:
-			bad.append(id)
+				var trimesh := solid.shape as ConcavePolygonShape3D
+				if trimesh != null and not trimesh.backface_collision:
+					backed = false
+		if shapes == 0:
+			hollow.append(piece)
+		if absf(box.get_center().x) > 0.01 or absf(box.get_center().z) > 0.01 \
+				or absf(box.position.y) > 0.01:
+			off_centre.append(piece)
+		if sheet:
+			sheets += 1
+			if not backed:
+				one_sided.append(piece)
 		made.free()
-	check(baked == Props.ALL.size(), "every prop has a scene (%d of %d)" % [baked, Props.ALL.size()])
-	check(solid == Props.ALL.size(), "and every one is something to stand on (%s)"
-		% (", ".join(bad) if not bad.is_empty() else "all of them"))
+	check(loose.is_empty(), "every piece is a body on the world layer %s" % loose)
+	check(hollow.is_empty(), "with something to collide with %s" % hollow)
+	check(off_centre.is_empty(),
+		"centred on its origin with its base on the ground %s" % off_centre)
+	check(sheets > 0 and one_sided.is_empty(),
+		"and the %d that are sheets stop you from both sides %s" % [sheets, one_sided])
+
+	# A piece added later comes in the same way, without anyone remembering to set
+	# it up: the project's default for scenes names the same script.
+	var defaults: Dictionary = ProjectSettings.get_setting("importer_defaults/scene", {})
+	check(str(defaults.get("import_script/path", "")) == "res://tools/kit_import.gd",
+		"and a piece added later is imported the same way")
 
 
-# --- helpers -------------------------------------------------------------
+## Whether a mesh has an edge only one of its faces uses: some of it is a sheet
+## rather than the skin of a solid. Worked out here rather than asked of the import,
+## so the check does not take the importer's word for what it did.
+func _open(mesh: Mesh) -> bool:
+	var uses := {}
+	var faces := mesh.get_faces()
+	for i in range(0, faces.size(), 3):
+		for j in 3:
+			var a := str(faces[i + j].snappedf(0.0001))
+			var b := str(faces[i + (j + 1) % 3].snappedf(0.0001))
+			var edge := a + "|" + b if a < b else b + "|" + a
+			uses[edge] = int(uses.get(edge, 0)) + 1
+	return uses.values().has(1)
 
-func _zones() -> Array[Zone]:
-	var zones: Array[Zone] = []
-	for node in root.get_tree().get_nodes_in_group("zones"):
-		var zone := node as Zone
-		if zone != null:
-			zones.append(zone)
-	return zones
+
+## A block is the size it says: its look stretched to fit and its box the same, so
+## what you see is what you stand on, and changing its size changes both.
+func _test_a_block() -> void:
+	var holder := Node3D.new()
+	var block := KitBlock.new()
+	block.size = Vector3(10.0, 3.0, 2.0)
+	holder.add_child(block)
+	await stage(holder)
+	await run_frames(2)
+	var solid := _shape_of(block)
+	check(solid != null and solid.size.is_equal_approx(Vector3(10.0, 3.0, 2.0)),
+		"a block collides as the box it says it is (%s)" % (solid.size if solid != null else "none"))
+	var seen := _seen(block)
+	check(seen.size.is_equal_approx(Vector3(10.0, 3.0, 2.0)) and absf(seen.position.y) < 0.01,
+		"and looks it, standing on its origin (%s)" % seen)
+	var top := _reach(Vector3(3.0, 10.0, 0.0), Vector3(3.0, -1.0, 0.0))
+	check(absf(top - 7.0) < 0.05, "and you stand on its top (%.2f down)" % top)
+	block.size = Vector3(4.0, 6.0, 4.0)
+	await run_frames(2)
+	check(_shape_of(block).size.is_equal_approx(Vector3(4.0, 6.0, 4.0))
+			and _seen(block).size.is_equal_approx(Vector3(4.0, 6.0, 4.0)),
+		"and a new size changes both")
+	close()
 
 
-func _zone_named(zone_name: String) -> Zone:
-	for zone in _zones():
-		if zone.display_name == zone_name:
-			return zone
+func _shape_of(block: KitBlock) -> BoxShape3D:
+	for child in block.get_children(true):
+		if child is CollisionShape3D:
+			return (child as CollisionShape3D).shape as BoxShape3D
 	return null
 
 
-func _thresholds() -> Array[Threshold]:
-	var found: Array[Threshold] = []
+func _seen(block: KitBlock) -> AABB:
+	for child in block.get_children(true):
+		var view := child as MeshInstance3D
+		if view != null and view.mesh != null:
+			return view.transform * view.mesh.get_aabb()
+	return AABB()
+
+
+# --- the colosseum ----------------------------------------------------------
+
+func _test_the_colosseum() -> void:
+	check(str(ProjectSettings.get_setting("application/run/main_scene")) == Colosseum.SCENE,
+		"the game opens in the colosseum")
+	var level := await open(Colosseum.SCENE)
+	if level == null:
+		return
+	var spider := root.get_tree().get_first_node_in_group("spider") as SpiderPlayer
+	if not check(spider != null, "the colosseum has a spider in it"):
+		return
+	spider.require_captured_mouse = false
+	await run_frames(60)
+
+	# One size the whole way through, and every spell from the start: there is no
+	# growing, and nothing to find yet.
+	check(spider.growth.stage_index == 2 and not spider.growth.grows
+		and not spider.traits.evolving,
+		"the spider is a Huntsman and stays one (%s)" % spider.stage().display_name)
+	check(spider.spells.open_spells().size() == spider.spells.book.size(),
+		"with every spell open from the start (%d)" % spider.spells.open_spells().size())
+	var here := Zone.at(root.get_tree(), spider.global_position)
+	check(here != null and here.display_name == "The Colosseum",
+		"and starts in the Colosseum (%s)" % (here.display_name if here != null else "nowhere"))
+	check(spider.is_on_floor() and spider.global_position.distance_to(Colosseum.START) < 1.0,
+		"standing on the sand where it was put (%s)" % spider.global_position)
+
+	# Everything is something to stand on.
+	var bodies := 0
+	var loose := PackedStringArray()
+	for node in all_under(level):
+		var body := node as StaticBody3D
+		if body == null:
+			continue
+		bodies += 1
+		if body.collision_layer & GameLayers.WORLD == 0:
+			loose.append(body.name)
+	check(bodies > 150 and loose.is_empty(),
+		"all %d solids in it are on the world layer %s" % [bodies, loose])
+
+	_test_the_walls()
+	_test_the_ways()
+	_test_the_stands()
+	await _test_walking(spider)
+
+
+## Walled all round: from the middle of the sand every way but through a gate, the
+## first thing you meet is the arena wall or a column in front of it.
+func _test_the_walls() -> void:
+	var open_sides := PackedStringArray()
+	for degrees in range(15, 360, 30):
+		var way := Vector3.FORWARD.rotated(Vector3.UP, deg_to_rad(degrees))
+		var reach := _reach(Vector3(0.0, 2.0, 0.0), Vector3(0.0, 2.0, 0.0) + way * 60.0)
+		if reach < 0.0 or reach > Colosseum.ARENA * sqrt(2.0) + 0.1:
+			open_sides.append("%d°" % degrees)
+	check(open_sides.is_empty(), "the arena is walled all round %s" % open_sides)
+
+	var columns := 0
 	for node in all_under(current_scene):
-		var gate := node as Threshold
-		if gate != null:
-			found.append(gate)
-	return found
+		if node.scene_file_path == Kit.path_of("pillar3"):
+			columns += 1
+	check(columns == Colosseum.COLUMNS.size() * 8 + 4,
+		"with columns along the foot of the wall and in the corners (%d)" % columns)
 
 
-## The dummies station: three creatures on posts with their numbers over their
-## heads, for trying a fight against something that holds still and says what it
-## is doing.
+## A gate in the middle of each side, low enough to walk through and no higher
+## than a door, and through it a way out to a door at the far end that is shut.
+func _test_the_ways() -> void:
+	for side in Colosseum.SIDES:
+		var facing: Vector3 = Colosseum.SIDES[side]
+		var through := _reach(Vector3(0.0, 1.5, 0.0), facing * 60.0 + Vector3(0.0, 1.5, 0.0))
+		# The door itself is set into the middle of the outside wall's thickness.
+		check(through > Colosseum.RIM - 1.05 and through < Colosseum.RIM,
+			"%s: through the gate to a shut door at the end of the way out (%.1f)"
+			% [side, through])
+		var lintel := _reach(Vector3(0.0, 3.5, 0.0), facing * 60.0 + Vector3(0.0, 3.5, 0.0))
+		check(absf(lintel - Colosseum.ARENA) < 0.2,
+			"%s: and the gate is a door's height, with wall over it (%.1f)" % [side, lintel])
+
+
+## The tiers step up four at a time, the aisles climb them, and the rim has windows
+## in it to look out of and wall under them to lean on.
+func _test_the_stands() -> void:
+	var wrong := PackedStringArray()
+	for side in Colosseum.SIDES:
+		var facing: Vector3 = Colosseum.SIDES[side]
+		for k in Colosseum.TIERS:
+			var middle := Colosseum.frame(facing, 6.0,
+				Colosseum.ARENA + Colosseum.TIER * (k + 0.5), 0.0).origin
+			var down := _reach(middle + Vector3.UP * 40.0, middle + Vector3.DOWN)
+			var height := 40.0 - down
+			if absf(height - Colosseum.TIER * (k + 1)) > 0.05:
+				wrong.append("%s %d at %.1f" % [side, k + 1, height])
+	check(wrong.is_empty(), "the tiers are four, eight and twelve high on every side %s" % wrong)
+
+	var flights := 0
+	for side in Colosseum.SIDES:
+		var facing: Vector3 = Colosseum.SIDES[side]
+		for k in Colosseum.TIERS:
+			var foot := Colosseum.frame(facing, Colosseum.AISLE,
+				Colosseum.ARENA - Colosseum.TIER + Colosseum.TIER * k + 1.0, 0.0).origin
+			var step := 40.0 - _reach(foot + Vector3.UP * 40.0, foot + Vector3.DOWN)
+			if step > Colosseum.TIER * k + 0.1 and step < Colosseum.TIER * k + 2.1:
+				flights += 1
+	check(flights == Colosseum.SIDES.size() * Colosseum.TIERS,
+		"and a flight of stairs climbs each one (%d)" % flights)
+
+	var top := Colosseum.TIER * Colosseum.TIERS
+	var inside := Vector3(0.0, 0.0, Colosseum.RIM - 3.0)
+	var out := Vector3(0.0, 0.0, Colosseum.RIM + 10.0)
+	check(_reach(inside + Vector3.UP * (top + 2.0), out + Vector3.UP * (top + 2.0)) < 0.0,
+		"there is a window in the rim to look out of")
+	check(_reach(inside + Vector3.UP * (top + 0.5), out + Vector3.UP * (top + 0.5)) > 0.0,
+		"and wall under it to lean on")
+
+
+## The spider walks on the sand, and stands in the ways out and on the grass
+## outside — everywhere it can get to is somewhere to stand.
+func _test_walking(spider: SpiderPlayer) -> void:
+	var from := spider.global_position
+	Input.action_press("move_forward")
+	await run_frames(90)
+	Input.action_release("move_forward")
+	var moved := Vector2(spider.global_position.x - from.x, spider.global_position.z - from.z).length()
+	check(moved > 1.5 and spider.is_on_floor(),
+		"the spider walks on the sand (%.1fm)" % moved)
+
+	for spot in [Vector3(0.0, 0.8, Colosseum.ARENA + 6.0), Vector3(0.0, 0.8, Colosseum.RIM + 8.0)]:
+		spider.global_position = spot
+		spider.velocity = Vector3.ZERO
+		await run_frames(40)
+		check(spider.is_on_floor() and absf(spider.global_position.y - spot.y) < 0.6,
+			"and stands at %s (%s)" % [spot, spider.global_position])
+	release_all()
+
+
+# --- training dummies -------------------------------------------------------
+
+## Three creatures on posts with their numbers over their heads, for trying a fight
+## against something that holds still and says what it is doing.
 ##
 ## They are creatures rather than special cases, so silk, venom, webs, hauling and
 ## eating all work on them the way they work on anything — which is the point, and
 ## also the thing that would quietly stop being true if they were ever turned into
 ## a bespoke target.
-func _test_the_dummies(bed: Node) -> void:
+func _test_the_dummies() -> void:
+	var yard := Node3D.new()
+	yard.name = "Yard"
+	var ground := WorldKit.body(yard, "Ground")
+	WorldKit.box(ground, "Slab", Vector3(40.0, 1.0, 40.0), WorldKit.at(Vector3(0.0, -0.5, 0.0)),
+		"straw")
 	var posts: Array[TrainingDummy] = []
-	for node in all_under(bed):
-		var post := node as TrainingDummy
-		if post != null:
-			posts.append(post)
-	if not check(posts.size() == 3, "three dummies to practise on (%d)" % posts.size()):
-		return
+	for i in 3:
+		var post := TrainingDummy.new()
+		post.species_id = ["dummy_post", "dummy_runner", "dummy_biter"][i]
+		post.name = "Dummy_" + post.species_id
+		post.position = Vector3(-8.0 + 8.0 * i, 0.45, 0.0)
+		yard.add_child(post)
+		posts.append(post)
+	await stage(yard)
 
 	await run_frames(20)
 	var kinds: Array[String] = []
@@ -660,6 +324,7 @@ func _test_the_dummies(bed: Node) -> void:
 		var standing: Prey = post._standing
 		if not check(is_instance_valid(standing),
 				"%s has something standing on it" % post.species_id):
+			close()
 			return
 		kinds.append(standing.species)
 	check(kinds.size() == 3 and kinds[0] != kinds[1] and kinds[1] != kinds[2],
@@ -684,7 +349,7 @@ func _test_the_dummies(bed: Node) -> void:
 
 	# And the one that bites can never see further than the post will let it walk.
 	# The biter shipped with a 14m acquire radius against a 9m leash, so it picked
-	# fights with anyone who spawned across the gym and then spent the whole thing
+	# fights with anyone who spawned across the room and then spent the whole thing
 	# being snapped back to its plinth — which from in front read as one creature
 	# that would not let go. The post clamps it now, so a `.tres` edited by hand
 	# cannot put it back.
@@ -701,7 +366,7 @@ func _test_the_dummies(bed: Node) -> void:
 			"and gives up on distance inside it (%.1fm against %.1f)"
 			% [hunter.hunt_range * 1.8, post.leash])
 
-	# The readout is the whole reason the station exists.
+	# The readout is the whole reason the post exists.
 	var target: Prey = posts[0]._standing
 	target.bind(0.4)
 	target.poison(6.0)
@@ -723,7 +388,7 @@ func _test_the_dummies(bed: Node) -> void:
 		"and at 40%% wrapped a real web could take it (%.1f needed, %.1f is the best there is)"
 		% [target.total_thrash() / Prey.ESCAPE_MARGIN, strongest])
 
-	# Finish one and the post stands another up, or it is a one-shot station.
+	# Finish one and the post stands another up, or it is a one-shot target.
 	var was: Prey = posts[0]._standing
 	was.eaten = true
 	posts[0]._waiting = 0.05
@@ -739,7 +404,7 @@ func _test_the_dummies(bed: Node) -> void:
 	for post in posts:
 		if is_instance_valid(post._standing) and post._standing.aggression > 0.0:
 			biter = post
-	if check(biter != null, "the gym has a hunter to try that on"):
+	if check(biter != null, "there is a hunter to try that on"):
 		var kind: PreySpecies = biter._kind
 		var was_range := kind.hunt_range
 		kind.hunt_range = 14.0
@@ -759,3 +424,4 @@ func _test_the_dummies(bed: Node) -> void:
 		shipped.append(kind.id)
 	check(not shipped.has("dummy_post"),
 		"and none of them are in the game's own species (%d)" % shipped.size())
+	close()
