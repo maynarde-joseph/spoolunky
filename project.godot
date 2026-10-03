@@ -28,6 +28,12 @@ window/stretch/aspect="expand"
 
 theme/default_font_multichannel_signed_distance_field=true
 
+[importer_defaults]
+
+scene={
+"import_script/path": "res://tools/kit_import.gd"
+}
+
 [input]
 
 move_forward={
