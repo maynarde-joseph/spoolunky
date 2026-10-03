@@ -54,6 +54,7 @@ func _sections() -> Array[Callable]:
 		_test_clay_pillar,
 		_test_mud,
 		_test_lightning_rod,
+		_test_baked_clay,
 		_test_the_whole_book_open,
 	]
 
@@ -2391,6 +2392,51 @@ func _test_lightning_rod() -> void:
 	check(strike != null and strike.grounded.has(pillar), "it goes to ground through the pillar")
 	check(near.is_stunned(), "and out round its foot: the beetle there is stunned")
 	check(not far.is_stunned(), "the one further off than the ring is not")
+
+
+## Fire breathed on a clay pillar bakes it: red and hard, it stands far longer than
+## its ten seconds, and water no longer slumps it.
+func _test_baked_clay() -> void:
+	var earth := _learned("earth", 2)
+	var fire := _learned("fire", 2)
+	var douse := _learned("douse", 2)
+	spider.require_captured_mouse = false
+	var slab := add_slab(Vector3(0, 0.0, 220), Vector3(40, 0.5, 40))
+	await physics_frame
+	var floor_y := slab.global_position.y + 0.25
+	var start := slab.global_position + Vector3(0, 0.25, 8.0)
+	stand_on(start)
+	await run_frames(20)
+	var height := spider.stage().body_height
+	var spot := Vector3(start.x, floor_y, start.z) + Vector3.FORWARD * height * 2.4
+	clear_prey_near(spot, height * 30.0, null)
+	aim_at(spot)
+	await physics_frame
+	check(spells.cast_now(earth), "a pillar raised close by")
+	var pillar := _last_pillar()
+	if not check(pillar != null, "and standing"):
+		return
+	await run_frames(20)
+	check(not pillar.baked and is_equal_approx(pillar.lasts, earth.duration_at(0.0)),
+		"clay, standing its %.0f s" % pillar.lasts)
+	var face := pillar.base + Vector3.UP * pillar.tall * 0.4 + pillar.face * pillar.radius
+	aim_at(face)
+	await physics_frame
+	await process_frame
+	check(spells.cast_now(fire), "fire breathed on it")
+	var baked: bool = await wait_until(func() -> bool: return pillar.baked, 60)
+	check(baked and pillar.lasts >= ClayPillar.BAKED_FOR,
+		"it bakes hard, and stands %.0f s" % pillar.lasts)
+	var paint := (pillar.get_node("Block") as MeshInstance3D).material_override as StandardMaterial3D
+	check(paint != null and paint.albedo_color.is_equal_approx(ClayPillar.BAKED),
+		"red, like a pot out of the kiln")
+	await wait_until(func() -> bool: return _last_breath() == null, 240)
+	spells.forget_waits()
+	aim_at(face)
+	await physics_frame
+	check(spells.cast_now(douse), "water spat on it")
+	await _spat()
+	check(is_instance_valid(pillar) and not pillar.sinking(), "and it does not slump")
 
 
 ## The newest pillar of clay standing, or null.

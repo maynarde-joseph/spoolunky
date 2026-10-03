@@ -17,7 +17,8 @@ extends Node3D
 ## holds burns, which is how a catch is roasted without losing the web it is in.
 ##
 ## And water boils. A puddle it reaches goes up as a cloud of steam where it lay,
-## soaking and scalding whatever is in it, fliers included — see [Steam].
+## soaking and scalding whatever is in it, fliers included — see [Steam]. Clay it
+## reaches bakes hard, and stands far longer — see [ClayPillar].
 
 ## It has died down: everything it burned, and how many webs and lines went up.
 signal finished(breath: FireBreath, burned: Array[Prey], webs: int, lines: int)
@@ -65,12 +66,13 @@ var colour := Color(1.0, 0.45, 0.12, 1.0)
 ## it goes, every frame it lasts. Null, and it stays where it was breathed.
 var source: SpiderSpells = null
 
-## Everything it has burned, first to last, how many webs and lines went up, and
-## the steam it boiled off puddles.
+## Everything it has burned, first to last, how many webs and lines went up, the
+## steam it boiled off puddles, and the clay pillars it baked.
 var burned: Array[Prey] = []
 var webs_burned := 0
 var lines_burned := 0
 var steamed: Array[Steam] = []
+var baked: Array[ClayPillar] = []
 
 var _age := 0.0
 var _length := 0.0
@@ -151,6 +153,7 @@ func _physics_process(delta: float) -> void:
 		_burn_creatures(delta)
 		_burn_silk()
 		_boil_water()
+		_bake_clay()
 	elif _age >= lasts + FLARE:
 		finished.emit(self, burned, webs_burned, lines_burned)
 		queue_free()
@@ -237,6 +240,22 @@ func _boil_water() -> void:
 			body * STEAM_TALL, STEAM_LASTS, harm * STEAM_SCALD)
 		if cloud != null:
 			steamed.append(cloud)
+
+
+## Every clay pillar the flame reaches bakes hard.
+func _bake_clay() -> void:
+	if _length <= 0.0:
+		return
+	for node in get_tree().get_nodes_in_group(ClayPillar.GROUP):
+		var pillar := node as ClayPillar
+		if pillar == null or pillar.baked or pillar.sinking() or pillar.is_queued_for_deletion():
+			continue
+		for i in range(SAMPLES + 1):
+			var out := _length * float(i) / float(SAMPLES)
+			if pillar.in_the_way(origin + heading * out, radius_at(out)):
+				if pillar.bake():
+					baked.append(pillar)
+				break
 
 
 ## Whether the flame touches any of [param web]'s silk.

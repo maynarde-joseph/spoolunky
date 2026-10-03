@@ -28,6 +28,9 @@ extends StaticBody3D
 ## * **Water on it slumps it.** A drop of the spider's water that lands on a pillar
 ##   already standing softens it: it sinks back at once, and leaves a wide puddle
 ##   round where it stood.
+##
+## And fire bakes it: breathed on, it goes hard and red, like a pot out of a kiln,
+## and stands far longer — and water no longer softens it. See [FireBreath].
 
 const GROUP := "clay_pillars"
 
@@ -71,6 +74,12 @@ const MIRE := 4.0
 ## How wide the puddle a slumped pillar leaves is, as so many times its half-width.
 const SLUMP := 2.5
 
+## Baked clay: red and hard. How long a baked pillar stands from when it was baked,
+## in seconds, and how long it glows from the kiln.
+const BAKED := Color(0.6, 0.29, 0.17, 1.0)
+const BAKED_FOR := 30.0
+const GLOW := 1.5
+
 ## Where it comes up from, which way, how wide it is from the middle to the middle
 ## of a face, and how tall it stands, in metres.
 var base := Vector3.ZERO
@@ -94,8 +103,9 @@ var body := 0.25
 
 var colour := Color(0.62, 0.42, 0.26, 1.0)
 
-## Whether it came up out of a puddle, as mud.
+## Whether it came up out of a puddle, as mud, and whether fire has baked it.
 var muddy := false
+var baked := false
 
 ## Everything it came up under, everything of that it threw — or, as mud, held fast
 ## on its top — whether it threw the spider, and the webs it flung. All but what it
@@ -115,6 +125,8 @@ var _shape: BoxShape3D
 var _collider: CollisionShape3D
 var _mesh: BoxMesh
 var _view: MeshInstance3D
+var _paint: StandardMaterial3D
+var _baked_at := -1.0
 
 
 ## Raises one under [param host] at [param at], out of ground facing
@@ -190,9 +202,10 @@ func sinking() -> bool:
 
 ## Water landed on it: it softens and sinks back now, leaving a puddle
 ## [constant SLUMP] times its half-width round its foot if it stands out of the
-## floor, wet for [param seconds], in [param tint]. False if it was already going.
+## floor, wet for [param seconds], in [param tint]. False if it was already going,
+## or fire has baked it hard.
 func slump(seconds: float, tint := Color(0.36, 0.74, 0.9, 1.0)) -> bool:
-	if sinking() or is_queued_for_deletion():
+	if baked or sinking() or is_queued_for_deletion():
 		return false
 	_sink()
 	if axis.dot(Vector3.UP) >= 0.7:
@@ -220,6 +233,33 @@ func _over(off: Vector3, margin: float) -> bool:
 static func _flat(direction: Vector3, normal: Vector3) -> Vector3:
 	var flat := direction - normal * direction.dot(normal)
 	return flat.normalized() if flat.length_squared() > 0.000001 else Vector3.ZERO
+
+
+## Fire reached it: baked hard and red, it stands [constant BAKED_FOR] seconds from
+## now, and water no longer slumps it. False if it was baked already, or going.
+func bake() -> bool:
+	if baked or sinking() or is_queued_for_deletion():
+		return false
+	baked = true
+	_baked_at = _age
+	lasts = maxf(lasts, _age + BAKED_FOR)
+	if _paint != null:
+		_paint.albedo_color = BAKED
+		_paint.roughness = 0.85
+		_paint.emission_enabled = true
+		_paint.emission = Color(1.0, 0.45, 0.15)
+	SpellFlash.burst(get_parent(), base + axis * _now * 0.5, Color(1.0, 0.5, 0.2),
+		maxf(radius * 2.0, _now * 0.6), 0.5)
+	return true
+
+
+func _process(_delta: float) -> void:
+	if _paint == null or not baked:
+		return
+	var left := clampf(1.0 - (_age - _baked_at) / GLOW, 0.0, 1.0)
+	_paint.emission_energy_multiplier = 1.5 * left
+	if left <= 0.0:
+		_paint.emission_enabled = false
 
 
 func _physics_process(delta: float) -> void:
@@ -395,13 +435,13 @@ func _build() -> void:
 	_collider.shape = _shape
 	add_child(_collider)
 	_mesh = BoxMesh.new()
-	var paint := StandardMaterial3D.new()
-	paint.albedo_color = MUD if muddy else CLAY
-	paint.roughness = 0.35 if muddy else 1.0
+	_paint = StandardMaterial3D.new()
+	_paint.albedo_color = MUD if muddy else CLAY
+	_paint.roughness = 0.35 if muddy else 1.0
 	_view = MeshInstance3D.new()
 	_view.name = "Block"
 	_view.mesh = _mesh
-	_view.material_override = paint
+	_view.material_override = _paint
 	add_child(_view)
 	_set_height(0.0)
 	SpellFlash.burst(get_parent(), base, colour, radius * 2.5, 0.35)

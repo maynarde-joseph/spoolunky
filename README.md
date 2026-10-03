@@ -411,6 +411,8 @@ up. Everything else is learned:
   blow a gust while you breathe fire and the flame goes the whole length of the
   lane, burning what is in it and any dry silk. **Clay grounds lightning**: strike
   a pillar and the charge runs down it and out round its foot, twice as wide.
+  **Fire bakes clay**: breathe on a pillar and it bakes hard, stands three times as
+  long, and shrugs off water.
 * **Five on the keys.** The web is always on 1 and five spells ride on 2 to 6. A
   spell learned goes on the next free key; the tree takes one off or puts one on.
 
