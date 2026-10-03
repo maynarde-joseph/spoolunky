@@ -600,12 +600,14 @@ row of buttons:
   would expect); lava is where they meet.
 
 **Every pair, in one place.** Each interaction is the second spell acting on what
-the first left behind — a web, a puddle, a breath still burning — so the order is
-part of it, and a pair interacts only the way round that makes sense. Some pairs
-not at all: better nothing than a combination that is only a bigger number. Clay
-has none of its own — the pillar is a thing to build with and to throw things off,
-which is enough for one spell. Those that need a skill say so; the rest come with
-knowing both spells.
+the first left behind — a web, a puddle, a pool of lava — so the order is part of
+it, and a pair interacts only the way round that makes sense: water then fire is
+lava, and lava then lightning is a fire rod, lava then wind a spiral of fire. Some
+pairs not at all: better nothing than a combination that is only a bigger number.
+Fire and lightning, and wind and fire, have nothing to say to each other directly,
+so lava is where they meet. Clay has none of its own — the pillar is a thing to
+build with and to throw things off, which is enough for one spell. Those that need
+a skill say so; the rest come with knowing both spells.
 
 | Pair | First, then | What happens | Needs |
 |---|---|---|---|
@@ -616,19 +618,19 @@ knowing both spells.
 | Silk + pullback | web, then pullback | called back whole, wrapping what it passes | — |
 | Silk + clay | web, then clay | flung up off its anchors; silk tied to a pillar comes down when it goes | — |
 | Water + wind | puddle, then wind | a whirl that holds the first thing it reaches | Waterspout |
-| Lava + wind | lava, then wind | a spiral of fire that holds and burns the first thing it reaches | Waterspout |
 | Water + lightning | wet, then lightning | twice as hard, and on to anything wet near; a puddle is a lightning rod, sending it out round itself twice as wide | — |
 | Water + fire | puddle, then fire | lava, burning whatever stands in it | — |
 | Water + pullback | wet web, then pullback | soaks what it passes | Wet Silk |
+| Lava + lightning | lava, then lightning | the fire rod: a column of fire, and the strike out round it as fire, stunning and burning | — |
+| Lava + wind | lava, then wind | a spiral of fire that holds and burns the first thing it reaches | Waterspout |
 | Lightning + pullback | live web, then pullback | strikes what it passes | Live Silk |
+| Lightning + fire | — | none directly: lava is where they meet | — |
+| Wind + fire | — | none directly: lava is where they meet | — |
 | Wind + lightning | — | none | — |
 | Wind + pullback | — | none: the wind leaves webs where they stand | — |
-| Wind + clay | — | none of its own; what a pillar throws is loose in the air, so a gust carries it on | — |
-| Wind + fire | — | none directly: lava is where they meet | — |
-| Lava + lightning | lava, then lightning | the fire rod: a column of fire, and the strike out round it as fire, stunning and burning | — |
-| Lightning + fire | — | none directly: lava is where they meet | — |
 | Fire + pullback | — | none: fire takes a web on its way back as readily as one standing | — |
-| Pullback + clay | — | none: a pillar already throws webs | — |
+| Clay + wind | — | none of its own; what a pillar throws is loose in the air, so a gust carries it on | — |
+| Clay + pullback | — | none: a pillar already throws webs | — |
 | Clay + water, lightning or fire | — | none: clay is a thing to build with | — |
 
 **And off what you have become.** A trait is a change to the animal (§3.1) —

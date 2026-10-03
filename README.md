@@ -912,8 +912,9 @@ whirl wind lifts out of a puddle holding the first thing it reaches, acid water,
 square pillar of clay that throws what stands on it — the spider included — and flings
 the web it comes up under, a breath of fire swept from
 one creature to the next that burns harder the more silk is on what it touches and
-burns the silk with it — but not a wet web — and turns a puddle to lava, webs
-called back through what is in their way, the magic circles
+burns the silk with it — but not a wet web — and turns a puddle to lava, a strike
+sent out round a puddle, lava erupting into a fire rod and lifted by the wind into
+a spiral of fire, webs called back through what is in their way, the magic circles
 each spell is drawn in, the number keys, and the whole book opened at once:
 
 ```sh
