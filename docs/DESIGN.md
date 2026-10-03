@@ -559,9 +559,10 @@ row of buttons:
   held in a whirl — takes a strike twice as hard: twice as long stunned, twice
   the hurt and twice the fight gone, and passes it on to anything wet near it, and
   a strike on a whirl reaches what it holds. And **a puddle is a lightning rod**: a
-  strike that reaches one runs into the water and out round it, twice as wide as
-  it struck, stunning everything in the ring, wet or dry. Spit puddles across a
-  path, then the strike.
+  strike that reaches one breaks into six little bolts that race out across the
+  water to a ring twice as wide as it struck, stunning everything in the ring, wet
+  or dry — the bolt nearest a creature turning to run at it, so you see what each
+  one struck. Spit puddles across a path, then the strike.
 * **Lightning erupts lava: the fire rod.** Fire and lightning have nothing to say
   to each other directly — two ways of hurting — but lava gives them one: a strike
   that reaches a pool of it erupts it in a column of fire, and the strike goes out

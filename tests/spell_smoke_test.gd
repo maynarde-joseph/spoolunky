@@ -2173,9 +2173,10 @@ func _ground_under(from: Vector3) -> float:
 	return (hit["position"] as Vector3).y if not hit.is_empty() else -INF
 
 
-## A puddle is a lightning rod: a strike that reaches it runs into the water and out
-## round it, twice as wide as it struck, stunning what is there wet or dry. Without
-## the puddle the same strike leaves them be, and further off than the ring nothing.
+## A puddle is a lightning rod: a strike that reaches it breaks into six little bolts
+## that race out across the water, twice as wide as it struck, stunning what is there
+## wet or dry — the bolt nearest a creature running at it. Without the puddle the
+## same strike leaves them be, and further off than the ring nothing.
 func _test_lightning_rod() -> void:
 	var lightning := _learned("lightning", 2)
 	spider.require_captured_mouse = false
@@ -2218,6 +2219,28 @@ func _test_lightning_rod() -> void:
 	check(strike != null and strike.through_water.has(wet), "it runs into the water")
 	check(near.is_stunned(), "and out round it: the beetle near it is stunned, dry as it is")
 	check(not far.is_stunned(), "the one further off than the ring is not")
+	if not check(strike != null and strike.forks.size() == LightningStrike.FORKS,
+			"it breaks into %d little bolts (%d)" % [LightningStrike.FORKS,
+			strike.forks.size() if strike != null else 0]):
+		return
+	var to_near := near.global_position - wet.centre
+	to_near.y = 0.0
+	var at_it := 0
+	var to_edge := 0
+	var ring := maxf(radius * LightningStrike.ROD, wet.radius + radius)
+	for fork in strike.forks:
+		if fork.heading.dot(to_near.normalized()) > 0.99 \
+				and absf(fork.reach - to_near.length()) < height * 0.05:
+			at_it += 1
+		elif is_equal_approx(fork.reach, ring):
+			to_edge += 1
+	check(at_it == 1 and to_edge == LightningStrike.FORKS - 1,
+		"one runs at the beetle and stops there, the rest out to the edge of the ring")
+	var started := strike.spread()
+	await run_frames(4)
+	check(is_instance_valid(strike) and strike.spread() > started and strike.spread() < 1.0,
+		"racing out across the water, not there all at once (%.2f of the way)"
+		% (strike.spread() if is_instance_valid(strike) else 0.0))
 
 
 ## Lightning that reaches lava erupts it: a column of fire out of the pool, and the

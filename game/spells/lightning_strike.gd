@@ -23,8 +23,10 @@ extends Node3D
 ## * **Water.** Anything wet takes it twice as hard — twice the stun and twice the
 ##   hurt — and passes it on to anything wet near it, and a strike on a whirl
 ##   reaches everything the whirl holds. A puddle it reaches is a lightning rod: the
-##   strike runs into the water and out round it, [constant ROD] times as wide as it
-##   struck, wet or dry.
+##   strike breaks into [constant FORKS] little bolts that race out across the water
+##   to the edge of a ring [constant ROD] times as wide as it struck, and stuns
+##   everything in the ring, wet or dry — the bolt nearest a creature turning to run
+##   at it, so you see what each one struck.
 ## * **Lava.** A pool of it that the strike reaches erupts — a column of fire out of
 ##   it — and the strike goes out round it as fire, as wide as through water:
 ##   everything in the ring is stunned and burned. See [Lava].
@@ -51,6 +53,13 @@ const LIVE_FOR := 2.0
 ## How wide the ring is that a puddle it reaches sends it out in, round the puddle's
 ## middle, as so many times its own radius — and lava, erupting.
 const ROD := 2.0
+
+## How many little bolts a strike breaks into where it goes into a puddle, how long
+## they take to race out across the water, in seconds, and how long each is, as a
+## share of the ring they run out to.
+const FORKS := 6
+const SPREAD := 0.22
+const FORK_LENGTH := 0.35
 
 ## How hard lava it erupts burns what is in the ring, worth this much of a
 ## creature's health: all of it to something wrapped, a fifth to something bare —
@@ -94,11 +103,26 @@ var through_water: Array[WetGround] = []
 var erupted: Array[Lava] = []
 var set_alight: Array[Prey] = []
 
+## One of the little bolts it broke into in a puddle: where it runs from, which way
+## out across the water, how far it goes, how long it is, and which way is up from
+## the water it runs over.
+class Fork:
+	var from := Vector3.ZERO
+	var heading := Vector3.FORWARD
+	var reach := 1.0
+	var length := 0.3
+	var up := Vector3.UP
+
+## The little bolts it broke into in puddles, every puddle's [constant FORKS] in turn.
+var forks: Array[Fork] = []
+
 ## Where it went, as pairs of points, for drawing.
 var _paths: Array = []
 var _age := 0.0
 var _material: StandardMaterial3D
 var _light: OmniLight3D
+var _fork_view: MeshInstance3D
+var _sparks: Array[MeshInstance3D] = []
 
 
 ## Calls one down at [param at] under [param host], taking [param hurt] of the
@@ -132,6 +156,7 @@ static func call_down(host: Node, at: Vector3, wide: float, stun_for: float, jum
 func _process(delta: float) -> void:
 	_age += delta
 	var left := clampf(1.0 - _age / SHOWN, 0.0, 1.0)
+	_draw_forks()
 	if _material != null:
 		_material.albedo_color.a = left
 	if _light != null:
@@ -165,11 +190,15 @@ func discharge() -> void:
 		through_water.append(wet)
 		_paths.append([at, wet.centre])
 		var ring := maxf(radius * ROD, wet.radius + radius)
+		var in_ring: Array[Prey] = []
 		for creature in creatures:
 			var off := creature.global_position - wet.centre
 			var rise := off.dot(wet.up)
 			if absf(rise) <= ring and (off - wet.up * rise).length() <= ring + creature.hit_radius():
-				_shock(creature, wet.centre)
+				in_ring.append(creature)
+				# The bolt that runs at it is its line in: no second line drawn.
+				_shock(creature, wet.centre, false)
+		_fork_out(wet.centre, wet.up, ring, in_ring)
 
 	# Lava it reaches erupts: a column of fire, and the strike out round it as fire.
 	for node in get_tree().get_nodes_in_group(Lava.GROUP):
@@ -279,12 +308,90 @@ func discharge() -> void:
 		_shock(best, from_point)
 
 
-func _shock(creature: Prey, from: Vector3) -> bool:
+func _shock(creature: Prey, from: Vector3, drawn := true) -> bool:
 	if creature == null or shocked.has(creature) or not creature.shock(stun, harm):
 		return false
 	shocked.append(creature)
-	_paths.append([from, creature.global_position])
+	if drawn:
+		_paths.append([from, creature.global_position])
 	return true
+
+
+## Breaks the strike into [constant FORKS] little bolts at [param centre], on water
+## facing [param up], to race out to [param ring]: evenly round, from a turn of its
+## own, except that the bolt nearest each of [param targets] turns to run at it and
+## stops there.
+func _fork_out(centre: Vector3, up: Vector3, ring: float, targets: Array[Prey]) -> void:
+	var side := up.cross(Vector3.FORWARD if absf(up.dot(Vector3.FORWARD)) < 0.9
+		else Vector3.RIGHT).normalized()
+	var turn := randf() * TAU
+	var made: Array[Fork] = []
+	for i in FORKS:
+		var fork := Fork.new()
+		fork.from = centre
+		fork.heading = side.rotated(up, turn + TAU * float(i) / float(FORKS))
+		fork.reach = ring
+		fork.length = ring * FORK_LENGTH
+		fork.up = up
+		made.append(fork)
+	var taken := {}
+	for creature in targets:
+		var off := creature.global_position - centre
+		var flat := off - up * off.dot(up)
+		if flat.length() < 0.001:
+			continue
+		var best := -1
+		var best_dot := -2.0
+		for i in made.size():
+			if taken.has(i):
+				continue
+			var lined := made[i].heading.dot(flat.normalized())
+			if lined > best_dot:
+				best_dot = lined
+				best = i
+		if best < 0:
+			break
+		taken[best] = true
+		made[best].heading = flat.normalized()
+		made[best].reach = flat.length()
+	forks.append_array(made)
+
+
+## How far through racing out the little bolts are: 0 as it strikes, 1 once they
+## have run all the way out.
+func spread() -> float:
+	return clampf(_age / SPREAD, 0.0, 1.0)
+
+
+## The little bolts where they have got to: each a short crooked bolt racing out
+## across the water behind a bright spark at its head, crackling as it goes — a
+## white core in a wider haze of the strike's colour, so it reads against pale
+## ground — drawn afresh each frame.
+func _draw_forks() -> void:
+	if _fork_view == null or forks.is_empty():
+		return
+	var going := 1.0 - pow(1.0 - spread(), 2.0)
+	var width := maxf(radius * 0.035, 0.01)
+	var core := WebGeometry.StrandSet.new()
+	var haze := WebGeometry.StrandSet.new()
+	for i in forks.size():
+		var fork := forks[i]
+		var lift := fork.up * maxf(radius * 0.04, 0.012)
+		var head := fork.reach * going
+		var tail := maxf(head - fork.length, 0.0)
+		var from := fork.from + fork.heading * tail + lift
+		var to := fork.from + fork.heading * head + lift
+		if from.distance_to(to) > 0.001:
+			zigzag(core, from, to, 4, fork.length * 0.12, width)
+			zigzag(haze, from, to, 4, fork.length * 0.12, width * 3.0)
+		if i < _sparks.size():
+			_sparks[i].global_position = to
+			_sparks[i].scale = Vector3.ONE * radius * lerpf(0.09, 0.04, spread())
+	var mesh := WebGeometry.build_mesh(core, Color(1.0, 1.0, 1.0, 1.0))
+	var glow := WebGeometry.build_mesh(haze, Color(colour.r, colour.g, colour.b, 0.35))
+	if mesh != null and glow != null:
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, glow.surface_get_arrays(0))
+	_fork_view.mesh = mesh
 
 
 ## The webs a charge in [param web] crosses to: any whose silk comes within
@@ -386,6 +493,29 @@ func _build_view() -> void:
 	bolt.top_level = true
 	add_child(bolt)
 	bolt.global_transform = Transform3D.IDENTITY
+	if not forks.is_empty():
+		_fork_view = MeshInstance3D.new()
+		_fork_view.name = "Forks"
+		_fork_view.material_override = _material
+		_fork_view.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_fork_view.top_level = true
+		add_child(_fork_view)
+		_fork_view.global_transform = Transform3D.IDENTITY
+		var bead := SphereMesh.new()
+		bead.radius = 1.0
+		bead.height = 2.0
+		bead.radial_segments = 8
+		bead.rings = 4
+		for fork in forks:
+			var spark := MeshInstance3D.new()
+			spark.name = "Spark"
+			spark.mesh = bead
+			spark.material_override = _material
+			spark.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			spark.top_level = true
+			add_child(spark)
+			_sparks.append(spark)
+		_draw_forks()
 	_light = OmniLight3D.new()
 	_light.name = "Flash"
 	_light.light_color = colour

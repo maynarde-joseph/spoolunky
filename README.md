@@ -404,8 +404,8 @@ up. Everything else is learned:
   soaks**: called back or flung, a web Douse left wet soaks what it passes, ready
   for lightning. **Fire turns water to lava**: breathe on a puddle and it turns to
   lava where it lies, burning whatever stands in it for a few seconds. **A puddle is
-  a lightning rod**: strike one and the charge runs out round it, twice as wide,
-  wet or dry. **Lightning erupts lava**: strike a pool of it and it goes up in a
+  a lightning rod**: strike one and the strike breaks into six little bolts that
+  race out across the water, twice as wide, wet or dry. **Lightning erupts lava**: strike a pool of it and it goes up in a
   column of fire, the strike running out round it as fire, stunning and burning.
   Which comes first decides: each is the second spell acting on what the first
   left behind — and some pairs have nothing, rather than a bigger number.
