@@ -33,8 +33,9 @@ const WAY := 2.0
 ## From the middle to the outside of the stands.
 const RIM := ARENA + TIER * TIERS
 
-## How far out the ground goes from the middle, every way.
-const GROUND := 120.0
+## How far out the ground goes from the middle, every way: far enough that the
+## haze has it before its edge shows.
+const GROUND := 1000.0
 
 ## Where the spider starts: on the sand, back from the south gate, facing in.
 const START := Vector3(0.0, 0.8, 12.0)
@@ -90,8 +91,10 @@ static func _sky(level: Node3D) -> void:
 	var sky := ProceduralSkyMaterial.new()
 	sky.sky_top_color = Color(0.36, 0.52, 0.76)
 	sky.sky_horizon_color = Color(0.72, 0.77, 0.82)
-	sky.ground_bottom_color = Color(0.26, 0.28, 0.24)
-	sky.ground_horizon_color = Color(0.62, 0.65, 0.64)
+	# Below the horizon the sky is the colour of grass seen through haze, so the
+	# ground meets it rather than stopping at an edge.
+	sky.ground_bottom_color = Color(0.48, 0.58, 0.44)
+	sky.ground_horizon_color = Color(0.64, 0.71, 0.66)
 	sky.sun_angle_max = 18.0
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_SKY

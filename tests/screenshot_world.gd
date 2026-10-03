@@ -17,7 +17,7 @@ const VIEWS := {
 	"arena": [Vector3(-14.0, 1.2, 14.0), Vector3(8.0, 3.0, -10.0)],
 	"from_the_rim": [Vector3(0.0, 13.5, -27.5), Vector3(0.0, 1.0, 6.0)],
 	"south_gate": [Vector3(6.0, 2.2, 8.0), Vector3(0.0, 1.5, 18.5)],
-	"way_out": [Vector3(0.0, 1.6, 20.0), Vector3(0.0, 1.5, 30.0)],
+	"way_out": [Vector3(0.6, 1.4, 27.5), Vector3(0.0, 1.6, 10.0)],
 	"outside": [Vector3(40.0, 6.0, 52.0), Vector3(0.0, 6.0, 0.0)],
 }
 
