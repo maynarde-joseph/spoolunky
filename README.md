@@ -405,6 +405,9 @@ up. Everything else is learned:
   **A wet web soaks**: called back, blown or flung, a web Douse left wet soaks what
   it passes, ready for lightning. **Fire boils water**: breathe on a puddle and it
   goes up as steam that soaks and scalds whatever is in it, fliers included.
+  **Water and clay, either way round**: a pillar raised out of a puddle comes up as
+  mud and holds what it lifts fast on its top instead of throwing it; water spat
+  on a pillar already standing slumps it into a wide puddle.
 * **Five on the keys.** The web is always on 1 and five spells ride on 2 to 6. A
   spell learned goes on the next free key; the tree takes one off or puts one on.
 
