@@ -1190,6 +1190,14 @@ traversal on a line is its own state, the way a person goes along a zip line:
   reach, the one you are looking at by preference. Grappling at a line takes you
   onto it, hanging, without stringing a second line to reach it — the difference
   between joining the network and extending it.
+* **Only a ride that works is offered.** A line counts as one if a body-sized ball,
+  hung where the spider hangs, can be swept along under it for at least three body
+  heights without meeting the world. A line laid along the floor, tight to a wall
+  or a step long fails, and is no ride at all: Q passes it over, the readout under
+  the cross offers nothing, a grapple aimed at it goes on through to what is
+  behind, and the line grapple lays it but does not hang you from it. A line that
+  passes is taken where the body fits — a line laid from your feet catches you a
+  little way up it, not inside the floor. The ride itself is the same as ever.
 
 A bridge, the one strand spun to be walked, keeps its plank.
 

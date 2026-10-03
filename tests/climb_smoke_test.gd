@@ -54,6 +54,7 @@ func run_checks() -> void:
 	await _test_grappling_a_long_way()
 	await _test_lines_are_rails()
 	await _test_the_line_grapple()
+	await _test_only_rides_that_work()
 	await _test_sloppy_normals()
 	await _test_momentum_survives_a_grapple()
 	await _test_a_steady_view()
@@ -1709,6 +1710,126 @@ func _test_the_line_grapple() -> void:
 ## shade under unit, 0.999263 among them, and that value used to become the
 ## body's up unexamined. One sloppy normal from the world was then an error
 ## every single frame until the spider next touched something else.
+## Only a ride that works is offered. A line is ridden hanging under it, so a line
+## with no room under it for the body — laid along the floor, or too short to be a
+## ride — is not taken by Q, is not where a grapple aimed at it stops, and the line
+## grapple lays it but does not hang you from it. A line that does have room is
+## taken where the body fits: out of the floor, even from a line that starts on it.
+func _test_only_rides_that_work() -> void:
+	var climb := _spider.climb
+	var builder := _spider.web_builder
+	builder.stop()
+	climb.release()
+	release_all()
+	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
+		if is_instance_valid(node):
+			node.queue_free()
+	await physics_frame
+	var height: float = _spider.stage().body_height
+	var floor_y := -ROOM_HALF.y + 0.2
+	var stand := Vector3(0.0, floor_y + height * 0.5, 0.5)
+
+	# Along the floor: no room to hang from it, so it is no ride.
+	var along := WebStrand.spin(_frame_line_pattern(), Vector3(-2.0, floor_y + 0.01, 0.0),
+		Vector3(2.0, floor_y + 0.01, 0.0), 1.0)
+	along.place_in(_room)
+	_spider.global_position = stand
+	_spider.velocity = Vector3.ZERO
+	_spider.view.face(Vector3.FORWARD)
+	_spider.view.pitch = -0.6
+	await run_frames(20)
+	check(not climb.has_room_to_hang(along, _spider.global_position),
+		"a line along the floor has no room to hang from")
+	check(not climb.toggle_ride() and not climb.is_riding(), "and Q does not take it")
+	check(not climb.clip_on(along, _spider.global_position) and not climb.is_riding(),
+		"nor does anything else hang you from it")
+
+	# Too short to be a ride, though there is room all round it.
+	var stub := WebStrand.spin(_frame_line_pattern(), Vector3(-height, 0.3, 0.0),
+		Vector3(height, 0.3, 0.0), 1.0)
+	stub.place_in(_room)
+	await physics_frame
+	check(not climb.has_room_to_hang(stub, stub.point_a),
+		"a line two body heights long is too short to ride")
+
+	# Across the room in the air: a ride, and Q takes it.
+	along.queue_free()
+	stub.queue_free()
+	var across := WebStrand.spin(_frame_line_pattern(), Vector3(-ROOM_HALF.x + 0.2, 0.0, 0.0),
+		Vector3(ROOM_HALF.x - 0.2, 0.0, 0.0), 1.0)
+	across.place_in(_room)
+	await physics_frame
+	check(climb.has_room_to_hang(across, _spider.global_position), "a line across the room is a ride")
+	climb.release()
+	_spider.global_position = Vector3(0.0, -0.4, 0.4)
+	_spider.velocity = Vector3.ZERO
+	await physics_frame
+	check(climb.toggle_ride() and climb.is_riding() and climb.holding_line() == across,
+		"and Q takes it")
+	climb.release()
+	across.queue_free()
+
+	# Rising off the floor, the way the line grapple lays one from your feet: taken
+	# where there is room under it, not at the foot, where the body would be in the
+	# floor.
+	var foot := Vector3(-1.5, floor_y + 0.01, 0.0)
+	var rising := WebStrand.spin(_frame_line_pattern(), foot, Vector3(2.0, 1.0, 0.0), 1.0)
+	rising.place_in(_room)
+	await physics_frame
+	check(climb.clip_on(rising, foot) and climb.is_riding(), "a line up off the floor is a ride")
+	var bottom := _spider.global_position.y - height * SpiderClimb.HANG_BODY
+	check(bottom > floor_y - height * 0.05,
+		"taken where the body fits, out of the floor (%.3f m over it)" % (bottom - floor_y))
+	climb.release()
+	rising.queue_free()
+	await run_frames(20)
+
+	# The line grapple aimed at the floor in front of you lays a line along it, and
+	# leaves you standing: there is no ride in it.
+	_spider.global_position = stand
+	_spider.velocity = Vector3.ZERO
+	await run_frames(20)
+	climb.toggle_grapple_style()
+	var near_floor := Vector3(0.0, floor_y, -0.6)
+	var toward := near_floor - _spider.view.aim_pivot()
+	_spider.view.face(Vector3(toward.x, 0.0, toward.z))
+	_spider.view.pitch = atan2(toward.y, Vector2(toward.x, toward.z).length())
+	await run_frames(2)
+	var before := _silk_count()
+	builder.place()
+	await run_frames(3)
+	check(_silk_count() == before + 1 and not climb.is_riding(),
+		"the line grapple aimed at the floor lays a line, and does not hang you from it")
+	climb.toggle_grapple_style()
+
+	# And the pull aimed at a line it could not hang you from goes on through to the
+	# floor behind it, as if the line were not there.
+	climb.release()
+	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
+		if is_instance_valid(node):
+			node.queue_free()
+	await physics_frame
+	var flat := WebStrand.spin(_frame_line_pattern(), Vector3(-2.0, floor_y + 0.01, -1.2),
+		Vector3(2.0, floor_y + 0.01, -1.2), 1.0)
+	flat.place_in(_room)
+	_spider.global_position = stand
+	_spider.velocity = Vector3.ZERO
+	await run_frames(20)
+	toward = Vector3(0.0, floor_y + 0.01, -1.2) - _spider.view.aim_pivot()
+	_spider.view.face(Vector3(toward.x, 0.0, toward.z))
+	_spider.view.pitch = atan2(toward.y, Vector2(toward.x, toward.z).length())
+	await run_frames(2)
+	check(builder.aimed_line() == flat, "the cross on a line along the floor")
+	builder.place()
+	var landed: bool = await wait_until(func() -> bool:
+		return not climb.is_grappling() and climb.is_attached(), 120)
+	check(landed and not climb.is_riding(),
+		"a grapple aimed at it lands on the floor behind, not on the line")
+	climb.release()
+	flat.queue_free()
+	await run_frames(20)
+
+
 func _test_sloppy_normals() -> void:
 	release_all()
 	_spider.global_position = Vector3(0, -ROOM_HALF.y + 0.6, 0)

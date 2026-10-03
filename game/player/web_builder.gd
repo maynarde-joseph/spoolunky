@@ -1103,6 +1103,11 @@ func place() -> void:
 	# it at all — strung across open air, there is no surface for the cross to find,
 	# and none is needed to take hold of silk that is already there.
 	_pending_ride = aimed_line()
+	if _pending_ride != null and _climb != null and not _climb.shoots_lines() \
+			and not _climb.has_room_to_hang(_pending_ride, aimed_line_point(_pending_ride)):
+		# No room to hang from it, so it is not a ride: the grapple goes on through to
+		# whatever is behind it, as if it were not there.
+		_pending_ride = null
 	if problem != Problem.NONE and (_pending_ride == null or problem == Problem.LOCKED):
 		_pending_ride = null
 		notice.emit(problem_text())

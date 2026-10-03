@@ -92,7 +92,7 @@ one kept to what the keys do today.
 | **Right Mouse** | let go of the line |
 | **Left Mouse** | **go there, trailing silk** — moving and building are the same act |
 | **G** | **grapple style** — the **pull** takes you there; the **line** lays a line from your feet to where you point and hangs you from it, ready to zip along |
-| **Q** | take hold of the nearest line — hang from it and zip along it with **W**/**S**, toward or away from where you look. **Q** or **Space** lets go |
+| **Q** | take hold of the nearest line with room to hang from — hang from it and zip along it with **W**/**S**, toward or away from where you look. **Q** or **Space** lets go |
 | **Left Mouse** *on something you've caught* | put a line on it and drag it instead — same click, read the only way that makes sense |
 | **Right Mouse** | **cast what is in hand** — the web, to start with: tap, or hold to wind it up |
 | **1, 2–6** | **take a spell in hand** — 1 is always the web; 2 to 6 are the five spells in your loadout. The wheel turns through them too |
@@ -187,7 +187,13 @@ Look at any ring and press **F**.
 
 ## Zipping along your own silk
 
-Any line — a grapple's, a frame's, a bridge — can be hung from and zipped along.
+Any line — a grapple's, a frame's, a bridge — can be hung from and zipped along,
+as long as there's room under it for you: a stretch of at least three body heights
+where the spider fits hanging. A line laid along the floor, run tight into a wall
+or only a step long isn't offered as a ride at all — **Q** passes it over, a
+grapple aimed at it goes on to whatever is behind, and the line grapple lays it
+without hanging you from it. You take hold where there's room, so a line that
+starts at your feet catches you just up it, not inside the floor.
 Arrive on a line already moving and you keep it. Letting go on purpose gives a
 kick to clear the edge; running off the end doesn't, so the wall the line is tied
 to takes you straight away.

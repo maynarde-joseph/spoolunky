@@ -72,6 +72,27 @@ const STEEP_KEEP := 0.85
 ## back onto: a floor, a ceiling, a gentle slope. See [method _carry_over].
 const SETTLE_UP := 0.5
 
+## How far under a line the body hangs, in body heights: like something on a pulley.
+const HANG := 0.45
+
+## How much of a line has to have room for the body hanging under it before it is
+## offered as a ride at all, in body heights: a ride, not a step. See
+## [method room_to_hang].
+const RIDE_LEAST := 3.0
+
+## How big the body is, hanging, from its middle out, in body heights: a little
+## under its collider, so a line that only grazes something still rides.
+const HANG_BODY := 0.3
+
+## How far apart the points tried along a line are, looking for room to hang, in
+## body heights. A ride has to be [constant RIDE_LEAST] long, so this cannot step
+## over one.
+const ROOM_STEP := 1.0
+
+## How long what [method room_to_hang] found about a line is taken as still true, in
+## milliseconds: the readout asks every frame, and the world hardly changes in that.
+const ROOM_KEPT := 250
+
 
 @export_group("Climbing")
 
@@ -214,6 +235,10 @@ var _view: SpiderCamera
 var _facing := Vector3.FORWARD
 var _current_up := Vector3.UP
 var _grace := 0.0
+
+## What [method room_to_hang] last found, by line: when, for which body and near
+## where, and the stretch.
+var _room_seen := {}
 var _previous_up := Vector3.ZERO
 var _swap_cooldown := 0.0
 var _grapple_time := 0.0
@@ -896,7 +921,8 @@ func _arrive() -> void:
 
 ## Takes hold of the nearest line in reach — the one you are looking at, if any —
 ## or lets go of the one you are hanging from. Returns true if anything happened.
-## This is Q; a grapple onto a line takes hold of it too, with [method clip_on].
+## This is Q; a grapple onto a line takes hold of it too, with [method clip_on]. Only
+## a line with room to hang from is taken: see [method room_to_hang].
 func toggle_ride() -> bool:
 	if mode == Mode.RIDING:
 		_launch_off_line()
@@ -925,7 +951,7 @@ func _find_ridable() -> WebStrand:
 		var point := Geometry3D.get_closest_point_to_segment(origin,
 			strand.point_a, strand.point_b)
 		var distance := origin.distance_to(point)
-		if distance > reach:
+		if distance > reach or not has_room_to_hang(strand, origin):
 			continue
 		var towards := point - origin
 		var aim := 1.0 if towards.length() < 0.001 else towards.normalized().dot(look)
@@ -936,16 +962,23 @@ func _find_ridable() -> WebStrand:
 	return best
 
 
-## Hangs the spider from [param strand] at the point of it nearest [param at],
-## carrying whatever speed it had along the line into the zip. What Q does, what a
-## grapple onto a line ends in, and what the line grapple does with the line it has
-## just laid. Returns false if there is no line to hang from.
+## Hangs the spider from [param strand] at the point of it nearest [param at] that
+## has room for the body, carrying whatever speed it had along the line into the zip.
+## What Q does, what a grapple onto a line ends in, and what the line grapple does
+## with the line it has just laid. Returns false, and says so, if there is no line
+## to hang from, or no room to hang from it: only a ride that works is offered.
 func clip_on(strand: WebStrand, at: Vector3) -> bool:
 	if strand == null or not is_instance_valid(strand) or _spider == null:
 		return false
+	var room := room_to_hang(strand, at)
+	var height := _body_height()
+	if room.y - room.x < height * RIDE_LEAST:
+		notice.emit("No room to hang from that line")
+		return false
 	ride_web = strand
 	var point := Geometry3D.get_closest_point_to_segment(at, strand.point_a, strand.point_b)
-	ride_distance = strand.point_a.distance_to(point)
+	ride_distance = clampf(strand.point_a.distance_to(point), room.x + height * 0.05,
+		room.y - height * 0.05)
 	ride_speed = _spider.velocity.dot(_ride_axis())
 	_forget_walk()
 	_grace = 0.0
@@ -997,7 +1030,75 @@ func _step_riding(delta: float, input_axis: Vector2, want_jump: bool, want_relea
 ## pulley.
 func _hang() -> void:
 	var point := ride_web.point_a + _ride_axis() * ride_distance
-	_spider.global_position = point - Vector3.UP * _body_height() * 0.45
+	_spider.global_position = point - Vector3.UP * _body_height() * HANG
+
+
+## Whether [param strand] is a ride that works near [param near]: a stretch of it at
+## least [constant RIDE_LEAST] body heights long with room for the body hanging
+## under it. See [method room_to_hang].
+func has_room_to_hang(strand: WebStrand, near: Vector3) -> bool:
+	var room := room_to_hang(strand, near)
+	return room.y - room.x >= _body_height() * RIDE_LEAST
+
+
+## The stretch of [param strand] with room for the body hanging under it, the one
+## nearest [param near]: from where to where along it, in metres from its first end,
+## or (-1, -1) if it has room nowhere.
+##
+## The body is a ball a little smaller than it is, hung where [method _hang] hangs
+## it and swept along the line both ways from the first place it fits, so the
+## stretch ends where the line runs too close to the floor, into a wall, or into
+## whatever it is tied to. A line laid along the ground has none: hanging from it
+## would put the body in the ground.
+func room_to_hang(strand: WebStrand, near: Vector3) -> Vector2:
+	var none := Vector2(-1.0, -1.0)
+	if strand == null or not is_instance_valid(strand) or _spider == null \
+			or not _spider.is_inside_tree():
+		return none
+	var length := strand.point_a.distance_to(strand.point_b)
+	if length < 0.001:
+		return none
+	var height := _body_height()
+	var id := strand.get_instance_id()
+	var seen: Array = _room_seen.get(id, [])
+	if not seen.is_empty() and Time.get_ticks_msec() - int(seen[0]) < ROOM_KEPT \
+			and is_equal_approx(float(seen[1]), height) \
+			and (seen[2] as Vector3).distance_to(near) < height:
+		return seen[3]
+	var axis := (strand.point_b - strand.point_a) / length
+	var drop := Vector3.DOWN * height * HANG
+	var ball := SphereShape3D.new()
+	ball.radius = height * HANG_BODY
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = ball
+	query.collision_mask = GameLayers.WORLD
+	query.exclude = [_spider.get_rid()]
+	var space := _spider.get_world_3d().direct_space_state
+	# The first place along it with room, out from the point nearest [param near].
+	var start := clampf(axis.dot(near - strand.point_a), 0.0, length)
+	var step := height * ROOM_STEP
+	var found := -1.0
+	for i in ceili(length / step) + 1:
+		for side: float in [1.0, -1.0]:
+			var at := start + side * step * float(i)
+			if at < 0.0 or at > length or (i == 0 and side < 0.0):
+				continue
+			query.transform = Transform3D(Basis.IDENTITY, strand.point_a + axis * at + drop)
+			if space.intersect_shape(query, 1).is_empty():
+				found = at
+				break
+		if found >= 0.0:
+			break
+	var room := none
+	if found >= 0.0:
+		query.transform = Transform3D(Basis.IDENTITY, strand.point_a + axis * found + drop)
+		query.motion = axis * (length - found)
+		var ahead: float = space.cast_motion(query)[0] * (length - found)
+		query.motion = -axis * found
+		var behind: float = space.cast_motion(query)[0] * found
+		room = Vector2(found - behind, found + ahead)
+	_room_seen[id] = [Time.get_ticks_msec(), height, near, room]
+	return room
 
 
 ## Comes off the line, carrying the zip's speed. Let go of on purpose, it gives a

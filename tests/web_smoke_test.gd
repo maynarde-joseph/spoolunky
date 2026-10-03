@@ -1195,6 +1195,11 @@ func _test_the_cross_on_a_line() -> void:
 	builder._update_aim()
 	check(not builder.aim_valid, "with nothing behind it for the cross to land on")
 	check(builder.aimed_line() == high, "the cross on it picks it all the same")
+	var hud := level.get_node_or_null("HUD") as SpiderHUD
+	if hud != null:
+		await process_frame
+		check(hud.problem_label.text.begins_with("Line in reach"),
+			"the readout offers it as a ride (%s)" % hud.problem_label.text)
 	builder.place()
 	var on: bool = await wait_until(func() -> bool: return spider.climb.is_riding(), 240)
 	check(on and spider.climb.holding_line() == high,
@@ -1202,6 +1207,27 @@ func _test_the_cross_on_a_line() -> void:
 	spider.climb.release()
 	high.queue_free()
 	await physics_frame
+
+	# Along the floor, the cross on it all the same: no room to hang from it, so the
+	# readout offers no ride.
+	stand_on(start)
+	await run_frames(20)
+	var flat_at := start + Vector3.FORWARD * height * 6.0 + Vector3.UP * 0.01
+	var flat := WebStrand.spin(pattern_named("frame_line"), flat_at + Vector3.LEFT * height * 4.0,
+		flat_at + Vector3.RIGHT * height * 4.0, 1.0)
+	if check(flat != null, "a line along the floor"):
+		flat.place_in(webs)
+		await physics_frame
+		aim_at(flat_at)
+		await physics_frame
+		await process_frame
+		await process_frame
+		check(builder.aimed_line() == flat, "the cross on it")
+		if hud != null:
+			check(not hud.problem_label.text.begins_with("Line in reach"),
+				"and the readout does not offer it as a ride (%s)" % hud.problem_label.text)
+		flat.queue_free()
+		await physics_frame
 
 
 ## A web is a larder while it holds something, and nothing once it does not.
