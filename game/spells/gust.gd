@@ -16,6 +16,11 @@ extends Node3D
 ## Over a puddle it does more: with Waterspout learned, it lifts the water into a
 ## whirl that runs on down the lane, and stops at the first thing it reaches and
 ## holds it there — see [WetGround] and [WaterSpiral].
+##
+## And blown while the spider is breathing fire, it fans the flame: the fire goes
+## with the wind, the whole length of the lane, and everything in the lane burns as
+## if it had stood in the breath a moment — and every web and line in it goes up,
+## unless it is wet. See [FireBreath].
 
 const GROUP := "gusts"
 
@@ -42,6 +47,13 @@ const SHOWN := 0.5
 ## end still goes somewhere.
 const CARRY := 0.5
 
+## How long a fanned flame burns what it reaches for, as so many seconds of standing
+## in the breath.
+const FAN_BURN := 0.5
+
+## How many points along a line are tried against the lane, for a fanned flame.
+const SAMPLES := 12
+
 ## Where it blows from, which way, how far, and how wide either side of its middle,
 ## in metres.
 var apex := Vector3.ZERO
@@ -66,6 +78,12 @@ var caster: Node3D = null
 var shoved: Array[Prey] = []
 var stung: Array[Prey] = []
 var blown: Array[WebNet] = []
+
+## Whether it fanned a breath of fire down the lane, what that burned, and how many
+## webs and lines went up.
+var fanned := false
+var scorched: Array[Prey] = []
+var silk_burned := 0
 
 var _age := 0.0
 var _paint: StandardMaterial3D
@@ -141,7 +159,69 @@ func _blow() -> void:
 			stung.append(creature)
 		if creature.shove(heading * push + Vector3.UP * push * LIFT, THROW):
 			shoved.append(creature)
+	# The fire first: a dry web in the lane burns before the wind can take it.
+	_fan_flames()
 	_blow_webs()
+
+
+## A breath of fire burning where the wind blows goes with it, down the whole lane.
+func _fan_flames() -> void:
+	var breath: FireBreath = null
+	for node in get_tree().get_nodes_in_group(FireBreath.GROUP):
+		var candidate := node as FireBreath
+		if candidate != null and candidate.burning() and _meets(candidate):
+			breath = candidate
+			break
+	if breath == null:
+		return
+	fanned = true
+	colour = colour.lerp(breath.colour, 0.75)
+	for node in get_tree().get_nodes_in_group("prey"):
+		var creature := node as Prey
+		if creature == null or not is_instance_valid(creature) or creature.eaten \
+				or not reaches(creature.global_position, creature.hit_radius()):
+			continue
+		if creature.burn(breath.harm * FAN_BURN) > 0.0 and not scorched.has(creature):
+			scorched.append(creature)
+	for node in get_tree().get_nodes_in_group("silk_webs"):
+		var web := node as WebStructure
+		if web == null or web.is_queued_for_deletion() or WetSilk.is_wet(web) \
+				or not _crosses(web):
+			continue
+		# What a web held burns as it goes, held in silk as it is.
+		for held in web.snared_prey():
+			var creature := held as Prey
+			if creature != null and is_instance_valid(creature) \
+					and creature.burn(breath.harm * FAN_BURN) > 0.0 and not scorched.has(creature):
+				scorched.append(creature)
+		web.tear()
+		silk_burned += 1
+	for i in 5:
+		SpellFlash.burst(get_parent(), apex + heading * reach * (0.15 + 0.2 * float(i)),
+			breath.colour, wide * 1.2, 0.45)
+
+
+## Whether any of [param breath]'s flame is in the lane.
+func _meets(breath: FireBreath) -> bool:
+	var long := maxf(breath.length(), 0.0)
+	for i in range(SAMPLES + 1):
+		var out := long * float(i) / float(SAMPLES)
+		if reaches(breath.origin + breath.heading * out, breath.radius_at(out)):
+			return true
+	return false
+
+
+## Whether any of [param web]'s silk is in the lane: along a line, or the middle of
+## a web.
+func _crosses(web: WebStructure) -> bool:
+	var strand := web as WebStrand
+	if strand != null:
+		for i in range(SAMPLES + 1):
+			if reaches(strand.point_a.lerp(strand.point_b, float(i) / float(SAMPLES))):
+				return true
+		return false
+	var net := web as WebNet
+	return net != null and reaches(net.signal_point())
 
 
 ## Every web in the lane goes with the wind, whole and at its pace, on to the end of

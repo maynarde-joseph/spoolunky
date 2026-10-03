@@ -575,6 +575,12 @@ row of buttons:
   which are roads, and not the web the spider is standing on. The strip laid out
   on the ground says which it will be: a tap for a lane that stops short of the
   web, a wind-up to send the web itself.
+* **Wind fans fire.** Wind blown while the spider is breathing fire takes the
+  flame with it, the whole length of the lane: everything in the lane burns as if
+  it had stood in the breath for half a second — a bare thing a little, a wrapped
+  or held one hard — and every web and line in it goes up, unless it is wet; a wet
+  web is blown down the lane as ever. Breathe, then blow, and the breath reaches as
+  far as the wind does.
 * **Fire over water is steam.** A breath of fire that reaches a puddle boils it
   away, and a cloud of steam rises where it lay — half as wide again as the puddle,
   three body heights tall, for 4 s. Everything in it is soaked, fliers included,
