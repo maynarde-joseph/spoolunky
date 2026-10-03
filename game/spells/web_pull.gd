@@ -3,8 +3,8 @@ extends Node3D
 
 ## A web on its way back to the spider, called in by the Pullback.
 ##
-## It comes off its anchors and flies straight in, folding up as it comes, with
-## whatever it was holding still in it. Everything loose it passes through on the
+## It comes off its anchors and flies straight in, whole — the shape it was spun in,
+## not folded up — with whatever it was holding still in it. Everything loose it passes through on the
 ## way takes silk — as much as one shot of that web would put on it, so a strong
 ## web dragged through a weak thing takes it outright — and a web that lightning
 ## left live strikes what it passes through as well. When it reaches the spider it
@@ -25,10 +25,6 @@ const GROUP := "web_pulls"
 
 ## Close enough to the spider to count as there, in its body heights.
 const ARRIVE := 0.8
-
-## How small it folds as it comes, as a share of its own size, and how fast.
-const FOLDED := 0.3
-const FOLD_RATE := 2.5
 
 ## The web coming in.
 var web: WebNet
@@ -54,7 +50,6 @@ var body_height := 0.25
 ## Everything it has hit on the way, in order.
 var hit: Array[Prey] = []
 
-var _fold := 1.0
 
 
 ## Calls [param net] in to [param to] under [param host]. Null if there is no web.
@@ -126,9 +121,6 @@ func _physics_process(delta: float) -> void:
 	for i in web.anchors.size():
 		web.anchors[i] += move
 	global_position = middle + move
-	_fold = move_toward(_fold, FOLDED, FOLD_RATE * delta)
-	if web.mesh_instance != null:
-		web.mesh_instance.scale = Vector3.ONE * _fold
 	_strike_along(middle, middle + move)
 
 

@@ -1883,6 +1883,10 @@ func _test_pullback() -> void:
 	await process_frame
 	check(spells.cooling(pullback), "let go, they come")
 	check(spider.get_tree().get_nodes_in_group(WebPull.GROUP).size() == 2, "both of them")
+	await run_frames(4)
+	var whole := is_instance_valid(crossing) and crossing.mesh_instance != null \
+		and crossing.mesh_instance.scale.is_equal_approx(Vector3.ONE)
+	check(whole, "keeping the shape they were spun in on the way, not folding up")
 	var back: bool = await wait_until(func() -> bool:
 		return spider.get_tree().get_nodes_in_group(WebPull.GROUP).is_empty(), 300)
 	check(back, "and both arrive")
@@ -2057,6 +2061,8 @@ func _test_stone_pillar() -> void:
 	check(thrower != null and thrower.flung.has(net), "it is flung")
 	await run_frames(3)
 	check(is_instance_valid(net) and net.signal_point().y > was, "up off its anchors")
+	check(is_instance_valid(net) and net.mesh_instance != null
+		and net.mesh_instance.scale.is_equal_approx(Vector3.ONE), "keeping its shape as it goes")
 	var spent: bool = await wait_until(func() -> bool: return not is_instance_id_valid(net_id), 120)
 	check(spent and fly.is_bundled(), "and once it is up, what it held comes down bundled")
 
