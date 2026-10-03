@@ -539,8 +539,10 @@ func _test_spells_leave_through_circles() -> void:
 		var ball_at := builder.held_centre()
 		var around := true
 		for circle in orbit:
-			around = around and absf(circle.global_position.distance_to(ball_at)
-				- ball * SpiderSpells.ORBIT_OUT) < height * 0.02
+			var out := circle.global_position.distance_to(ball_at)
+			around = around \
+				and out > ball * SpiderSpells.ORBIT_OUT * (1.0 - SpiderSpells.ORBIT_SWELL) - height * 0.02 \
+				and out < ball * SpiderSpells.ORBIT_OUT * (1.0 + SpiderSpells.ORBIT_SWELL) + height * 0.02
 		check(around, "going round the ball of silk, a little way out from it")
 		check(orbit[0].radius < ball and orbit[0].points == silk.sigil,
 			"small, smaller than the ball (%.2f m to its %.2f m), with silk's own star (%d)"
@@ -553,6 +555,30 @@ func _test_spells_leave_through_circles() -> void:
 			% [small, orbit[0].radius])
 		check((orbit[0].global_position - builder.held_centre()).angle_to(was) > 0.05,
 			"and going round it")
+		# All round it, each its own way: between them above the ball and below it,
+		# not round one ring, and no two going round about the same axis.
+		var turning: Array[Vector3] = []
+		for circle in orbit:
+			turning.append(circle.global_position - builder.held_centre())
+		var low := INF
+		var high := -INF
+		for frame in 30:
+			await run_frames(1)
+			var reach := builder.ball_radius(builder.charge) * SpiderSpells.ORBIT_OUT
+			for i in orbit.size():
+				var offset := orbit[i].global_position - builder.held_centre()
+				if frame == 5:
+					turning[i] = turning[i].cross(offset).normalized()
+				low = minf(low, offset.dot(builder.held_up()) / reach)
+				high = maxf(high, offset.dot(builder.held_up()) / reach)
+		check(high - low > 0.8, "all round the ball, above it and below it (%.2f to %.2f of the way out)"
+			% [low, high])
+		var apart := PI
+		for i in turning.size():
+			for j in range(i + 1, turning.size()):
+				apart = minf(apart, turning[i].angle_to(turning[j]))
+		check(apart > 0.35, "each on a path of its own (axes %.0f° apart at the least)"
+			% rad_to_deg(apart))
 		spells.cancel_cast()
 		release_action(spider.input_shoot)
 		await run_frames(2)

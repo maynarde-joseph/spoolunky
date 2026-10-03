@@ -51,15 +51,27 @@ const PILLAR_BODIES := 0.6
 
 ## Silk's circles while the ball of silk winds up: how many go round it, how big
 ## each is and how far out from the ball's middle it goes round, as shares of the
-## ball's radius, how fast they go round, in radians a second, how far each tips up
-## out of the ring towards a camera looking down on it, and the least their lines
-## are, in metres.
+## ball's radius, and the least their lines are, in metres.
 const ORBIT_COUNT := 3
 const ORBIT_SIZE := 0.5
 const ORBIT_OUT := 1.8
-const ORBIT_TURN := 1.6
-const ORBIT_TIP := 0.5
 const ORBIT_LINE := 0.001
+
+## Each circle's own way round the ball, one entry per circle: how fast it goes
+## round its ring, in radians a second (the sign is which way); how far that ring is
+## tipped from level, in radians; how fast the tip itself turns about the ball; and
+## how many times a lap the circle weaves back and forth across its ring. None of
+## the rates divides into another, so between them the three go all round the ball
+## and no path ever quite repeats. See [method orbit_offset].
+const ORBIT_SPEEDS := [1.6, -1.9, 2.3]
+const ORBIT_TILTS := [0.45, 1.0, 1.4]
+const ORBIT_DRIFTS := [0.37, -0.29, 0.23]
+const ORBIT_WEAVES := [2.0, 3.0, 2.0]
+
+## How far a circle weaves off its ring, in radians, and how much it swells out
+## from the ball and back as it goes, as a share of [constant ORBIT_OUT].
+const ORBIT_WEAVE := 0.35
+const ORBIT_SWELL := 0.08
 
 ## How far in front of the spider fire's circle hangs, and water's, in body heights:
 ## on the line the breath or the spit will take, so it leaves through the middle of
@@ -957,9 +969,9 @@ func _update_circle() -> void:
 
 
 ## Silk's circles: [constant ORBIT_COUNT] small ones — the same circle every other
-## spell is drawn in, in silk's colour with its six-pointed star — going round the
-## ball of silk the builder winds up over the spider's back, in a ring square to the
-## spider's back and tipped up a little towards a camera looking down on it. They
+## spell is drawn in, in silk's colour with its six-pointed star — going all round
+## the ball of silk the builder winds up over the spider's back, each on a weaving
+## path of its own (see [method orbit_offset]) and facing out from the ball. They
 ## grow with the ball, and flare away as the web is thrown, or fade if the throw is
 ## given up.
 func _update_orbit(delta: float) -> void:
@@ -989,10 +1001,35 @@ func _update_orbit(delta: float) -> void:
 		var circle := _orbit[i]
 		if not is_instance_valid(circle):
 			continue
-		var angle := _orbit_age * ORBIT_TURN + TAU * float(i) / float(_orbit.size())
-		var out := side * cos(angle) + ahead * sin(angle)
-		circle.hold(MagicCircle.facing(centre + out * ball * ORBIT_OUT,
-			(out + up * ORBIT_TIP).normalized()), ball * ORBIT_SIZE)
+		var out := orbit_offset(i, _orbit_age, side, ahead, up)
+		circle.hold(MagicCircle.facing(centre + out * ball, out.normalized()),
+			ball * ORBIT_SIZE)
+
+
+## Where circle [param index] of silk's orbit is, [param age] seconds into the
+## wind-up, from the middle of the ball, in ball radii; [param side], [param ahead]
+## and [param up] square to one another, [param up] being the ball's.
+##
+## A ring tipped from level by the circle's own tilt, about a hinge that turns
+## slowly round the ball, so the ring sweeps round it; the circle going round the
+## ring at its own speed, weaving back and forth across it and swelling in and out
+## as it goes. A handful of sines a circle a frame — nothing worth keeping a path
+## for.
+static func orbit_offset(index: int, age: float, side: Vector3, ahead: Vector3,
+		up: Vector3) -> Vector3:
+	var speed: float = ORBIT_SPEEDS[index % ORBIT_SPEEDS.size()]
+	var tilt: float = ORBIT_TILTS[index % ORBIT_TILTS.size()]
+	var drift: float = ORBIT_DRIFTS[index % ORBIT_DRIFTS.size()]
+	var weaves: float = ORBIT_WEAVES[index % ORBIT_WEAVES.size()]
+	var start := TAU * float(index) / float(ORBIT_COUNT)
+	var turn := start + age * drift
+	var hinge := side * cos(turn) + ahead * sin(turn)
+	var normal := up.rotated(hinge, tilt)
+	var across := normal.cross(hinge)
+	var lap := start + age * speed
+	var weave := ORBIT_WEAVE * sin(weaves * lap + start)
+	var heading := (hinge * cos(lap) + across * sin(lap)) * cos(weave) + normal * sin(weave)
+	return heading * ORBIT_OUT * (1.0 + ORBIT_SWELL * sin((weaves + 1.0) * lap - start))
 
 
 ## The circle [param spell] leaves through, wound up to [param wound]: the one held
