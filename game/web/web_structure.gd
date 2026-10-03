@@ -68,6 +68,19 @@ var caught_on_arrival := 0
 var bundled_on_arrival := 0
 var material: StandardMaterial3D
 
+## Wet silk: the blue drawn over it while water stands in it — unlit, so it reads
+## as blue in any light, and over the silk's own material, so a live web's glow
+## still shows through — and how much thicker its threads are drawn. See
+## [method show_wet].
+const WET_BLUE := Color(0.3, 0.62, 1.0, 0.85)
+const WET_WIDTH := 1.6
+
+## Whether it is showing water standing in it.
+var shows_wet := false
+
+## The lines its mesh was built from, kept to build it again thicker when it is wet.
+var _strands: WebGeometry.StrandSet = null
+
 ## The anchor points this web was spun across, in world space. Kept so a web
 ## can be captured into a reusable design.
 var anchors := PackedVector3Array()
@@ -450,6 +463,7 @@ func status_line() -> String:
 ## Builds the mesh child from a set of silk lines. Called by subclasses.
 func _build_visual(strands: WebGeometry.StrandSet) -> void:
 	strand_length = strands.length
+	_strands = strands
 	var mesh := WebGeometry.build_mesh(strands, pattern.color)
 	if mesh == null:
 		return
@@ -556,6 +570,29 @@ func _release(prey: Node3D, notify_prey: bool) -> void:
 ## Where in the web something that just hit it should stick. Overridden by nets.
 func _catch_point(body: Node3D) -> Vector3:
 	return body.global_position
+
+
+## Water standing in it, or not: blue, and its silk a little thicker, while it is
+## — see [WetSilk].
+func show_wet(wet: bool) -> void:
+	if wet == shows_wet:
+		return
+	shows_wet = wet
+	if mesh_instance == null:
+		return
+	if _strands != null:
+		mesh_instance.mesh = WebGeometry.build_mesh(_strands, pattern.color,
+			WET_WIDTH if wet else 1.0)
+	mesh_instance.material_overlay = _wet_paint() if wet else null
+
+
+static func _wet_paint() -> StandardMaterial3D:
+	var paint := StandardMaterial3D.new()
+	paint.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	paint.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	paint.cull_mode = BaseMaterial3D.CULL_DISABLED
+	paint.albedo_color = WET_BLUE
+	return paint
 
 
 func _refresh_tint() -> void:

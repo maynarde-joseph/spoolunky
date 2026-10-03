@@ -8,7 +8,8 @@ extends Node
 ## taking the web — and lightning stays in it twice as long. So water is how you
 ## keep a web through fire of your own, and how you make a live web last. Soaked
 ## by a spider that has learned Sodden Silk it is [member heavy] too, and holds
-## half as hard again. It dries off in a few seconds.
+## half as hard again. It shows — the silk blue, and its threads a little thicker
+## (see [method WebStructure.show_wet]) — and it dries off in a few seconds.
 
 const NAME := "Wet"
 
@@ -18,8 +19,6 @@ const LIVE_LONGER := 2.0
 ## How much harder a heavy wet web holds: Sodden Silk's.
 const HEAVY_HOLD := 1.5
 
-## How much darker the silk looks while it is wet.
-const DARKER := 0.35
 
 ## The web it is in.
 var web: WebStructure
@@ -31,7 +30,6 @@ var left := 8.0
 ## [constant HEAVY_HOLD].
 var heavy := false
 
-var _albedo := Color.WHITE
 
 
 ## Soaks [param in_web] for [param seconds]: longer if it is already wet and this
@@ -84,14 +82,13 @@ func _ready() -> void:
 	if web == null:
 		queue_free()
 		return
-	if web.material != null:
-		_albedo = web.material.albedo_color
-		web.material.albedo_color = _albedo.darkened(DARKER)
+	# Blue, and a little thicker, while the water stands in it.
+	web.show_wet(true)
 
 
 func _physics_process(delta: float) -> void:
 	left -= delta
 	if left <= 0.0:
-		if is_instance_valid(web) and web.material != null:
-			web.material.albedo_color = _albedo
+		if is_instance_valid(web):
+			web.show_wet(false)
 		queue_free()

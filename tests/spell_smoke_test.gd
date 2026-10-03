@@ -1758,8 +1758,14 @@ func _test_fire_burns_silk() -> void:
 	var wet := _spin(spot + Vector3(0.0, half + height * 0.3, 0.0), half)
 	if not check(wet != null, "another web"):
 		return
+	var dry_span := wet.mesh_instance.mesh.get_aabb().size.length()
 	WetSilk.soak(wet, 10.0)
 	await physics_frame
+	var blue := wet.mesh_instance.material_overlay as StandardMaterial3D
+	check(wet.shows_wet and blue != null and blue.albedo_color.b > blue.albedo_color.r + 0.3,
+		"water standing in it shows: the silk turns blue")
+	check(wet.mesh_instance.mesh.get_aabb().size.length() > dry_span,
+		"and its threads a little thicker")
 	var roast := spawn("wasp", (wet as WebNet).signal_point())
 	if not check(roast != null, "a wasp for it"):
 		return
@@ -1781,6 +1787,11 @@ func _test_fire_burns_silk() -> void:
 	check(roast.is_stuck() and roast.health() < 1.0 - fire.power_at(0.0) * fire.duration_at(0.0)
 		* 0.6, "and the wasp burns in it, held all the while (%d%% left)"
 		% roundi(roast.health() * 100.0))
+	WetSilk.of(wet).left = 0.01
+	await run_frames(2)
+	check(not wet.shows_wet and wet.mesh_instance.material_overlay == null
+		and is_equal_approx(wet.mesh_instance.mesh.get_aabb().size.length(), dry_span),
+		"dry again, it is silk-coloured and as fine as it was")
 
 
 ## Fire breathed over a puddle turns it to lava where it lies: whatever stands in it

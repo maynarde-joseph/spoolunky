@@ -392,8 +392,9 @@ up. Everything else is learned:
   There are twenty-two points
   of it and ten to earn, so what you learn is the kind of spider you are.
 * **The interactions are where it gets interesting.** **Wet Silk**: spit Douse
-  through your webs and they are wet, and a wet web stands in fire — breathe on what it holds and only that
-  burns — and keeps lightning twice as long. **Sodden Silk**: a wet web
+  through your webs and they are wet — blue, and a little thicker — and a wet web
+  stands in fire — breathe on what it holds and only that burns — and keeps
+  lightning twice as long. **Sodden Silk**: a wet web
   holds half as hard again. **Waterspout**: wind over a puddle lifts a whirl that
   holds the first thing it reaches — and wind over lava, a spiral of fire that
   holds it and burns it. **Live Silk**: lightning stays in a web, and

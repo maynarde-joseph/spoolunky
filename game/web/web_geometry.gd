@@ -230,7 +230,7 @@ static func layout_strand(a: Vector3, b: Vector3, pattern: WebPattern,
 
 ## Builds the drawable mesh. Each silk line becomes two crossed quads so it
 ## stays visible from any angle without needing a billboard shader.
-static func build_mesh(strands: StrandSet, color: Color) -> ArrayMesh:
+static func build_mesh(strands: StrandSet, color: Color, width_scale := 1.0) -> ArrayMesh:
 	if strands.size() == 0:
 		return null
 	var tool := SurfaceTool.new()
@@ -238,7 +238,7 @@ static func build_mesh(strands: StrandSet, color: Color) -> ArrayMesh:
 	for i in strands.size():
 		var a := strands.starts[i]
 		var b := strands.ends[i]
-		var half: float = strands.widths[i] * 0.5
+		var half: float = strands.widths[i] * 0.5 * width_scale
 		var axis := (b - a).normalized()
 		var side_a := _perpendicular(axis)
 		var side_b := axis.cross(side_a).normalized()

@@ -570,7 +570,8 @@ row of buttons:
   something wrapped, a fifth to something bare), and the lava is spent. Spit,
   breathe, strike: three spells for the biggest single thing any of them do.
 * **Water keeps silk from fire, and keeps lightning in it** (Wet Silk). A web
-  water was spat through is wet for as long as a puddle is: fire passes it by, burning
+  water was spat through is wet for as long as a puddle is — and shows it, its
+  silk drawn blue and a little thicker until it dries: fire passes it by, burning
   what it holds without taking the web, and lightning stays in it twice as long.
   So a catch can be roasted where it hangs: spit through the web, then breathe on
   what it holds. With Sodden Silk the water weighs it down, and it holds half as hard again
