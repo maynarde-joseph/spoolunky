@@ -696,8 +696,8 @@ func cancel_shot() -> void:
 ## The ball of silk the spider winds up while aiming, held over its back.
 ##
 ## A wizard holding a fireball: you can see the throw coming, and it grows and
-## brightens as the wind-up fills, with silk's magic circle wrapped round it (see
-## [method SpiderSpells._update_circle]). That is the point — the second you spend
+## brightens as the wind-up fills, with silk's magic circles going round it (see
+## [method SpiderSpells._update_orbit]). That is the point — the second you spend
 ## winding up has a reading in the world as well as one on the HUD, so you can
 ## judge the throw without looking away from the fly.
 func _show_held(shown: bool) -> void:
@@ -714,9 +714,7 @@ func _update_held() -> void:
 	_held.global_position = held_centre()
 	_held.scale = Vector3.ONE * maxf(ball_radius(charge), 0.005)
 	if _held_material != null:
-		# Brightening, but never so far that the circle wrapped round it — light on
-		# dark — washes out on it.
-		_held_material.emission_energy_multiplier = lerpf(0.25, 0.7, charge)
+		_held_material.emission_energy_multiplier = lerpf(0.5, 2.2, charge)
 
 
 ## Where the middle of the ball of silk is while it is wound up: over the spider's
@@ -753,8 +751,8 @@ func _build_held() -> void:
 	mesh.rings = 6
 	_held_material = WebGeometry.silk_material()
 	_held_material.albedo_color = Color(0.12, 0.13, 0.16, 1.0)
-	# Solid, unlike silk in a web: the half of the circle wrapped round the far side
-	# of the ball is behind it, and should look it.
+	# Solid, unlike silk in a web: silk's circles going round behind the ball are
+	# behind it, and should look it.
 	_held_material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
 	_held = MeshInstance3D.new()
 	_held.name = "HeldSilk"

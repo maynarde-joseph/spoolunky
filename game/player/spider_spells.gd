@@ -49,6 +49,18 @@ const SPIRAL_BODIES := Vector2(1.3, 1.6)
 ## How wide a pillar of stone is, from its middle to its side, in body heights.
 const PILLAR_BODIES := 0.6
 
+## Silk's circles while the ball of silk winds up: how many go round it, how big
+## each is and how far out from the ball's middle it goes round, as shares of the
+## ball's radius, how fast they go round, in radians a second, how far each tips up
+## out of the ring towards a camera looking down on it, and the least their lines
+## are, in metres.
+const ORBIT_COUNT := 3
+const ORBIT_SIZE := 0.5
+const ORBIT_OUT := 1.8
+const ORBIT_TURN := 1.6
+const ORBIT_TIP := 0.5
+const ORBIT_LINE := 0.001
+
 ## How far in front of the spider fire's circle hangs, and water's, in body heights:
 ## on the line the breath or the spit will take, so it leaves through the middle of
 ## it.
@@ -79,6 +91,11 @@ var _builder: WebBuilder
 var _tree: SpellTree
 ## The circle drawn while a spell winds up, until it goes.
 var _circle: MagicCircle = null
+
+## Silk's circles, going round the ball of silk while it winds up, and how long
+## they have been going round.
+var _orbit: Array[MagicCircle] = []
+var _orbit_age := 0.0
 
 ## Lines out to the webs a Pullback will call in, while it winds up.
 var _pull_lines: MeshInstance3D
@@ -144,6 +161,7 @@ func _process(delta: float) -> void:
 		# for this one alike. Two things easing one number is two things fighting.
 		_builder.framing_held = charging
 	_update_circle()
+	_update_orbit(delta)
 	_update_splash()
 	_update_path()
 	_update_pull_lines()
@@ -918,32 +936,17 @@ func _host() -> Node:
 ## hang in front of the spider's jaws on the line the breath or the spit will take,
 ## water's with where it will come down laid on the ground; lightning's lies on what
 ## it will strike, and earth's where the pillar will come up; wind's lies under the
-## spider's feet with the strip it will blow down. Silk's is wrapped round the ball of silk the builder winds up over the
-## spider's back — bent onto it, rolling round it as it grows — and flares off it
-## as the web is thrown.
+## spider's feet with the strip it will blow down. Silk's are three small ones going
+## round the ball of silk: see [method _update_orbit].
 func _update_circle() -> void:
 	var spell := current()
-	var silk := _builder != null and _builder.aiming and _spider != null
-	var held := silk or (charging and spell != null and spell.form != SpiderSpell.Form.SILK
-		and _spider != null and _view != null)
+	var held := charging and spell != null and spell.form != SpiderSpell.Form.SILK \
+		and _spider != null and _view != null
 	if not held:
 		# Given up, or gone: either way it fades rather than vanishing.
 		if _circle != null and is_instance_valid(_circle):
 			_circle.release()
 		_circle = null
-		return
-	if _circle != null and is_instance_valid(_circle) and _circle.wrapped != silk:
-		_circle.release()
-		_circle = null
-	if silk:
-		var ball := _builder.ball_radius(_builder.charge)
-		if _circle == null or not is_instance_valid(_circle):
-			var thread := hand()[0] if not hand().is_empty() else null
-			_circle = MagicCircle.wrap(_host(), _builder.held_centre(), _builder.held_up(), ball,
-				thread.colour if thread != null else Color.WHITE,
-				thread.sigil if thread != null else 6)
-		else:
-			_circle.hold_round(_builder.held_centre(), _builder.held_up(), ball)
 		return
 	var place := circle_at(spell, charge)
 	if _circle == null or not is_instance_valid(_circle):
@@ -951,6 +954,45 @@ func _update_circle() -> void:
 			spell.sigil)
 	else:
 		_circle.hold(place["where"], place["wide"])
+
+
+## Silk's circles: [constant ORBIT_COUNT] small ones — the same circle every other
+## spell is drawn in, in silk's colour with its six-pointed star — going round the
+## ball of silk the builder winds up over the spider's back, in a ring square to the
+## spider's back and tipped up a little towards a camera looking down on it. They
+## grow with the ball, and flare away as the web is thrown, or fade if the throw is
+## given up.
+func _update_orbit(delta: float) -> void:
+	if _builder == null or not _builder.aiming or _spider == null:
+		for circle in _orbit:
+			if is_instance_valid(circle):
+				circle.release()
+		_orbit.clear()
+		_orbit_age = 0.0
+		return
+	_orbit_age += delta
+	var ball := _builder.ball_radius(_builder.charge)
+	var centre := _builder.held_centre()
+	var up := _builder.held_up()
+	var side := up.cross(Vector3.FORWARD if absf(up.dot(Vector3.FORWARD)) < 0.95
+		else Vector3.RIGHT).normalized()
+	var ahead := side.cross(up).normalized()
+	if _orbit.is_empty():
+		var thread := hand()[0] if not hand().is_empty() else null
+		for i in ORBIT_COUNT:
+			var circle := MagicCircle.draw(_host(), Transform3D(Basis.IDENTITY, centre),
+				ball * ORBIT_SIZE, thread.colour if thread != null else Color.WHITE,
+				thread.sigil if thread != null else 6, ORBIT_LINE)
+			if circle != null:
+				_orbit.append(circle)
+	for i in _orbit.size():
+		var circle := _orbit[i]
+		if not is_instance_valid(circle):
+			continue
+		var angle := _orbit_age * ORBIT_TURN + TAU * float(i) / float(_orbit.size())
+		var out := side * cos(angle) + ahead * sin(angle)
+		circle.hold(MagicCircle.facing(centre + out * ball * ORBIT_OUT,
+			(out + up * ORBIT_TIP).normalized()), ball * ORBIT_SIZE)
 
 
 ## The circle [param spell] leaves through, wound up to [param wound]: the one held

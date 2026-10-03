@@ -502,8 +502,8 @@ func _test_number_keys() -> void:
 	spells.take(1)
 
 
-## Every spell is drawn in a magic circle while it winds up — silk's wrapped round
-## the ball of silk, curved onto it and rolling round it, fire and water in front of
+## Every spell is drawn in a magic circle while it winds up — silk in three small ones
+## going round the ball of silk, fire and water in front of
 ## the spider's jaws on the line the breath or the spit will take, water with where
 ## it will come down laid out, lightning on the ground where it will strike, earth
 ## round the foot of the pillar to come, wind under the spider's feet with the strip
@@ -525,36 +525,41 @@ func _test_spells_leave_through_circles() -> void:
 	aim_at(centre)
 	await process_frame
 
-	# Silk: wrapped round the ball of silk over the spider's back, curved onto it,
-	# growing with it and rolling round it. Held the way a player holds it: the
-	# spider lets go for you if the key is up.
+	# Silk: three small circles going round the ball of silk over the spider's back,
+	# growing with it. Held the way a player holds it: the spider lets go for you if
+	# the key is up.
 	spells.take(1)
 	var silk := spells.current()
 	send_action(spider.input_shoot)
 	await run_frames(6)
-	var wrapped := _circles()
-	if check(builder.aiming and wrapped.size() == 1,
-			"winding up silk draws one circle (%d)" % wrapped.size()):
-		var round_ball := wrapped[0]
+	var orbit := _circles()
+	if check(builder.aiming and orbit.size() == SpiderSpells.ORBIT_COUNT,
+			"winding up silk draws %d circles (%d)" % [SpiderSpells.ORBIT_COUNT, orbit.size()]):
 		var ball := builder.ball_radius(builder.charge)
-		check(round_ball.wrapped, "wrapped round the ball of silk, curved onto it")
-		check(round_ball.global_position.distance_to(builder.held_centre()) < height * 0.01
-			and round_ball.global_basis.y.normalized().dot(builder.held_up()) > 0.99,
-			"capping the ball over the spider's back")
-		check(absf(round_ball.radius - ball * MagicCircle.WRAP_LIFT) < height * 0.01,
-			"standing just off it (%.2f m round a %.2f m ball)" % [round_ball.radius, ball])
-		check(round_ball.points == silk.sigil, "with silk's own star (%d)" % round_ball.points)
-		var leaning := round_ball._lean.basis.y
-		var small := round_ball.radius
+		var ball_at := builder.held_centre()
+		var around := true
+		for circle in orbit:
+			around = around and absf(circle.global_position.distance_to(ball_at)
+				- ball * SpiderSpells.ORBIT_OUT) < height * 0.02
+		check(around, "going round the ball of silk, a little way out from it")
+		check(orbit[0].radius < ball and orbit[0].points == silk.sigil,
+			"small, smaller than the ball (%.2f m to its %.2f m), with silk's own star (%d)"
+			% [orbit[0].radius, ball, orbit[0].points])
+		var was := orbit[0].global_position - ball_at
+		var small := orbit[0].radius
 		builder.track(0.5)
 		await run_frames(6)
-		check(round_ball.radius > small * 1.2, "growing as the ball does (%.2f -> %.2f m)"
-			% [small, round_ball.radius])
-		check(round_ball._lean.basis.y.angle_to(leaning) > 0.05, "and rolling round it")
+		check(orbit[0].radius > small * 1.2, "growing as the ball does (%.2f -> %.2f m)"
+			% [small, orbit[0].radius])
+		check((orbit[0].global_position - builder.held_centre()).angle_to(was) > 0.05,
+			"and going round it")
 		spells.cancel_cast()
 		release_action(spider.input_shoot)
 		await run_frames(2)
-		check(round_ball.is_fading(), "given up, it fades")
+		var fading := true
+		for circle in orbit:
+			fading = fading and circle.is_fading()
+		check(fading, "given up, they fade")
 	await wait_until(func() -> bool: return _circles().is_empty(), 90)
 
 	# Fire: in front of the spider's jaws, on the line the breath will take.
@@ -661,16 +666,17 @@ func _test_spells_leave_through_circles() -> void:
 	await run_frames(2)
 	await wait_until(func() -> bool: return _circles().is_empty(), 90)
 
-	# Silk again, thrown this time: the circle flares off the ball as the web goes.
+	# Silk again, thrown this time: the circles flare away as the web goes.
 	spells.take(1)
 	send_action(spider.input_shoot)
 	await run_frames(6)
-	wrapped = _circles()
-	if check(wrapped.size() == 1 and wrapped[0].wrapped, "a ball of silk wound up again"):
+	orbit = _circles()
+	if check(orbit.size() == SpiderSpells.ORBIT_COUNT, "a ball of silk wound up again"):
 		release_action(spider.input_shoot)
 		await run_frames(3)
 		check(builder.shot_in_flight() or web_count() > 0, "let go, the web is thrown")
-		check(wrapped[0].is_fading(), "and the circle flares off the ball as it goes")
+		check(orbit[0].is_fading() and orbit[2].is_fading(),
+			"and its circles flare away as it goes")
 	await wait_until(func() -> bool: return _circles().is_empty(), 90)
 
 	# Earth: on the ground where the pillar will come up, round its foot.

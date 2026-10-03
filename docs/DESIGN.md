@@ -489,11 +489,12 @@ bolt comes out of it. Earth's lies round the foot of the pillar to come. Wind's
 lies under the spider's feet, with the strip it will
 blow down laid out on the ground ahead. The
 pullback's is drawn round the spider, with a thin line out to every web it will
-call in. The web's is wrapped round the ball of silk it winds up over the
-spider's back: its lines bent onto the ball, so the circle is curved, capping it
-like a band of writing round a globe — growing with it, rolling round it while you
-hold, and flaring off it as the web is thrown. The ball under it is solid and dark
-enough that the circle reads on it, light on dark.
+call in. The web's are three small ones going round the ball of silk it winds up
+over the spider's back — the same circle as every other spell's, small, in a ring
+tipped up a little towards the camera — growing with the ball as you hold, and
+flaring away as the web is thrown. (For a while it was one circle bent onto the
+ball itself; small, curved, and seen across a ball at a slant, it never read as
+cleanly as the flat ones.)
 
 **One aim for all of them.** The crosshair is the only aiming there is, and it
 is the same for everything: silk goes from the spider to whatever the cross is
