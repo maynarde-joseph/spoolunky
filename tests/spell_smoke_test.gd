@@ -48,6 +48,7 @@ func _sections() -> Array[Callable]:
 		_test_storm_and_paralysis,
 		_test_fire_breath,
 		_test_fire_burns_silk,
+		_test_steam,
 		_test_pullback,
 		_test_clay_pillar,
 		_test_the_whole_book_open,
@@ -1833,6 +1834,66 @@ func _test_fire_burns_silk() -> void:
 	check(roast.is_stuck() and roast.health() < 1.0 - fire.power_at(0.0) * fire.duration_at(0.0)
 		* 0.6, "and the wasp burns in it, held all the while (%d%% left)"
 		% roundi(roast.health() * 100.0))
+
+
+## Fire breathed over a puddle boils it off: the ground dry, and a cloud of steam
+## rising where it lay that soaks and scalds what is in it, a flier included. Fire on
+## dry ground boils nothing.
+func _test_steam() -> void:
+	var fire := _learned("fire", 2)
+	spider.require_captured_mouse = false
+	var slab := add_slab(Vector3(0, 0.0, -180), Vector3(40, 0.5, 40))
+	await physics_frame
+	var start := slab.global_position + Vector3(0, 0.25, 6.0)
+	stand_on(start)
+	await run_frames(20)
+	var height := spider.stage().body_height
+	var spot := start + Vector3.FORWARD * height * 2.5
+	clear_prey_near(spot, height * 30.0, null)
+	aim_at(spot)
+	await physics_frame
+	await process_frame
+	check(spells.cast_now(fire), "fire breathed on dry ground")
+	await wait_until(func() -> bool: return _last_breath() == null, 240)
+	check(_steam().is_empty(), "boils nothing")
+
+	spells.forget_waits()
+	var wet := WetGround.puddle(level, spot, Vector3.UP, height * 0.6, 20.0)
+	var fly := spawn("fly", spot + Vector3.UP * height * 2.0)
+	if not check(wet != null and fly != null, "a puddle, and a fly over it"):
+		return
+	fly.move_speed = 0.0
+	fly.aggression = 0.0
+	await physics_frame
+	check(not fly.is_wet(), "the fly dry to start with")
+	aim_at(spot)
+	await physics_frame
+	await process_frame
+	check(spells.cast_now(fire), "fire breathed on the puddle")
+	var boiled: bool = await wait_until(func() -> bool: return not _steam().is_empty(), 60)
+	if not check(boiled and not wet.is_wet(), "it boils off, the ground dry"):
+		return
+	var cloud := _steam()[0]
+	check(Vector2(cloud.base.x - spot.x, cloud.base.z - spot.z).length() < height * 0.2
+		and cloud.tall > height * 2.0, "and steam rises where it lay, %.2f m tall" % cloud.tall)
+	var soaked: bool = await wait_until(func() -> bool: return fly.is_wet(), 60)
+	check(soaked and cloud.soaked.has(fly), "the fly in it is soaked, two body heights up")
+	var hurt_at := fly.health()
+	await run_frames(30)
+	check(fly.health() < hurt_at, "and scalded while it stays (%d%% left)"
+		% roundi(fly.health() * 100.0))
+	await wait_until(func() -> bool: return _steam().is_empty(), 400)
+	check(_steam().is_empty(), "and the steam thins away")
+
+
+## The steam hanging now.
+func _steam() -> Array[Steam]:
+	var found: Array[Steam] = []
+	for node in spider.get_tree().get_nodes_in_group(Steam.GROUP):
+		var cloud := node as Steam
+		if cloud != null and not cloud.is_queued_for_deletion():
+			found.append(cloud)
+	return found
 
 
 ## The breath of fire going now, or null.

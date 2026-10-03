@@ -403,7 +403,8 @@ up. Everything else is learned:
   it, wrapping what it passes, and drops what it held bundled where the wind ends
   — while a web just past the end stays put and catches what the wind blows in.
   **A wet web soaks**: called back, blown or flung, a web Douse left wet soaks what
-  it passes, ready for lightning.
+  it passes, ready for lightning. **Fire boils water**: breathe on a puddle and it
+  goes up as steam that soaks and scalds whatever is in it, fliers included.
 * **Five on the keys.** The web is always on 1 and five spells ride on 2 to 6. A
   spell learned goes on the next free key; the tree takes one off or puts one on.
 
@@ -908,8 +909,8 @@ whirl wind lifts out of a puddle holding the first thing it reaches, acid water,
 square pillar of clay that throws what stands on it — the spider included — and flings
 the web it comes up under, a breath of fire swept from
 one creature to the next that burns harder the more silk is on what it touches and
-burns the silk with it — but not a wet web — webs called back through what is in
-their way, the magic circles
+burns the silk with it — but not a wet web — and boils a puddle into steam, webs
+called back through what is in their way, the magic circles
 each spell is drawn in, the number keys, and the whole book opened at once:
 
 ```sh

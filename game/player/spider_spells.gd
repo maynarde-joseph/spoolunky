@@ -720,7 +720,7 @@ func breath_heading() -> Vector3:
 	return _view.aim_forward()
 
 
-func _on_breath_finished(_breath: FireBreath, burned: Array[Prey], webs: int,
+func _on_breath_finished(breath: FireBreath, burned: Array[Prey], webs: int,
 		lines: int) -> void:
 	var said := PackedStringArray()
 	if burned.size() == 1 and is_instance_valid(burned[0]):
@@ -732,6 +732,8 @@ func _on_breath_finished(_breath: FireBreath, burned: Array[Prey], webs: int,
 		said.append("%d web%s burned away" % [webs, "" if webs == 1 else "s"])
 	if lines > 0:
 		said.append("%d line%s burned away" % [lines, "" if lines == 1 else "s"])
+	if breath != null and not breath.steamed.is_empty():
+		said.append("the water boils into steam")
 	if not said.is_empty():
 		notice.emit(" · ".join(said))
 
