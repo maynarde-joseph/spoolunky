@@ -1097,6 +1097,9 @@ func room_to_hang(strand: WebStrand, near: Vector3) -> Vector2:
 		query.motion = -axis * found
 		var behind: float = space.cast_motion(query)[0] * found
 		room = Vector2(found - behind, found + ahead)
+	if _room_seen.size() > 32:
+		# Lines come and go: what was found about ones long gone is no use to keep.
+		_room_seen.clear()
 	_room_seen[id] = [Time.get_ticks_msec(), height, near, room]
 	return room
 
