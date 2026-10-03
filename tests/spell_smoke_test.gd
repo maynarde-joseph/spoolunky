@@ -307,12 +307,12 @@ func _test_the_tree() -> void:
 
 	# A tier makes its spell bigger.
 	var spell := spells.by_id("douse")
-	var reach := spells.fan_reach(spell, 0.0)
+	var puddle := spells.puddle_wide(spell, 0.0)
 	check(tree.learn(deluge), "Deluge learned")
-	check(is_equal_approx(spells.fan_reach(spell, 0.0), reach * deluge.size_scale),
-		"Douse throws further (%.1f -> %.1f m)" % [reach, spells.fan_reach(spell, 0.0)])
+	check(is_equal_approx(spells.puddle_wide(spell, 0.0), puddle * deluge.size_scale),
+		"Douse leaves wider puddles (%.2f -> %.2f m)" % [puddle, spells.puddle_wide(spell, 0.0)])
 	check(is_equal_approx(spells.duration_of(spell, 0.0), spell.duration_at(0.0)
-		* deluge.duration_scale), "and the ground stays wet longer")
+		* deluge.duration_scale), "which stay wet longer")
 	check(deluge.effect_line().contains("%"), "and its card says so (%s)" % deluge.effect_line())
 
 	# A cut makes the waits shorter, silk's too.
@@ -516,12 +516,12 @@ func _test_number_keys() -> void:
 	spells.take(1)
 
 
-## Every spell but silk is drawn in a magic circle while it winds up — fire in front
-## of the spider's jaws on the line the breath will take, lightning on the ground
-## where it will strike, water and wind under the spider's feet, with the fan or the
-## strip they will cover ahead — and leaves through it: the circle flares and fades
-## as the spell goes, lightning draws a second one over the strike, and a wind-up
-## given up fades the same way.
+## Every spell but silk is drawn in a magic circle while it winds up — fire and
+## water in front of the spider's jaws on the line the breath or the spit will take,
+## water with where it will come down laid out, lightning on the ground where it
+## will strike, wind under the spider's feet with the strip it will blow down — and
+## leaves through it: the circle flares and fades as the spell goes, lightning draws
+## a second one over the strike, and a wind-up given up fades the same way.
 func _test_spells_leave_through_circles() -> void:
 	spells.open_all = true
 	spider.require_captured_mouse = false
@@ -601,8 +601,10 @@ func _test_spells_leave_through_circles() -> void:
 	check(circle.is_fading(), "and the one on the ground flares and fades")
 	await wait_until(func() -> bool: return _circles().is_empty(), 90)
 
-	# Water: under the spider's feet. Given up, it fades the same way.
+	# Water: in front of the spider's jaws on the line the spit leaves on, with where
+	# it will come down laid out. Given up, it fades the same way.
 	spells.take(2)
+	var douse := spells.current()
 	send_action(spider.input_shoot)
 	await run_frames(2)
 	circles = _circles()
@@ -610,12 +612,16 @@ func _test_spells_leave_through_circles() -> void:
 		release_action(spider.input_shoot)
 		return
 	circle = circles[0]
-	var under := circle.global_position - spider.global_position
-	check(Vector2(under.x, under.z).length() < height * 0.1 and under.y < 0.0,
-		"under the spider's feet")
-	check(absf(spells.fan_shown() - spells.fan_reach(spells.current(), spells.charge))
-		< height * 0.2, "with the fan it will cover laid out on the ground (%.2f m)"
-		% spells.fan_shown())
+	var leaving := spells.spit_heading()
+	var out := circle.global_position - spells.breath_origin()
+	check(absf(out.length() - height * spells.circle_ahead) < height * 0.05
+		and out.normalized().dot(leaving) > 0.99,
+		"in front of the jaws, on the line the spit leaves on (%.2f m out)" % out.length())
+	check(leaving.dot(Vector3.UP) > (spells.spit_target() - spells.breath_origin())
+		.normalized().dot(Vector3.UP), "tipped up from the cross, for the arc it is spat on")
+	check(absf(spells.splash_shown() - spells.splash_wide(douse, spells.charge))
+		< height * 0.2, "with where it will come down laid out (%.2f m across)"
+		% spells.splash_shown())
 	spells.cancel_cast()
 	release_action(spider.input_shoot)
 	await run_frames(2)
@@ -636,7 +642,7 @@ func _test_spells_leave_through_circles() -> void:
 			"under the spider's feet")
 	check(absf(spells.path_shown() - spells.lane_reach(gust, spells.charge)) < height * 0.2,
 		"with the strip it will blow down laid out ahead (%.2f m)" % spells.path_shown())
-	check(is_zero_approx(spells.fan_shown()), "and no fan")
+	check(is_zero_approx(spells.splash_shown()), "and nothing laid out where water lands")
 	spells.cancel_cast()
 	release_action(spider.input_shoot)
 	await run_frames(2)
@@ -680,10 +686,13 @@ func _test_a_lean_spider_casts_sooner() -> void:
 		"which waits a fifth less (%.2fs against %.2fs)" % [builder._cooldown_span, plain])
 
 
-## Water sprayed in a fan in front of the spider: what the spray catches is soaked
-## and stung, a flier included; the ground stays wet, and keeps whatever walks onto
-## it soaked until it dries; what is off to the side or past its reach stays dry.
-## A web it reaches is wet, and fire passes a wet web by.
+## Water spat at the cross: a spray of drops out of the spider's jaws, more of them
+## the longer it is wound up. What a drop hits is soaked and stung, a flier in the
+## air included; where drops come down they leave puddles round the cross, which
+## keep whatever stands in them soaked until they dry, and a drop that comes down
+## in one makes it bigger. What is off to the side stays dry. Silk a drop goes
+## through is wet once Wet Silk is learned, and fire passes a wet web by; a drop
+## that hits a wall leaves nothing on it.
 func _test_douse() -> void:
 	var douse := spells.by_id("douse")
 	if not check(douse != null and douse.form == SpiderSpell.Form.DOUSE,
@@ -691,7 +700,10 @@ func _test_douse() -> void:
 		return
 	_learned("douse", 2)
 	check(spells.select("douse"), "learned, it can be taken in hand")
-	check(not spells.is_area(douse), "it is thrown from the spider, not called down")
+	check(not spells.is_area(douse), "it is spat from the spider, not called down")
+	check(spells.spit_drops(0.0) == int(WaterSpit.DROPS.x)
+		and spells.spit_drops(1.0) == int(WaterSpit.DROPS.y),
+		"a tap spits %d drops, a full wind-up %d" % [spells.spit_drops(0.0), spells.spit_drops(1.0)])
 
 	var slab := add_slab(Vector3(90, 0.0, -90), Vector3(60, 0.5, 60))
 	await physics_frame
@@ -699,72 +711,119 @@ func _test_douse() -> void:
 	stand_on(start)
 	await physics_frame
 	var height := spider.stage().body_height
-	var far := spells.fan_reach(douse, 0.0)
-	var full := spells.fan_reach(douse, 1.0)
-	check(far > height * 3.0 and full > far * 1.5,
-		"a tap throws it %.1f m, a full wind-up %.1f m" % [far, full])
+	var wide := spells.puddle_wide(douse, 0.0)
+	check(wide > height * 0.2 and spells.puddle_wide(douse, 1.0) > wide,
+		"each drop leaves a puddle %.2f m to its rim from a tap, %.2f m from a full wind-up"
+		% [wide, spells.puddle_wide(douse, 1.0)])
 	var ahead := Vector3.FORWARD
 	var side := Vector3.RIGHT
-	clear_prey_near(start + ahead * full * 0.5, full * 1.5, null)
-	var walker := spawn("beetle", start + ahead * far * 0.5 + Vector3(0.0, 0.2, 0.0))
-	var flier := spawn("moth", start + ahead * far * 0.6 + Vector3(0.0, height * 1.5, 0.0))
-	var aside := spawn("fly", start + ahead * far * 0.3 + side * far * 0.8 + Vector3.UP * 0.2)
-	var beyond := spawn("beetle", start + ahead * (far + height * 4.0) + Vector3(0.0, 0.2, 0.0))
-	if not check(walker != null and flier != null and aside != null and beyond != null,
-			"two beetles, a moth and a fly"):
+	var spot := start + ahead * height * 8.0
+	clear_prey_near(spot, height * 24.0, null)
+	var walker := spawn("beetle", spot + Vector3(0.0, 0.2, 0.0))
+	var aside := spawn("fly", spot + side * height * 6.0 + Vector3.UP * 0.2)
+	if not check(walker != null and aside != null, "a beetle, and a fly off to the side"):
 		return
-	for creature in [walker, flier, aside, beyond]:
+	for creature in [walker, aside]:
 		creature.aggression = 0.0
 		creature.move_speed = 0.0
+	await run_frames(20)
+	aim_at(walker.global_position)
 	await physics_frame
-	aim_at(start + ahead * full * 2.0 + Vector3.DOWN * 0.25)
-	check(spells.cast_now(douse), "sprayed")
-	var wet := _first_wet()
-	if not check(wet != null, "and the ground is wet"):
-		return
-	check(wet.heading.dot(ahead) > 0.99, "out the way the cross looks")
-	check(absf(wet.reach - far) < 0.01, "as far as a tap throws it (%.1f m)" % wet.reach)
+	check(spells.cast_now(douse), "spat at the beetle")
+	var mouthful := _last_spit()
+	check(mouthful != null and mouthful.thrown == spells.spit_drops(0.0),
+		"a spray of drops (%d)" % (mouthful.thrown if mouthful != null else 0))
 	check(spells.cooling(douse), "and it waits its own wait (%.1fs)" % spells.cooldown_left(douse))
+	var down: bool = await _spat()
+	check(down, "and every drop comes down")
 	check(walker.is_wet() and walker.health() < 1.0,
-		"the beetle in it is soaked and stung (%d%% left)" % roundi(walker.health() * 100.0))
-	check(flier.is_wet(), "and so is the moth over it")
+		"the beetle it was spat at is soaked and stung (%d%% left)" % roundi(walker.health() * 100.0))
 	check(not aside.is_wet() and is_equal_approx(aside.health(), 1.0),
 		"the fly off to the side is not")
-	check(not beyond.is_wet(), "nor the beetle past its reach")
-	var late := spawn("ant", start + ahead * far * 0.3 + Vector3(0.0, 0.2, 0.0))
-	if check(late != null, "an ant on the wet ground after"):
+	var pools := _puddles()
+	check(pools.size() >= 2, "and the drops leave puddles where they come down (%d)" % pools.size())
+	var furthest := 0.0
+	var level_ground := true
+	for pool in pools:
+		var off := pool.centre - walker.global_position
+		furthest = maxf(furthest, Vector2(off.x, off.z).length())
+		level_ground = level_ground and pool.up.dot(Vector3.UP) > 0.99
+	check(furthest <= spells.splash_wide(douse, 0.0) + height * 0.5,
+		"round the cross, %.2f m out at most" % furthest)
+	check(level_ground, "lying on the ground")
+	var late := spawn("ant", pools[0].centre + Vector3.UP * 0.05)
+	if check(late != null, "an ant in a puddle after"):
+		late.aggression = 0.0
 		late.move_speed = 0.0
 		var soaked: bool = await wait_until(func() -> bool: return late.is_wet(), 60)
-		check(soaked, "is soaked by standing on it")
-	wet.life = 0.0
-	await run_frames(2)
-	check(not wet.is_wet(), "and when its time is up, the ground dries")
-	var wet_id := wet.get_instance_id()
-	var gone: bool = await wait_until(func() -> bool: return not is_instance_id_valid(wet_id),
-		120)
-	check(gone, "and the wet is gone")
+		check(soaked, "is soaked by standing in it")
 
-	# Silk it reaches is wet once Wet Silk is learned, and fire passes a wet web by.
+	# Spat at a flier, the drops have it in the air.
 	spells.forget_waits()
-	clear_prey_near(start, full * 2.0, null)
+	var flier := spawn("moth", spot + side * height * 3.0 + Vector3.UP * height * 2.0)
+	if check(flier != null, "a moth in the air"):
+		flier.aggression = 0.0
+		flier.move_speed = 0.0
+		await physics_frame
+		aim_at(flier.global_position)
+		await physics_frame
+		check(spells.cast_now(douse), "spat at it")
+		await _spat()
+		check(flier.is_wet() and flier.health() < 1.0,
+			"and it is soaked and stung (%d%% left)" % roundi(flier.health() * 100.0))
+
+	# A drop that comes down in a puddle makes it bigger, up to a point; and a puddle
+	# dries when its time is up.
+	spells.forget_waits()
+	var bare := spot - side * height * 10.0
+	aim_at(bare)
+	await physics_frame
+	check(spells.cast_now(douse), "spat at bare ground")
+	await _spat()
+	var middle := _puddle_at(bare)
+	if check(middle != null, "and there is a puddle where the cross was"):
+		var was := middle.radius
+		spells.forget_waits()
+		check(spells.cast_now(douse), "spat there again")
+		await _spat()
+		check(_puddle_at(bare) == middle and middle.radius > was,
+			"the drop that came down in it made it bigger (%.2f -> %.2f m)" % [was, middle.radius])
+		check(middle.radius <= wide * WetGround.POOL + 0.001, "but no bigger than a pool")
+		middle.life = 0.0
+		await run_frames(2)
+		check(not middle.is_wet(), "and when its time is up, it dries")
+		var middle_id := middle.get_instance_id()
+		var gone: bool = await wait_until(func() -> bool:
+			return not is_instance_id_valid(middle_id), 120)
+		check(gone, "and is gone")
+
+	# Silk a drop goes through is wet once Wet Silk is learned, and fire passes a wet
+	# web by.
+	spells.forget_waits()
+	clear_prey_near(start, height * 30.0, null)
 	var half := height * 1.2
-	var soaked_web := _spin(start + ahead * far * 0.6 + Vector3.UP * (half + 0.1), half)
-	var dry_web := _spin(start + side * full + Vector3.UP * (half + 0.1), half)
-	if not check(soaked_web != null and dry_web != null, "a web in the spray, one out of it"):
+	var soaked_web := _spin(start + ahead * height * 6.0 + Vector3.UP * (half + 0.1), half)
+	var dry_web := _spin(start + side * height * 8.0 + Vector3.UP * (half + 0.1), half)
+	if not check(soaked_web != null and dry_web != null,
+			"a web in the way of the drops, one out of it"):
 		return
 	await physics_frame
-	aim_at(start + ahead * full * 2.0 + Vector3.DOWN * 0.25)
-	check(spells.cast_now(douse), "sprayed at a web")
+	aim_at((soaked_web as WebNet).signal_point())
+	await physics_frame
+	check(spells.cast_now(douse), "spat through a web")
+	await _spat()
 	check(not WetSilk.is_wet(soaked_web), "before Wet Silk is learned, the web stays dry")
 	spells.forget_waits()
 	spider.spell_tree.grant("wet_silk")
-	check(spells.cast_now(douse), "sprayed at it again, with Wet Silk learned")
-	check(WetSilk.is_wet(soaked_web), "the web it reaches is wet")
-	check(not WetSilk.is_wet(dry_web), "and the one out of the spray is dry")
+	check(spells.cast_now(douse), "spat through it again, with Wet Silk learned")
+	await _spat()
+	check(WetSilk.is_wet(soaked_web), "the web the drops went through is wet")
+	check(not WetSilk.is_wet(dry_web), "and the one out of their way is dry")
 	var plain_hold := soaked_web.hold_strength()
 	spells.forget_waits()
 	spider.spell_tree.grant("sodden_silk")
 	check(spells.cast_now(douse), "and again, with Sodden Silk")
+	await _spat()
 	check(is_equal_approx(soaked_web.hold_strength(), plain_hold * WetSilk.HEAVY_HOLD),
 		"which holds half as hard again while it is wet (%.1f -> %.1f)"
 		% [plain_hold, soaked_web.hold_strength()])
@@ -773,14 +832,32 @@ func _test_douse() -> void:
 	var dry_id := dry_web.get_instance_id()
 	for web in [soaked_web, dry_web]:
 		# Breathed straight into the middle of each, from a little way off.
-		var middle := (web as WebNet).signal_point()
-		FireBreath.breathe(level, middle + Vector3.BACK * height * 2.0, Vector3.FORWARD,
+		var centre := (web as WebNet).signal_point()
+		FireBreath.breathe(level, centre + Vector3.BACK * height * 2.0, Vector3.FORWARD,
 			height * 4.0, 0.3, fire.power_at(0.0), height)
 	await run_frames(12)
 	check(is_instance_id_valid(soaked_id) and not soaked_web.is_queued_for_deletion(),
 		"fire passes the wet web by")
 	check(not is_instance_id_valid(dry_id) or dry_web.is_queued_for_deletion(),
 		"and burns the dry one")
+
+	# A drop that hits a wall only splashes: puddles lie on the ground.
+	spells.forget_waits()
+	var wall := add_slab(start + ahead * height * 5.0 + Vector3.UP * height * 2.0,
+		Vector3(height * 6.0, height * 4.0, 0.3))
+	await physics_frame
+	aim_at(start + ahead * (height * 5.0 - 0.15) + Vector3.UP * height * 2.0)
+	await physics_frame
+	var before := _puddles().size()
+	check(spells.cast_now(douse), "spat at a wall")
+	await _spat()
+	var on_walls := 0
+	for pool in _puddles():
+		if pool.up.dot(Vector3.UP) < WaterSpit.FLOOR:
+			on_walls += 1
+	check(on_walls == 0, "leaves no puddle on it (%d puddles, %d before)"
+		% [_puddles().size(), before])
+	wall.free()
 
 
 ## Wind blown down a lane in front of the spider, further the longer it is wound
@@ -858,12 +935,13 @@ func _test_gust() -> void:
 	check(caught and walker.held_by() == web, "blown into the web, it is caught")
 
 
-## Wind over wet ground lifts the water into a whirl that runs on the way the wind
+## Wind over a puddle lifts the water into a whirl that runs on the way the wind
 ## blew, stops at the first thing it reaches and holds it there — round and round,
-## going nowhere, worn down a little — for as long as the wind-up gave it. The
-## ground it came from is dry, what is further on is left alone, and wind with no
-## wet ground under it lifts nothing. All of it once Waterspout is learned: before,
-## wind over wet ground is only wind.
+## going nowhere, worn down a little — for as long as the wind-up gave it. One
+## whirl however many puddles the wind crosses, and every one of them dry after;
+## what is further on is left alone, and wind with no puddle under it lifts
+## nothing. All of it once Waterspout is learned: before, wind over a puddle is
+## only wind.
 func _test_the_whirl() -> void:
 	var douse := spells.by_id("douse")
 	var gust := spells.by_id("gust")
@@ -877,31 +955,42 @@ func _test_the_whirl() -> void:
 	stand_on(start)
 	await physics_frame
 	var height := spider.stage().body_height
-	var far := spells.fan_reach(douse, 0.0)
+	var far := spells.lane_reach(gust, 0.0)
 	var ahead := Vector3.FORWARD
+	var spot := start + ahead * far * 0.4
+	var past := spells.splash_wide(douse, 0.0)
 	clear_prey_near(start + ahead * far, far * 3.0, null)
-	var first := spawn("beetle", start + ahead * (far + height * 2.0) + Vector3(0.0, 0.2, 0.0))
-	var further := spawn("beetle", start + ahead * (far + height * 7.0) + Vector3(0.0, 0.2, 0.0))
-	if not check(first != null and further != null, "two beetles past the wet, one behind the other"):
+	var first := spawn("beetle", spot + ahead * (past + height) + Vector3(0.0, 0.2, 0.0))
+	var further := spawn("beetle", spot + ahead * (past + height * 6.0) + Vector3(0.0, 0.2, 0.0))
+	if not check(first != null and further != null,
+			"two beetles past where it will be wet, one behind the other"):
 		return
 	for creature in [first, further]:
 		creature.aggression = 0.0
 		creature.move_speed = 0.0
 	await physics_frame
-	aim_at(start + ahead * far * 3.0 + Vector3.DOWN * 0.25)
-	check(spells.cast_now(douse), "the ground doused")
-	var wet := _first_wet()
-	if not check(wet != null and _first_whirl() == null, "wet, and no whirl yet"):
+	aim_at(spot)
+	await physics_frame
+	check(spells.cast_now(douse), "the ground spat on")
+	await _spat()
+	var pools := _puddles()
+	if not check(not pools.is_empty() and _first_whirl() == null,
+			"puddles (%d), and no whirl yet" % pools.size()):
 		return
-	check(spells.cast_now(gust), "wind blown over it, before Waterspout is learned")
-	check(_first_whirl() == null and wet.is_wet(), "lifts nothing, and the ground stays wet")
+	check(spells.cast_now(gust), "wind blown over them, before Waterspout is learned")
+	check(_first_whirl() == null and pools[0].is_wet(), "lifts nothing, and the puddles stay wet")
 	spells.forget_waits()
 	spider.spell_tree.grant("waterspout")
-	check(spells.cast_now(gust), "and with it learned, wind blown over it")
+	check(spells.cast_now(gust), "and with it learned, wind blown over them")
 	var whirl := _first_whirl()
 	if not check(whirl != null, "lifts the water into a whirl"):
 		return
-	check(not wet.is_wet(), "and the ground it came from is dry")
+	check(_whirls().size() == 1, "one whirl, off %d puddles" % pools.size())
+	var still_wet := 0
+	for pool in pools:
+		if pool.is_wet():
+			still_wet += 1
+	check(still_wet == 0, "and every puddle the wind crossed is dry (%d still wet)" % still_wet)
 	check(whirl.heading.dot(ahead) > 0.99, "running on the way the wind blew")
 	var whirl_id := whirl.get_instance_id()
 	var got: bool = await wait_until(func() -> bool:
@@ -941,35 +1030,71 @@ func _test_acid_water() -> void:
 	stand_on(start)
 	await physics_frame
 	var height := spider.stage().body_height
-	var far := spells.fan_reach(douse, 0.0)
+	var far := spells.lane_reach(gust, 0.0)
+	var spot := start + Vector3.FORWARD * far * 0.4
 	clear_prey_near(start, far * 3.0, null)
 	for step in ["paralytic", "digestive"]:
 		traits.take(traits.by_id(step))
 	check(traits.acid_water(), "a digestive flood makes the spider's water acid")
-	var ant := spawn("ant", start + Vector3.FORWARD * (far + height * 2.0) + Vector3(0, 0.2, 0))
+	var ant := spawn("ant", spot + Vector3.FORWARD * (spells.splash_wide(douse, 0.0) + height)
+		+ Vector3(0, 0.2, 0))
 	if not check(ant != null, "an ant"):
 		return
 	ant.aggression = 0.0
 	ant.move_speed = 0.0
 	await physics_frame
-	aim_at(start + Vector3.FORWARD * far * 3.0 + Vector3.DOWN * 0.25)
-	check(spells.cast_now(douse) and spells.cast_now(gust), "doused, and a whirl blown at it")
+	aim_at(spot)
+	await physics_frame
+	check(spells.cast_now(douse), "the ground in front of it spat on")
+	await _spat()
+	check(spells.cast_now(gust), "and a whirl blown at it")
 	var eaten: bool = await wait_until(func() -> bool: return ant.is_poisoned(), 240)
 	check(eaten, "and its water doses what it holds")
 
 
 func _first_whirl() -> WaterSpiral:
+	var whirls := _whirls()
+	return whirls[0] if not whirls.is_empty() else null
+
+
+func _whirls() -> Array[WaterSpiral]:
+	var found: Array[WaterSpiral] = []
 	for node in spider.get_tree().get_nodes_in_group(WaterSpiral.GROUP):
 		var whirl := node as WaterSpiral
 		if whirl != null and not whirl.is_queued_for_deletion():
-			return whirl
-	return null
+			found.append(whirl)
+	return found
 
 
-func _first_wet() -> WetGround:
+## The spit still in the air, the newest if there are more, or null.
+func _last_spit() -> WaterSpit:
+	var found: WaterSpit = null
+	for node in spider.get_tree().get_nodes_in_group(WaterSpit.GROUP):
+		var mouthful := node as WaterSpit
+		if mouthful != null and not mouthful.is_queued_for_deletion():
+			found = mouthful
+	return found
+
+
+## Waits for every drop in the air to come down. Returns whether they did.
+func _spat() -> bool:
+	return await wait_until(func() -> bool: return _last_spit() == null, 180)
+
+
+## Every puddle still wet.
+func _puddles() -> Array[WetGround]:
+	var found: Array[WetGround] = []
 	for node in spider.get_tree().get_nodes_in_group(WetGround.GROUP):
 		var wet := node as WetGround
-		if wet != null and not wet.is_queued_for_deletion():
+		if wet != null and not wet.is_queued_for_deletion() and wet.is_wet():
+			found.append(wet)
+	return found
+
+
+## The puddle [param point] is in, or null.
+func _puddle_at(point: Vector3) -> WetGround:
+	for wet in _puddles():
+		if wet.holds(point, 0.02):
 			return wet
 	return null
 
@@ -1268,16 +1393,19 @@ func _test_lightning_and_water() -> void:
 	clear_prey_near(centre, 20.0, null)
 	var height := spider.stage().body_height
 	var strike_radius := lightning.size_at(0.0) * height
-	var far := spells.fan_reach(douse, 0.0)
-	var beetle := spawn("beetle", start + Vector3.FORWARD * (far + height * 2.0)
-		+ Vector3(0.0, 0.2, 0.0))
-	if not check(beetle != null, "a beetle past the wet ground"):
+	var spot := start + Vector3.FORWARD * spells.lane_reach(gust, 0.0) * 0.4
+	var beetle := spawn("beetle", spot + Vector3.FORWARD * (spells.splash_wide(douse, 0.0)
+		+ height) + Vector3(0.0, 0.2, 0.0))
+	if not check(beetle != null, "a beetle past the puddles"):
 		return
 	beetle.aggression = 0.0
 	beetle.move_speed = 0.0
 	await physics_frame
-	aim_at(start + Vector3.FORWARD * far * 3.0 + Vector3.DOWN * 0.25)
-	check(spells.cast_now(douse) and spells.cast_now(gust), "a whirl blown at it")
+	aim_at(spot)
+	await physics_frame
+	check(spells.cast_now(douse), "the ground in front of it spat on")
+	await _spat()
+	check(spells.cast_now(gust), "and a whirl blown at it")
 	var whirl := _first_whirl()
 	if whirl == null:
 		return

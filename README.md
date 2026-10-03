@@ -12,10 +12,10 @@ foxes, and what is not eaten goes home and breeds.
 You are a spider wizard. The thrown web is the first spell, and what you catch and
 eat earns the rest: experience makes rank — Apprentice Spooder up to Grand
 Spooder — and every rank opens a row of the **spell tree** and two points to
-spend in it. A call that brings your webs flying back, a spray of water, a gust
+spend in it. A call that brings your webs flying back, a spit of water, a gust
 of wind, lightning and a breath of fire, each with a second tier; the ways they
 work off your silk and each other — webs that will not burn, webs left live,
-lightning run along your lines, wind over wet ground lifting a whirl; and shorter
+lightning run along your lines, wind over a puddle lifting a whirl; and shorter
 waits. Five spells ride on your keys beside the web.
 
 The project opens somewhere else now, though: **the Hollow Wood**, a prototype of a
@@ -46,9 +46,10 @@ game/
              tree, eating and stamina, and the body you see — a skeleton and the
              gait that walks it
   spells/    what spells leave in the world: the magic circle each is drawn
-             in, wet ground and wet silk, a gust, the whirl wind lifts off wet
-             ground, a strike of lightning and the charge it leaves in a web, a
-             web called back, the bloom where one lands
+             in, a spit of water and the puddles it leaves, wet silk, a gust,
+             the whirl wind lifts out of a puddle, a breath of fire, a strike of
+             lightning and the charge it leaves in a web, a web called back, the
+             bloom where one lands
   prey/      things to catch, and something to spawn them
   combat/    creatures fighting back: carrying out their attacks, and what they spit
   ecosystem/ what makes the valley live: the clock, dens, forage, haunts, and the
@@ -374,10 +375,10 @@ up. Everything else is learned:
   Journeyman), a spell's **second tier** (Deluge, Gale, Thunderhead, Inferno, Long
   Recall), an **interaction**, or a **shorter wait**. There are twenty-one points
   of it and ten to earn, so what you learn is the kind of spider you are.
-* **The interactions are where it gets interesting.** **Wet Silk**: Douse wets
-  your webs, and a wet web stands in fire — breathe on what it holds and only that
+* **The interactions are where it gets interesting.** **Wet Silk**: spit Douse
+  through your webs and they are wet, and a wet web stands in fire — breathe on what it holds and only that
   burns — and keeps lightning twice as long. **Sodden Silk**: a wet web
-  holds half as hard again. **Waterspout**: wind over wet ground lifts a whirl that
+  holds half as hard again. **Waterspout**: wind over a puddle lifts a whirl that
   holds the first thing it reaches. **Live Silk**: lightning stays in a web, and
   the web strikes whatever touches it. **Live Lines**: lightning runs along your
   lines to every web they tie together.
@@ -879,9 +880,9 @@ learned in the tree — rank from catching and eating, points, rows, the loadout
 five and the tree on **E** — the strip that shows the keys, and what each spell does
 — to what it lands on, and to the other spells and the silk it meets, before and
 after the interaction that lets it. Lightning run down a wire to a
-wasp across the room and left live in the web, a spray that leaves the ground and
-the silk wet, a gust that blows a beetle into a web, the whirl wind lifts off wet
-ground holding the first thing it reaches, acid water, a breath of fire swept from
+wasp across the room and left live in the web, a spit that leaves puddles where it
+lands and the silk it goes through wet, a gust that blows a beetle into a web, the
+whirl wind lifts out of a puddle holding the first thing it reaches, acid water, a breath of fire swept from
 one creature to the next that burns harder the more silk is on what it touches and
 burns the silk with it — but not a wet web — webs called back through what is in
 their way, the magic circles

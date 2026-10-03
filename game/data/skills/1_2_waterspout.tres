@@ -6,7 +6,7 @@
 script = ExtResource("1_skill")
 id = "waterspout"
 display_name = "Waterspout"
-description = "Wind blown over ground Douse left wet lifts the water into a whirl that runs on the way the wind blew, and holds the first thing it reaches."
+description = "Wind blown over a puddle Douse left lifts the water into a whirl that runs on the way the wind blew, and holds the first thing it reaches."
 kind = 2
 row = 1
 column = 2

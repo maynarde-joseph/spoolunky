@@ -6,7 +6,7 @@
 script = ExtResource("1_skill")
 id = "douse"
 display_name = "Douse"
-description = "Water sprayed in a fan in front of you. It soaks and stings what it catches, fliers included, and leaves the ground wet."
+description = "Water spat where you aim, in a spray of drops. They soak and sting what they hit, fliers included, and leave puddles where they land."
 kind = 0
 row = 0
 column = 0

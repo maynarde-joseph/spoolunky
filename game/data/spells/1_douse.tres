@@ -6,11 +6,11 @@
 script = ExtResource("1_spell")
 id = "douse"
 display_name = "Douse"
-description = "Water sprayed in a fan in front of you. What it catches is soaked and stung, and the ground stays wet: whatever stands on it stays soaked, and lightning hits anything wet twice as hard. A web it reaches is wet too, and a wet web does not burn."
+description = "Water spat where you aim, in a spray of drops. What a drop hits is soaked and stung, and where they land they leave puddles: whatever stands in one stays soaked, and lightning hits anything wet twice as hard."
 form = 1
 order = 1
 cooldown = 6.0
-size = Vector2(4, 7)
+size = Vector2(0.3, 0.4)
 duration = Vector2(8, 12)
 power = Vector2(0.04, 0.07)
 sigil = 5

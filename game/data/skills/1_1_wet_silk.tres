@@ -6,7 +6,7 @@
 script = ExtResource("1_skill")
 id = "wet_silk"
 display_name = "Wet Silk"
-description = "Douse soaks the silk its spray reaches. A wet web does not burn — it stands in the fire and catches what a geyser throws into it — and lightning stays in it twice as long."
+description = "Douse soaks the silk its drops go through. A wet web does not burn — it stands in the fire while what it holds burns — and lightning stays in it twice as long."
 kind = 2
 row = 1
 column = 1

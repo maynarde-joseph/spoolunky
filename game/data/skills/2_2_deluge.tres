@@ -6,7 +6,7 @@
 script = ExtResource("1_skill")
 id = "deluge"
 display_name = "Deluge"
-description = "Douse throws its water a third further, and the ground stays wet half as long again."
+description = "Douse leaves puddles a third wider, and they stay wet half as long again."
 kind = 1
 row = 2
 column = 2

@@ -1,12 +1,12 @@
 class_name WaterSpiral
 extends Node3D
 
-## A whirl of water, lifted off wet ground by the wind.
+## A whirl of water, lifted out of a puddle by the wind.
 ##
-## No spell casts it on its own. Douse wets the ground in a fan in front of the
-## spider; a Gust blown over that ground lifts the water into a whirl, which runs on
-## the way the wind blew, riding whatever the ground does on the way and breaking
-## on the first wall it meets — see [WetGround] and [Gust].
+## No spell casts it on its own. Douse leaves puddles where its drops land; a Gust
+## blown over one lifts the water into a whirl, which runs on the way the wind
+## blew, riding whatever the ground does on the way and breaking on the first wall
+## it meets — see [WetGround] and [Gust].
 ##
 ## It stops at the first thing it reaches and holds it there: round and round in
 ## the water, going nowhere and doing nothing, soaked and worn down a little, for a

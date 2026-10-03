@@ -46,8 +46,9 @@ signal notice(text: String)
 ## body heights, from a tap to a full wind-up.
 const SPIRAL_BODIES := Vector2(1.3, 1.6)
 
-## How far in front of the spider fire's circle hangs, in body heights: on the line
-## the breath will take, so it leaves through the middle of it.
+## How far in front of the spider fire's circle hangs, and water's, in body heights:
+## on the line the breath or the spit will take, so it leaves through the middle of
+## it.
 @export var circle_ahead := 0.75
 
 ## How wide that circle is, in body heights, from a tap to a full wind-up.
@@ -80,10 +81,10 @@ var _circle: MagicCircle = null
 var _pull_lines: MeshInstance3D
 var _pull_mesh: ImmediateMesh
 var _pull_paint: StandardMaterial3D
-## The fan a spray of water will cover, and the strip a gust of wind will blow
+## Where a spit of water will come down, and the strip a gust of wind will blow
 ## down, while they wind up.
-var _fan: MeshInstance3D
-var _fan_paint: StandardMaterial3D
+var _splash: MeshInstance3D
+var _splash_paint: StandardMaterial3D
 var _path: MeshInstance3D
 var _path_paint: StandardMaterial3D
 
@@ -140,7 +141,7 @@ func _process(delta: float) -> void:
 		# for this one alike. Two things easing one number is two things fighting.
 		_builder.framing_held = charging
 	_update_circle()
-	_update_fan()
+	_update_splash()
 	_update_path()
 	_update_pull_lines()
 
@@ -494,59 +495,74 @@ func _strike(spell: SpiderSpell, wound: float) -> Dictionary:
 	return {"cast": true, "at": at}
 
 
-## Water sprayed in a fan in front of the spider, out across the ground as far as
-## the wind-up throws it. Everything the spray catches is soaked and stung, a flier
-## comes down, and the ground stays wet for a while after: whatever stands on it
-## stays soaked. With Wet Silk learned, the silk the spray reaches is soaked too,
-## and a wet web does not burn — with Sodden Silk, it holds harder as well. See
-## [WetGround] and [WetSilk].
+## Water spat at the cross: a spray of drops out of the spider's jaws, arcing down
+## round where it points — more of them, leaving bigger puddles, the longer it was
+## wound up. What a drop hits is soaked and stung, and a flier comes down; where
+## drops land on the ground they leave puddles, and whatever stands in one stays
+## soaked. With Wet Silk learned, every web and line a drop goes through is soaked
+## too, and a wet web does not burn — with Sodden Silk, it holds harder as well.
+## See [WaterSpit], [WetGround] and [WetSilk].
 func _douse(spell: SpiderSpell, wound: float) -> Dictionary:
-	var from := feet_ground()
-	var heading := fan_heading()
-	var far := fan_reach(spell, wound)
-	var lasts := duration_of(spell, wound)
-	var wet := WetGround.spill(_host(), from, heading, far, lasts, spell.colour)
-	if wet == null:
+	var at := spit_target()
+	var mouthful := WaterSpit.spit(_host(), breath_origin(), at, spit_drops(wound),
+		body_height(), puddle_wide(spell, wound), duration_of(spell, wound),
+		power_of(spell, wound), spell.colour, knows(&"wet_silk"), knows(&"sodden_silk"))
+	if mouthful == null:
 		return {"cast": false}
-	var harm := power_of(spell, wound)
-	var soaked := 0
-	for node in get_tree().get_nodes_in_group("prey"):
-		var creature := node as Prey
-		if creature == null or not is_instance_valid(creature) or creature.eaten:
-			continue
-		if not _in_spray(creature.global_position, from, heading, far, creature.hit_radius()):
-			continue
-		creature.soak(WetGround.SOAK + lasts * 0.5)
-		creature.wound(harm)
-		soaked += 1
-	var webs := 0
-	if knows(&"wet_silk"):
-		var heavy := knows(&"sodden_silk")
-		for node in get_tree().get_nodes_in_group("silk_webs"):
-			var web := node as WebStructure
-			if web != null and not web.is_queued_for_deletion() \
-					and _spray_reaches(web, from, heading, far):
-				WetSilk.soak(web, lasts, heavy)
-				webs += 1
+	mouthful.landed.connect(_on_spit_landed)
+	return {"cast": true, "at": at}
+
+
+## Where a spit of water comes down: on whatever the cross is on — a creature, a
+## line, a web, the world — by the same pick everything else aims with. On open sky,
+## as far as silk reaches along the cross, and it falls on from there.
+func spit_target() -> Vector3:
+	return aim_target().get("point", _spider.global_position)
+
+
+## Which way a spit of water leaves the jaws: tipped up from the line to where it
+## will come down, by as much as the arc it is spat on needs.
+func spit_heading() -> Vector3:
+	var going := WaterSpit.launch(breath_origin(), spit_target(), body_height())
+	return going.normalized() if going.length_squared() > 0.000001 else _view.aim_forward()
+
+
+## How many drops a spit wound up to [param wound] throws.
+func spit_drops(wound: float) -> int:
+	return roundi(lerpf(WaterSpit.DROPS.x, WaterSpit.DROPS.y, clampf(wound, 0.0, 1.0)))
+
+
+## How wide a puddle each drop of a spit wound up to [param wound] leaves, from the
+## middle to the rim, in metres.
+func puddle_wide(spell: SpiderSpell, wound: float) -> float:
+	return size_of(spell, wound) * body_height()
+
+
+## How far from the cross a spit wound up to [param wound] wets, puddles and all,
+## in metres: where its drops scatter to, and a puddle's width past that.
+func splash_wide(spell: SpiderSpell, wound: float) -> float:
+	return puddle_wide(spell, wound) * (WaterSpit.SCATTER + 1.0)
+
+
+func _on_spit_landed(_spit: WaterSpit, soaked: Array[Prey], webs: int, _puddles: int) -> void:
 	var said := PackedStringArray()
-	if soaked > 0:
-		said.append("%d soaked" % soaked)
+	if not soaked.is_empty():
+		said.append("%d soaked" % soaked.size())
 	if webs > 0:
 		said.append("%d web%s wet — it will not burn" % [webs, "" if webs == 1 else "s"])
 	if not said.is_empty():
 		notice.emit("Douse — " + ", ".join(said))
-	return {"cast": true, "at": from + heading * far * 0.5}
 
 
 ## Wind blown down a lane in front of the spider, as far as the wind-up sends it:
 ## everything loose in it is shoved on down the lane and stung — into a web, if one
 ## is in the way, which catches it — and a boss only takes the sting. With
-## Waterspout learned, over ground Douse left wet it lifts the water into a whirl
-## that runs on down the lane, and holds the first thing it reaches. See [Gust] and
+## Waterspout learned, over a puddle Douse left it lifts the water into a whirl that
+## runs on down the lane, and holds the first thing it reaches. See [Gust] and
 ## [WaterSpiral].
 func _blow(spell: SpiderSpell, wound: float) -> Dictionary:
 	var from := feet_ground()
-	var heading := fan_heading()
+	var heading := lane_heading()
 	var far := lane_reach(spell, wound)
 	var wide := lane_wide(spell, wound)
 	var height := body_height()
@@ -556,39 +572,57 @@ func _blow(spell: SpiderSpell, wound: float) -> Dictionary:
 		power_of(spell, wound), spell.colour)
 	if gust == null:
 		return {"cast": false}
-	var whirls := 0
 	# Only with Waterspout learned does wind take the water up at all.
-	var spouts: Array = get_tree().get_nodes_in_group(WetGround.GROUP) \
-		if knows(&"waterspout") else []
-	for node in spouts:
-		var wet := node as WetGround
-		if wet == null or not wet.is_wet():
-			continue
-		var met: Variant = wet.met_by(from, heading, far, wide)
-		if met == null:
-			continue
-		var whirl := WaterSpiral.send(_host(), met, heading,
-			lerpf(SPIRAL_BODIES.x, SPIRAL_BODIES.y, wound) * height, wet.reach + far * 0.5,
-			WaterSpiral.PACE * height, duration_of(spell, wound), power_of(spell, wound) * 2.0,
-			_traits != null and _traits.acid_water(), venom_strength(), wet.colour)
-		wet.dry()
-		if whirl != null:
-			whirl.spent.connect(_on_whirl_spent)
-			whirls += 1
+	var whirl := _lift_water(spell, wound, from, heading, far, wide) \
+		if knows(&"waterspout") else null
 	var said := PackedStringArray()
 	if not gust.shoved.is_empty():
 		said.append("%d blown back" % gust.shoved.size())
-	if whirls > 0:
-		said.append("the wet ground whirls up")
+	if whirl != null:
+		said.append("the water whirls up")
 	if not said.is_empty():
 		notice.emit("Gust — " + ", ".join(said))
 	return {"cast": true, "at": from + heading * far * 0.5}
 
 
-## Which way a spray of water or a gust of wind goes: flat along the ground, from
-## the spider to what the cross is on — or the way the cross looks, if it is on the
-## sky or at the spider's feet.
-func fan_heading() -> Vector3:
+## The water a gust blown from [param from] along [param heading], [param far]
+## metres and [param wide] either side, takes up: one whirl, off the puddle nearest
+## the spider, running on to the end of the lane and half as far again — and every
+## puddle in the lane dries, because the wind took all of it. Null if the lane
+## crosses no puddle.
+func _lift_water(spell: SpiderSpell, wound: float, from: Vector3, heading: Vector3,
+		far: float, wide: float) -> WaterSpiral:
+	var met: Array[WetGround] = []
+	var nearest: WetGround = null
+	var nearest_out := INF
+	for node in get_tree().get_nodes_in_group(WetGround.GROUP):
+		var wet := node as WetGround
+		if wet == null or wet.is_queued_for_deletion() or not wet.met_by(from, heading, far, wide):
+			continue
+		met.append(wet)
+		var out := (wet.centre - from).dot(heading)
+		if out < nearest_out:
+			nearest_out = out
+			nearest = wet
+	if nearest == null:
+		return null
+	var height := body_height()
+	var whirl := WaterSpiral.send(_host(), nearest.centre, heading,
+		lerpf(SPIRAL_BODIES.x, SPIRAL_BODIES.y, wound) * height,
+		maxf(far - nearest_out, 0.0) + far * 0.5, WaterSpiral.PACE * height,
+		duration_of(spell, wound), power_of(spell, wound) * 2.0,
+		_traits != null and _traits.acid_water(), venom_strength(), nearest.colour)
+	for wet in met:
+		wet.dry()
+	if whirl != null:
+		whirl.spent.connect(_on_whirl_spent)
+	return whirl
+
+
+## Which way a gust of wind goes: flat along the ground, from the spider to what
+## the cross is on — or the way the cross looks, if it is on the sky or at the
+## spider's feet.
+func lane_heading() -> Vector3:
 	var target := aim_target(GameLayers.WORLD)
 	var toward: Vector3 = target.get("point", Vector3.ZERO) - _spider.global_position
 	toward.y = 0.0
@@ -599,11 +633,6 @@ func fan_heading() -> Vector3:
 		toward = -_spider.global_basis.z
 		toward.y = 0.0
 	return toward.normalized() if toward.length_squared() > 0.000001 else Vector3.FORWARD
-
-
-## How far a fan of water wound up to [param wound] reaches, in metres.
-func fan_reach(spell: SpiderSpell, wound: float) -> float:
-	return size_of(spell, wound) * body_height()
 
 
 ## How far a lane of wind wound up to [param wound] blows, in metres: its share of
@@ -618,34 +647,10 @@ func lane_wide(spell: SpiderSpell, wound: float) -> float:
 	return spell.size_at(wound) * body_height()
 
 
-## The ground under the spider, where water and wind leave from.
+## The ground under the spider, where wind leaves from.
 func feet_ground() -> Vector3:
 	return _ground({"point": _spider.global_position, "hit": false}) \
 		.get("point", _spider.global_position)
-
-
-## Whether the spray thrown from [param from] reaches [param point]: in the fan,
-## and within its height of the ground either way — it is thrown, so it catches
-## fliers too.
-func _in_spray(point: Vector3, from: Vector3, heading: Vector3, far: float,
-		margin: float) -> bool:
-	if not WetGround.in_fan(point, from, heading, far, margin):
-		return false
-	var rise := point.y - from.y
-	return rise >= -far * 0.5 - margin and rise <= far * 0.5 + margin
-
-
-## Whether any of [param web]'s silk is in the spray.
-func _spray_reaches(web: WebStructure, from: Vector3, heading: Vector3, far: float) -> bool:
-	var margin := body_height() * 0.2
-	for anchor in web.anchors:
-		if _in_spray(anchor, from, heading, far, margin):
-			return true
-	for step in range(1, 7):
-		var middle := from + heading * far * float(step) / 6.0 + Vector3.UP * body_height()
-		if _in_spray(web.nearest_silk(middle), from, heading, far, margin):
-			return true
-	return false
 
 
 func _on_whirl_spent(_whirl: WaterSpiral, held: Array[Prey]) -> void:
@@ -677,7 +682,8 @@ func _breathe(spell: SpiderSpell, wound: float) -> Dictionary:
 	return {"cast": true, "at": breath_origin() + breath_heading() * breath.reach}
 
 
-## Where a breath of fire comes from: the spider's jaws, where its aim starts.
+## Where a breath of fire comes from, or a spit of water: the spider's jaws, where
+## its aim starts.
 func breath_origin() -> Vector3:
 	return _view.aim_origin()
 
@@ -783,7 +789,7 @@ func venom_strength() -> float:
 ## and the line, if it is on one.
 ##
 ## [param mask] is what the cross can stop on. Silk by default, webs and lines
-## alike, because silk is something to aim at; a fan of water or wind looks straight
+## alike, because silk is something to aim at; a lane of wind looks straight
 ## through it to the floor.
 func aim_target(mask := GameLayers.WORLD | GameLayers.WEB_WALK) -> Dictionary:
 	var from := _view.aim_origin()
@@ -841,11 +847,11 @@ func _host() -> Node:
 # --- what you can see ----------------------------------------------------
 
 ## The circle a spell is drawn in while it winds up: where it will come from, as
-## wide as it will be, in its own colour and with its own star. Fire's hangs in
-## front of the spider's jaws on the line the breath will take; lightning's lies on
-## what it will strike; water's lies under the spider's feet with the fan ahead, and
-## wind's with the strip it will blow down. Silk has no circle: it is the ball of
-## silk, wound up by the builder.
+## wide as it will be, in its own colour and with its own star. Fire's and water's
+## hang in front of the spider's jaws on the line the breath or the spit will take,
+## water's with where it will come down laid on the ground; lightning's lies on what
+## it will strike; wind's lies under the spider's feet with the strip it will blow
+## down. Silk has no circle: it is the ball of silk, wound up by the builder.
 func _update_circle() -> void:
 	var spell := current()
 	var held := charging and spell != null and spell.form != SpiderSpell.Form.SILK \
@@ -887,8 +893,9 @@ func _cast_circle(spell: SpiderSpell, wound: float) -> void:
 func circle_at(spell: SpiderSpell, wound: float) -> Dictionary:
 	var height := body_height()
 	match spell.form:
-		SpiderSpell.Form.FIRE:
-			var heading := breath_heading()
+		SpiderSpell.Form.FIRE, SpiderSpell.Form.DOUSE:
+			var heading := breath_heading() if spell.form == SpiderSpell.Form.FIRE \
+				else spit_heading()
 			return {"where": MagicCircle.facing(breath_origin() + heading * height
 				* circle_ahead, heading),
 				"wide": height * lerpf(circle_bodies.x, circle_bodies.y, wound)}
@@ -921,30 +928,41 @@ func area_target(spell: SpiderSpell) -> Dictionary:
 
 
 ## Whether [param spell] lands on an area where you point, rather than leaving the
-## spider: breathed, sprayed, blown or called back.
+## spider: breathed, spat, blown or called back.
 func is_area(spell: SpiderSpell) -> bool:
 	return spell.form == SpiderSpell.Form.LIGHTNING
 
 
-## The fan a spray of water will cover, laid on the ground in front of the spider
-## while it winds up: which way it goes, and how far. Flat from the floor under the
-## spider, so on rough ground it is a guide rather than a promise.
-func _update_fan() -> void:
+## Where a spit of water will come down, laid on what the cross is on while it
+## winds up: a round as wide as its drops will scatter, puddles and all.
+func _update_splash() -> void:
 	var spell := current()
-	var shown := charging and spell != null and _view != null and _spider != null \
-		and spell.form == SpiderSpell.Form.DOUSE
-	if shown and _fan == null:
-		_build_fan()
-	if _fan == null:
+	var shown := charging and spell != null and spell.form == SpiderSpell.Form.DOUSE \
+		and _view != null and _spider != null
+	if shown and _splash == null:
+		_splash = _preview("SpellSplash", _disc())
+		_splash_paint = _splash.material_override as StandardMaterial3D
+	if _splash == null:
 		return
-	_fan.visible = shown
+	_splash.visible = shown
 	if not shown:
 		return
-	var heading := fan_heading()
-	var far := maxf(fan_reach(spell, charge), 0.01)
-	_fan.global_transform = Transform3D(Basis.looking_at(heading, Vector3.UP).scaled(
-		Vector3.ONE * far), feet_ground() + Vector3.UP * body_height() * 0.05)
-	_fan_paint.albedo_color = Color(spell.colour.r, spell.colour.g, spell.colour.b, 0.28)
+	var target := aim_target()
+	var up: Vector3 = target.get("normal", Vector3.UP)
+	var wide := splash_wide(spell, charge)
+	var lie := MagicCircle.facing(target.get("point", _spider.global_position)
+		+ up * body_height() * 0.03, up)
+	_splash.global_transform = Transform3D(lie.basis * Basis.from_scale(Vector3(wide, 1.0,
+		wide)), lie.origin)
+	_splash_paint.albedo_color = Color(spell.colour.r, spell.colour.g, spell.colour.b, 0.28)
+
+
+## How far out from the cross the round a spit will come down in reaches while it
+## winds up, in metres: for a check. Nought when none is showing.
+func splash_shown() -> float:
+	if _splash == null or not _splash.visible:
+		return 0.0
+	return _splash.global_basis.get_scale().x
 
 
 ## The strip a gust of wind will blow down, as long and as wide as it will be, laid
@@ -956,13 +974,16 @@ func _update_path() -> void:
 	var shown := charging and spell != null and spell.form == SpiderSpell.Form.GUST \
 		and _view != null and _spider != null
 	if shown and _path == null:
-		_build_path()
+		var strip := PlaneMesh.new()
+		strip.size = Vector2.ONE
+		_path = _preview("SpellPath", strip)
+		_path_paint = _path.material_override as StandardMaterial3D
 	if _path == null:
 		return
 	_path.visible = shown
 	if not shown:
 		return
-	var heading := fan_heading()
+	var heading := lane_heading()
 	var far := maxf(lane_reach(spell, charge), 0.01)
 	var wide := lane_wide(spell, charge) * 2.0
 	# Scaled along its own axes, not the world's: as wide as the lane across it and
@@ -973,21 +994,36 @@ func _update_path() -> void:
 	_path_paint.albedo_color = Color(spell.colour.r, spell.colour.g, spell.colour.b, 0.3)
 
 
-func _build_path() -> void:
-	var strip := PlaneMesh.new()
-	strip.size = Vector2.ONE
-	_path_paint = StandardMaterial3D.new()
-	_path_paint.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_path_paint.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_path_paint.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_path = MeshInstance3D.new()
-	_path.name = "SpellPath"
-	_path.mesh = strip
-	_path.material_override = _path_paint
-	_path.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_path.top_level = true
-	_path.visible = false
-	add_child(_path)
+## A see-through shape laid in the world while a spell winds up, hidden until it is
+## wanted: where a spit will come down, or the strip a gust will blow down.
+func _preview(part_name: String, shape: Mesh) -> MeshInstance3D:
+	var paint := StandardMaterial3D.new()
+	paint.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	paint.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	paint.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var part := MeshInstance3D.new()
+	part.name = part_name
+	part.mesh = shape
+	part.material_override = paint
+	part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	part.top_level = true
+	part.visible = false
+	add_child(part)
+	return part
+
+
+## A flat round of unit radius, lying in its own XZ plane.
+func _disc() -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var sides := 32
+	for i in sides:
+		var a := TAU * float(i) / float(sides)
+		var b := TAU * float(i + 1) / float(sides)
+		tool.add_vertex(Vector3.ZERO)
+		tool.add_vertex(Vector3(cos(a), 0.0, sin(a)))
+		tool.add_vertex(Vector3(cos(b), 0.0, sin(b)))
+	return tool.commit()
 
 
 ## How far down the ground the strip runs while a gust winds up, in metres: for a
@@ -1035,40 +1071,6 @@ func pull_lines_shown() -> int:
 	if _pull_lines == null or not _pull_lines.visible:
 		return 0
 	return _pull_mesh.get_surface_count()
-
-
-## A fan of unit reach, opening [constant WetGround.SPREAD] either side of ahead.
-func _build_fan() -> void:
-	var tool := SurfaceTool.new()
-	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var sides := 16
-	for i in sides:
-		var a := deg_to_rad(lerpf(-WetGround.SPREAD, WetGround.SPREAD, float(i) / float(sides)))
-		var b := deg_to_rad(lerpf(-WetGround.SPREAD, WetGround.SPREAD,
-			float(i + 1) / float(sides)))
-		tool.add_vertex(Vector3.ZERO)
-		tool.add_vertex(Vector3(sin(a), 0.0, -cos(a)))
-		tool.add_vertex(Vector3(sin(b), 0.0, -cos(b)))
-	_fan_paint = StandardMaterial3D.new()
-	_fan_paint.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_fan_paint.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_fan_paint.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_fan = MeshInstance3D.new()
-	_fan.name = "SpellFan"
-	_fan.mesh = tool.commit()
-	_fan.material_override = _fan_paint
-	_fan.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_fan.top_level = true
-	_fan.visible = false
-	add_child(_fan)
-
-
-## How far out the fan reaches while a wind-up is held, in metres: for a check.
-## Nought when no fan is showing.
-func fan_shown() -> float:
-	if _fan == null or not _fan.visible:
-		return 0.0
-	return _fan.global_basis.get_scale().x
 
 
 # --- keeping up with the spider ------------------------------------------

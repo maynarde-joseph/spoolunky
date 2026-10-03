@@ -8,9 +8,9 @@ extends Node3D
 ## so wind is how you drive prey into silk. A boss stands its ground and only takes
 ## the sting.
 ##
-## Over wet ground it does more: with Waterspout learned, the spider's spells lift
-## the water into a whirl that runs on down the lane, and stops at the first thing
-## it reaches and holds it there — see [WetGround] and [WaterSpiral].
+## Over a puddle it does more: with Waterspout learned, it lifts the water into a
+## whirl that runs on down the lane, and stops at the first thing it reaches and
+## holds it there — see [WetGround] and [WaterSpiral].
 
 const GROUP := "gusts"
 
