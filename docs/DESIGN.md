@@ -489,18 +489,11 @@ bolt comes out of it. Earth's lies round the foot of the pillar to come. Wind's
 lies under the spider's feet, with the strip it will
 blow down laid out on the ground ahead. The
 pullback's is drawn round the spider, with a thin line out to every web it will
-call in. The web's are three small ones going all round the ball of silk it winds
-up over the spider's back — the same circle as every other spell's, small, facing
-out from the ball — growing with the ball as you hold, and flaring away as the web
-is thrown. Each weaves a path of its own: a ring tipped by its own amount, whose
-tip turns slowly round the ball, gone round at its own speed and in its own
-direction, weaving back and forth across it and swelling in and out as it goes
-(`SpiderSpells.orbit_offset`). None of the rates divides into another, so between
-them the three cover the whole ball and never quite retrace a path — for a handful
-of sines a circle a frame, which is nothing worth baking a path to save. (For a
-while it was one circle bent onto the ball itself; small, curved, and seen across
-a ball at a slant, it never read as cleanly as the flat ones. Then the three went
-round one level ring, which read as a ring, not as magic.)
+call in. The web has none: the ball of silk it winds up over the spider's back,
+growing and brightening as you hold, is its own show. (Circles on the ball were
+tried three ways — one bent onto the ball itself, three going round it in a ring,
+and three weaving all round it on paths of their own — and the bare ball read
+best.)
 
 **One aim for all of them.** The crosshair is the only aiming there is, and it
 is the same for everything: silk goes from the spider to whatever the cross is

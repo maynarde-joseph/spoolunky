@@ -52,30 +52,6 @@ const SPIRAL_BODIES := Vector2(1.3, 1.6)
 const PILLAR_BODIES := 0.6
 const PILLAR_RING := 1.6
 
-## Silk's circles while the ball of silk winds up: how many go round it, how big
-## each is and how far out from the ball's middle it goes round, as shares of the
-## ball's radius, and the least their lines are, in metres.
-const ORBIT_COUNT := 3
-const ORBIT_SIZE := 0.5
-const ORBIT_OUT := 1.8
-const ORBIT_LINE := 0.001
-
-## Each circle's own way round the ball, one entry per circle: how fast it goes
-## round its ring, in radians a second (the sign is which way); how far that ring is
-## tipped from level, in radians; how fast the tip itself turns about the ball; and
-## how many times a lap the circle weaves back and forth across its ring. None of
-## the rates divides into another, so between them the three go all round the ball
-## and no path ever quite repeats. See [method orbit_offset].
-const ORBIT_SPEEDS := [1.6, -1.9, 2.3]
-const ORBIT_TILTS := [0.45, 1.0, 1.4]
-const ORBIT_DRIFTS := [0.37, -0.29, 0.23]
-const ORBIT_WEAVES := [2.0, 3.0, 2.0]
-
-## How far a circle weaves off its ring, in radians, and how much it swells out
-## from the ball and back as it goes, as a share of [constant ORBIT_OUT].
-const ORBIT_WEAVE := 0.35
-const ORBIT_SWELL := 0.08
-
 ## How far in front of the spider fire's circle hangs, and water's, in body heights:
 ## on the line the breath or the spit will take, so it leaves through the middle of
 ## it.
@@ -106,11 +82,6 @@ var _builder: WebBuilder
 var _tree: SpellTree
 ## The circle drawn while a spell winds up, until it goes.
 var _circle: MagicCircle = null
-
-## Silk's circles, going round the ball of silk while it winds up, and how long
-## they have been going round.
-var _orbit: Array[MagicCircle] = []
-var _orbit_age := 0.0
 
 ## Lines out to the webs a Pullback will call in, while it winds up.
 var _pull_lines: MeshInstance3D
@@ -176,7 +147,6 @@ func _process(delta: float) -> void:
 		# for this one alike. Two things easing one number is two things fighting.
 		_builder.framing_held = charging
 	_update_circle()
-	_update_orbit(delta)
 	_update_splash()
 	_update_path()
 	_update_pull_lines()
@@ -954,8 +924,8 @@ func _host() -> Node:
 ## hang in front of the spider's jaws on the line the breath or the spit will take,
 ## water's with where it will come down laid on the ground; lightning's lies on what
 ## it will strike, and earth's where the pillar will come up; wind's lies under the
-## spider's feet with the strip it will blow down. Silk's are three small ones going
-## round the ball of silk: see [method _update_orbit].
+## spider's feet with the strip it will blow down. Silk has no circle: it is the
+## ball of silk, wound up by the builder.
 func _update_circle() -> void:
 	var spell := current()
 	var held := charging and spell != null and spell.form != SpiderSpell.Form.SILK \
@@ -972,70 +942,6 @@ func _update_circle() -> void:
 			spell.sigil)
 	else:
 		_circle.hold(place["where"], place["wide"])
-
-
-## Silk's circles: [constant ORBIT_COUNT] small ones — the same circle every other
-## spell is drawn in, in silk's colour with its six-pointed star — going all round
-## the ball of silk the builder winds up over the spider's back, each on a weaving
-## path of its own (see [method orbit_offset]) and facing out from the ball. They
-## grow with the ball, and flare away as the web is thrown, or fade if the throw is
-## given up.
-func _update_orbit(delta: float) -> void:
-	if _builder == null or not _builder.aiming or _spider == null:
-		for circle in _orbit:
-			if is_instance_valid(circle):
-				circle.release()
-		_orbit.clear()
-		_orbit_age = 0.0
-		return
-	_orbit_age += delta
-	var ball := _builder.ball_radius(_builder.charge)
-	var centre := _builder.held_centre()
-	var up := _builder.held_up()
-	var side := up.cross(Vector3.FORWARD if absf(up.dot(Vector3.FORWARD)) < 0.95
-		else Vector3.RIGHT).normalized()
-	var ahead := side.cross(up).normalized()
-	if _orbit.is_empty():
-		var thread := hand()[0] if not hand().is_empty() else null
-		for i in ORBIT_COUNT:
-			var circle := MagicCircle.draw(_host(), Transform3D(Basis.IDENTITY, centre),
-				ball * ORBIT_SIZE, thread.colour if thread != null else Color.WHITE,
-				thread.sigil if thread != null else 6, ORBIT_LINE)
-			if circle != null:
-				_orbit.append(circle)
-	for i in _orbit.size():
-		var circle := _orbit[i]
-		if not is_instance_valid(circle):
-			continue
-		var out := orbit_offset(i, _orbit_age, side, ahead, up)
-		circle.hold(MagicCircle.facing(centre + out * ball, out.normalized()),
-			ball * ORBIT_SIZE)
-
-
-## Where circle [param index] of silk's orbit is, [param age] seconds into the
-## wind-up, from the middle of the ball, in ball radii; [param side], [param ahead]
-## and [param up] square to one another, [param up] being the ball's.
-##
-## A ring tipped from level by the circle's own tilt, about a hinge that turns
-## slowly round the ball, so the ring sweeps round it; the circle going round the
-## ring at its own speed, weaving back and forth across it and swelling in and out
-## as it goes. A handful of sines a circle a frame — nothing worth keeping a path
-## for.
-static func orbit_offset(index: int, age: float, side: Vector3, ahead: Vector3,
-		up: Vector3) -> Vector3:
-	var speed: float = ORBIT_SPEEDS[index % ORBIT_SPEEDS.size()]
-	var tilt: float = ORBIT_TILTS[index % ORBIT_TILTS.size()]
-	var drift: float = ORBIT_DRIFTS[index % ORBIT_DRIFTS.size()]
-	var weaves: float = ORBIT_WEAVES[index % ORBIT_WEAVES.size()]
-	var start := TAU * float(index) / float(ORBIT_COUNT)
-	var turn := start + age * drift
-	var hinge := side * cos(turn) + ahead * sin(turn)
-	var normal := up.rotated(hinge, tilt)
-	var across := normal.cross(hinge)
-	var lap := start + age * speed
-	var weave := ORBIT_WEAVE * sin(weaves * lap + start)
-	var heading := (hinge * cos(lap) + across * sin(lap)) * cos(weave) + normal * sin(weave)
-	return heading * ORBIT_OUT * (1.0 + ORBIT_SWELL * sin((weaves + 1.0) * lap - start))
 
 
 ## The circle [param spell] leaves through, wound up to [param wound]: the one held

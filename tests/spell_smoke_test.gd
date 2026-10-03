@@ -525,68 +525,14 @@ func _test_spells_leave_through_circles() -> void:
 	aim_at(centre)
 	await process_frame
 
-	# Silk: three small circles going round the ball of silk over the spider's back,
-	# growing with it. Held the way a player holds it: the spider lets go for you if
-	# the key is up.
+	# Held the way a player holds it: the spider lets go for you if the key is up.
 	spells.take(1)
-	var silk := spells.current()
 	send_action(spider.input_shoot)
 	await run_frames(6)
-	var orbit := _circles()
-	if check(builder.aiming and orbit.size() == SpiderSpells.ORBIT_COUNT,
-			"winding up silk draws %d circles (%d)" % [SpiderSpells.ORBIT_COUNT, orbit.size()]):
-		var ball := builder.ball_radius(builder.charge)
-		var ball_at := builder.held_centre()
-		var around := true
-		for circle in orbit:
-			var out := circle.global_position.distance_to(ball_at)
-			around = around \
-				and out > ball * SpiderSpells.ORBIT_OUT * (1.0 - SpiderSpells.ORBIT_SWELL) - height * 0.02 \
-				and out < ball * SpiderSpells.ORBIT_OUT * (1.0 + SpiderSpells.ORBIT_SWELL) + height * 0.02
-		check(around, "going round the ball of silk, a little way out from it")
-		check(orbit[0].radius < ball and orbit[0].points == silk.sigil,
-			"small, smaller than the ball (%.2f m to its %.2f m), with silk's own star (%d)"
-			% [orbit[0].radius, ball, orbit[0].points])
-		var was := orbit[0].global_position - ball_at
-		var small := orbit[0].radius
-		builder.track(0.5)
-		await run_frames(6)
-		check(orbit[0].radius > small * 1.2, "growing as the ball does (%.2f -> %.2f m)"
-			% [small, orbit[0].radius])
-		check((orbit[0].global_position - builder.held_centre()).angle_to(was) > 0.05,
-			"and going round it")
-		# All round it, each its own way: between them above the ball and below it,
-		# not round one ring, and no two going round about the same axis.
-		var turning: Array[Vector3] = []
-		for circle in orbit:
-			turning.append(circle.global_position - builder.held_centre())
-		var low := INF
-		var high := -INF
-		for frame in 30:
-			await run_frames(1)
-			var reach := builder.ball_radius(builder.charge) * SpiderSpells.ORBIT_OUT
-			for i in orbit.size():
-				var offset := orbit[i].global_position - builder.held_centre()
-				if frame == 5:
-					turning[i] = turning[i].cross(offset).normalized()
-				low = minf(low, offset.dot(builder.held_up()) / reach)
-				high = maxf(high, offset.dot(builder.held_up()) / reach)
-		check(high - low > 0.8, "all round the ball, above it and below it (%.2f to %.2f of the way out)"
-			% [low, high])
-		var apart := PI
-		for i in turning.size():
-			for j in range(i + 1, turning.size()):
-				apart = minf(apart, turning[i].angle_to(turning[j]))
-		check(apart > 0.35, "each on a path of its own (axes %.0f° apart at the least)"
-			% rad_to_deg(apart))
-		spells.cancel_cast()
-		release_action(spider.input_shoot)
-		await run_frames(2)
-		var fading := true
-		for circle in orbit:
-			fading = fading and circle.is_fading()
-		check(fading, "given up, they fade")
-	await wait_until(func() -> bool: return _circles().is_empty(), 90)
+	check(builder.aiming and _circles().is_empty(), "winding up silk is a ball of silk, not a circle")
+	spells.cancel_cast()
+	release_action(spider.input_shoot)
+	await run_frames(2)
 
 	# Fire: in front of the spider's jaws, on the line the breath will take.
 	spells.take(5)
@@ -690,19 +636,6 @@ func _test_spells_leave_through_circles() -> void:
 	spells.cancel_cast()
 	release_action(spider.input_shoot)
 	await run_frames(2)
-	await wait_until(func() -> bool: return _circles().is_empty(), 90)
-
-	# Silk again, thrown this time: the circles flare away as the web goes.
-	spells.take(1)
-	send_action(spider.input_shoot)
-	await run_frames(6)
-	orbit = _circles()
-	if check(orbit.size() == SpiderSpells.ORBIT_COUNT, "a ball of silk wound up again"):
-		release_action(spider.input_shoot)
-		await run_frames(3)
-		check(builder.shot_in_flight() or web_count() > 0, "let go, the web is thrown")
-		check(orbit[0].is_fading() and orbit[2].is_fading(),
-			"and its circles flare away as it goes")
 	await wait_until(func() -> bool: return _circles().is_empty(), 90)
 
 	# Earth: on the ground where the pillar will come up, round its foot.

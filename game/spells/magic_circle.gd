@@ -23,7 +23,7 @@ const FADE := 0.35
 const TURN := Vector2(0.6, -1.1)
 
 ## How wide its lines are, as a share of its radius, and never thinner than this
-## many metres, unless it was drawn finer: see [method draw].
+## many metres.
 const LINE := 0.018
 const LINE_LEAST := 0.003
 
@@ -43,10 +43,6 @@ var colour := Color(0.8, 0.85, 1.0, 1.0)
 ## for lightning and so on, so two circles side by side can be told apart.
 var points := 6
 
-## The least its lines are, in metres. A small circle is drawn finer, or the
-## floor a circle on the ground needs would make its lines fat.
-var line_least := LINE_LEAST
-
 var _age := 0.0
 var _let_go := -1.0
 var _band: MeshInstance3D
@@ -55,10 +51,9 @@ var _paint: StandardMaterial3D
 
 
 ## Draws one under [param host] at [param where], [param wide] metres across from
-## the middle to the rim, in [param tint], with a [param star_points]-pointed star,
-## its lines never thinner than [param least] metres.
+## the middle to the rim, in [param tint], with a [param star_points]-pointed star.
 static func draw(host: Node, where: Transform3D, wide: float, tint: Color,
-		star_points := 6, least := LINE_LEAST) -> MagicCircle:
+		star_points := 6) -> MagicCircle:
 	if host == null:
 		return null
 	var circle := MagicCircle.new()
@@ -66,7 +61,6 @@ static func draw(host: Node, where: Transform3D, wide: float, tint: Color,
 	circle.radius = maxf(wide, 0.02)
 	circle.colour = tint
 	circle.points = maxi(star_points, 3)
-	circle.line_least = maxf(least, 0.0005)
 	circle.add_to_group("spell_effects")
 	host.add_child(circle)
 	circle.global_transform = where
@@ -222,4 +216,4 @@ static func _at(turn: float, across: float) -> Vector3:
 
 
 func _width() -> float:
-	return maxf(LINE, line_least / maxf(radius, 0.02))
+	return maxf(LINE, LINE_LEAST / maxf(radius, 0.02))
