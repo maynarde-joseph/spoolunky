@@ -26,7 +26,7 @@ const SPECIES_DIR := "res://game/data/training"
 @export var species_id := "dummy_post"
 
 ## How far from the post the creature is allowed to wander before it is put back.
-## A runner you have to chase across the gym is not a target.
+## A runner you have to chase across the room is not a target.
 @export var leash := 9.0
 
 var _kind: PreySpecies

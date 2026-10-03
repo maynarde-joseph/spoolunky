@@ -4,7 +4,7 @@ extends Node
 ## The living part of a level: what time of day it is, and what is near what.
 ##
 ## Creatures only have needs where there is one of these. In a level without it —
-## the sandbox, the gym, the test arenas — they wander as they always have,
+## the sandbox, the colosseum, the test arenas — they wander as they always have,
 ## hungry for nothing and afraid of nothing, which is what every check written
 ## before there was an ecosystem was written against. Put one in a level and the
 ## same creatures start to live there: they get hungry, they go and find what they

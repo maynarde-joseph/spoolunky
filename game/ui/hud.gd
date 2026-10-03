@@ -44,8 +44,7 @@ Right Mouse  (hold)    wind it up: a bigger web, more drops of water, a
                        spells in your loadout
 E                      the spell tree — catching and eating earn ranks,
                        ranks earn points, points learn spells
-F                      wrap prey, then drain it — in the Hollow Wood
-                       a meal mends you; at a shrine, rest
+F                      wrap prey, then drain it; at a shrine, rest
 X                      pull down the web you're looking at
 O                      the spider's look: detailed, low poly or minimal
 

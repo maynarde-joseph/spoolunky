@@ -92,7 +92,7 @@ func record(species: PreySpecies) -> void:
 
 
 ## Whether [param species] is one of the game's creatures, rather than a practice
-## target off a post in the gym. Those are drunk like anything else, but they are
+## target off a training post. Those are drunk like anything else, but they are
 ## not in the world, and nothing about them counts toward what you are.
 static func is_wild(species: PreySpecies) -> bool:
 	return species != null and PreyLibrary.find(species.id) != null
@@ -257,8 +257,8 @@ func take(gift: SpiderTrait, source := "") -> bool:
 ## The size tier with every owned trait folded into it.
 ##
 ## This is the whole mechanism. Scales multiply, bonuses add, and the result is
-## an ordinary [GrowthStage] — so the climb component, the web builder, the
-## thresholds and the HUD all pick the traits up without knowing they exist.
+## an ordinary [GrowthStage] — so the climb component, the web builder and the
+## HUD all pick the traits up without knowing they exist.
 func shape(base: GrowthStage) -> GrowthStage:
 	if base == null:
 		return GrowthStage.new()

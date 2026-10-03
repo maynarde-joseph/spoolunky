@@ -4,6 +4,13 @@
 > of a wild valley. You end the biggest thing in it, with the wyvern that hunts
 > the whole valley hanging in your web. The only way up is to eat.
 
+**Where it stands now.** The game opens in the Colosseum (§4), an arena built from
+a kit of pieces. The valley that pitch describes and the Hollow Wood after it (§12)
+are gone, the spider is held at one size — there is no growing for now (§3) — and
+what the game around the colosseum is going to be is still being decided. What
+follows keeps the reasoning for everything still in the game, and for what was
+tried.
+
 ---
 
 ## 1. The pitch
@@ -437,14 +444,12 @@ goes, and they now get an answer with the traits folded in. Taking one is
 announced down the same channel as growing a tier, so the body resizes through
 the code that already did that.
 
-**Gates take either key.** A threshold names a size *and* may name a trait, and
-either opens it — a lid that gives to a Huntsman, or to a Hollow Frame that
-folds through its slots. The hunting ground has none: its creatures are its
-gates (§4). But the gym keeps three, and a level that wants one has it. With
-traits coming by chance, the size is the key you can always count on and the
-trait is the shortcut luck may hand you early. The gate never says which key you
-are missing. It dips and settles back, the same as always, and the answer is
-what you go and try.
+**Gates took either key.** A threshold named a size *and* could name a trait, and
+either opened it — a lid that gave to a Huntsman, or to a Hollow Frame that folded
+through its slots. With traits coming by chance, the size was the key you could
+always count on and the trait the shortcut luck might hand you early. Only the
+gym had any, and they went with it: with one size and no traits there is nothing
+left for a gate like that to ask.
 
 **The screen.** Opened on **E**. Nothing on it is bought any more, so it is a
 map rather than a shop: every trait you do not have says what carries it and
@@ -718,6 +723,40 @@ needs the spells it is between).
 
 ## 4. The world
 
+### The Colosseum — where it starts now
+
+The game opens in an arena: a square of sand thirty-six metres across, walled four
+high with columns along the foot of the wall, and a gate in the middle of each
+side. Behind the wall the stands go up in three tiers, four metres a tier, with
+stairs up each, to a rim of open windows twelve metres up. Each gate leads through
+a cut in the stands to a shut door in the outside wall — four ways out to places
+not built yet. Nothing lives in it.
+
+It is built from a kit rather than from the project's own solids: seventy-five
+pieces in `Pieces/` — walls with and without doors and windows, corners, pillars
+and columns, stairs, ramps, railings, floor tiles, blocks — on a two-metre grid.
+The kit is used at its own scale, a metre to a unit, against a spider seven tenths
+of a metre tall: a wall is nearly six spiders high and a door four. With no growing
+there is one body to build for, so every gap, ledge and room can be sized to what
+that body does — and since a spider climbs everything, height never stops it;
+distance, a surface it cannot hold and a shut door are what can.
+
+Each piece is made solid as it is imported (`tools/kit_import.gd`): centred on its
+origin, base on the ground, and a collider the shape of its mesh on the world
+layer, so everything that can be seen can be stood on and silked. The bulk — each
+tier of the stands — is a `KitBlock`, the kit's own wall stretched to size with a
+box to stand on, so a building is a few dozen nodes and still wears the kit's
+look. `Colosseum` places everything and the bake saves it as a scene of real nodes
+to move about in the editor.
+
+It is white until the kit's palette texture is added; the pieces point at it and
+take their colours from it when it is there.
+
+### What came before
+
+The rest of this section is the world as it was until the colosseum replaced it:
+a valley, and then the Hollow Wood (§12). Both are gone. The reasoning stays.
+
 One wild valley — the hunting ground — laid out the way a hunting ground is in
 the games it is named for: a camp to set out from, and round it the places things
 live, each its own country with its own creatures and its own danger. Seven
@@ -889,27 +928,6 @@ the design size and then magnified. That magnification was the pixelisation.
 Sizes live in one block at the top of `hud.gd` and are applied in code, not left
 as per-label overrides in the scene — a size that lives in nine places is a size
 nobody adjusts.
-
----
-
-### 4.8 The testbed — a gym, not a place
-
-`game/world/testbed.tscn` is the workshop; the project opens the hunting ground.
-Nine stations on one flat floor, fifty-two metres by forty, all in sight of the
-middle: corners for web fitting, three slots wide to narrow, a wall-overhang-
-ceiling run with slopes at twenty through eighty degrees, grapple anchors at
-one/three/seven/thirteen metres, a roof with a hole for draglines, two posts of
-different heights for a zipline, the three size gates side by side, a prey pen,
-and a hole in the floor for falling out of the world.
-
-It exists because the hunting ground (§4.1–4.7) is the best part of eight
-hundred metres across, so checking whether a web fits a corner meant a walk,
-and checking a *different* corner meant another one.
-
-**The rule for adding to it:** a station tests one thing and says on it what
-that thing is — the signs are the documentation, because a gym you have to read
-a file to use is a gym nobody uses. If you cannot tell what a station is for by
-standing in front of it, it needs a better shape, not a longer sign.
 
 ---
 
@@ -2132,8 +2150,8 @@ too much for a Ruin Stalker's silk — until it has lost a fight with a boar and
 limping home across the glade, past the web you strung there. Watching is a way of
 hunting: what is out, where it is going, what just hurt it.
 
-Without an `Ecosystem` in a level none of this runs. The sandbox, the gym and the
-test arenas have creatures that wander as they always did, hungry for nothing and
+Without an `Ecosystem` in a level none of this runs. The sandbox, the colosseum and
+the test arenas have creatures that wander as they always did, hungry for nothing and
 afraid of nothing, which is what every check written before the ecosystem was
 written against.
 
@@ -2453,6 +2471,14 @@ spell — the Clay Pillar — makes the loadout's limit bite.
 Left: more interactions between spells and silk, a second tier for the pillar,
 and the tree's numbers played and tuned.
 
+**Milestone 9 — The Colosseum** *(started)*
+Done: the hunting ground, the Hollow Wood and the gym taken out, with the props
+and the bakes that only they used; a kit of pieces brought in and made solid on
+import; and the colosseum built from it, which the game opens. The spider is held
+at one size.
+Left: what the game around it is — where the four ways out lead, and what lives
+in the arena.
+
 ---
 
 ## 11. Design guardrails
@@ -2509,6 +2535,11 @@ and the tree's numbers played and tuned.
 ---
 
 ## 12. The Hollow Wood — a souls-like prototype
+
+The wood itself is gone, replaced by the Colosseum (§4). What it was built to try
+is all still in the game, waiting for a level to be put in: shrines and waking,
+creatures that fight back with attacks they tell you about, a lair that seals, and
+two bosses. What follows is the wood as it was.
 
 The valley is a hunting ground: nothing in it means you harm, it simply eats
 things your size, and growing is how you stop being one of them. The Hollow Wood

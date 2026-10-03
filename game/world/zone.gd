@@ -12,7 +12,8 @@ extends Node3D
 @export var display_name := "Somewhere"
 
 ## Which size tier this place is built around, for sanity-checking the scale
-## rather than for gating anything. Gating is the thresholds' job.
+## rather than for gating anything. Nought to nought for a place built for no size
+## in particular, and the HUD says nothing about it.
 @export var built_for := Vector2(0.25, 0.4)
 
 ## The volume this zone claims, in world space.

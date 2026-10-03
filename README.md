@@ -1,13 +1,8 @@
 # Spoolunky
 
-A first-person spider game in Godot 4.6, set in a wild valley that gets on with
-its life whether you are in it or not. You start the size of a coin in a hollow
-stump at the valley's edge, spin webs to catch whatever walks into them, and eat
-your way across it — through the ferns, into the caves under the great tree's
-roots, out over the glade and up into the ruins — until the wyvern circling the
-crag is something you could eat. Everything out there is eating something too:
-hares graze the glade, foxes hunt the hares, wolves come out at dusk for the
-foxes, and what is not eaten goes home and breeds.
+A spider game in Godot 4.6. You climb anything — walls and ceilings are floors
+to a spider — swing and zip on your own silk, spin webs to catch what walks into
+them, and fight with what you can cast.
 
 You are a spider wizard. The thrown web is the first spell, and what you catch and
 eat earns the rest: experience makes rank — Apprentice Spooder up to Grand
@@ -19,20 +14,16 @@ work off your silk and each other — webs that will not burn, webs left live,
 lightning run along your lines, wind over a puddle lifting a whirl; and shorter
 waits. Five spells ride on your keys beside the web.
 
-The project opens somewhere else now, though: **the Hollow Wood**, a prototype of a
-second shape for the game. A stretch of old forest floor under the sky with ruins
-standing in it — a ring of standing stones where you wake, a ruined court, a walled
-graveyard, a chapel with its roof fallen in, a watchtower on a hill, a barrow dug
-into a mound, and a mire — each a place you walk up to, scout from outside and go
-into. Everything in it is hostile and fights back with attacks you can learn to
-read, and the way to beat a thing is the way to catch a monster: wear it down,
-then wrap it. The spider is one size the whole way through, with every spell from
-the start; there is a miniboss sealed in the barrow and a main boss that flies the
-rounds of the whole wood. The structures are greybox on purpose: it is there to
-find out whether the shape is fun.
+The project opens in **the Colosseum**, where the game will start: an arena built
+from the kit of pieces in `Pieces/`, with stands going up in tiers round the sand
+and a way out in the middle of each side to a door that does not open yet. Nothing
+lives in it. The levels that came before — the hunting ground, the Hollow Wood and
+the gym — are gone, and what the game around the colosseum is going to be is still
+being decided. The spider is one size, a Huntsman, with every spell from the start.
 
-The full pitch — the loop, the size tiers, the world and what lives in it, the
-trap catalogue, and the Hollow Wood (§12) — is in [`docs/DESIGN.md`](docs/DESIGN.md).
+The design notes — the loop, the spells and how they work off each other, the trap
+catalogue, the creatures and what fights back — are in
+[`docs/DESIGN.md`](docs/DESIGN.md).
 
 ## Where things are
 
@@ -58,19 +49,19 @@ game/
              mind every creature in it has
   rig/       bodies: bones, meshes skinned to them, and the motion that poses them
   ui/        HUD
-  world/     the Hollow Wood, the hunting ground and the gym, the kit and the
-             paints they are built from, the props they are furnished with, day
-             and night, gates, and the shrines, marks, shortcuts and lair
-tools/       the bakes that turn builders into scenes, and the tab check
+  world/     the colosseum, the kit's pieces placed by name and stretched into
+             blocks, the paints, day and night, places, and the shrines, marks,
+             shortcuts, lair and training posts
+Pieces/      the kit: walls, pillars, stairs and the rest, as .fbx
+tools/       the import that makes each piece solid, the bake that turns the
+             colosseum into a scene, and the tab check
 tests/       seven headless suites and screenshot tools
   support/   what the suites share: the verdict, and the arena a web check runs in
 addons/character-controller/   the movement template the spider is built on
 ```
 
-The project opens the Hollow Wood, `game/world/hollow_wood.tscn`. The hunting ground,
-`game/world/hunting_ground.tscn`, is the other game, and opening it in the editor
-and pressing F6 plays it. The sandbox the web, spell and combat suites run in is the
-character-controller example level
+The project opens the colosseum, `game/world/colosseum.tscn`. The sandbox the
+web, spell and combat suites run in is the character-controller example level
 (`addons/character-controller/example/main/level.tscn`), with the spider, a HUD, a
 `Webs` container and a prey spawner dropped into it. A `Devices` container is made
 on demand the first time you put something down.
@@ -97,7 +88,7 @@ one kept to what the keys do today.
 | **Right Mouse** | **cast what is in hand** — the web, to start with: tap, or hold to wind it up |
 | **1, 2–6** | **take a spell in hand** — 1 is always the web; 2 to 6 are the five spells in your loadout. The wheel turns through them too |
 | **E** | the **spell tree** — your rank, the points to spend, every skill and where it stands. Click a skill to learn it; click a spell you know to put it on a key or take it off |
-| **F** | wrap caught prey, then drain it (also re-arms a sprung snare). In the Hollow Wood a meal mends you, and at a shrine **F** rests |
+| **F** | wrap caught prey, then drain it (also re-arms a sprung snare). At a shrine **F** rests |
 | **Y** | **put a line on a bundle and drag it along** — again to drop what you're carrying |
 | **X** | pull down the web you're looking at, for half the silk back — or pick a device back up |
 | **G** | wire two things together — web or device, press on each end |
@@ -454,7 +445,7 @@ An insect's is an `InsectBody`, where every size, colour and part is a number, a
 a species points at one with its `body` field. One without is still drawn as the
 old placeholder ball.
 
-In the hunting ground the insects keep hours: moths, mosquitoes and fireflies come
+In a level with an `Ecosystem` the insects keep hours: moths, mosquitoes and fireflies come
 out at night, and bees, butterflies, flies and wasps by day.
 
 Past the insects are the creatures of the wilds, whose species say so with a
@@ -639,45 +630,64 @@ up in the build wheel — the library scans that folder. The fields that matter
 most are `shape` (strand or net), `trigger` (passive, alert, snare or lure),
 `unlock_stage`, the three silk costs, and `hold_strength` / `durability`.
 
-## The Hollow Wood
+## The Colosseum
 
-`game/world/hollow_wood.tscn` is what the project opens: a stretch of old forest
-floor, out under a grey late sky, with ruins standing in it. Ferns, toadstools,
-fallen leaves and the old trees fill the ground between the places, and worn paths
-run from the clearing to all of them. The spider is a Huntsman the whole way
-through — eating here neither grows it nor passes anything on — every spell and
-every interaction is known from the start with no limit on the keys (the tiers
-and the shorter waits are still earned, rank by rank), and nothing mends it but a
-shrine and a meal: drink something you have wrapped and you get some of yourself
-back.
+`game/world/colosseum.tscn` is what the project opens, and where the game will
+start: an arena built from the kit in `Pieces/`. A square of sand thirty-six metres
+across, walled four high, with columns along the foot of the wall and in the
+corners, and a gate in the middle of each side. Behind the wall the stands go up in
+three tiers, four metres a tier, with stairs climbing each one, to a rim of open
+windows twelve metres up. Each gate leads through a cut in the stands to a shut
+door in the outside wall — four ways to somewhere not built yet. Outside is grass.
 
-* **The Shrine Clearing**, in the south: a ring of standing stones round a dais and
-  a shrine. You wake here, and nothing hostile comes in.
-* **The Ruined Court**, in the middle: old paving, arches and broken walls, columns
-  and a dry fountain. Blade rats and charger beetles, and the wyrm likes it here.
-* **The Graveyard**, east: a walled yard of stones and dead trees, frogs among the
-  stones and mosquitoes over them, and a crypt with a shrine inside.
-* **The Chapel**, west: a long hall with its roof fallen in over the south end,
-  tall shelves in aisles, bats and wasps, and a gallery with a shrine on it. Its
-  great door is open; its side door, towards the clearing, opens only from inside.
-* **The Watchtower**, north, on a hill: four floors with a hole in each, open to
-  the sky at the top, where there is a shrine. Its door is shut and opens from the
-  inside — so the way in is up its outside and down through it.
-* **The Barrow**, north-east: a hall dug into a mound at the end of a cutting, with
-  a shrine before it. **The Rat King** keeps it: step inside with the king alive
-  and a veil drops over the door until one of you is beaten.
-* **The Mire**, south-west: a sunken bog of reeds and lily pads, and frogs.
+You start on the sand, back from the south gate, facing in. The spider is a
+Huntsman the whole way through — eating neither grows it nor passes anything on —
+with every spell and every interaction known from the start; the tiers and the
+shorter waits are still earned, rank by rank. Nothing lives here yet. Walk in and
+the HUD names the place.
 
-**Shrines.** Touch one and it is lit, and it is where you wake when you are
-driven off. Rest at one (**F**) and you are whole again — and every hostile is back
-on its feet at its mark. Driven off, the same: you wake at the last shrine you lit
-and the place has stirred. Your webs stay. A boss that beat you is back at its
-post; one you have beaten stays beaten. A door, once opened, stays open.
+Everything in it is solid: climb the wall, string silk between the columns — four
+metres apart, inside a strand's reach — walk the tiers, look out over the rim. Fall
+out of the world and you are put back on the sand.
 
-**What lives here fights back.** Every attack is told before it lands — the
-creature stops, turns to you, and a ring or a line in the attack's colour shows
-where it is going — then the strike, then a moment it stands open, which is when
-to put silk on it. Each hostile has a bite and one move of its own:
+It is all white for now, and will be until the kit's colours are in: every piece's
+material points at `Pieces/aap color palette.png`, which did not come with the
+pieces. Put that file in `Pieces/` and the kit takes its colours — the stands with
+it, because they are the kit's own wall stretched. The sand and the grass are the
+project's own paints.
+
+## The kit
+
+`Pieces/` holds the kit: seventy-five pieces as `.fbx` — walls plain, with a door,
+with a window and round a corner; pillars and columns; door frames; stairs and
+ramps; fences and railings; floor tiles; blocks; and odds like a key, a coin and a
+lever. They are built on a two-metre grid, and to the spider's scale as they are:
+a wall is four metres long and four high, a door three high, and the spider seven
+tenths of a metre.
+
+Each comes in through `tools/kit_import.gd`, which every piece's import names. The
+pieces came out of their files wherever they sat in the scene they were made in;
+the import centres each one's footprint on its origin with its base on the ground,
+and makes it a body on the world layer with a collider the shape of its mesh —
+solid from both sides where the mesh is a sheet. So a piece dragged from `Pieces/`
+into a scene stands where you drop it, and is something the spider can walk on and
+stick silk to. The project's default for scenes names the same script, so a piece
+added later comes in the same way. Godot does not reimport when only the script
+changes, so after changing it, select the pieces and **Reimport**.
+
+`Kit` puts a piece down by name from code. `KitBlock` is a solid of any size in the
+look of one of the pieces — that piece's mesh stretched to fit, and a box to stand
+on — for the bulk of a building: each tier of the stands is one, where in walls it
+would be thirty. Change its `size` in the inspector and the block follows.
+
+## What fights back
+
+Nothing in the colosseum fights yet, but everything that did in the Hollow Wood is
+still in the game, ready to put in a level.
+
+Every attack is told before it lands — the creature stops, turns to you, and a ring
+or a line in the attack's colour shows where it is going — then the strike, then a
+moment it stands open, which is when to put silk on it. Each hostile has a bite and one move of its own:
 
 | Hostile | Its move | The answer |
 |---|---|---|
@@ -701,69 +711,25 @@ place to keep it while you do. Unless it is wet: a web you have doused stands in
 the flame while what it holds burns.
 
 And two bosses, named across the foot of the screen with their health and wrap:
-**the Rat King**, sealed in the Barrow, which whirls and cuts every thread round
-it, calls blade rats and pounces; and **the Hollow Wyrm**, which keeps to no place
-but flies the rounds of the whole wood, and dives, spits fire, tears silk down
-with a gust and sweeps with its tail. Beating the Rat King gives you what it kept:
-Wing Buds, a glide.
+**the Rat King**, which whirls and cuts every thread round it, calls blade rats and
+pounces, and seals its lair until one of you is beaten; and **the Hollow Wyrm**,
+which flies a round of its own, and dives, spits fire, tears silk down with a gust
+and sweeps with its tail. Beating the Rat King gives you what it kept: Wing Buds,
+a glide.
 
-**The line grapple** is one key away: **G** switches from the pull to a grapple
-that lays a line from your feet to where you point and hangs you from its near
-end. W zips you along it, and off its end onto whatever it is tied to.
+**Shrines.** Touch one and it is lit, and it is where you wake when you are
+driven off. Rest at one (**F**) and you are whole again — and every hostile is back
+on its feet at its mark. Driven off, the same: you wake at the last shrine you lit
+and the place has stirred. Your webs stay. A boss that beat you is back at its
+post; one you have beaten stays beaten. A door, once opened, stays open.
 
-## The hunting ground
+## A level can be alive
 
-`game/world/hunting_ground.tscn` is the other game: one wild valley, laid out the way a
-hunting ground is in the games it is named for — a camp to set out from, and round
-it the places things live, each its own country with its own creatures and its
-own danger. It is all to one scale — a metre is about fourteen of its units — and
-it is the spider that changes size.
-
-* **The Camp**, at the south edge: a hollow stump open toward the valley, with
-  moss on its floor and a glowcap for a lamp. Nothing lives here and nothing comes
-  looking. It is where you start, and where you are put back if you fall out of
-  the world.
-* **The Fern Floor**, between the camp and the glade: ferns overhead, toadstools
-  with caps like roofs, pebbles that are boulders, fallen leaves, an anthill and a
-  puddle. Midges, flies, ants and beetles by day; moths and fireflies at night,
-  and mosquitoes over the puddle.
-* **The Rootways**, in the west: the great tree, three and a half metres through,
-  its roots arching over the hollow it stands in so that under each is a cave.
-  Shelf fungus up the bark to climb by, a hollow log to walk the length of, and
-  glowcaps lighting the caves at night. What lives here comes out in the dark:
-  roaches, rats, moths and beetles, and bats that hang under the roots by day.
-* **The Bloom Glade**, the open middle: a meadow in flower, with tall grass and
-  wildflowers to string silk between, brambles of berries, a ring of standing
-  stones, a wild hive and a wasps' nest. The busiest place in the valley by day —
-  bees and butterflies over the flowers and wasps hunting them, hares in the grass
-  and a fox after the hares, songbirds in the trees, and stags grazing all of it.
-* **The Old Ruins**, up on a shelf of ground in the north-west: broken walls round
-  a courtyard, a gateway, columns standing and fallen, a tower with its top broken
-  away, and in the courtyard a statue of a great spider. Lizards on the walls,
-  ravens on the tower, boars in the rubble, rats and roaches out of it at night,
-  and wolves denned at the tower's foot.
-* **The Mere**, in the east: a round lake with an island in it, a birch on the
-  island, lily pads and reeds. Fish graze the weed on its bottom, the Mire Kraken lies in the
-  deepest part, and the Mere Leviathan, which nothing hunts, goes where it likes in
-  all of it. Frogs sit on the banks, and stags and wolves come down to the shore.
-  The water is water: a spider in it swims, and nothing that lives in it comes out.
-* **Wyrm's Crag**, in the north: a rock tower weathered into ledges, with spires
-  standing off it and, in the bowl on top, the wyvern's nest of branches, bones
-  and three eggs. Nothing lives up there but ravens. The wyvern hunts the whole
-  valley.
-
-Each place is built for a stretch of the spider's sizes, smallest nearest the
-camp, so the way across the valley is the way up the sizes. But nothing shuts the
-way to any of it: what keeps a spiderling out of the crag is that the crag would
-eat it. Walk into a place and the HUD names it, and what size it was built for.
-
-## The valley is alive
-
-The hunting ground has an `Ecosystem` in it, which is what makes the creatures in
-it live rather than wander. A day goes round in twelve minutes, with the time in
-the corner of the HUD: the sun goes over and sets, the moon comes up after it, and
-the sky goes with them (`DayNight`). The colours the level was built with are its
-noon, and the rest of the day is worked out from them.
+Put an `Ecosystem` in a level and the creatures in it live rather than wander. None
+has one now — the hunting ground that did is gone — but it is all still there. A
+day goes round in twelve minutes, with the time in the corner of the HUD: the sun
+goes over and sets, the moon comes up after it, and the sky goes with them
+(`DayNight`).
 
 * **Everything gets hungry**, at its own rate, and goes to find what it eats:
   patches of forage — moss, toadstools, flowers, grass, berries — that it eats
@@ -773,7 +739,7 @@ noon, and the rest of the day is worked out from them.
 * **Everything is afraid** of what would eat it, and runs: from as far off as it
   can see the thing if it is hunting, and only up close if it is not. A wary one
   keeps clear of a spider big enough to eat it, too.
-* **Dens** put their creatures out when the valley opens and breed them on what
+* **Dens** put their creatures out when the level opens and breed them on what
   they eat: every meal is put by, and a new one is born when enough has been. A
   den whose creatures go hungry dwindles, and one that is hunted out is found again
   in the end by a stray of its kind.
@@ -792,67 +758,38 @@ on it, and then fewer hares.
 
 ## Levels are scenes, not scripts
 
-`hollow_wood.tscn`, `hunting_ground.tscn` and `testbed.tscn` hold their geometry
-as real nodes, so anything in them can be selected and moved in the editor. They
-did not start that way — each was assembled in `_ready()` from `hollow_wood.gd`,
-`hunting_ground.gd` and `testbed.gd`, which is quick to write and impossible to
-tweak, because there is nothing in the editor to tweak.
-
-Those scripts are still there as the **generator of record**. To throw the
-hand-placed version away and build the shape again from scratch:
+`colosseum.tscn` holds its pieces as real nodes, so anything in it can be selected
+and moved in the editor. `Colosseum` (`game/world/colosseum.gd`) is the generator
+of record — it says where every piece goes — and `tools/bake_level.gd` runs it and
+saves the scene:
 
 ```sh
-godot --headless --script res://tools/bake_level.gd -- testbed hunting_ground hollow_wood --force
+godot --headless --path . --script res://tools/bake_level.gd -- --force
 ```
 
-What the Hollow Wood holds that is not geometry — shrines, the marks hostiles
-stand up at, the doors that open from inside, the lair — is nodes with scripts of
-their own, which survive the bake and pick their pieces back up when the scene is
-loaded.
-
-Without `--force` it looks at a baked level and leaves it alone, so running it by
-accident costs nothing.
-
-The world is built out of `WorldKit` solids — each one a mesh and a collider of
-the same shape, so everything you can see you can stand on and stick silk to —
-painted from the `Palette`, a few flat matte paints kept one to a file in
-`game/world/materials/`. Change a colour there and everything painted with it
-follows. The ground is one height map, drawn in pieces and collided as one. The
-shapes the builder makes a point at a time — the valley's ground, the hollow log —
-are kept by the bake in `game/world/meshes/`, one compressed file each, rather
-than written into the scene as numbers.
-
-The things in it — thirty-one of them, from an acorn to a fallen pillar — are
-**props**: each built in `game/world/props.gd` and baked into its own scene in
-`game/world/props/`, so the world holds instances of them and the editor has them
-to drag in. Like the levels, a prop that has a scene is left alone unless you say
-otherwise:
-
-```sh
-godot --headless --path . --script res://tools/bake_props.gd -- --force fern
-```
+Without `--force` it leaves a scene that is already there alone, because building
+it again throws away anything moved by hand. Nothing is added to the tree while it
+builds, so nothing in the level runs on the way: what is saved is what the
+generator said and no more.
 
 One thing to know if you add to a level: **only `@export` properties survive being
 saved into a scene.** A value set in code on a plain `var` is there while the
 builder runs and gone the moment it is baked — which is how the zones ended up
 measuring nothing and the gates stopped opening the first time round. And a
-change made *inside* an instanced scene is not saved either; what the builder
-hangs on a prop after putting it down is the one exception the bake keeps.
+change made *inside* an instanced scene — a piece, the spider — is not saved
+either.
 
-## The gym
+## Training posts
 
-`game/world/testbed.tscn` is a signed practice room — one station per thing the
-game does. The **DUMMIES** station is the one for fights: three creatures on
-posts with their numbers over their heads, showing how much silk is on them, how
-long the venom has left, what that has done to their speed, and what a web would
-have to hold to take them. One stands still, one runs at a wasp's pace so you can
-watch silk take its legs, and one comes for you. Finish one and the post stands a
-fresh one up.
-
-They are ordinary creatures, so silk, venom, webs, hauling and eating all work on
-them exactly as they work on anything else — and their species live in
-`game/data/training/` rather than `game/data/prey/`, so they never spawn in the
-world, fill the larder or pass on traits.
+`TrainingDummy` is a creature on a post with its combat numbers over its head — how
+much silk is on it, how long the venom has left, what that has done to its speed,
+and what a web would have to hold to take it — and a fresh one stood up when you
+finish the last. There are three in `game/data/training/`: one that stands still,
+one that runs at a wasp's pace, and one that comes for you. They lived in the gym,
+which is gone, and none is placed anywhere now. They are ordinary creatures, so
+silk, venom, webs, hauling and eating all work on them as on anything else, and
+their species live outside `game/data/prey/`, so they never spawn, fill the larder
+or pass on traits.
 
 ## Running the tests
 
@@ -871,22 +808,18 @@ back, in a plain box room:
 godot --headless --script res://tests/climb_smoke_test.gd
 ```
 
-A third loads the hunting ground, the gym and the Hollow Wood and checks the
-levels themselves — that the seven places are all there, none inside another, and
-every size has one built for it; that there is a sun and a sky, and a day and a
-night to drive them; that every species has a den somewhere, every place has
-forage, and everything that roams has haunts to roam between; that there is ground
-under every place and hills round the edge; that the spider starts in the camp, on
-its floor, with the HUD naming it; that the Mere is full of water and nothing in it
-comes out; that every prop is something to stand on; in the gym, that every
-station is signed and the spider lands on the floor rather than through it; and in
-the Hollow Wood, that the spider is held at a Huntsman with every spell open, every
-place is there with ground under it and every one but the clearing and the belfry
-has something hostile in it, one shrine is lit and the rest are cold, the chapel,
-the crypt and the barrow can be walked into while the two doors that open from
-inside are shut until their levers are touched, the Rat King keeps the Barrow, the
-wyrm's beat can be flown end to end, and being driven off wakes you whole in the
-clearing:
+A third checks the kit and the colosseum: that every piece comes in as a body on
+the world layer, centred on its origin with its base on the ground, and that a
+sheet is solid from both sides; that a block is the size it says, to look at and
+to stand on; that the game opens in the colosseum, with the spider a Huntsman with
+every spell open, on the sand where it was put and the HUD naming the place; that
+everything in it is solid; that the arena is walled all round, with a gate in each
+side that is a door's height and a way out behind it to a shut door; that the
+tiers step up four at a time with a flight of stairs up each, and there are windows
+in the rim; that the spider walks on the sand and stands in the ways out and on the
+grass outside; and that the training posts each stand a creature up — one that
+stands, one that runs, one that bites, none seeing past its leash — with a readout
+that says what a web would need:
 
 ```sh
 godot --headless --script res://tests/world_smoke_test.gd
@@ -1005,30 +938,14 @@ xvfb-run -a godot --rendering-driver opengl3 --resolution 800x600 \
     --script res://tests/screenshot_creatures.gd
 ```
 
-And every prop, one at a time and on one sheet, `props.png` — built from the
-script, so a change shows before it is baked:
-
-```sh
-xvfb-run -a godot --rendering-driver opengl3 --resolution 800x600 \
-    --path . --script res://tests/screenshot_props.gd
-```
-
-And the hunting ground from a set of named places, each at an hour of its own —
-the camp, the fern floor, the caves under the great tree, the glade by day and at
-night, the ruins' gate, the Mere's shore, its island and under it, the Mere at
-dusk, the wyvern's nest, and the valley from above. Name them after `--` to render
-only those, for instance `-- camp glade_at_night`:
+And the colosseum from a set of named places — from above, the arena, from the
+rim, the south gate, the way out behind it, and from outside. Name them after `--`
+to render only those, for instance `-- arena from_the_rim`:
 
 ```sh
 xvfb-run -a godot --rendering-driver opengl3 --resolution 1280x720 \
     --path . --script res://tests/screenshot_world.gd
 ```
 
-Put `wood` first to photograph the Hollow Wood instead — the clearing, the court,
-the graveyard and its crypt, the chapel outside and in, the watchtower and its
-belfry, the barrow outside and in, the mire, and the wood from above:
-
-```sh
-xvfb-run -a godot --rendering-driver opengl3 --resolution 1280x720 \
     --path . --script res://tests/screenshot_world.gd -- wood
 ```
