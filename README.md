@@ -398,15 +398,12 @@ up. Everything else is learned:
   holds the first thing it reaches. **Live Silk**: lightning stays in a web, and
   the web strikes whatever touches it. **Live Lines**: lightning runs along your
   lines to every web they tie together.
-* **Some come with the spells**, nothing to learn once you know both. **Wind
-  blows webs**: a web in the gust's lane comes off its anchors and flies on down
-  it, wrapping what it passes, and drops what it held bundled where the wind ends
-  — while a web just past the end stays put and catches what the wind blows in.
-  **A wet web soaks**: called back, blown or flung, a web Douse left wet soaks what
-  it passes, ready for lightning. **Fire boils water**: breathe on a puddle and it
-  goes up as steam that soaks and scalds whatever is in it, fliers included.
-  Which comes first decides: each is the second spell acting on what the first
-  left behind — and some pairs have nothing, rather than a bigger number.
+* **Some come with the spells**, nothing to learn once you know both. **A wet web
+  soaks**: called back or flung, a web Douse left wet soaks what it passes, ready
+  for lightning. **Fire boils water**: breathe on a puddle and it goes up as steam
+  that soaks and scalds whatever is in it, fliers included. Which comes first
+  decides: each is the second spell acting on what the first left behind — and
+  some pairs have nothing, rather than a bigger number.
 * **Five on the keys.** The web is always on 1 and five spells ride on 2 to 6. A
   spell learned goes on the next free key; the tree takes one off or puts one on.
 
@@ -906,7 +903,7 @@ five and the tree on **E** — the strip that shows the keys, and what each spel
 — to what it lands on, and to the other spells and the silk it meets, before and
 after the interaction that lets it. Lightning run down a wire to a
 wasp across the room and left live in the web, a spit that leaves puddles where it
-lands and the silk it goes through wet, a gust that blows a beetle into a web and a web down the lane, the
+lands and the silk it goes through wet, a gust that blows a beetle into a web, the
 whirl wind lifts out of a puddle holding the first thing it reaches, acid water, a
 square pillar of clay that throws what stands on it — the spider included — and flings
 the web it comes up under, a breath of fire swept from

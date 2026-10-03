@@ -6,7 +6,7 @@
 script = ExtResource("1_skill")
 id = "gust"
 display_name = "Gust"
-description = "Wind blown down a lane in front of you, as far as you wind it up. It shoves what it catches on down the lane and stings it — into a web past its end, if one is there. A web in the lane is blown down it, wrapping what it passes."
+description = "Wind blown down a lane in front of you, as far as you wind it up. It shoves what it catches on down the lane and stings it — into a web, if one is in the way."
 kind = 0
 row = 0
 column = 1

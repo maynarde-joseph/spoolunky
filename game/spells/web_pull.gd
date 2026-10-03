@@ -16,9 +16,8 @@ extends Node3D
 ## while it flies, or one pull through a crowd would sweep up the lot.
 ##
 ## A clay pillar coming up under a web throws it the same way, only up off the
-## pillar's top rather than in to the spider, and a gust blows it the same way on
-## down its lane: what it held comes down bundled where it ends up. See
-## [method fling], [ClayPillar] and [Gust].
+## pillar's top rather than in to the spider: what it held comes down bundled where
+## it ends up. See [method fling] and [ClayPillar].
 
 ## Reached the spider. [param took] is how many bundles it brought.
 signal arrived(pull: WebPull, took: int)
