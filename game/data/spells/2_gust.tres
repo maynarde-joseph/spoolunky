@@ -6,7 +6,7 @@
 script = ExtResource("1_spell")
 id = "gust"
 display_name = "Gust"
-description = "Wind blown down a lane in front of you — the longer you hold, the further it goes. It shoves what it reaches on down the lane and stings it — into a web, if one is in the way, which catches it."
+description = "Wind blown down a lane in front of you — the longer you hold, the further it goes. It shoves what it reaches on down the lane and stings it — into a web just past its end, which catches it. A web in the lane goes with the wind, wrapping what it passes."
 form = 5
 order = 2
 cooldown = 6.0

@@ -872,8 +872,11 @@ func _test_douse() -> void:
 
 ## Wind blown down a lane in front of the spider, further the longer it is wound
 ## up: everything loose in it is shoved on down the lane and stung, a boss only
-## stung, and what it blows into a web the web catches; beside the lane, or past its
-## end, the wind does nothing.
+## stung, and what it blows into a web past the lane's end the web catches; beside
+## the lane, or past its end, the wind does nothing. A web in the lane goes with the
+## wind — off its anchors and down the lane, wrapping what it passes, its catch
+## coming down bundled where the wind drops it — but not the one the spider stands
+## on.
 func _test_gust() -> void:
 	var gust := spells.by_id("gust")
 	if not check(gust != null and gust.form == SpiderSpell.Form.GUST, "there is Gust in the book"):
@@ -924,25 +927,78 @@ func _test_gust() -> void:
 	check(is_equal_approx(aside.health(), 1.0), "the fly beside the lane is left alone")
 	check(is_equal_approx(beyond.health(), 1.0), "and so is the beetle past its end")
 
-	# Blown into a web, it is caught.
+	# Blown into a web just past the end of the lane, it is caught: the web is out of
+	# the wind, so it stays where it is.
 	spells.forget_waits()
 	clear_prey_near(start + ahead * far * 0.5, far * 2.0, null)
-	var walker := spawn("beetle", start + ahead * far * 0.3 + Vector3(0.0, 0.2, 0.0))
-	if not check(walker != null, "a beetle in front of a web"):
+	var walker := spawn("beetle", start + ahead * (far - height) + Vector3(0.0, 0.2, 0.0))
+	if not check(walker != null, "a beetle at the end of the lane"):
 		return
 	walker.aggression = 0.0
 	walker.move_speed = 0.0
 	walker.struggle_stamina = 30.0
 	var half := height * 1.2
-	var web := _spin(walker.global_position + ahead * height * 2.0
+	var web := _spin(start + ahead * (far + height * 1.5)
 		+ Vector3.UP * (half - height * 0.3), half)
-	if not check(web != null, "and the web"):
+	if not check(web != null, "and a web just past it"):
 		return
 	await physics_frame
 	check(not walker.is_stuck(), "loose to start with")
 	check(spells.cast_now(gust), "blown at it")
 	var caught: bool = await wait_until(func() -> bool: return walker.is_stuck(), 60)
-	check(caught and walker.held_by() == web, "blown into the web, it is caught")
+	check(caught and walker.held_by() == web and not web.called_back,
+		"blown into the web, it is caught, and the web stays put")
+
+	# A web in the lane goes with the wind: off its anchors and down the lane, whole,
+	# wrapping what it passes, and what it held comes down bundled where the wind
+	# drops it.
+	spells.forget_waits()
+	clear_webs()
+	clear_prey_near(start + ahead * far * 0.5, far * 2.0, null)
+	await physics_frame
+	var sail := _spin(start + ahead * far * 0.3 + Vector3.UP * (half - height * 0.3),
+		half) as WebNet
+	if not check(sail != null, "a web standing in the lane"):
+		return
+	var frame_lines := sail.frame().size()
+	var held := spawn("fly", sail.signal_point())
+	var downwind := spawn("beetle", start + ahead * far * 0.6 + Vector3(0.0, 0.2, 0.0))
+	await physics_frame
+	await physics_frame
+	if not check(held != null and held.is_stuck() and downwind != null,
+			"with a fly in it, and a beetle further down the lane"):
+		return
+	held.move_speed = 0.0
+	downwind.aggression = 0.0
+	downwind.move_speed = 0.0
+	downwind.struggle_stamina = 30.0
+	var sail_id := sail.get_instance_id()
+	check(spells.cast_now(gust), "blown at it")
+	await physics_frame
+	check(is_instance_valid(sail) and sail.called_back and sail.frame().is_empty()
+		and frame_lines > 0, "the web comes off its anchors, its frame coming down")
+	var went: bool = await wait_until(func() -> bool: return not is_instance_id_valid(sail_id), 120)
+	check(went, "and goes on down the lane")
+	check(downwind.silk_on() > 0.0 or downwind.is_bundled(),
+		"wrapping the beetle it passes (%d%% wrapped)" % roundi(downwind.silk_on() * 100.0))
+	var landed := (held.global_position - start).dot(ahead)
+	check(held.is_bundled() and landed > far * 0.7,
+		"and the fly comes down bundled where the wind drops it (%.1f m out, the lane %.1f m)"
+		% [landed, far])
+
+	# Not the web the spider is standing on: the floor stays under its feet.
+	spells.forget_waits()
+	clear_prey_near(start, far * 2.0, null)
+	var floor_web := _spin_flat(start + Vector3.UP * 0.03, height * 1.5) as WebNet
+	if not check(floor_web != null, "a web lying under the spider"):
+		return
+	stand_on(start)
+	await run_frames(20)
+	check(spells.cast_now(gust), "blown from on top of it")
+	await physics_frame
+	check(is_instance_valid(floor_web) and not floor_web.called_back,
+		"and the web underfoot stays where it is")
+	clear_webs()
 
 
 ## Wind over a puddle lifts the water into a whirl that runs on the way the wind

@@ -4,9 +4,14 @@ extends Node3D
 ## A gust of wind, blown down a lane in front of the spider.
 ##
 ## It shoves everything loose in the lane on down it, away from the spider, and
-## stings it on the way. Anything it blows into one of your webs, the web catches —
-## so wind is how you drive prey into silk. A boss stands its ground and only takes
-## the sting.
+## stings it on the way. Anything it blows into a web past the end of the lane, the
+## web catches — so wind is how you drive prey into silk. A boss stands its ground
+## and only takes the sting.
+##
+## A web in the lane goes with the wind: off its anchors and on down the lane, whole,
+## wrapping what it passes through the way a web called back does, and what it held
+## comes down bundled where the wind drops it — see [WebPull]. Not lines, which are
+## roads, and not the web the spider is standing on.
 ##
 ## Over a puddle it does more: with Waterspout learned, it lifts the water into a
 ## whirl that runs on down the lane, and stops at the first thing it reaches and
@@ -33,6 +38,10 @@ const REACH_DOWN := 0.3
 ## How long its streaks are on screen, in seconds.
 const SHOWN := 0.5
 
+## How far a web it blows goes at the least, as a share of the lane: a web near its
+## end still goes somewhere.
+const CARRY := 0.5
+
 ## Where it blows from, which way, how far, and how wide either side of its middle,
 ## in metres.
 var apex := Vector3.ZERO
@@ -47,9 +56,16 @@ var harm := 0.05
 
 var colour := Color(0.82, 0.94, 0.9, 1.0)
 
-## Everything it shoved, and everything it stung, in the order it reached them.
+## How tall the one who blew it is, for how near a web it blows has to come to where
+## it is going; and the spider, whose web underfoot it leaves be.
+var body := 0.25
+var caster: Node3D = null
+
+## Everything it shoved, and everything it stung, in the order it reached them, and
+## the webs it blew away.
 var shoved: Array[Prey] = []
 var stung: Array[Prey] = []
+var blown: Array[WebNet] = []
 
 var _age := 0.0
 var _paint: StandardMaterial3D
@@ -59,10 +75,11 @@ var _streaks: MeshInstance3D
 ## Blows one under [param host] from [param from] along [param toward], laid flat,
 ## out to [param far] metres and [param half_width] either side, shoving at
 ## [param strength] metres a second and taking [param sting] of a creature's
-## health. It has blown by the time this returns, so what it reached can be read
-## straight off it.
+## health, for [param spider], [param body_height] metres tall. It has blown by the
+## time this returns, so what it reached can be read straight off it.
 static func blow(host: Node, from: Vector3, toward: Vector3, far: float, half_width: float,
-		strength: float, sting: float, tint := Color(0.82, 0.94, 0.9, 1.0)) -> Gust:
+		strength: float, sting: float, tint := Color(0.82, 0.94, 0.9, 1.0),
+		body_height := 0.25, spider: Node3D = null) -> Gust:
 	var flat := Vector3(toward.x, 0.0, toward.z)
 	if host == null or flat.length_squared() < 0.000001 or far <= 0.0:
 		return null
@@ -74,6 +91,8 @@ static func blow(host: Node, from: Vector3, toward: Vector3, far: float, half_wi
 	gust.push = strength
 	gust.harm = sting
 	gust.colour = tint
+	gust.body = maxf(body_height, 0.05)
+	gust.caster = spider
 	gust.add_to_group(GROUP)
 	gust.add_to_group("spell_effects")
 	host.add_child(gust)
@@ -122,6 +141,33 @@ func _blow() -> void:
 			stung.append(creature)
 		if creature.shove(heading * push + Vector3.UP * push * LIFT, THROW):
 			shoved.append(creature)
+	_blow_webs()
+
+
+## Every web in the lane goes with the wind, whole and at its pace, on to the end of
+## the lane — or half its length, if it was nearly there.
+func _blow_webs() -> void:
+	for node in get_tree().get_nodes_in_group("silk_webs"):
+		var net := node as WebNet
+		if net == null or net.is_queued_for_deletion() or net.called_back:
+			continue
+		# Its middle in the wind, not just an edge: a web just past the end of the lane
+		# is one the wind blows things into, and it has to stay put for that.
+		var middle := net.signal_point()
+		if not reaches(middle):
+			continue
+		if caster != null and is_instance_valid(caster) \
+				and net.reaches(caster.global_position, body * 0.6):
+			continue
+		var out := Vector2(middle.x - apex.x, middle.z - apex.z).dot(
+			Vector2(heading.x, heading.z))
+		var goal := middle + heading * maxf(reach - out, reach * CARRY)
+		# Off its anchors: the frame it was walked round on comes down as it goes.
+		for line in net.frame():
+			line.demolish()
+		if WebPull.fling(get_parent(), net, goal, push, maxf(net.radius, body * 0.5), 1.0,
+				body) != null:
+			blown.append(net)
 
 
 func _process(delta: float) -> void:

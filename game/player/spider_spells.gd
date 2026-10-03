@@ -571,11 +571,12 @@ func _on_spit_landed(_spit: WaterSpit, soaked: Array[Prey], webs: int, _puddles:
 
 
 ## Wind blown down a lane in front of the spider, as far as the wind-up sends it:
-## everything loose in it is shoved on down the lane and stung — into a web, if one
-## is in the way, which catches it — and a boss only takes the sting. With
-## Waterspout learned, over a puddle Douse left it lifts the water into a whirl that
-## runs on down the lane, and holds the first thing it reaches. See [Gust] and
-## [WaterSpiral].
+## everything loose in it is shoved on down the lane and stung — into a web past the
+## end of it, if one is there, which catches it — and a boss only takes the sting. A
+## web in the lane is blown down it, wrapping what it passes, and what it held comes
+## down bundled where the wind drops it. With Waterspout learned, over a puddle Douse
+## left it lifts the water into a whirl that runs on down the lane, and holds the
+## first thing it reaches. See [Gust] and [WaterSpiral].
 func _blow(spell: SpiderSpell, wound: float) -> Dictionary:
 	var from := feet_ground()
 	var heading := lane_heading()
@@ -585,7 +586,7 @@ func _blow(spell: SpiderSpell, wound: float) -> Dictionary:
 	var push := lerpf(Gust.PUSH.x, Gust.PUSH.y, wound) * height \
 		* (_tree.tier(spell.id).y if _tree != null else 1.0)
 	var gust := Gust.blow(_host(), from + Vector3.UP * height * 0.3, heading, far, wide, push,
-		power_of(spell, wound), spell.colour)
+		power_of(spell, wound), spell.colour, height, _spider)
 	if gust == null:
 		return {"cast": false}
 	# Only with Waterspout learned does wind take the water up at all.
@@ -594,6 +595,9 @@ func _blow(spell: SpiderSpell, wound: float) -> Dictionary:
 	var said := PackedStringArray()
 	if not gust.shoved.is_empty():
 		said.append("%d blown back" % gust.shoved.size())
+	if not gust.blown.is_empty():
+		said.append("%d web%s blown away" % [gust.blown.size(),
+			"" if gust.blown.size() == 1 else "s"])
 	if whirl != null:
 		said.append("the water whirls up")
 	if not said.is_empty():
