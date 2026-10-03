@@ -575,12 +575,6 @@ row of buttons:
   which are roads, and not the web the spider is standing on. The strip laid out
   on the ground says which it will be: a tap for a lane that stops short of the
   web, a wind-up to send the web itself.
-* **Wind fans fire.** Wind blown while the spider is breathing fire takes the
-  flame with it, the whole length of the lane: everything in the lane burns as if
-  it had stood in the breath for half a second — a bare thing a little, a wrapped
-  or held one hard — and every web and line in it goes up, unless it is wet; a wet
-  web is blown down the lane as ever. Breathe, then blow, and the breath reaches as
-  far as the wind does.
 * **Fire over water is steam.** A breath of fire that reaches a puddle boils it
   away, and a cloud of steam rises where it lay — half as wide again as the puddle,
   three body heights tall, for 4 s. Everything in it is soaked, fliers included,
@@ -612,11 +606,11 @@ knowing both spells.
 | Water + lightning | wet, then lightning | twice as hard, and on to anything wet near | — |
 | Water + fire | puddle, then fire | steam that soaks and scalds what is in it | — |
 | Water + pullback | wet web, then pullback | soaks what it passes | Wet Silk |
-| Wind + fire | breath, then wind | the flame goes the length of the lane | — |
 | Lightning + pullback | live web, then pullback | strikes what it passes | Live Silk |
 | Wind + lightning | — | none of its own; a live web blown down a lane strikes what it passes | — |
 | Wind + pullback | — | none: both move webs, one away and one home | — |
 | Wind + clay | — | none of its own; what a pillar throws is loose in the air, so a gust carries it on | — |
+| Wind + fire | — | none: wind does not carry a breath of fire | — |
 | Lightning + fire | — | none: two ways of hurting, and a live web burns like any other | — |
 | Fire + pullback | — | none: fire takes a web on its way back as readily as one standing | — |
 | Pullback + clay | — | none: a pillar already throws webs | — |

@@ -405,10 +405,8 @@ up. Everything else is learned:
   **A wet web soaks**: called back, blown or flung, a web Douse left wet soaks what
   it passes, ready for lightning. **Fire boils water**: breathe on a puddle and it
   goes up as steam that soaks and scalds whatever is in it, fliers included.
-  **Wind fans fire**: blow a gust while you breathe fire and the flame goes the
-  whole length of the lane, burning what is in it and any dry silk. Which comes
-  first decides: each is the second spell acting on what the first left behind —
-  and some pairs have nothing, rather than a bigger number.
+  Which comes first decides: each is the second spell acting on what the first
+  left behind — and some pairs have nothing, rather than a bigger number.
 * **Five on the keys.** The web is always on 1 and five spells ride on 2 to 6. A
   spell learned goes on the next free key; the tree takes one off or puts one on.
 

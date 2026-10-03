@@ -49,7 +49,6 @@ func _sections() -> Array[Callable]:
 		_test_fire_breath,
 		_test_fire_burns_silk,
 		_test_steam,
-		_test_fanned_flame,
 		_test_pullback,
 		_test_clay_pillar,
 		_test_the_whole_book_open,
@@ -1885,84 +1884,6 @@ func _test_steam() -> void:
 		% roundi(fly.health() * 100.0))
 	await wait_until(func() -> bool: return _steam().is_empty(), 400)
 	check(_steam().is_empty(), "and the steam thins away")
-
-
-## Wind blown while the spider breathes fire carries the flame down the whole lane:
-## what is in the lane past the breath's reach burns, and a dry web in it goes up
-## rather than being blown — a wet one is blown as ever. Wind with no fire burning
-## burns nothing.
-func _test_fanned_flame() -> void:
-	var fire := _learned("fire", 2)
-	var gust := _learned("gust", 2)
-	spider.require_captured_mouse = false
-	var slab := add_slab(Vector3(-180, 0.0, -60), Vector3(40, 0.5, 40))
-	await physics_frame
-	var start := slab.global_position + Vector3(0, 0.25, 12.0)
-	stand_on(start)
-	await run_frames(20)
-	var height := spider.stage().body_height
-	var ahead := Vector3.FORWARD
-	var far := spells.lane_reach(gust, 0.0)
-	var flame := fire.size_at(0.0) * height
-	check(far > flame + height * 3.0, "the wind reaches further than the breath (%.1f m to %.1f m)"
-		% [far, flame])
-	clear_prey_near(start + ahead * far * 0.5, far * 2.0, null)
-	var past := start + ahead * (flame + height * 1.5) + Vector3(0.0, 0.2, 0.0)
-	var calm := spawn("beetle", past)
-	if not check(calm != null, "a beetle in the lane, past where the breath reaches"):
-		return
-	calm.aggression = 0.0
-	calm.move_speed = 0.0
-	await physics_frame
-	aim_at(start + ahead * far * 2.0 + Vector3.DOWN * 0.25)
-	check(spells.cast_now(gust), "wind alone")
-	var plain := _last_gust()
-	check(plain != null and not plain.fanned and not plain.scorched.has(calm),
-		"burns nothing")
-	await run_frames(30)
-
-	spells.forget_waits()
-	clear_prey_near(start + ahead * far * 0.5, far * 2.0, null)
-	var beetle := spawn("beetle", past)
-	var half := height * 0.8
-	var lift := Vector3.UP * (half - height * 0.3)
-	var dry := _spin(start + ahead * (flame + height * 2.0) + lift, half)
-	var wet := _spin(start + ahead * minf(flame + height * 3.6, far - height * 0.5) + lift, half)
-	if not check(beetle != null and dry != null and wet != null,
-			"a beetle, a web and a wet web, all in the lane past the breath"):
-		return
-	WetSilk.soak(wet, 10.0)
-	beetle.aggression = 0.0
-	beetle.move_speed = 0.0
-	await physics_frame
-	var dry_id := dry.get_instance_id()
-	aim_at(start + ahead * far * 2.0 + Vector3.DOWN * 0.25)
-	await physics_frame
-	await process_frame
-	check(spells.cast_now(fire), "fire breathed down the lane")
-	await run_frames(10)
-	check(_last_breath() != null and _last_breath().burning(), "still burning")
-	check(spells.cast_now(gust), "and wind blown through it")
-	var fanned := _last_gust()
-	check(fanned != null and fanned.fanned, "the wind takes the fire with it")
-	check(fanned != null and fanned.scorched.has(beetle) and beetle.health() < 1.0,
-		"and the beetle past the breath's reach burns (%d%% left)" % roundi(beetle.health() * 100.0))
-	await physics_frame
-	check(not is_instance_id_valid(dry_id), "the dry web in the lane goes up")
-	check(is_instance_valid(wet) and wet.called_back, "the wet one is blown down the lane instead")
-	await wait_until(func() -> bool: return _last_breath() == null, 240)
-	await wait_until(func() -> bool:
-		return spider.get_tree().get_nodes_in_group(WebPull.GROUP).is_empty(), 240)
-
-
-## The newest gust of wind still showing, or null.
-func _last_gust() -> Gust:
-	var found: Gust = null
-	for node in spider.get_tree().get_nodes_in_group(Gust.GROUP):
-		var gust := node as Gust
-		if gust != null and not gust.is_queued_for_deletion():
-			found = gust
-	return found
 
 
 ## The steam hanging now.

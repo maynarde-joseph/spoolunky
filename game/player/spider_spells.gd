@@ -574,8 +574,7 @@ func _on_spit_landed(_spit: WaterSpit, soaked: Array[Prey], webs: int, _puddles:
 ## everything loose in it is shoved on down the lane and stung — into a web past the
 ## end of it, if one is there, which catches it — and a boss only takes the sting. A
 ## web in the lane is blown down it, wrapping what it passes, and what it held comes
-## down bundled where the wind drops it. Blown while the spider breathes fire, it
-## carries the flame down the whole lane. With Waterspout learned, over a puddle Douse
+## down bundled where the wind drops it. With Waterspout learned, over a puddle Douse
 ## left it lifts the water into a whirl that runs on down the lane, and holds the
 ## first thing it reaches. See [Gust] and [WaterSpiral].
 func _blow(spell: SpiderSpell, wound: float) -> Dictionary:
@@ -596,9 +595,6 @@ func _blow(spell: SpiderSpell, wound: float) -> Dictionary:
 	var said := PackedStringArray()
 	if not gust.shoved.is_empty():
 		said.append("%d blown back" % gust.shoved.size())
-	if gust.fanned:
-		said.append("the fire goes with it" + (", %d burned" % gust.scorched.size()
-			if not gust.scorched.is_empty() else ""))
 	if not gust.blown.is_empty():
 		said.append("%d web%s blown away" % [gust.blown.size(),
 			"" if gust.blown.size() == 1 else "s"])
