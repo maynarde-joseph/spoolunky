@@ -13,6 +13,10 @@ extends Node3D
 ##
 ## It hits on the way and does not catch: the web is [member WebStructure.called_back]
 ## while it flies, or one pull through a crowd would sweep up the lot.
+##
+## A stone pillar coming up under a web throws it the same way, only up off the
+## pillar's top rather than in to the spider: what it held comes down bundled where
+## it ends up. See [method fling] and [StonePillar].
 
 ## Reached the spider. [param took] is how many bundles it brought.
 signal arrived(pull: WebPull, took: int)
@@ -29,8 +33,11 @@ const FOLD_RATE := 2.5
 ## The web coming in.
 var web: WebNet
 
-## What it is coming to.
+## What it is coming to: the spider, or, flung, nothing — see [member goal].
 var spider: Node3D
+
+## Where a flung web is making for.
+var goal := Vector3.ZERO
 
 ## How fast it comes, in metres a second.
 var speed := 20.0
@@ -72,9 +79,38 @@ static func call_in(host: Node, net: WebNet, to: Node3D, pace: float, reach: flo
 	return pull
 
 
+## Throws [param net] off its anchors to [param to] under [param host], the same as
+## [method call_in] but to a place rather than to the spider. Null if there is no
+## web.
+static func fling(host: Node, net: WebNet, to: Vector3, pace: float, reach: float,
+		silk_share: float, height: float) -> WebPull:
+	if host == null or net == null or not is_instance_valid(net) \
+			or net.is_queued_for_deletion():
+		return null
+	var pull := WebPull.new()
+	pull.name = "WebFling"
+	pull.web = net
+	pull.goal = to
+	pull.speed = maxf(pace, 0.1)
+	pull.sweep = maxf(reach, 0.01)
+	pull.share = silk_share
+	pull.body_height = maxf(height, 0.05)
+	pull.add_to_group(GROUP)
+	pull.add_to_group("spell_effects")
+	host.add_child(pull)
+	pull.global_position = net.signal_point()
+	net.called_back = true
+	return pull
+
+
+## Whether it was flung rather than called in to the spider.
+func is_flung() -> bool:
+	return spider == null
+
+
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(web) or web.is_queued_for_deletion() \
-			or not is_instance_valid(spider):
+			or (not is_flung() and not is_instance_valid(spider)):
 		queue_free()
 		return
 	var middle := web.signal_point()
@@ -96,9 +132,9 @@ func _physics_process(delta: float) -> void:
 	_strike_along(middle, middle + move)
 
 
-## Where it is making for: the spider's middle.
+## Where it is making for: the spider's middle, or where it was flung.
 func _goal() -> Vector3:
-	return spider.global_position
+	return goal if is_flung() else spider.global_position
 
 
 ## Everything loose within [member sweep] of this frame's stretch takes its silk,
@@ -127,6 +163,12 @@ func _strike_along(from: Vector3, to: Vector3) -> void:
 ## came in from — at its feet, not inside it, where the spider's own body would
 ## shove it away.
 func _arrive() -> void:
+	if is_flung():
+		# Thrown, not called: what it held comes down where it got to.
+		var took := web.collect(goal, body_height * 0.8)
+		arrived.emit(self, took)
+		queue_free()
+		return
 	var toward := web.signal_point() - spider.global_position
 	toward.y = 0.0
 	if toward.length_squared() < 0.000001:

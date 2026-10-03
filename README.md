@@ -13,7 +13,8 @@ You are a spider wizard. The thrown web is the first spell, and what you catch a
 eat earns the rest: experience makes rank — Apprentice Spooder up to Grand
 Spooder — and every rank opens a row of the **spell tree** and two points to
 spend in it. A call that brings your webs flying back, a spit of water, a gust
-of wind, lightning and a breath of fire, each with a second tier; the ways they
+of wind, lightning, a breath of fire and a pillar of stone, the first five with a
+second tier; the ways they
 work off your silk and each other — webs that will not burn, webs left live,
 lightning run along your lines, wind over a puddle lifting a whirl; and shorter
 waits. Five spells ride on your keys beside the web.
@@ -47,7 +48,8 @@ game/
              gait that walks it
   spells/    what spells leave in the world: the magic circle each is drawn
              in, a spit of water and the puddles it leaves, wet silk, a gust,
-             the whirl wind lifts out of a puddle, a breath of fire, a strike of
+             the whirl wind lifts out of a puddle, a breath of fire, a pillar of
+             stone, a strike of
              lightning and the charge it leaves in a web, a web called back, the
              bloom where one lands
   prey/      things to catch, and something to spawn them
@@ -371,9 +373,10 @@ up. Everything else is learned:
   Adept, Journeyman, Master, Grand Spooder.
 * **Each rank opens its row of the tree and two points.** **E** opens the tree. A
   point buys a skill in a row you have reached: a **spell** (Douse, Gust and the
-  Pullback for an Apprentice; Summon Lightning for an Adept; Fire Breath for a
-  Journeyman), a spell's **second tier** (Deluge, Gale, Thunderhead, Inferno, Long
-  Recall), an **interaction**, or a **shorter wait**. There are twenty-one points
+  Pullback for an Apprentice; Summon Lightning and the Stone Pillar for an Adept;
+  Fire Breath for a Journeyman), a spell's **second tier** (Deluge, Gale,
+  Thunderhead, Inferno, Long Recall), an **interaction**, or a **shorter wait**.
+  There are twenty-two points
   of it and ten to earn, so what you learn is the kind of spider you are.
 * **The interactions are where it gets interesting.** **Wet Silk**: spit Douse
   through your webs and they are wet, and a wet web stands in fire — breathe on what it holds and only that
@@ -882,7 +885,9 @@ five and the tree on **E** — the strip that shows the keys, and what each spel
 after the interaction that lets it. Lightning run down a wire to a
 wasp across the room and left live in the web, a spit that leaves puddles where it
 lands and the silk it goes through wet, a gust that blows a beetle into a web, the
-whirl wind lifts out of a puddle holding the first thing it reaches, acid water, a breath of fire swept from
+whirl wind lifts out of a puddle holding the first thing it reaches, acid water, a
+pillar of stone that throws what stands on it — the spider included — and flings
+the web it comes up under, a breath of fire swept from
 one creature to the next that burns harder the more silk is on what it touches and
 burns the silk with it — but not a wet web — webs called back through what is in
 their way, the magic circles

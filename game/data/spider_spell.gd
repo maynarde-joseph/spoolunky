@@ -35,6 +35,9 @@ enum Form {
 	## Wind blown down a lane in front of the spider, that shoves what it reaches away —
 	## and over a puddle, lifts the water into a whirl.
 	GUST,
+	## A pillar of stone raised where you point, that throws what stands there off
+	## its top.
+	EARTH,
 }
 
 @export var id := "silk"
@@ -56,11 +59,12 @@ enum Form {
 
 ## How wide it reaches, in body heights, from a tap to a full wind-up: the radius
 ## of a strike, how wide a puddle each drop of water leaves, how far a breath of
-## fire reaches, or how wide a lane of wind is either side of its middle.
+## fire reaches, how wide a lane of wind is either side of its middle, or how tall
+## a pillar of stone stands.
 @export var size := Vector2(1.5, 3.0)
 
 ## How long what it leaves behind lasts, in seconds, from a tap to a full wind-up:
-## a puddle, a whirl's hold, a stun.
+## a puddle, a whirl's hold, a stun, a pillar of stone.
 @export var duration := Vector2(2.5, 4.0)
 
 ## How much of a creature's health it takes, from a tap to a full wind-up, when

@@ -46,6 +46,9 @@ signal notice(text: String)
 ## body heights, from a tap to a full wind-up.
 const SPIRAL_BODIES := Vector2(1.3, 1.6)
 
+## How wide a pillar of stone is, from its middle to its side, in body heights.
+const PILLAR_BODIES := 0.6
+
 ## How far in front of the spider fire's circle hangs, and water's, in body heights:
 ## on the line the breath or the spit will take, so it leaves through the middle of
 ## it.
@@ -442,6 +445,8 @@ func _cast_form(spell: SpiderSpell, wound: float) -> Dictionary:
 			return _breathe(spell, wound)
 		SpiderSpell.Form.PULLBACK:
 			return _pull_back(spell, wound)
+		SpiderSpell.Form.EARTH:
+			return _raise(spell, wound)
 	push_warning("%s has a form nothing casts yet" % spell.display_name)
 	return {"cast": false}
 
@@ -449,13 +454,14 @@ func _cast_form(spell: SpiderSpell, wound: float) -> Dictionary:
 # --- lightning, water and wind --------------------------------------------
 
 ## Lightning comes down on what the cross is on — a creature, a web, the floor.
-## Aimed at open air, it comes down through it to whatever is underneath.
-func _ground(target: Dictionary) -> Dictionary:
+## Aimed at open air, it comes down through it to whatever is underneath: whatever
+## of [param mask] is there.
+func _ground(target: Dictionary, mask := GameLayers.WORLD | GameLayers.WEB_WALK) -> Dictionary:
 	if target.get("hit", false):
 		return target
 	var point: Vector3 = target.get("point", Vector3.ZERO)
 	var query := PhysicsRayQueryParameters3D.create(point, point + Vector3.DOWN * cast_reach(),
-		GameLayers.WORLD | GameLayers.WEB_WALK, exclusions())
+		mask, exclusions())
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if hit.is_empty():
 		return target
@@ -716,6 +722,60 @@ func _on_breath_finished(_breath: FireBreath, burned: Array[Prey], webs: int,
 		notice.emit(" · ".join(said))
 
 
+# --- earth ----------------------------------------------------------------
+
+## A pillar of stone raised where the cross is, out of whatever it is on — up from
+## the floor, out of a wall — as tall as the wind-up makes it. What stands there is
+## stunned and thrown off its top, hurt; the spider standing there is thrown up
+## higher than it can jump; a web it comes up under is flung up off it. It stands
+## for its time, then sinks back. See [StonePillar].
+func _raise(spell: SpiderSpell, wound: float) -> Dictionary:
+	var target := pillar_target()
+	if not target.get("hit", false):
+		notice.emit("Nothing there to raise a pillar out of")
+		return {"cast": false}
+	var height := body_height()
+	var at: Vector3 = target["point"]
+	var pillar := StonePillar.raise(_host(), at, target.get("normal", Vector3.UP), pillar_wide(),
+		size_of(spell, wound) * height, duration_of(spell, wound), power_of(spell, wound),
+		height, spell.colour, _spider)
+	if pillar == null:
+		return {"cast": false}
+	var said := PackedStringArray()
+	if not pillar.struck.is_empty():
+		said.append("%d thrown" % pillar.struck.size())
+	if pillar.spider_thrown:
+		said.append("up you go")
+	if not pillar.flung.is_empty():
+		said.append("%d web%s flung" % [pillar.flung.size(), "" if pillar.flung.size() == 1 else "s"])
+	if not said.is_empty():
+		notice.emit("Stone Pillar — " + ", ".join(said))
+	return {"cast": true, "at": at}
+
+
+## Where a pillar of stone comes up, and which way: out of the world where the cross
+## meets it, along the way it faces. Stone comes out of the world, not out of silk
+## or a creature: with the cross on either it comes up out of whatever is under it,
+## so a pillar aimed at a web comes up under that web, not somewhere past it. Open
+## air, out of whatever is underneath.
+func pillar_target() -> Dictionary:
+	var target := aim_target()
+	if target.get("prey") != null or target.get("line") != null:
+		target["hit"] = false
+	elif target.get("hit", false):
+		var world := aim_target(GameLayers.WORLD)
+		if world.get("hit", false) and (world["point"] as Vector3).distance_to(
+				target["point"]) < body_height() * 0.05:
+			return world
+		target["hit"] = false
+	return _ground(target, GameLayers.WORLD)
+
+
+## How wide a pillar of stone is, from its middle to its side, in metres.
+func pillar_wide() -> float:
+	return PILLAR_BODIES * body_height()
+
+
 # --- pullback -------------------------------------------------------------
 
 ## Every web the spider has in reach, called back to it at once — the way the
@@ -850,8 +910,8 @@ func _host() -> Node:
 ## wide as it will be, in its own colour and with its own star. Fire's and water's
 ## hang in front of the spider's jaws on the line the breath or the spit will take,
 ## water's with where it will come down laid on the ground; lightning's lies on what
-## it will strike; wind's lies under the spider's feet with the strip it will blow
-## down. Silk's is wrapped round the ball of silk the builder winds up over the
+## it will strike, and earth's where the pillar will come up; wind's lies under the
+## spider's feet with the strip it will blow down. Silk's is wrapped round the ball of silk the builder winds up over the
 ## spider's back — bent onto it, rolling round it as it grows — and flares off it
 ## as the web is thrown.
 func _update_circle() -> void:
@@ -920,6 +980,12 @@ func circle_at(spell: SpiderSpell, wound: float) -> Dictionary:
 			var up: Vector3 = target.get("normal", Vector3.UP)
 			return {"where": MagicCircle.facing(target.get("point", _spider.global_position)
 				+ up * height * 0.03, up), "wide": size_of(spell, wound) * height}
+		SpiderSpell.Form.EARTH:
+			# Round the foot of the pillar, a little wider than it, so it shows.
+			var foot := pillar_target()
+			var out: Vector3 = foot.get("normal", Vector3.UP)
+			return {"where": MagicCircle.facing(foot.get("point", _spider.global_position)
+				+ out * height * 0.03, out), "wide": pillar_wide() * 1.4}
 	var ground := _ground({"point": _spider.global_position, "hit": false})
 	var floor_up: Vector3 = ground.get("normal", Vector3.UP)
 	var wide := size_of(spell, wound) * height
@@ -933,8 +999,10 @@ func circle_at(spell: SpiderSpell, wound: float) -> Dictionary:
 
 ## Where an area spell lands, and which way is up there: lightning comes down on
 ## what the cross is on, and through open air — or a line, which carries nothing —
-## to whatever is under it.
+## to whatever is under it; a pillar comes up out of the world there.
 func area_target(spell: SpiderSpell) -> Dictionary:
+	if spell != null and spell.form == SpiderSpell.Form.EARTH:
+		return pillar_target()
 	if spell != null and spell.form == SpiderSpell.Form.LIGHTNING:
 		var target := aim_target()
 		if target.get("line") != null:
@@ -946,7 +1014,7 @@ func area_target(spell: SpiderSpell) -> Dictionary:
 ## Whether [param spell] lands on an area where you point, rather than leaving the
 ## spider: breathed, spat, blown or called back.
 func is_area(spell: SpiderSpell) -> bool:
-	return spell.form == SpiderSpell.Form.LIGHTNING
+	return spell.form == SpiderSpell.Form.LIGHTNING or spell.form == SpiderSpell.Form.EARTH
 
 
 ## Where a spit of water will come down, laid on what the cross is on while it

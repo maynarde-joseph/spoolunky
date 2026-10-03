@@ -475,7 +475,8 @@ the same second the web always took.
 **Every spell is drawn in a magic circle.** Thin line art in the
 spell's colour — two rings with marks like writing between them, and an inner
 ring with the spell's own star in it: six points for the web, three for fire, four
-for lightning, five for water, eight for wind, seven for the pullback — that draws
+for lightning, five for water, eight for wind, seven for the pullback, nine for
+earth — that draws
 itself in as the
 key goes down, turns
 while you hold, and flares and fades as the spell leaves through it. Where it is
@@ -484,7 +485,8 @@ line the breath will take, and the breath goes through the middle of it. Water's
 hangs there too, tipped up for the arc the spit will take, with where its drops
 will come down laid out round the cross. Lightning's lies on the ground where it
 will strike, as wide as the strike, and a second opens over it, face down, as the
-bolt comes out of it. Wind's lies under the spider's feet, with the strip it will
+bolt comes out of it. Earth's lies round the foot of the pillar to come. Wind's
+lies under the spider's feet, with the strip it will
 blow down laid out on the ground ahead. The
 pullback's is drawn round the spider, with a thin line out to every web it will
 call in. The web's is wrapped round the ball of silk it winds up over the
@@ -510,6 +512,7 @@ what the circles are for.
 | **Summon Lightning** | Adept, 1 point | strikes where you point, and stuns what it reaches for 2.5–4 s — going nowhere, biting nothing, fighting nothing — and takes 10–15% of its health. A hunter gives up the chase, a flier falls, and anything a web holds loses a third of its fight. With Live Silk learned, a web it reaches is live for twice the stun after, and strikes what touches it as hard; a line carries nothing until Live Lines, and a strike aimed at one comes down on the floor under it | 7 s |
 | **Fire Breath** | Journeyman, 2 points | fire breathed out of the spider's jaws at whatever the cross is on, for 0.6–1.4 s after you let go, 3.5–5 body heights out — or to the first wall — and opening a little on the way. It follows the cross while it lasts, so it is swept: across a creature, along a line, through the web holding what you want burned. What is in it burns for as long as it is: 40–45% of a creature's health a second if it is wrapped all the way or held in a web, a fifth of that if it is bare. What it takes is health, and a creature low on health is an easier catch (§12). Every web and line it touches burns away | 6 s |
 | **Pullback** | Apprentice, 1 point | every web you have in reach comes off its anchors and flies back to you, folding up as it comes and taking the frame it was walked round on with it — the feathers coming home to a blade dancer. What it passes through takes the silk one shot of that web would put on it — enough, and it is wrapped where it stands — and what the web held lands at your feet, bundled. Nothing in reach, nothing cast and no wait spent | 10 s |
+| **Stone Pillar** | Adept, 1 point | a pillar of stone comes up out of whatever the cross is on — up from a floor, out of a wall — 3–5 body heights tall and 0.6 either side of its middle, and stands for 10 s before it sinks back. With the cross on a creature, a web or a line, it comes up out of the ground under it. What stands where it comes up is stunned first, so it rides the pillar up rather than fighting it, then thrown off the top — two body heights over it and out past its edge — and comes down still stunned, hurt by 6–10% of its health. A boss stands its ground and only takes the stun and the hurt. The spider standing there is thrown up ahead of it, higher than twice a jump: a way up as well as a weapon. A web it comes up under is flung up off its anchors, wrapping what it passes the way a web called back does, and what it held comes down bundled where it ends up. While it stands it is stone like any other — to climb, to tie silk to, to stand behind — and silk tied to it comes down when it goes | 5 s |
 
 **Spells are learned, in the tree** (§3.3): with points that ranks hand out, in
 the rank's row. The strip down the right-hand side of the HUD shows the keys —
@@ -619,12 +622,12 @@ standing on whatever it needs:
 | Row | Skills |
 |---|---|
 | Apprentice | **Douse**, **Gust**, **Pullback** (spells, 1 point each); **Quick Silk** — silk waits a quarter less |
-| Adept | **Summon Lightning** (1); **Wet Silk** — Douse wets the webs it is spat through (needs Douse); **Waterspout** — wind over a puddle is a whirl (needs Douse and Gust); **Long Recall** — the Pullback sweeps and wraps half as hard again (needs Pullback) |
+| Adept | **Summon Lightning** (1); **Stone Pillar** (1); **Wet Silk** — Douse wets the webs it is spat through (needs Douse); **Waterspout** — wind over a puddle is a whirl (needs Douse and Gust); **Long Recall** — the Pullback sweeps and wraps half as hard again (needs Pullback) |
 | Journeyman | **Fire Breath** (2); **Live Silk** — lightning stays in a web (needs Lightning); **Deluge** — Douse's puddles a third wider and wet half as long again; **Gale** — Gust a quarter further, shoving and stinging half as hard again |
 | Master | **Sodden Silk** — a wet web holds half as hard again (needs Wet Silk); **Thunderhead** — lightning a third wider, harder and longer; **Inferno** — the breath a third further and hotter; **Steady Hands** — every wait 15% shorter |
 | Grand | **Live Lines** — lightning runs along your lines (2, needs Live Silk); **Archweaver** — every wait a quarter shorter (2) |
 
-There are twenty-one points of it and ten to spend, so a rank is a choice, and
+There are twenty-two points of it and ten to spend, so a rank is a choice, and
 what you learn is the kind of spider you are: a storm spider wiring its webs
 together, a wet one whose webs survive its own fire, one that lives on the
 Pullback. Skills are resources in `game/data/skills/`, and the tree grows a card
@@ -632,9 +635,8 @@ for a new one with nothing else to edit.
 
 **The loadout is five.** Silk is always on 1 and takes no slot; five more ride on
 2 to 6. A spell learned goes on the next free key; the tree screen (**E**) takes a
-spell off the keys or puts one on. There are five spells beside the web now, so
-the limit does not bite yet — it is there for when there are more than five worth
-carrying.
+spell off the keys or puts one on. There are six spells beside the web, so the
+limit bites: one of them stays off the keys, and which one is a choice.
 
 **The testing switch.** `all_spells_open` on the spider — on in the Hollow Wood —
 makes every spell and every interaction known from the start and lifts the
@@ -2355,9 +2357,11 @@ water used to go; Fire Breath in place of the Firebolt — by way of a geyser,
 which aimed too much like lightning; every spell but the web and the Pullback
 doing harm; and ranks earned by catching and eating, opening rows of a spell tree
 whose points buy spells, second tiers, interactions and shorter waits, with five
-spells on the keys (§3.3). Evolving by chance is parked, its code kept.
-Left: more interactions between spells and silk, a reason for the loadout's limit
-to bite, and the tree's numbers played and tuned.
+spells on the keys (§3.3). Evolving by chance is parked, its code kept. Douse is a
+spit that leaves puddles, silk's circle is wrapped round its ball, and a sixth
+spell — the Stone Pillar — makes the loadout's limit bite.
+Left: more interactions between spells and silk, a second tier for the pillar,
+and the tree's numbers played and tuned.
 
 ---
 

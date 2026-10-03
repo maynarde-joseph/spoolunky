@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="SpiderSpell" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_spell.gd" id="1_spell"]
+
+[resource]
+script = ExtResource("1_spell")
+id = "earth"
+display_name = "Stone Pillar"
+description = "A pillar of stone, raised where you point. What stands there is stunned and thrown off its top; stand there yourself and you go up higher than you can jump. A web it comes up under is flung. It stands for ten seconds."
+form = 6
+order = 6
+cooldown = 5.0
+size = Vector2(3, 5)
+duration = Vector2(10, 10)
+power = Vector2(0.06, 0.1)
+sigil = 9
+colour = Color(0.72, 0.56, 0.36, 1)

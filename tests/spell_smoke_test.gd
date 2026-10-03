@@ -49,6 +49,7 @@ func _sections() -> Array[Callable]:
 		_test_fire_breath,
 		_test_fire_burns_silk,
 		_test_pullback,
+		_test_stone_pillar,
 		_test_the_whole_book_open,
 	]
 
@@ -333,42 +334,27 @@ func _test_the_tree() -> void:
 	check(is_equal_approx(builder._cooldown_span, plain_silk * 0.85),
 		"silk's included (%.2fs -> %.2fs)" % [plain_silk, builder._cooldown_span])
 
-	# Five on the keys, and the tree moves them. A sixth spell, made up for the
-	# purpose: the book has only five beside silk.
+	# Five on the keys, and the tree moves them: there are six spells beside silk.
 	tree.forget_all()
 	tree.earn(100000.0)
 	for spell_id in ["douse", "gust", "pullback", "lightning", "fire"]:
 		tree.learn(tree.by_id(spell_id))
 	check(tree.loadout.size() == SpellTree.LOADOUT_SIZE and spells.hand().size() == 6,
 		"five spells fill the loadout, on keys 2 to 6 (%s)" % str(tree.loadout))
-	var extra := SpiderSpell.new()
-	extra.id = "test_extra"
-	extra.display_name = "Test Extra"
-	extra.description = "A spell for checking."
-	extra.form = SpiderSpell.Form.DOUSE
-	extra.order = 900
-	spells.book.append(extra)
-	var teaches := SpellSkill.new()
-	teaches.id = "test_extra"
-	teaches.display_name = "Test Extra"
-	teaches.kind = SpellSkill.Kind.SPELL
-	teaches.spell = "test_extra"
-	tree.skills.append(teaches)
-	check(tree.grant("test_extra") and spells.is_open(extra) and spells.key_for(extra) == 0,
+	var sixth := spells.by_id("earth")
+	check(tree.learn(tree.by_id("earth")) and spells.is_open(sixth) and spells.key_for(sixth) == 0,
 		"a sixth is known, but not on a key: the loadout is full")
-	check(not tree.slot("test_extra"), "and there is no room for it")
-	check(tree.unslot("gust") and tree.slot("test_extra"), "until one comes off")
-	check(spells.key_for(extra) == 6 and spells.key_for(spells.by_id("pullback")) == 3,
+	check(not tree.slot("earth"), "and there is no room for it")
+	check(tree.unslot("gust") and tree.slot("earth"), "until one comes off")
+	check(spells.key_for(sixth) == 6 and spells.key_for(spells.by_id("pullback")) == 3,
 		"then it goes on the last key, and the rest move up (%d, %d)"
-		% [spells.key_for(extra), spells.key_for(spells.by_id("pullback"))])
+		% [spells.key_for(sixth), spells.key_for(spells.by_id("pullback"))])
 	check(spells.select("douse") and tree.unslot("douse") and spells.current().id == "silk",
 		"a spell taken off the keys while in hand leaves silk in hand")
 	spells.open_all = true
 	check(spells.hand().size() == spells.book.size(),
 		"with everything open, every spell is on a key, past the five (%d)" % spells.hand().size())
 	spells.open_all = false
-	spells.book.erase(extra)
-	tree.skills.erase(teaches)
 	tree.forget_all()
 
 
@@ -519,8 +505,9 @@ func _test_number_keys() -> void:
 ## Every spell is drawn in a magic circle while it winds up — silk's wrapped round
 ## the ball of silk, curved onto it and rolling round it, fire and water in front of
 ## the spider's jaws on the line the breath or the spit will take, water with where
-## it will come down laid out, lightning on the ground where it will strike, wind
-## under the spider's feet with the strip it will blow down — and leaves through it:
+## it will come down laid out, lightning on the ground where it will strike, earth
+## round the foot of the pillar to come, wind under the spider's feet with the strip
+## it will blow down — and leaves through it:
 ## the circle flares and fades as the spell goes, lightning draws a second one over
 ## the strike, and a wind-up given up fades the same way.
 func _test_spells_leave_through_circles() -> void:
@@ -682,6 +669,26 @@ func _test_spells_leave_through_circles() -> void:
 		await run_frames(3)
 		check(builder.shot_in_flight() or web_count() > 0, "let go, the web is thrown")
 		check(wrapped[0].is_fading(), "and the circle flares off the ball as it goes")
+	await wait_until(func() -> bool: return _circles().is_empty(), 90)
+
+	# Earth: on the ground where the pillar will come up, round its foot.
+	spells.take(7)
+	var earth := spells.current()
+	send_action(spider.input_shoot)
+	await run_frames(2)
+	var earthen := _circles()
+	if check(earth.form == SpiderSpell.Form.EARTH and earthen.size() == 1,
+			"winding up earth draws one circle (%d)" % earthen.size()):
+		var foot: Vector3 = spells.pillar_target()["point"]
+		check(earthen[0].global_position.distance_to(foot) < height * 0.1
+			and earthen[0].global_basis.y.normalized().dot(Vector3.UP) > 0.99,
+			"lying round the foot of the pillar to come")
+		check(absf(earthen[0].radius - spells.pillar_wide() * 1.4) < height * 0.05,
+			"a little wider than the pillar (%.2f m)" % earthen[0].radius)
+	release_action(spider.input_shoot)
+	await run_frames(2)
+	check(_last_pillar() != null and earthen.size() == 1 and earthen[0].is_fading(),
+		"let go, the pillar comes up through it")
 
 
 ## The magic circles standing now.
@@ -1917,6 +1924,164 @@ func _test_pullback() -> void:
 ## A level can hand the spider the whole book at once: every spell known and on a
 ## key, and every interaction, to an Apprentice — but no tier and no point — and
 ## shut again when it takes the book back.
+## A pillar of stone raised where the cross is, out of the floor: what stands there
+## is stunned, carried up and thrown off the top, hurt, and comes down still stunned;
+## the spider standing there is thrown up higher than it can jump; a web it comes up
+## under is flung up off it, and what it held comes down bundled. It comes out of a
+## wall as readily, and while it stands it is stone to stand on; once its time is up
+## it sinks away, and silk tied to it comes down with it.
+func _test_stone_pillar() -> void:
+	var earth := spells.by_id("earth")
+	if not check(earth != null and earth.form == SpiderSpell.Form.EARTH,
+			"there is the Stone Pillar in the book"):
+		return
+	_learned("earth", 2)
+	check(spells.select("earth"), "learned, it can be taken in hand")
+	check(spells.is_area(earth), "raised where you point, not thrown from the spider")
+	var slab := add_slab(Vector3(-150, 0.0, 150), Vector3(40, 0.5, 40))
+	await physics_frame
+	var floor_y := slab.global_position.y + 0.25
+	var start := slab.global_position + Vector3(0, 0.25, 8.0)
+	stand_on(start)
+	await physics_frame
+	var height := spider.stage().body_height
+	var spot := start + Vector3.FORWARD * height * 6.0
+	clear_prey_near(spot, height * 30.0, null)
+	var beetle := spawn("beetle", spot + Vector3(0.0, 0.2, 0.0))
+	if not check(beetle != null, "a beetle where it will come up"):
+		return
+	beetle.aggression = 0.0
+	beetle.move_speed = 0.0
+	await run_frames(20)
+	aim_at(beetle.global_position)
+	await physics_frame
+	var under := Vector3(beetle.global_position.x, floor_y, beetle.global_position.z)
+	check(spells.cast_now(earth), "raised")
+	var pillar := _last_pillar()
+	if not check(pillar != null, "a pillar comes up"):
+		return
+	check(pillar.base.distance_to(under) < height * 0.2 and pillar.axis.dot(Vector3.UP) > 0.99,
+		"out of the floor under the beetle (%.2f m off)" % pillar.base.distance_to(under))
+	check(absf(pillar.tall - earth.size_at(0.0) * height) < 0.01
+		and is_equal_approx(pillar.lasts, earth.duration_at(0.0)),
+		"%.2f m tall, standing %.0f s" % [pillar.tall, pillar.lasts])
+	check(pillar.struck.has(beetle) and beetle.is_stunned() and beetle.health() < 1.0,
+		"the beetle is stunned and hurt before it goes anywhere (%d%% left)"
+		% roundi(beetle.health() * 100.0))
+	check(spells.cooling(earth), "and it waits its own wait (%.1fs)" % spells.cooldown_left(earth))
+	var highest := beetle.global_position.y
+	for i in 60:
+		await physics_frame
+		highest = maxf(highest, beetle.global_position.y)
+	check(pillar.thrown.has(beetle), "carried up, and thrown off the top")
+	check(highest > floor_y + pillar.tall + height * 0.5,
+		"higher than the pillar (%.2f m up, the pillar %.2f m)" % [highest - floor_y, pillar.tall])
+	var down: bool = await wait_until(func() -> bool:
+		return beetle.global_position.y < floor_y + pillar.tall * 0.5, 180)
+	check(down and beetle.is_stunned(), "and comes back down, still stunned")
+	var top := _ground_under(pillar.base + Vector3.UP * (pillar.tall + height))
+	check(absf(top - (floor_y + pillar.tall)) < height * 0.1,
+		"while it stands, its top is stone to stand on (%.2f m up)" % (top - floor_y))
+
+	# Its time up, it sinks away, and silk tied to it comes down with it.
+	var side := pillar.base + Vector3.UP * pillar.tall * 0.6 + Vector3.BACK * pillar.radius
+	var tie := WebStrand.spin(pattern_named("frame_line"), side,
+		Vector3(side.x, floor_y, side.z + height * 4.0), 1.0)
+	if check(tie != null, "a line tied to its side"):
+		tie.place_in(webs)
+		var pillar_id := pillar.get_instance_id()
+		pillar.lasts = 0.0
+		await run_frames(2)
+		check(pillar.sinking(), "its time up, it sinks back")
+		check(not is_instance_valid(tie) or tie.is_queued_for_deletion(),
+			"and the line tied to it comes down with it")
+		var gone: bool = await wait_until(func() -> bool:
+			return not is_instance_id_valid(pillar_id), 60)
+		check(gone and absf(_ground_under(under + Vector3.UP * height * 4.0) - floor_y) < 0.05,
+			"and is gone, the floor bare again")
+
+	# Stood where it comes up, the spider goes up with it, higher than it can jump.
+	spells.forget_waits()
+	var stand := start + Vector3.LEFT * height * 10.0
+	stand_on(stand)
+	await run_frames(20)
+	var feet_y := spider.global_position.y
+	check(spells.cast_now(earth), "raised under the spider's own feet")
+	var lift := _last_pillar()
+	if check(lift != null and lift.spider_thrown, "the spider is thrown"):
+		var peak := spider.global_position.y
+		for i in 60:
+			await physics_frame
+			peak = maxf(peak, spider.global_position.y)
+		var jump: float = spider.stage().jump_velocity
+		var jump_peak := jump * jump / (2.0 * spider.gravity)
+		check(peak > floor_y + lift.tall and peak - feet_y > jump_peak * 2.0,
+			"up past its top, more than twice as high as a jump (%.2f m, a jump %.2f m)"
+			% [peak - feet_y, jump_peak])
+
+	# A web it comes up under is flung up off it, and what it held comes down
+	# bundled where it got to.
+	spells.forget_waits()
+	stand_on(start)
+	await run_frames(20)
+	var net_at := start + Vector3.RIGHT * height * 8.0 + Vector3.FORWARD * height * 4.0
+	var net := _spin_flat(net_at + Vector3.UP * height * 0.3, height * 1.2) as WebNet
+	if not check(net != null, "a web lying low over the floor"):
+		return
+	await physics_frame
+	var fly := spawn("fly", net.signal_point())
+	await physics_frame
+	await physics_frame
+	if not check(fly != null and fly.is_stuck(), "with a fly in it"):
+		return
+	fly.move_speed = 0.0
+	aim_at(net.signal_point())
+	await physics_frame
+	var under_net: Vector3 = spells.pillar_target()["point"]
+	var off_net := Vector2(under_net.x - net_at.x, under_net.z - net_at.z).length()
+	check(off_net < net.radius, "the cross on the web puts the pillar under it, not past it "
+		+ "(%.2f m from its middle, %.2f m to its rim)" % [off_net, net.radius])
+	var net_id := net.get_instance_id()
+	var was := net.signal_point().y
+	check(spells.cast_now(earth), "raised under the web")
+	var thrower := _last_pillar()
+	check(thrower != null and thrower.flung.has(net), "it is flung")
+	await run_frames(3)
+	check(is_instance_valid(net) and net.signal_point().y > was, "up off its anchors")
+	var spent: bool = await wait_until(func() -> bool: return not is_instance_id_valid(net_id), 120)
+	check(spent and fly.is_bundled(), "and once it is up, what it held comes down bundled")
+
+	# Out of a wall, it comes out level.
+	spells.forget_waits()
+	var wall := add_slab(start + Vector3.LEFT * height * 6.0 + Vector3.UP * height * 3.0,
+		Vector3(0.3, height * 6.0, height * 6.0))
+	await physics_frame
+	aim_at(start + Vector3.LEFT * (height * 6.0 - 0.15) + Vector3.UP * height * 2.0)
+	await physics_frame
+	check(spells.cast_now(earth), "raised out of a wall")
+	var ledge := _last_pillar()
+	check(ledge != null and ledge.axis.dot(Vector3.RIGHT) > 0.99,
+		"it comes out of it level (%s)" % (str(ledge.axis) if ledge != null else "—"))
+	wall.free()
+
+
+## The newest pillar of stone standing, or null.
+func _last_pillar() -> StonePillar:
+	var found: StonePillar = null
+	for node in spider.get_tree().get_nodes_in_group(StonePillar.GROUP):
+		var pillar := node as StonePillar
+		if pillar != null and not pillar.is_queued_for_deletion():
+			found = pillar
+	return found
+
+
+## How high the world is under [param from]: where a ray straight down meets it.
+func _ground_under(from: Vector3) -> float:
+	var hit := spider.get_world_3d().direct_space_state.intersect_ray(
+		PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 50.0, GameLayers.WORLD))
+	return (hit["position"] as Vector3).y if not hit.is_empty() else -INF
+
+
 func _test_the_whole_book_open() -> void:
 	check(spells.open_spells().size() == 1, "an Apprentice has silk and nothing else")
 	spells.open_all = true
