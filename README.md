@@ -90,7 +90,7 @@ one kept to what the keys do today.
 | **Ctrl** | drop onto a dragline (from a wall or ceiling) |
 | **Ctrl** / **Space** | lower / raise yourself on the line |
 | **Right Mouse** | let go of the line |
-| **Left Mouse** | **go there and stop, trailing silk** — moving and building are the same act. It goes through lines; **Q** is what takes hold of one |
+| **Left Mouse** | **go there, trailing silk** — hold a direction and you land running, or let go and you stop there. Moving and building are the same act. It goes through lines; **Q** is what takes hold of one |
 | **G** | **grapple style** — the **pull** takes you there; the **line** lays a line from your feet to where you point and hangs you from it, ready to zip along |
 | **Q** | take hold of the nearest line with room to hang from — hang from it and zip along it with **W**/**S**, toward or away from where you look. **Q** or **Space** lets go |
 | **Left Mouse** *on something you've caught* | put a line on it and drag it instead — same click, read the only way that makes sense |
@@ -147,6 +147,13 @@ refusing at the end, so the ghost is always something you can actually buy.
 tiers gate what your silk can *hold* and how much you can spin, not where you
 are allowed to go. A long grapple is flung faster so it still lands in about a
 second, because distance should cost you silk rather than patience.
+
+**A landing springs.** Hold a direction as you arrive and you land running: what
+the grapple carried along the surface stays (up to a quarter over a walk), and for
+the next moment the spider is faster and much quicker off the mark, fading back to
+a walk over most of a second. Let go of the keys and it brakes to a stop a step on
+from the point. The same goes for any speed above a walk — off a line, out of a
+fall: hold the way it's going and it coasts, let go and you stop.
 
 **A line is a rail, not a floor.** You can't stand on one — a thread a couple
 of centimetres across was the most finicky thing in the game to walk — so the

@@ -56,7 +56,7 @@ func run_checks() -> void:
 	await _test_the_line_grapple()
 	await _test_only_rides_that_work()
 	await _test_sloppy_normals()
-	await _test_a_grapple_stops_where_it_lands()
+	await _test_a_grapple_lands_running()
 	await _test_a_steady_view()
 
 
@@ -678,20 +678,31 @@ func _test_round_things() -> void:
 	await physics_frame
 
 
-## A skid turns when you steer across it.
+## A skid is yours to keep, to drop, or to turn out of.
 ##
-## Speed above a walk — what a grapple's landing leaves you with — bleeds away slowly,
-## so arriving somewhere is not a dead stop. But steering across it was slow too: the
-## keys took half a second to win against it, which read as the keys going the wrong
-## way after every grapple.
+## Speed above a walk — off the end of a line, out of a fall — bleeds away slowly
+## while the keys go along with it, so it is a thing you can use. It used to coast
+## on with nothing held as well, which read as the spider sliding out of your hands:
+## letting go now brakes. And steering across it was slow: the keys took half a
+## second to win against it, which read as the keys going the wrong way.
 func _test_turning_out_of_a_skid() -> void:
 	release_all()
 	await _set_down(Vector3(0.0, -ROOM_HALF.y + 0.5, 1.5), Vector3.FORWARD, -0.2)
+	check(_spider.climb.skid_damping < _spider.climb.deceleration * 0.5,
+		"speed above a walk bleeds slower than a stop (%.1f against %.1f)"
+		% [_spider.climb.skid_damping, _spider.climb.deceleration])
 	var fast := Vector3.RIGHT * _spider.speed * 3.0
 	_spider.velocity = fast
+	Input.action_press("move_right")
 	await run_frames(10)
+	Input.action_release("move_right")
 	check(_spider.velocity.dot(Vector3.RIGHT) > _spider.speed * 1.5,
-		"left alone, a skid keeps going (%.2f m/s)" % _spider.velocity.dot(Vector3.RIGHT))
+		"held along, a skid keeps going (%.2f m/s)" % _spider.velocity.dot(Vector3.RIGHT))
+	_spider.velocity = fast
+	await run_frames(10)
+	var left := Vector3(_spider.velocity.x, 0.0, _spider.velocity.z).length()
+	check(left < _spider.speed * 0.5,
+		"let go of the keys and it brakes (%.2f m/s after a sixth of a second)" % left)
 	_spider.velocity = fast
 	Input.action_press("move_forward")
 	await run_frames(10)
@@ -1286,69 +1297,106 @@ func _test_a_steady_view() -> void:
 
 # --- scaffolding --------------------------------------------------------
 
-## A grapple takes you to the point and you stop there, whichever way you came in.
+## A grapple lands you running if the keys say run, and stopped if they say nothing.
 ##
-## It used to keep what it was carrying along the surface, so a grapple to the floor
-## ahead slid you on past the point you sent it to. Speed you have some other way —
-## off the end of a line, out of a fall — still bleeds off in a skid rather than
-## being clamped away, and a jump out of that skid still carries it.
-func _test_a_grapple_stops_where_it_lands() -> void:
+## It used to keep 80% of what it carried along the surface and skid on from there,
+## so a grapple to the floor ahead slid you on past the point with nothing held —
+## out of your hands. Then it stopped dead, and running on from a landing was a stop
+## and a start. Now what it carries along the surface stays, up to the landing's top
+## speed; letting go brakes that within a step; and for a moment after landing the
+## spider is faster and quicker off the mark, fading back to a walk. A jump out of a
+## landing still carries it, which is the chaining.
+func _test_a_grapple_lands_running() -> void:
 	release_all()
 	var climb := _spider.climb
-	check(is_zero_approx(climb.grapple_carry), "nothing of a grapple's travel survives the landing")
-	check(climb.skid_damping < climb.deceleration * 0.5,
-		"speed above a walk still bleeds slower than a stop (%.1f against %.1f)"
-		% [climb.skid_damping, climb.deceleration])
+	var height: float = _spider.stage().body_height
+	check(climb.grapple_carry > 0.5, "a grapple's travel along the surface survives the landing")
+	check(climb.landing_time > 0.0 and climb.landing_speed > 0.0 and climb.landing_push > 0.0,
+		"and a landing springs (%.1f s, %.2f times the speed, %.0f times the push)"
+		% [climb.landing_time, 1.0 + climb.landing_speed, 1.0 + climb.landing_push])
+	var floor_at := Vector3(-2.0, -ROOM_HALF.y + 0.5, 0.0)
+	await _set_down(floor_at, Vector3.FORWARD, -0.2)
+	var walk := climb._surface_speed(false)
+	var top := walk * (1.0 + climb.landing_speed)
 
 	# Head-on into a floor: all of the travel is into the stone, so all of it
 	# goes. A stop is the right answer here and it has to stay the right answer.
-	_spider.global_position = Vector3(0.0, -ROOM_HALF.y + 1.0, 0.0)
-	climb.release()
-	_spider.velocity = Vector3(0.0, -8.0, 0.0)
-	climb.grapple_target = Vector3(0.0, -ROOM_HALF.y, 0.0)
-	climb.grapple_normal = Vector3.UP
-	climb._arrive()
+	_land(Vector3(0.0, -8.0, 0.0))
 	check(_spider.velocity.length() < 0.5,
-		"straight down onto a floor still stops dead (%.2f m/s)"
-		% _spider.velocity.length())
+		"straight down onto a floor still stops (%.2f m/s)" % _spider.velocity.length())
 
-	# Glancing along it: stopped there too, not slid on past the point.
-	climb.release()
-	_spider.velocity = Vector3(9.0, -2.0, 0.0)
-	climb.grapple_target = Vector3(1.0, -ROOM_HALF.y, 0.0)
-	climb.grapple_normal = Vector3.UP
-	climb._arrive()
-	check(_spider.velocity.length() < 0.5,
-		"and skimming across it stops you at the point as well (%.2f m/s)"
-		% _spider.velocity.length())
+	# Glancing along it: what ran along the floor stays, but no faster than the
+	# landing's top speed — a grapple flies far faster than any walk.
+	_land(Vector3(9.0, -2.0, 0.0))
+	var kept := _spider.velocity
+	check(kept.dot(Vector3.RIGHT) > walk and kept.length() <= top + 0.01,
+		"skimming across it lands you running, no faster than %.2f (%.2f m/s)"
+		% [top, kept.length()])
 
-	# Speed come by another way skids, long enough to be a thing you can use. Walk
-	# speed is about 2.4, so this measures how long it takes to come back down
-	# toward it.
-	_spider.velocity = Vector3(7.0, 0.0, 0.0)
-	climb.tangent_velocity = _spider.velocity
-	var fast := _spider.velocity.length()
-	await run_frames(12)
-	var after := _spider.climb.tangent_velocity.length()
-	check(after > _spider.stage().move_speed,
-		"a fifth of a second later it is still above a walk (%.2f over %.2f)"
-		% [after, _spider.stage().move_speed])
-	check(after < fast, "and coming down (%.2f from %.2f)" % [after, fast])
+	# Nothing held: it brakes, settling a step on from the point rather than
+	# skidding on past it.
+	var landed := _spider.global_position
+	await run_frames(20)
+	var slid := Vector3(_spider.global_position.x - landed.x, 0.0,
+		_spider.global_position.z - landed.z).length()
+	check(slid < height, "let go and it settles within a body height of the point (%.2f of %.2f m)"
+		% [slid, height])
+	check(climb.tangent_velocity.length() < walk * 0.1,
+		"and stops there (%.2f m/s)" % climb.tangent_velocity.length())
 
-	# And a jump out of that skid takes it with you, which is the chaining.
-	var sideways := _spider.climb.tangent_velocity
-	_spider.velocity = sideways
+	# Held the way it was going: faster than a walk to begin with, fading back to one.
+	_land(Vector3(9.0, -2.0, 0.0))
+	Input.action_press("move_right")
+	await run_frames(6)
+	var early := climb.tangent_velocity.length()
+	check(early > walk * 1.1, "hold the way it was going and it runs on faster than a walk (%.2f over %.2f)"
+		% [early, walk])
+	await run_frames(int(climb.landing_time * 60.0) + 6)
+	var late := climb.tangent_velocity.length()
+	Input.action_release("move_right")
+	check(absf(late - walk) < walk * 0.05,
+		"fading back to a walk once the spring is spent (%.2f against %.2f)" % [late, walk])
+
+	# From a standstill, too: off the mark at once after a landing, against a walk's
+	# few frames of run-up.
+	await _set_down(floor_at, Vector3.FORWARD, -0.2)
+	Input.action_press("move_left")
+	await run_frames(3)
+	var usual := climb.tangent_velocity.length()
+	Input.action_release("move_left")
+	await _set_down(floor_at, Vector3.FORWARD, -0.2)
+	_land(Vector3(0.0, -8.0, 0.0))
+	Input.action_press("move_left")
+	await run_frames(3)
+	var sprung := climb.tangent_velocity.length()
+	Input.action_release("move_left")
+	check(sprung > walk and usual < walk * 0.8,
+		"and from a standstill a landing is off the mark at once (%.2f m/s three frames in, against %.2f)"
+		% [sprung, usual])
+
+	# And a jump out of a landing takes what it had with it, which is the chaining.
+	var running := climb.tangent_velocity
+	_spider.velocity = running
 	climb._leap(Vector2.ZERO)
 	var flat := Vector3(_spider.velocity.x, 0.0, _spider.velocity.z)
-	check(flat.length() > sideways.length() * 0.8,
-		"jumping out of a skid carries it into the air (%.2f of %.2f)"
-		% [flat.length(), sideways.length()])
+	check(flat.length() > running.length() * 0.8,
+		"jumping out of a landing carries it into the air (%.2f of %.2f)"
+		% [flat.length(), running.length()])
 	check(_spider.velocity.y > 0.0,
 		"while still going up (%.2f m/s)" % _spider.velocity.y)
 	climb.release()
 	_spider.global_position = Vector3(0.0, -ROOM_HALF.y + 0.6, 0.0)
 	_spider.velocity = Vector3.ZERO
 	await run_frames(10)
+
+
+## A grapple landing on the floor where the spider stands, carrying [param travel].
+func _land(travel: Vector3) -> void:
+	var climb := _spider.climb
+	climb.grapple_target = _spider.global_position
+	climb.grapple_normal = Vector3.UP
+	_spider.velocity = travel
+	climb._arrive()
 
 
 func _build_room() -> Node3D:

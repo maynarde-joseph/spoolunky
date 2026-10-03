@@ -111,18 +111,33 @@ const ROOM_KEPT := 250
 
 @export var acceleration := 14.0
 
-## How much of a grapple's travel along the surface survives the landing: none. A
-## grapple takes you to the point and you stop there. It used to keep most of it,
-## which slid a grapple to the floor ahead on past the point it was sent to — the
-## spider not stopping where it was sent.
-@export_range(0.0, 1.0, 0.05) var grapple_carry := 0.0
+## How much of a grapple's travel along the surface survives the landing: all of
+## it, up to the landing's top speed (see [member landing_speed]) — so a glancing
+## arrival lands you running and a head-on one stops. Letting go of the keys brakes
+## what it kept within a step: the skid that once slid you on past the point with
+## nothing held is gone, and so is the dead stop that replaced it.
+@export_range(0.0, 1.0, 0.05) var grapple_carry := 1.0
 
-## How fast speed above a walk bleeds off, per second.
+## Seconds a grapple's landing puts a spring in the step for, fading all the way:
+## a higher top speed and a harder push toward whatever the keys say, so running on
+## from where a grapple lands is one movement rather than a stop and a start.
+@export var landing_time := 0.8
+
+## Top speed over a walk at the moment a grapple lands: 0.25 is a quarter as fast
+## again. Fades over [member landing_time].
+@export var landing_speed := 0.25
+
+## Acceleration over the usual at the moment a grapple lands: 2 is three times as
+## hard. Fades over [member landing_time].
+@export var landing_push := 2.0
+
+## How fast speed above a walk bleeds off, per second, while the keys go along
+## with it.
 ##
 ## Deliberately far gentler than [member deceleration], which exists to stop you
 ## the moment you let go of a key: speed that came from somewhere else — off the end
 ## of a line, out of a fall — is a skid you can use, not something wiped out in four
-## frames.
+## frames. Let go, though, and it brakes like anything else.
 @export var skid_damping := 1.6
 @export var deceleration := 18.0
 
@@ -237,6 +252,9 @@ var _view: SpiderCamera
 var _facing := Vector3.FORWARD
 var _current_up := Vector3.UP
 var _grace := 0.0
+
+## Seconds left of a grapple landing's spring: see [member landing_time].
+var _landing := 0.0
 
 ## What [method room_to_hang] last found, by line: when, for which body and near
 ## where, and the stretch.
@@ -419,6 +437,7 @@ func step(delta: float, input_axis: Vector2, want_jump: bool, want_sprint: bool,
 	if _spider == null:
 		return
 	_grace = maxf(0.0, _grace - delta)
+	_landing = maxf(0.0, _landing - delta)
 	_swap_cooldown = maxf(0.0, _swap_cooldown - delta)
 	_silk_warning = maxf(0.0, _silk_warning - delta)
 	if mode == Mode.GRAPPLING:
@@ -457,6 +476,7 @@ func release() -> void:
 	ride_web = null
 	ride_speed = 0.0
 	line_length = 0.0
+	_landing = 0.0
 	_forget_walk()
 	if _spider != null:
 		_spider.up_direction = Vector3.UP
@@ -499,23 +519,31 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	# Walking the surface: all the movement happens in its tangent plane, and
 	# the only force is the one holding the spider onto it.
 	wish = _walk(input_axis)
-	var speed := _surface_speed(want_sprint)
+	# A grapple's landing springs: quicker and harder off the mark for a moment,
+	# fading to nothing over landing_time.
+	var spring := _landing / landing_time if landing_time > 0.0 else 0.0
+	var speed := _surface_speed(want_sprint) * (1.0 + landing_speed * spring)
 	var velocity := _spider.velocity
 	var tangent := velocity - _current_up * velocity.dot(_current_up)
 	var target := wish * speed
 	# Above a walk, speed bleeds instead of being clamped away. Steering against
 	# it still brakes hard — that is what deceleration is for — but coasting on
-	# what a grapple or a jump gave you is a skid, and a skid is the only place
+	# what a jump or a line gave you is a skid, and a skid is the only place
 	# carried momentum can actually live.
 	#
-	# Only while the keys go along with it, though, or nothing is held. Steering
-	# across a skid turns as sharply as steering at a walk: a landing that would not
-	# take a turn for half a second read as the keys going the wrong way.
-	var with_skid := wish == Vector3.ZERO or wish.dot(tangent.normalized()) > 0.7
+	# Only while the keys go along with it, though. Let go and it brakes: a skid
+	# that coasted on with nothing held read as the spider sliding out of your
+	# hands. And steering across one turns as sharply as steering at a walk: a
+	# landing that would not take a turn for half a second read as the keys going
+	# the wrong way. A landing's spring is not a skid either: it fades on its own.
+	var with_skid := spring <= 0.0 and wish != Vector3.ZERO \
+		and wish.dot(tangent.normalized()) > 0.7
 	if tangent.length() > speed and with_skid:
 		tangent = tangent.lerp(target, clampf(skid_damping * delta, 0.0, 1.0))
 	else:
 		var rate: float = acceleration if target.dot(tangent) > 0.0 else deceleration
+		if wish != Vector3.ZERO:
+			rate *= 1.0 + landing_push * spring
 		tangent = tangent.lerp(target, clampf(rate * delta, 0.0, 1.0))
 
 	var into := _current_up * stick_force * height
@@ -902,16 +930,20 @@ func _grapple_limit(speed: float) -> float:
 func _arrive() -> void:
 	var point := grapple_target
 	var normal := grapple_normal
-	# What was running into the surface goes, and of what was running along it,
-	# only [member grapple_carry] — none, as the game ships: the grapple takes you
-	# to the point, and you stop there.
+	# What was running into the surface goes. Of what was running along it,
+	# [member grapple_carry] stays — no faster than the landing's own top speed,
+	# since a grapple flies far faster than any walk — and the landing's spring
+	# takes it on from there, or the brakes do if nothing is held.
 	var travel := _spider.velocity
 	var along := travel - normal * travel.dot(normal)
-	_spider.velocity = along * grapple_carry
 	# Taken outright: the body rolled towards it all the way in, and the grapple
 	# knows exactly which surface it is.
 	_adopt_surface(normal, false)
 	_set_mode(Mode.ATTACHED)
+	_landing = landing_time
+	_spider.velocity = (along * grapple_carry).limit_length(
+		_surface_speed(false) * (1.0 + landing_speed))
+	tangent_velocity = _spider.velocity
 	grappled.emit(point, normal)
 
 

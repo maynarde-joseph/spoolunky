@@ -1778,11 +1778,11 @@ and a log lying on the floor:
   It now offers the nearest *other* surface too, on the same terms as an inside
   corner: near enough to be the next thing underfoot, standing on this side of the
   one you are on, and pushed into.
-* **A skid turns when you steer across it.** Speed above a walk — what a grapple's
-  landing leaves you with — bleeds away slowly, so arriving is not a dead stop. But
-  it ignored steering across it too, so for half a second after every grapple the
-  keys seemed to go the wrong way. A skid now only coasts while the keys go along
-  with it or nothing is held.
+* **A skid turns when you steer across it.** Speed above a walk bleeds away
+  slowly, so arriving is not a dead stop. But it ignored steering across it too, so
+  for half a second after every grapple the keys seemed to go the wrong way. A skid
+  now only coasts while the keys go along with it — let go and it brakes (see
+  *A grapple landing springs*).
 
 ### Framing a throw
 
@@ -1849,23 +1849,39 @@ What changes is that going somewhere is two things — putting the road down, an
 zipping along it — and the second is where you can be caught. The line is still one of
 your three (§5), and still a wire a spell can run down.
 
-### A grapple stops where it lands
+### A grapple landing springs
 
-The grapple takes you to the point you sent it to, and **you stop there**. For a
-while it kept what it had been carrying along the surface — 80% of it, so a
-glancing arrival landed you running, for chaining one grapple into the next — but
-a grapple to the floor ahead then slid on past the point it was sent to, and that
-read as the spider not stopping where it was told. `grapple_carry` is the knob,
-and it is nought.
+The grapple takes you to the point you sent it to, and what you do there is up to
+the keys. It has been both wrong ways round. First it kept 80% of what it carried
+along the surface and skidded on from there, so a grapple to the floor ahead slid
+on past the point with nothing held — the spider out of your hands. Then it
+stopped dead, which was right for where it stopped and wrong for smooth play:
+running on from a landing was a stop and then a start.
 
-Two pieces of that stayed, because they are about speed come by some other way —
-off the end of a line, out of a fall:
+Now:
 
-* **Above a walk, speed bleeds rather than being clamped.** `deceleration` is
-  18/s because it exists to stop you the moment you release a key; a skid at
-  1.6/s lasts long enough to be a thing you use. Steering *against* it still
-  brakes hard.
-* **A jump carries what you already had**, so a skid jumped out of goes with you.
+* **What ran along the surface stays, up to the landing's top speed.**
+  `grapple_carry` is 1, capped at a quarter over a walk (`landing_speed`): a
+  grapple flies far faster than any walk, and a head-on landing has nothing along
+  the surface to keep, so it still stops.
+* **The landing springs.** For `landing_time` (0.8 s) the top speed is up to 1.25
+  times a walk and the push toward whatever the keys say up to three times as hard
+  (`landing_push`), both fading to nothing. Holding on lands you running and eases
+  you back to a walk; from a head-on stop you are off the mark in a frame or two
+  rather than the usual run-up.
+* **Letting go brakes.** With nothing held, what the landing kept goes at the full
+  `deceleration` — a soft step on from the point, about half a body, not a skid.
+
+Two pieces of the old carry stayed, because they are about speed come by some other
+way — off the end of a line, out of a fall:
+
+* **Above a walk, speed bleeds rather than being clamped — while the keys go along
+  with it.** `deceleration` is 18/s because it exists to stop you the moment you
+  release a key; a skid at 1.6/s lasts long enough to be a thing you use.
+  Steering *against* it still brakes hard, and letting go stops it like anything
+  else: a skid that coasted on with nothing held read as sliding out of control.
+* **A jump carries what you already had**, so a landing or a skid jumped out of
+  goes with you.
 
 **Why not swinging instead.** The obvious alternative — click an anchor and swing
 from it — is already in the game twice: `Ctrl` drops you onto a dragline and you
@@ -2141,7 +2157,7 @@ hold in their head on the first screen.
 | **Space** | Jump. Also the way off a web, which is sticky, and off a line you are hanging from |
 | **Shift** | **Sprint**, out of a pool of a few seconds that fills back up while you walk. It costs more per size class of whatever is on your line, which is what makes hauling something home at a run a decision rather than the obvious move (§2) |
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
-| **Left Mouse** | **Go there, trailing a line, and stop there.** A surface pulls you over — through any line in the way, since Q is what takes hold of a line; something you already caught comes to you instead. A creature still on its feet is none of those, so the aim reads straight through it to whatever is behind (§2). As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5) |
+| **Left Mouse** | **Go there, trailing a line** — holding a direction lands you running, letting go stops you there. A surface pulls you over — through any line in the way, since Q is what takes hold of a line; something you already caught comes to you instead. A creature still on its feet is none of those, so the aim reads straight through it to whatever is behind (§2). As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5) |
 | **G** | **Grapple style**: the pull above, or the line — a line from your feet to where you point, with you hanging from it, ready to zip along (*Two grapples*, §7) |
 | **Right Mouse** | **Cast what is in hand** — the web, to start with (§3.2). With the web in hand: |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |

@@ -26,9 +26,10 @@ Shift                  sprint — it runs out, and it runs out faster the
 walk into a wall       climb it — walls and ceilings are floors to you
 silk is sticky         a web holds you; jump to come off it
 
-Left Mouse             grapple there and stop, trailing a line — three at
-                       a time, and a fourth takes the oldest down. It goes
-                       through lines: Q is what takes hold of one
+Left Mouse             grapple there, trailing a line — hold a way to go
+                       and you land running. Three lines at a time, and a
+                       fourth takes the oldest down. It goes through
+                       lines: Q is what takes hold of one
 Q                      take hold of the nearest line you can hang from,
                        or let go
 on a line              W/S zip along it, toward or away from where you look
