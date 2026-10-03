@@ -5,8 +5,8 @@
 [resource]
 script = ExtResource("1_skill")
 id = "earth"
-display_name = "Stone Pillar"
-description = "A pillar of stone, raised where you point for ten seconds. What stands there is stunned and thrown off its top, and you can throw yourself up with it."
+display_name = "Clay Pillar"
+description = "A square pillar of clay, raised where you point for ten seconds. What stands there is stunned and thrown off its top, and you can throw yourself up with it."
 kind = 0
 row = 1
 column = 4

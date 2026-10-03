@@ -46,8 +46,11 @@ signal notice(text: String)
 ## body heights, from a tap to a full wind-up.
 const SPIRAL_BODIES := Vector2(1.3, 1.6)
 
-## How wide a pillar of stone is, from its middle to its side, in body heights.
+## How wide a pillar of clay is, from its middle to the middle of a face, in body
+## heights, and how far out the circle round its foot goes, in those half-widths:
+## out past its corners, which stand nearly half as far out again.
 const PILLAR_BODIES := 0.6
+const PILLAR_RING := 1.6
 
 ## Silk's circles while the ball of silk winds up: how many go round it, how big
 ## each is and how far out from the ball's middle it goes round, as shares of the
@@ -761,11 +764,12 @@ func _on_breath_finished(_breath: FireBreath, burned: Array[Prey], webs: int,
 
 # --- earth ----------------------------------------------------------------
 
-## A pillar of stone raised where the cross is, out of whatever it is on — up from
-## the floor, out of a wall — as tall as the wind-up makes it. What stands there is
-## stunned and thrown off its top, hurt; the spider standing there is thrown up
-## higher than it can jump; a web it comes up under is flung up off it. It stands
-## for its time, then sinks back. See [StonePillar].
+## A pillar of clay raised where the cross is, out of whatever it is on — up from
+## the floor, out of a wall — as tall as the wind-up makes it: a square block, a
+## face turned to the camera. What stands there is stunned and thrown off its top,
+## hurt; the spider standing there is thrown up higher than it can jump; a web it
+## comes up under is flung up off it. It stands for its time, then sinks back. See
+## [ClayPillar].
 func _raise(spell: SpiderSpell, wound: float) -> Dictionary:
 	var target := pillar_target()
 	if not target.get("hit", false):
@@ -773,9 +777,11 @@ func _raise(spell: SpiderSpell, wound: float) -> Dictionary:
 		return {"cast": false}
 	var height := body_height()
 	var at: Vector3 = target["point"]
-	var pillar := StonePillar.raise(_host(), at, target.get("normal", Vector3.UP), pillar_wide(),
+	var camera := _spider.view.camera if _spider.view != null else null
+	var pillar := ClayPillar.raise(_host(), at, target.get("normal", Vector3.UP), pillar_wide(),
 		size_of(spell, wound) * height, duration_of(spell, wound), power_of(spell, wound),
-		height, spell.colour, _spider)
+		height, spell.colour, _spider,
+		camera.global_basis.z if camera != null else Vector3.ZERO)
 	if pillar == null:
 		return {"cast": false}
 	var said := PackedStringArray()
@@ -786,12 +792,12 @@ func _raise(spell: SpiderSpell, wound: float) -> Dictionary:
 	if not pillar.flung.is_empty():
 		said.append("%d web%s flung" % [pillar.flung.size(), "" if pillar.flung.size() == 1 else "s"])
 	if not said.is_empty():
-		notice.emit("Stone Pillar — " + ", ".join(said))
+		notice.emit("Clay Pillar — " + ", ".join(said))
 	return {"cast": true, "at": at}
 
 
-## Where a pillar of stone comes up, and which way: out of the world where the cross
-## meets it, along the way it faces. Stone comes out of the world, not out of silk
+## Where a pillar of clay comes up, and which way: out of the world where the cross
+## meets it, along the way it faces. Clay comes out of the world, not out of silk
 ## or a creature: with the cross on either it comes up out of whatever is under it,
 ## so a pillar aimed at a web comes up under that web, not somewhere past it. Open
 ## air, out of whatever is underneath.
@@ -808,7 +814,7 @@ func pillar_target() -> Dictionary:
 	return _ground(target, GameLayers.WORLD)
 
 
-## How wide a pillar of stone is, from its middle to its side, in metres.
+## How wide a pillar of clay is, from its middle to the middle of a face, in metres.
 func pillar_wide() -> float:
 	return PILLAR_BODIES * body_height()
 
@@ -1067,11 +1073,11 @@ func circle_at(spell: SpiderSpell, wound: float) -> Dictionary:
 			return {"where": MagicCircle.facing(target.get("point", _spider.global_position)
 				+ up * height * 0.03, up), "wide": size_of(spell, wound) * height}
 		SpiderSpell.Form.EARTH:
-			# Round the foot of the pillar, a little wider than it, so it shows.
+			# Round the foot of the pillar, out past its corners, so it shows.
 			var foot := pillar_target()
 			var out: Vector3 = foot.get("normal", Vector3.UP)
 			return {"where": MagicCircle.facing(foot.get("point", _spider.global_position)
-				+ out * height * 0.03, out), "wide": pillar_wide() * 1.4}
+				+ out * height * 0.03, out), "wide": pillar_wide() * PILLAR_RING}
 	var ground := _ground({"point": _spider.global_position, "hit": false})
 	var floor_up: Vector3 = ground.get("normal", Vector3.UP)
 	var wide := size_of(spell, wound) * height

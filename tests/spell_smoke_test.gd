@@ -49,7 +49,7 @@ func _sections() -> Array[Callable]:
 		_test_fire_breath,
 		_test_fire_burns_silk,
 		_test_pullback,
-		_test_stone_pillar,
+		_test_clay_pillar,
 		_test_the_whole_book_open,
 	]
 
@@ -717,8 +717,8 @@ func _test_spells_leave_through_circles() -> void:
 		check(earthen[0].global_position.distance_to(foot) < height * 0.1
 			and earthen[0].global_basis.y.normalized().dot(Vector3.UP) > 0.99,
 			"lying round the foot of the pillar to come")
-		check(absf(earthen[0].radius - spells.pillar_wide() * 1.4) < height * 0.05,
-			"a little wider than the pillar (%.2f m)" % earthen[0].radius)
+		check(absf(earthen[0].radius - spells.pillar_wide() * SpiderSpells.PILLAR_RING) < height * 0.05,
+			"out past the corners of the pillar (%.2f m)" % earthen[0].radius)
 	release_action(spider.input_shoot)
 	await run_frames(2)
 	check(_last_pillar() != null and earthen.size() == 1 and earthen[0].is_fading(),
@@ -1966,19 +1966,17 @@ func _test_pullback() -> void:
 	check(not spells.cooling(pullback), "and the wait is not spent")
 
 
-## A level can hand the spider the whole book at once: every spell known and on a
-## key, and every interaction, to an Apprentice — but no tier and no point — and
-## shut again when it takes the book back.
-## A pillar of stone raised where the cross is, out of the floor: what stands there
-## is stunned, carried up and thrown off the top, hurt, and comes down still stunned;
-## the spider standing there is thrown up higher than it can jump; a web it comes up
-## under is flung up off it, and what it held comes down bundled. It comes out of a
-## wall as readily, and while it stands it is stone to stand on; once its time is up
-## it sinks away, and silk tied to it comes down with it.
-func _test_stone_pillar() -> void:
+## A square pillar of clay raised where the cross is, out of the floor, a face to
+## the camera: what stands there is stunned, carried up and thrown off the top, hurt,
+## and comes down still stunned; the spider standing there is thrown up higher than
+## it can jump; a web it comes up under is flung up off it, and what it held comes
+## down bundled. It comes out of a wall as readily, with a level top, and while it
+## stands it is solid to stand on; once its time is up it sinks away, and silk tied
+## to it comes down with it.
+func _test_clay_pillar() -> void:
 	var earth := spells.by_id("earth")
 	if not check(earth != null and earth.form == SpiderSpell.Form.EARTH,
-			"there is the Stone Pillar in the book"):
+			"there is the Clay Pillar in the book"):
 		return
 	_learned("earth", 2)
 	check(spells.select("earth"), "learned, it can be taken in hand")
@@ -2007,6 +2005,20 @@ func _test_stone_pillar() -> void:
 		return
 	check(pillar.base.distance_to(under) < height * 0.2 and pillar.axis.dot(Vector3.UP) > 0.99,
 		"out of the floor under the beetle (%.2f m off)" % pillar.base.distance_to(under))
+	var back := spider.view.camera.global_basis.z
+	back = Vector3(back.x, 0.0, back.z).normalized()
+	var clay := pillar.get_node("Clay") as CollisionShape3D
+	check(clay != null and clay.shape is BoxShape3D and pillar.face.dot(back) > 0.99
+		and pillar.global_basis.z.normalized().dot(pillar.face) > 0.99,
+		"a square block, a face turned to the camera")
+	var middle := pillar.base + Vector3.UP * pillar.tall * 0.5
+	var corner := (pillar.face + pillar.flank) * pillar.radius
+	check(pillar.in_the_way(middle + corner * 0.9) and not pillar.in_the_way(middle + corner * 1.1),
+		"out to its corners and no further")
+	var paint := (pillar.get_node("Block") as MeshInstance3D).material_override as StandardMaterial3D
+	check(paint != null and paint.albedo_color.r > paint.albedo_color.g + 0.08
+		and paint.albedo_color.g > paint.albedo_color.b + 0.05, "of brown clay (%s)"
+		% (paint.albedo_color.to_html(false) if paint != null else "—"))
 	check(absf(pillar.tall - earth.size_at(0.0) * height) < 0.01
 		and is_equal_approx(pillar.lasts, earth.duration_at(0.0)),
 		"%.2f m tall, standing %.0f s" % [pillar.tall, pillar.lasts])
@@ -2026,12 +2038,12 @@ func _test_stone_pillar() -> void:
 	check(down and beetle.is_stunned(), "and comes back down, still stunned")
 	var top := _ground_under(pillar.base + Vector3.UP * (pillar.tall + height))
 	check(absf(top - (floor_y + pillar.tall)) < height * 0.1,
-		"while it stands, its top is stone to stand on (%.2f m up)" % (top - floor_y))
+		"while it stands, its top is solid to stand on (%.2f m up)" % (top - floor_y))
 
 	# Its time up, it sinks away, and silk tied to it comes down with it.
-	var side := pillar.base + Vector3.UP * pillar.tall * 0.6 + Vector3.BACK * pillar.radius
+	var side := pillar.base + Vector3.UP * pillar.tall * 0.6 + pillar.face * pillar.radius
 	var tie := WebStrand.spin(pattern_named("frame_line"), side,
-		Vector3(side.x, floor_y, side.z + height * 4.0), 1.0)
+		Vector3(side.x, floor_y, side.z) + pillar.face * height * 4.0, 1.0)
 	if check(tie != null, "a line tied to its side"):
 		tie.place_in(webs)
 		var pillar_id := pillar.get_instance_id()
@@ -2109,14 +2121,15 @@ func _test_stone_pillar() -> void:
 	var ledge := _last_pillar()
 	check(ledge != null and ledge.axis.dot(Vector3.RIGHT) > 0.99,
 		"it comes out of it level (%s)" % (str(ledge.axis) if ledge != null else "—"))
+	check(ledge != null and ledge.face.dot(Vector3.UP) > 0.99, "with a level top to stand on")
 	wall.free()
 
 
-## The newest pillar of stone standing, or null.
-func _last_pillar() -> StonePillar:
-	var found: StonePillar = null
-	for node in spider.get_tree().get_nodes_in_group(StonePillar.GROUP):
-		var pillar := node as StonePillar
+## The newest pillar of clay standing, or null.
+func _last_pillar() -> ClayPillar:
+	var found: ClayPillar = null
+	for node in spider.get_tree().get_nodes_in_group(ClayPillar.GROUP):
+		var pillar := node as ClayPillar
 		if pillar != null and not pillar.is_queued_for_deletion():
 			found = pillar
 	return found
@@ -2129,6 +2142,9 @@ func _ground_under(from: Vector3) -> float:
 	return (hit["position"] as Vector3).y if not hit.is_empty() else -INF
 
 
+## A level can hand the spider the whole book at once: every spell known and on a
+## key, and every interaction, to an Apprentice — but no tier and no point — and
+## shut again when it takes the book back.
 func _test_the_whole_book_open() -> void:
 	check(spells.open_spells().size() == 1, "an Apprentice has silk and nothing else")
 	spells.open_all = true
