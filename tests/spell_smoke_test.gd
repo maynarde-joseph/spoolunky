@@ -53,6 +53,7 @@ func _sections() -> Array[Callable]:
 		_test_pullback,
 		_test_clay_pillar,
 		_test_mud,
+		_test_lightning_rod,
 		_test_the_whole_book_open,
 	]
 
@@ -2345,6 +2346,51 @@ func _test_mud() -> void:
 		"leaving a wide puddle where it stood (%.2f m to its rim, %.2f m to a face of the pillar)"
 		% [pool.radius if pool != null else 0.0, half])
 	await _spat()
+
+
+## Lightning that reaches a clay pillar goes to ground through it: down the pillar
+## and out in a ring round its foot, twice as wide as it struck. Further off than the
+## ring, nothing.
+func _test_lightning_rod() -> void:
+	var earth := _learned("earth", 2)
+	var lightning := _learned("lightning", 2)
+	spider.require_captured_mouse = false
+	var slab := add_slab(Vector3(-180, 0.0, 60), Vector3(40, 0.5, 40))
+	await physics_frame
+	var floor_y := slab.global_position.y + 0.25
+	var start := slab.global_position + Vector3(0, 0.25, 8.0)
+	stand_on(start)
+	await run_frames(20)
+	var height := spider.stage().body_height
+	var spot := Vector3(start.x, floor_y, start.z) + Vector3.FORWARD * height * 6.0
+	clear_prey_near(spot, height * 30.0, null)
+	aim_at(spot)
+	await physics_frame
+	check(spells.cast_now(earth), "a pillar raised")
+	var pillar := _last_pillar()
+	if not check(pillar != null, "and standing"):
+		return
+	await run_frames(20)
+	var radius := lightning.size_at(0.0) * height
+	var near := spawn("beetle", pillar.base + pillar.flank * radius * 1.6 + Vector3.UP * 0.2)
+	var far := spawn("beetle", pillar.base + pillar.flank * radius * 2.8 + Vector3.UP * 0.2)
+	if not check(near != null and far != null, "a beetle at its foot and one further off"):
+		return
+	for beetle in [near, far]:
+		beetle.aggression = 0.0
+		beetle.move_speed = 0.0
+	await physics_frame
+	var aim := pillar.base + Vector3.UP * pillar.tall * 0.8 + pillar.face * pillar.radius
+	check(near.global_position.distance_to(aim) > radius * 1.5,
+		"the near one well out of the strike's own reach (%.2f m, the strike %.2f m)"
+		% [near.global_position.distance_to(aim), radius])
+	aim_at(aim)
+	await physics_frame
+	check(spells.cast_now(lightning), "lightning called down on the pillar")
+	var strike := _last_strike()
+	check(strike != null and strike.grounded.has(pillar), "it goes to ground through the pillar")
+	check(near.is_stunned(), "and out round its foot: the beetle there is stunned")
+	check(not far.is_stunned(), "the one further off than the ring is not")
 
 
 ## The newest pillar of clay standing, or null.

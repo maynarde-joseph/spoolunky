@@ -23,6 +23,9 @@ extends Node3D
 ## * **Water.** Anything wet takes it twice as hard — twice the stun and twice the
 ##   hurt — and passes it on to anything wet near it, and a strike on a whirl
 ##   reaches everything the whirl holds.
+## * **Clay.** A pillar it reaches is a lightning rod: the strike runs down it into
+##   the ground and out in a ring round its foot, [constant GROUNDED] times as wide as
+##   it struck, and through whatever stands on it — see [ClayPillar].
 ## * **Storm Rider.** It jumps on from what it struck to what is near, wet or not
 ##   — see [member arcs].
 ##
@@ -42,6 +45,10 @@ const FLASH := 3.0
 
 ## How long a web it reaches stays live, as so many times the stun.
 const LIVE_FOR := 2.0
+
+## How wide the ring is that a clay pillar it reaches sends it out in, round the
+## pillar's foot, as so many times its radius.
+const GROUNDED := 2.0
 
 ## How far above the strike the bolt comes down from, in radii — and in metres,
 ## at the least.
@@ -70,11 +77,13 @@ var lines := false
 
 var colour := Color(0.98, 0.92, 0.55, 1.0)
 
-## What it stunned, the webs it ran through, and the lines it ran along to get to
-## them, in the order it reached them.
+## What it stunned, the webs it ran through, the lines it ran along to get to
+## them, and the clay pillars it went to ground through, in the order it reached
+## them.
 var shocked: Array[Prey] = []
 var charged: Array[WebStructure] = []
 var ran_along: Array[WebStrand] = []
+var grounded: Array[ClayPillar] = []
 
 ## Where it went, as pairs of points, for drawing.
 var _paths: Array = []
@@ -137,6 +146,26 @@ func discharge() -> void:
 	for creature in creatures:
 		if creature.global_position.distance_to(at) <= radius + creature.hit_radius():
 			_shock(creature, at)
+
+	# Clay: a pillar it reaches takes it down into the ground, and out round its foot
+	# — and through whatever is on the pillar, top or side.
+	for node in get_tree().get_nodes_in_group(ClayPillar.GROUP):
+		var pillar := node as ClayPillar
+		if pillar == null or pillar.is_queued_for_deletion() or pillar.sinking() \
+				or not pillar.in_the_way(at, radius):
+			continue
+		grounded.append(pillar)
+		var top := pillar.base + pillar.axis * pillar.height()
+		_paths.append([at, top])
+		_paths.append([top, pillar.base])
+		var ring := radius * GROUNDED
+		for creature in creatures:
+			var off := creature.global_position - pillar.base
+			var up := off.dot(pillar.axis)
+			if up < -ring or up > pillar.height() + creature.hit_radius() * 2.0:
+				continue
+			if (off - pillar.axis * up).length() <= ring + creature.hit_radius():
+				_shock(creature, pillar.base)
 
 	# Water: a whirl it lands in, or near enough to touch, carries it to all it holds.
 	for node in get_tree().get_nodes_in_group(WaterSpiral.GROUP):

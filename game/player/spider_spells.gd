@@ -493,6 +493,8 @@ func _strike(spell: SpiderSpell, wound: float) -> Dictionary:
 	var said := PackedStringArray()
 	if not strike.shocked.is_empty():
 		said.append("%d stunned" % strike.shocked.size())
+	if not strike.grounded.is_empty():
+		said.append("down the pillar and out round its foot")
 	if not strike.charged.is_empty() and strike.live:
 		said.append("%d web%s live for %ds" % [strike.charged.size(),
 			"" if strike.charged.size() == 1 else "s", roundi(stun * LightningStrike.LIVE_FOR)])

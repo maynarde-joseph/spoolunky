@@ -409,7 +409,8 @@ up. Everything else is learned:
   mud and holds what it lifts fast on its top instead of throwing it; water spat
   on a pillar already standing slumps it into a wide puddle. **Wind fans fire**:
   blow a gust while you breathe fire and the flame goes the whole length of the
-  lane, burning what is in it and any dry silk.
+  lane, burning what is in it and any dry silk. **Clay grounds lightning**: strike
+  a pillar and the charge runs down it and out round its foot, twice as wide.
 * **Five on the keys.** The web is always on 1 and five spells ride on 2 to 6. A
   spell learned goes on the next free key; the tree takes one off or puts one on.
 
