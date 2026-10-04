@@ -471,14 +471,15 @@ press, and something leaves the spider and does its work where it lands. The
 rest are the same verb with other things behind it, so they share the web's
 keys, its reach, its wind-up and its kind of limit.
 
-**Right mouse casts whatever is in hand, and the number keys pick what is in
-hand** — 1 is always the web, and 2 to 6 are the five spells in the loadout
-(§3.3); the wheel turns through them too. A tap casts at once; holding winds it
+**Right mouse casts whatever is in hand, and the disc picks what is in hand** —
+the web always, and the five spells in the loadout (§3.3); the wheel turns
+through them too. (The number keys picked them until the disc came, and are
+parked: bound to nothing, one line each to bring back.) A tap casts at once; holding winds it
 up — a bigger web, a longer breath of fire, more drops of water, a longer stun — over
 the same second the web always took.
 
 **Hold Tab for the disc, and chain off it.** Holding Tab brings the spells in hand
-up in a ring round the cross, in the order of the keys with the web at the top, and
+up in a ring round the cross, in the loadout's order with the web at the top, and
 slows the world to a quarter while it is up. Flick the mouse toward one and let go
 to take it in hand; the mouse moves the disc's pointer instead of the view, so the
 slow is help with choosing and none with aiming. Brought up in the two seconds
@@ -493,7 +494,8 @@ waiting, or out of a tap's reach — and letting go on it only takes it in hand.
 Why that, and not a slow after every cast or a chain key of its own: every
 interaction is the second spell acting on what the first left (below), and what it
 left lasts for seconds, so the hard part of a combination was never the clock. It
-was changing spell mid-fight with the number keys far from the hand that steers,
+was changing spell mid-fight with the number keys far from the hand that steers —
+which is why, the disc in, the number keys came out —
 and aiming a second time at a puddle while a creature walks. The disc takes the
 first, the chain the second, and the slow is the moment to choose in — and to let
 go just as the creature steps into the puddle. A slow on every cast would put half
@@ -545,8 +547,8 @@ what the circles are for.
 | **Clay Pillar** | Adept, 1 point | a square pillar of brown clay comes up out of whatever the cross is on — up from a floor, out of a wall — 3–5 body heights tall and 0.6 from its middle to each face, a face turned to the camera the way an ice block comes up out of water, and stands for 10 s before it sinks back. Square rather than round so it is a thing to build with: flat faces to climb and stand behind, and a top as wide as it looks. With the cross on a creature, a web or a line, it comes up out of the ground under it. What stands where it comes up is stunned first, so it rides the pillar up rather than fighting it, then thrown off the top — two body heights over it and out past its edge — and comes down still stunned, hurt by 6–10% of its health. A boss stands its ground and only takes the stun and the hurt. The spider standing there is thrown up ahead of it, higher than twice a jump: a way up as well as a weapon. A web it comes up under is flung up off its anchors, wrapping what it passes the way a web called back does, and what it held comes down bundled where it ends up. While it stands it is as solid as any wall — to climb, to tie silk to, to stand behind — and silk tied to it comes down when it goes | 5 s |
 
 **Spells are learned, in the tree** (§3.3): with points that ranks hand out, in
-the rank's row. The strip down the right-hand side of the HUD shows the keys —
-the web on 1 and the loadout's five on 2 to 6 — what is in hand, what is waiting
+the rank's row. The strip down the right-hand side of the HUD shows the hand —
+the web and the loadout's five — what is in hand, what is waiting
 and for how long, and the slots still empty, which say where to fill them.
 
 **They work off each other.** This is the part that makes the spells more than a
@@ -728,10 +730,10 @@ together, a wet one whose webs survive its own fire, one that lives on the
 Pullback. Skills are resources in `game/data/skills/`, and the tree grows a card
 for a new one with nothing else to edit.
 
-**The loadout is five.** Silk is always on 1 and takes no slot; five more ride on
-2 to 6. A spell learned goes on the next free key; the tree screen (**E**) takes a
-spell off the keys or puts one on. There are six spells beside the web, so the
-limit bites: one of them stays off the keys, and which one is a choice.
+**The loadout is five.** Silk is always in hand and takes no slot; five more ride
+with it on the disc. A spell learned goes into the loadout if there is room; the
+tree screen (**E**) takes a spell out or puts one in. There are six spells beside
+the web, so the limit bites: one of them stays out, and which one is a choice.
 
 **The testing switch.** `all_spells_open` on the spider — on in the Hollow Wood —
 makes every spell and every interaction known from the start and lifts the
@@ -2297,9 +2299,8 @@ hold in their head on the first screen.
 | **Right Mouse** | **Cast what is in hand** — the web, to start with (§3.2). With the web in hand: |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
 | **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |
-| **1, 2–6** | **Take a spell in hand** — 1 is always the web, and 2 to 6 the five spells in the loadout (§3.3). A key pressed mid-wind-up drops the wind-up and takes its own spell (§3.2) |
-| **Wheel** | The next or last spell on the keys |
-| **Tab** *(hold)* | **The spell disc** — the spells in hand in a ring round the cross, the world slowed to a quarter while it is up; flick toward one and let go to take it. Just after a spell lands it chains: what would act on what that spell left glows, and letting go on it casts it there (§3.2) |
+| **Tab** *(hold)* | **The spell disc** — the web and the loadout's five in a ring round the cross, the world slowed to a quarter while it is up; flick toward one and let go to take it. Just after a spell lands it chains: what would act on what that spell left glows, and letting go on it casts it there (§3.2) |
+| **Wheel** | The next or last spell in hand |
 | **Q** | **Take hold of the nearest line**, or let go. Hanging from one, **W/S** zip you along it toward or away from where you look, with no gravity in it; run off the end onto whatever it is tied to (*Silk is the road network*, §6) |
 | **E** | The spell tree — your rank, your points, and what they can learn (§3.3) |
 | **F** | Wrap the prey you are looking at, then drain it. At a shrine in the Hollow Wood, rest (§12) |
@@ -2311,7 +2312,8 @@ hold in their head on the first screen.
 ### Parked, not deleted
 
 The hold-to-size placer, the tuning dials, the weave modes, saved designs,
-trigger wiring, the bag and its bar, and the tether all still exist, still compile
+trigger wiring, the bag and its bar, the tether and the number keys for spells
+all still exist, still compile
 and are still tested — their input actions are simply bound to nothing, and the
 bar is hidden. Each is one
 line in `project.godot` to bring back once the simpler feel is proven, and
@@ -2519,7 +2521,7 @@ water used to go; Fire Breath in place of the Firebolt — by way of a geyser,
 which aimed too much like lightning; every spell but the web and the Pullback
 doing harm; and ranks earned by catching and eating, opening rows of a spell tree
 whose points buy spells, second tiers, interactions and shorter waits, with five
-spells on the keys (§3.3). Evolving by chance is parked, its code kept. Douse is a
+spells in the loadout (§3.3). Evolving by chance is parked, its code kept. Douse is a
 spit that leaves puddles, silk's circle is wrapped round its ball, and a sixth
 spell — the Clay Pillar — makes the loadout's limit bite. Holding Tab brings up a
 disc of the spells in hand with the world slowed, and just after a spell lands the

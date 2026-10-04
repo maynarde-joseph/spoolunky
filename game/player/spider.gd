@@ -415,7 +415,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 ## The number keys: each takes its spell in hand. Returns whether the event was one
-## of them, so the caller can stop looking.
+## of them, so the caller can stop looking. Parked: the disc took over, and their
+## actions are bound to nothing — one line each in `project.godot` brings them back.
 func _spell_key_input(event: InputEvent) -> bool:
 	for key in range(1, 10):
 		if event.is_action_pressed("spell_%d" % key):

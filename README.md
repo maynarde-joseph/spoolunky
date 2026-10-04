@@ -93,9 +93,9 @@ one kept to what the keys do today.
 | **Q** | take hold of the nearest line with room to hang from — hang from it and zip along it with **W**/**S**, toward or away from where you look. **Q** or **Space** lets go |
 | **Left Mouse** *on something you've caught* | put a line on it and drag it instead — same click, read the only way that makes sense |
 | **Right Mouse** | **cast what is in hand** — the web, to start with: tap, or hold to wind it up |
-| **1, 2–6** | **take a spell in hand** — 1 is always the web; 2 to 6 are the five spells in your loadout. The wheel turns through them too |
-| **Tab** *(hold)* | **the spell disc** — the spells in hand in a ring round the cross, with the world slowed to a quarter while it is up. Flick the mouse toward one and let go to take it in hand. Just after a spell lands the disc **chains**: the spells that would do something to what it left glow with what they'd make, and letting go on one casts it straight there |
-| **E** | the **spell tree** — your rank, the points to spend, every skill and where it stands. Click a skill to learn it; click a spell you know to put it on a key or take it off |
+| **Tab** *(hold)* | **the spell disc** — the web and the five spells in your loadout in a ring round the cross, with the world slowed to a quarter while it is up. Flick the mouse toward one and let go to take it in hand. Just after a spell lands the disc **chains**: the spells that would do something to what it left glow with what they'd make, and letting go on one casts it straight there |
+| **Wheel** | turn through the spells in hand. (The number keys used to take them; they are parked, bound to nothing) |
+| **E** | the **spell tree** — your rank, the points to spend, every skill and where it stands. Click a skill to learn it; click a spell you know to put it in the loadout or take it out |
 | **F** | wrap caught prey, then drain it (also re-arms a sprung snare). At a shrine **F** rests |
 | **Y** | **put a line on a bundle and drag it along** — again to drop what you're carrying |
 | **X** | pull down the web you're looking at, for half the silk back — or pick a device back up |
@@ -408,8 +408,9 @@ up. Everything else is learned:
   column of fire, the strike running out round it as fire, stunning and burning.
   Which comes first decides: each is the second spell acting on what the first
   left behind — and some pairs have nothing, rather than a bigger number.
-* **Five on the keys.** The web is always on 1 and five spells ride on 2 to 6. A
-  spell learned goes on the next free key; the tree takes one off or puts one on.
+* **Five in the loadout.** The web is always in hand and five spells ride with it,
+  on the disc. A spell learned goes into the loadout if there is room; the tree
+  takes one out or puts one in.
 * **The disc, and chaining.** Hold **Tab** and the spells in hand come up in a ring
   round the cross while the world slows to a quarter; flick the mouse toward one
   and let go to take it in hand. Bring it up in the two seconds after a spell lands
@@ -423,7 +424,7 @@ up. Everything else is learned:
 Every spell but the web and the Pullback hurts, and what it takes is health,
 which is how hard a creature fights silk — so a spell is always a way of making
 a catch easier. The level switch `all_spells_open` hands over every spell and
-interaction at once with no limit on the keys, for trying them out; tiers and
+interaction at once with no limit on the loadout, for trying them out; tiers and
 shorter waits are still earned.
 
 Evolving by chance from what you eat is parked: the traits and their screen are
@@ -904,7 +905,7 @@ godot --headless --script res://tests/creature_smoke_test.gd
 
 A fifth casts every spell in the sandbox: the web as the first of them, the rest
 learned in the tree — rank from catching and eating, points, rows, the loadout of
-five and the tree on **E** — the strip that shows the keys, and what each spell does
+five and the tree on **E** — the strip that shows the hand, and what each spell does
 — to what it lands on, and to the other spells and the silk it meets, before and
 after the interaction that lets it. Lightning run down a wire to a
 wasp across the room and left live in the web, a spit that leaves puddles where it
@@ -916,7 +917,7 @@ one creature to the next that burns harder the more silk is on what it touches a
 burns the silk with it — but not a wet web — and turns a puddle to lava, a strike
 sent out round a puddle, lava erupting into a fire rod and lifted by the wind into
 a spiral of fire, webs called back through what is in their way, the magic circles
-each spell is drawn in, the number keys, the disc and the world slowing under it,
+each spell is drawn in, the number keys parked, the disc and the world slowing under it,
 chains cast off it at what the last spell left — a lightning rod, lava, a fire rod
 and a web burned, with the cross turned away — and the whole book opened at once:
 

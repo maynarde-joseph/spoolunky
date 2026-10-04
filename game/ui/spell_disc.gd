@@ -6,8 +6,8 @@ extends Control
 ## middle. Everything it shows is read off the spider's [SpiderDisc] every frame, so
 ## it can only show what letting go will do.
 ##
-## The ring goes round in the order of the number keys, silk at the top, so a spell
-## is always in the same place: the disc is learned as a set of flicks, not read.
+## The ring goes round in the loadout's order, silk at the top, so a spell is always
+## in the same place: the disc is learned as a set of flicks, not read.
 ##
 ## Up in the moment after a cast, it chains: the slices that would do something to
 ## what the cast left glow, and say what they would make; the rest dim. One that cannot
@@ -78,7 +78,7 @@ func _draw() -> void:
 
 
 ## One slice: filled, lit in the spell's colour when the pointer is on it, with its
-## name, its key and how long it has still to wait — and while chaining, glowing with
+## name and how long it has still to wait — and while chaining, glowing with
 ## what it would make if it is [param offer]ed, dimmed if it is not.
 func _slice(middle: Vector2, inner: float, outer: float, index: int, count: int,
 		spell: SpiderSpell, lit: bool, in_hand: bool, spells: SpiderSpells, offer: Dictionary,
@@ -120,9 +120,6 @@ func _slice(middle: Vector2, inner: float, outer: float, index: int, count: int,
 	if under != "":
 		_text(font, label_at + Vector2(0.0, 20.0), under, SpiderHUD.SMALL_SIZE,
 			Color(under_tint, under_tint.a * shown), room)
-	var key_at := centre + Vector2.from_angle(mid_turn) * (outer - 18.0)
-	_text(font, key_at + Vector2(0.0, 6.0), str(index + 1), SpiderHUD.SMALL_SIZE,
-		Color(tint, 0.9 * shown))
 
 
 ## The middle: what letting go now does — takes a spell in hand, or casts the chain

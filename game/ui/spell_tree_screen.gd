@@ -110,14 +110,14 @@ func press(skill_id: String) -> bool:
 	var spell := SpellLibrary.find(skill.spell)
 	var spell_name := spell.display_name if spell != null else skill.display_name
 	if _tree.open_all:
-		_say("Every spell is on the keys while everything is open")
+		_say("Every spell is in the loadout while everything is open")
 		return false
 	if _tree.is_slotted(skill.spell):
 		_tree.unslot(skill.spell)
-		_say("%s off the keys" % spell_name)
+		_say("%s out of the loadout" % spell_name)
 		return true
 	if _tree.slot(skill.spell):
-		_say("%s on [%d]" % [spell_name, _key_of(skill.spell)])
+		_say("%s into the loadout" % spell_name)
 		return true
 	_say("The loadout is full — take a spell off it first")
 	return false
@@ -173,7 +173,7 @@ func _build() -> void:
 
 	_loadout_line = _heading("", 22, Color(0.86, 0.9, 1.0, 1.0))
 	page.add_child(_loadout_line)
-	page.add_child(_heading("click a spell you know to put it on a key, or take it off",
+	page.add_child(_heading("click a spell you know to put it in the loadout, or take it out",
 		16, Color(0.72, 0.75, 0.82, 1.0)))
 	_message = _heading("", 19, OPEN)
 	page.add_child(_message)
@@ -286,8 +286,8 @@ func _refresh() -> void:
 			colour = LEARNED
 			text = "learned"
 			if skill.kind == SpellSkill.Kind.SPELL:
-				var key := _key_of(skill.spell)
-				text = "learned · on [%d]" % key if key > 0 else "learned · not on a key"
+				text = "learned · in the loadout" if _key_of(skill.spell) > 0 \
+					else "learned · not in the loadout"
 		elif _tree.can_learn(skill):
 			colour = OPEN
 			text = "learn it — %d point%s" % [skill.cost, "" if skill.cost == 1 else "s"]
@@ -297,14 +297,14 @@ func _refresh() -> void:
 			state.text = text
 		card.modulate = colour
 
-	var slots := PackedStringArray(["[1] Silk"])
+	var slots := PackedStringArray(["Silk"])
 	if _spells != null:
 		var keys := _spells.hand()
 		for i in range(1, keys.size()):
-			slots.append("[%d] %s" % [i + 1, keys[i].display_name])
+			slots.append(keys[i].display_name)
 		if not _tree.open_all:
 			for i in range(keys.size(), SpellTree.LOADOUT_SIZE + 1):
-				slots.append("[%d] —" % (i + 1))
+				slots.append("—")
 	_loadout_line.text = "Loadout    " + "    ".join(slots)
 
 

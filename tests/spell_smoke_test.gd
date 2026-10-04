@@ -33,7 +33,7 @@ func _sections() -> Array[Callable]:
 		_test_the_tree,
 		_test_the_tree_screen,
 		_test_the_strip,
-		_test_number_keys,
+		_test_spell_keys,
 		_test_the_disc,
 		_test_chains,
 		_test_spells_leave_through_circles,
@@ -69,7 +69,7 @@ func _test_the_book() -> void:
 	var first := book[0]
 	check(first.id == "silk" and first.form == SpiderSpell.Form.SILK,
 		"and the web is the first spell in it")
-	check(spells.is_open(first) and spells.key_for(first) == 1, "known from the start, on key 1")
+	check(spells.is_open(first) and spells.key_for(first) == 1, "known from the start, first in hand")
 	check(spells.current() == first, "and in hand to begin with")
 	var ids := {}
 	var nameless := PackedStringArray()
@@ -153,7 +153,7 @@ func _test_learning_a_spell() -> void:
 		"an Apprentice has %d points to spend (%d)" % [SpellTree.POINTS_PER_RANK, tree.points()])
 	check(tree.learn(skill), "learned")
 	check(spells.is_open(douse) and heard.has("douse"), "and it is known, and says so")
-	check(spells.key_for(douse) == 2, "on the first key after silk's (%d)" % spells.key_for(douse))
+	check(spells.key_for(douse) == 2, "in the first slot after silk's (%d)" % spells.key_for(douse))
 	check(tree.points() == SpellTree.POINTS_PER_RANK - skill.cost, "for its point")
 	check(spells.cycle(1) and spells.current() == douse, "the wheel takes it in hand")
 	check(spells.cycle(1) and spells.current().id == "silk", "and comes round to silk again")
@@ -266,7 +266,7 @@ func _test_ranks() -> void:
 ## What the tree teaches and how: a skill needs its row open, what it stands on and
 ## the points; a tier makes its spell bigger; a cut shortens the waits, silk's too;
 ## five spells fill the loadout and the tree moves them; and with everything open
-## every spell is on a key.
+## every spell is in hand.
 func _test_the_tree() -> void:
 	var tree := spider.spell_tree
 	for row in SpellTree.RANKS.size():
@@ -349,17 +349,17 @@ func _test_the_tree() -> void:
 		"five spells fill the loadout, on keys 2 to 6 (%s)" % str(tree.loadout))
 	var sixth := spells.by_id("earth")
 	check(tree.learn(tree.by_id("earth")) and spells.is_open(sixth) and spells.key_for(sixth) == 0,
-		"a sixth is known, but not on a key: the loadout is full")
+		"a sixth is known, but not in the loadout: it is full")
 	check(not tree.slot("earth"), "and there is no room for it")
 	check(tree.unslot("gust") and tree.slot("earth"), "until one comes off")
 	check(spells.key_for(sixth) == 6 and spells.key_for(spells.by_id("pullback")) == 3,
-		"then it goes on the last key, and the rest move up (%d, %d)"
+		"then it goes in the last slot, and the rest move up (%d, %d)"
 		% [spells.key_for(sixth), spells.key_for(spells.by_id("pullback"))])
 	check(spells.select("douse") and tree.unslot("douse") and spells.current().id == "silk",
-		"a spell taken off the keys while in hand leaves silk in hand")
+		"a spell taken out of the loadout while in hand leaves silk in hand")
 	spells.open_all = true
 	check(spells.hand().size() == spells.book.size(),
-		"with everything open, every spell is on a key, past the five (%d)" % spells.hand().size())
+		"with everything open, every spell is in hand, past the five (%d)" % spells.hand().size())
 	spells.open_all = false
 	tree.forget_all()
 
@@ -390,13 +390,13 @@ func _test_the_tree_screen() -> void:
 	check(screen.card_text("lightning").begins_with("opens at Adept"),
 		"one in a row not reached yet names its rank (%s)" % screen.card_text("lightning"))
 	check(screen.press("douse") and tree.has("douse"), "pressing a card learns it")
-	check(screen.card_text("douse") == "learned · on [2]",
-		"and the card says which key it is on (%s)" % screen.card_text("douse"))
-	check(screen.loadout_text().contains("[2] Douse"),
-		"and so does the loadout (%s)" % screen.loadout_text())
+	check(screen.card_text("douse") == "learned · in the loadout",
+		"and the card says it is in the loadout (%s)" % screen.card_text("douse"))
+	check(screen.loadout_text().contains("Silk    Douse"),
+		"and so does the loadout, after silk (%s)" % screen.loadout_text())
 	check(screen.press("douse") and not tree.is_slotted("douse"),
-		"pressed again, it comes off the keys")
-	check(screen.card_text("douse") == "learned · not on a key", "and says so")
+		"pressed again, it comes out of the loadout")
+	check(screen.card_text("douse") == "learned · not in the loadout", "and says so")
 	check(screen.press("douse") and tree.is_slotted("douse"), "and again, back on")
 	check(not screen.press("fire") and screen.message_text().contains("opens at"),
 		"a shut one says why when it is pressed (%s)" % screen.message_text())
@@ -461,16 +461,30 @@ func _test_the_strip() -> void:
 			"and the chip counts the wait down (%s)" % state.text)
 
 
-## Each number key takes what is on it in hand — silk on 1, the loadout on 2 to 6 —
-## Q takes hold of lines, and the bag's bar is put away so the keys have one meaning.
-func _test_number_keys() -> void:
-	for key in range(1, spells.book.size() + 1):
-		check(InputMap.has_action("spell_%d" % key), "a key for spell %d" % key)
+## The number keys are parked now the disc takes spells in hand: their actions are
+## still there, bound to nothing, and the number row is free. The wheel still turns
+## through the hand, Q takes hold of lines, the bag's bar is put away, and the strip
+## names what is in hand without a key to it. Taking another spell in hand gives up a
+## wind-up under way.
+func _test_spell_keys() -> void:
+	var parked := true
+	for key in range(1, 10):
+		parked = parked and InputMap.has_action("spell_%d" % key) \
+			and InputMap.action_get_events("spell_%d" % key).is_empty()
+	check(parked, "the number keys' actions are kept, and bound to nothing")
+	var on_the_row: Array[StringName] = []
+	for action in InputMap.get_actions():
+		for event in InputMap.action_get_events(action):
+			var key_event := event as InputEventKey
+			if key_event != null and key_event.physical_keycode >= KEY_1 \
+					and key_event.physical_keycode <= KEY_9:
+				on_the_row.append(action)
+	check(on_the_row.is_empty(), "and the number row is free (%s)" % str(on_the_row))
 	var wheel := InputMap.action_get_events("spell_next") + InputMap.action_get_events("spell_prev")
 	var on_the_wheel := wheel.size() == 2
 	for event in wheel:
 		on_the_wheel = on_the_wheel and event is InputEventMouseButton
-	check(on_the_wheel, "and the wheel turns it both ways")
+	check(on_the_wheel, "the wheel turns through the hand both ways")
 	var on_q: Array[StringName] = []
 	for action in InputMap.get_actions():
 		for event in InputMap.action_get_events(action):
@@ -481,30 +495,21 @@ func _test_number_keys() -> void:
 	var hud := level.get_node_or_null("HUD") as SpiderHUD
 	if check(hud != null, "the level has a HUD"):
 		check(not hud._hotbar.visible, "and the bag's bar is put away")
-		var chip := hud._spell_chips.get(2) as Control
-		var label := chip.get_node_or_null(NodePath("Row/Key")) as Label if chip != null else null
-		check(label != null and label.text == "3",
-			"each chip says its key (%s)" % (label.text if label != null else "—"))
+		var chip := hud._spell_chips.get(0) as Control
+		check(chip != null and chip.get_node_or_null(NodePath("Row/Key")) == null,
+			"the strip names what is in hand, with no key to it")
 
-	spider.require_captured_mouse = false
-	var third := spells.book[2]
-	send_action("spell_3")
-	await process_frame
-	release_action("spell_3")
-	check(spells.current().id == "silk", "a key with nothing on it leaves the hand where it was")
 	spells.open_all = true
+	spider.require_captured_mouse = false
+	# Parked, not broken: bind a key to one again and it takes its spell.
 	send_action("spell_3")
 	await process_frame
 	release_action("spell_3")
-	check(spells.current() == third, "open, its key takes it in hand (%s)" % third.display_name)
-	send_action("spell_1")
-	await process_frame
-	release_action("spell_1")
-	check(spells.current().id == "silk", "and 1 takes silk back")
-	# A key while winding up: the wind-up is given up and the key has its way.
+	check(spells.current() == spells.hand()[2],
+		"parked, not broken: the action still takes its spell (%s)" % spells.current().display_name)
 	check(spells.take(2) and spells.begin_cast() and spells.charging, "winding up the second")
 	check(spells.take(4) and not spells.charging and spells.current() == spells.book[3],
-		"a key mid-wind-up drops it and takes its own spell")
+		"taking another in hand drops the wind-up and takes it")
 	spells.take(1)
 
 
@@ -2632,7 +2637,7 @@ func _test_the_whole_book_open() -> void:
 	spells.open_all = true
 	check(spells.open_spells().size() == spells.book.size(),
 		"with the whole book open, it has all %d" % spells.book.size())
-	check(spells.hand().size() == spells.book.size(), "every one of them on a key")
+	check(spells.hand().size() == spells.book.size(), "every one of them in hand")
 	var tree := spider.spell_tree
 	check(tree.knows(&"live_silk") and tree.knows(&"waterspout"), "and every interaction")
 	check(not tree.has_tier("douse") and tree.points() == SpellTree.POINTS_PER_RANK

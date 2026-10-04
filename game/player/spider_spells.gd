@@ -5,9 +5,10 @@ extends Node3D
 ## ready again.
 ##
 ## Right mouse casts whatever is in hand: a tap casts it at once, and holding
-## winds it up — bigger, longer — until you let go. The number keys take a spell in
-## hand — silk on 1, always, and the loadout on 2 to 6 — and the wheel moves the
-## hand along them. Silk is still thrown by the [WebBuilder] exactly as it always
+## winds it up — bigger, longer — until you let go. The disc takes a spell in hand
+## — silk, always, and the loadout's five — and the wheel moves the hand along
+## them. Each is in a slot, silk in the first: [method take] and [method key_for]
+## count them from 1, which is what the number keys did before they were parked. Silk is still thrown by the [WebBuilder] exactly as it always
 ## was; all this decides is that silk is what the key means right now. Every other
 ## spell is cast from here.
 ##
@@ -1304,7 +1305,7 @@ func _on_learned(skill: SpellSkill) -> void:
 	opened.emit(spell)
 	var key := key_for(spell)
 	if key > 0:
-		notice.emit("New spell: %s — [%d] to take it in hand" % [spell.display_name, key])
+		notice.emit("New spell: %s — hold [Tab] to take it in hand" % spell.display_name)
 	else:
 		notice.emit("New spell: %s — the loadout is full: make room in the tree [E]"
 			% spell.display_name)

@@ -10,10 +10,9 @@ extends Node
 ## mouse moves the pointer instead of the view while the disc is up, so the slow is
 ## help with choosing and none with aiming.
 ##
-## The number keys and the wheel still take spells in hand without it. The disc is
-## for when the keys are too far from the hand that is steering — and, being the same
-## for every spell in the same place every time, it is soon a flick you do without
-## looking.
+## It is what takes a spell in hand — the number keys did, and are parked — with
+## the wheel to turn through them as well. Being the same for every spell in the
+## same place every time, it is soon a flick you do without looking.
 ##
 ## Brought up in the moment after a cast, it is a chain as well: the spells that would
 ## do something to what that cast left are lit and named for what they would make —
@@ -83,8 +82,8 @@ func _exit_tree() -> void:
 	_pace = 1.0
 
 
-## Brings the disc up. A wind-up under way is given up, as a number key gives it up:
-## the disc is the player saying they want something else in hand. False if it is up
+## Brings the disc up. A wind-up under way is given up: the disc is the player saying
+## they want something else in hand. False if it is up
 ## already, or there is nothing on the keys to choose between.
 func open() -> bool:
 	if is_open or _spells == null or slices().size() < 2:
@@ -146,7 +145,7 @@ func steer(motion: Vector2) -> void:
 	pointer = (pointer + motion).limit_length(pointer_reach)
 
 
-## What the disc offers, in order round it from the top: what the number keys hold.
+## What the disc offers, in order round it from the top: silk, then the loadout.
 func slices() -> Array[SpiderSpell]:
 	if _spells == null:
 		var none: Array[SpiderSpell] = []

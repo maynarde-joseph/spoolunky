@@ -7,8 +7,8 @@ extends CanvasLayer
 const HOTBAR_SLOT := 72.0
 const HOTBAR_GAP := 8.0
 
-## Whether the bag's bar is on screen. Put away for now: the number keys are the
-## spells', and nothing in the game asks for a device. Its keys are bound to nothing
+## Whether the bag's bar is on screen. Put away for now: nothing in the game asks for
+## a device. Its keys are bound to nothing
 ## while it is away, and the bar is still built, so bringing it back is this.
 const SHOW_BAG := false
 
@@ -40,10 +40,12 @@ Right Mouse            cast what is in hand — the web, to start with: it
 Right Mouse  (hold)    wind it up: a bigger web, more drops of water, a
                        longer stun. Brackets on a creature: the silk goes
                        where it is heading, so keep the cross on it
-1 / 2-6 / wheel        take a spell in hand — 1 is silk, 2 to 6 the five
-                       spells in your loadout
-Tab  (hold)            the spell disc: the world slows while it is up —
-                       flick the mouse toward a spell and let go
+Tab  (hold)            the spell disc: silk and your loadout's five, the
+                       world slowed while it is up — flick the mouse toward
+                       a spell and let go. Just after a spell lands it
+                       chains: let go on a lit one and it goes straight at
+                       what the last spell left
+Wheel                  turn through the spells in hand
 E                      the spell tree — catching and eating earn ranks,
                        ranks earn points, points learn spells
 F                      wrap prey, then drain it; at a shrine, rest
@@ -546,8 +548,7 @@ func _on_trait_gained(gift: SpiderTrait, source: String) -> void:
 func _refresh_in_hand(builder: WebBuilder) -> void:
 	var spells := _spider.spells
 	var spell := spells.current() if spells != null else null
-	var more := "    [1-%d] spells" % spells.hand().size() \
-		if spells != null and spells.hand().size() > 1 else ""
+	var more := "    [Tab] spells" if spells != null and spells.hand().size() > 1 else ""
 	if spell == null or spell.form == SpiderSpell.Form.SILK:
 		var chosen := builder.current_pattern()
 		pattern_label.text = "Silk — %s" % chosen.display_name if chosen != null else "Silk"
@@ -617,15 +618,6 @@ func _build_spell_strip() -> void:
 		row.add_theme_constant_override("separation", 10)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		chip.add_child(row)
-		# The key that takes it in hand, first, where the eye starts.
-		var key := Label.new()
-		key.name = "Key"
-		key.text = str(i + 1)
-		key.add_theme_font_size_override("font_size", TITLE_SIZE)
-		key.custom_minimum_size = Vector2(22.0, 0.0)
-		key.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		key.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		row.add_child(key)
 		var swatch := ColorRect.new()
 		swatch.name = "Swatch"
 		swatch.custom_minimum_size = Vector2(8.0, 0.0)
@@ -677,9 +669,6 @@ func _refresh_spells() -> void:
 		chip.add_theme_stylebox_override("panel", _chip_style(spell, in_hand))
 		chip.modulate = Color(1, 1, 1, 1) if spell != null else Color(1, 1, 1, 0.45)
 		var tint := spell.colour if spell != null else Color(0.6, 0.62, 0.68, 1.0)
-		var key := chip.get_node_or_null(NodePath("Row/Key")) as Label
-		if key != null:
-			key.modulate = Color(tint.r, tint.g, tint.b, 1.0)
 		var swatch := chip.get_node_or_null(NodePath("Row/Swatch")) as ColorRect
 		if swatch != null:
 			swatch.color = tint
