@@ -441,7 +441,7 @@ func _test_the_dungeon() -> void:
 	var leaky := PackedStringArray()
 	for cell: Vector2i in plan.cells:
 		var room: DungeonRoom = run.rooms[cell]
-		var centre := FloorPlan.centre(cell)
+		var centre := run.centre_of(cell)
 		if room.global_position.distance_to(centre) > 0.01 or room.room_id != plan.cells[cell]["room"]:
 			astray.append(str(cell))
 		for side in 4:
@@ -455,6 +455,8 @@ func _test_the_dungeon() -> void:
 			elif not open and not blocked:
 				leaky.append("%s %s" % [cell, Rooms.SIDE_NAMES[side]])
 	check(astray.is_empty(), "each the room the plan says, in its square %s" % astray)
+	check(run.entrance().global_position.distance_to(run.global_position) < 0.01,
+		"with the way in under the run, wherever the plan put it")
 	check(shut.is_empty(), "every doorway the plan opens is a way through into the next room %s"
 		% shut)
 	check(leaky.is_empty(), "and every other side is wall, or a doorway bricked up %s" % leaky)
