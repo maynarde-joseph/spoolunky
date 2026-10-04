@@ -478,31 +478,23 @@ parked: bound to nothing, one line each to bring back.) A tap casts at once; hol
 up — a bigger web, a longer breath of fire, more drops of water, a longer stun — over
 the same second the web always took.
 
-**Hold Tab for the disc, and chain off it.** Holding Tab brings the spells in hand
-up in a ring round the cross, in the loadout's order with the web at the top, and
-slows the world to a quarter while it is up. Flick the mouse toward one and let go
-to take it in hand; the mouse moves the disc's pointer instead of the view, so the
-slow is help with choosing and none with aiming. Brought up in the two seconds
-after a spell lands — its drops down, its web stuck, its puddle melted — the disc
-**chains**: the spells that would do something to what that spell left glow, named
-for what they would make (after water, *Lava*, *Lightning rod* and *Whirl*; after a
-web, *Burn web*, *Live web*, *Call back* and the rest; after lava, *Fire rod* and
-*Fire spiral*), and letting go on one casts it as a tap straight at what was left,
-wherever the cross is by then. One that cannot go yet says why on its slice — still
-waiting, or out of a tap's reach — and letting go on it only takes it in hand.
+**Hold Tab for the disc.** Holding Tab brings the spells in hand up in a ring round
+the cross, in the loadout's order with the web at the top, and slows the world to a
+quarter while it is up. Flick the mouse toward one and let go to take it in hand;
+the mouse moves the disc's pointer instead of the view, so the slow is help with
+choosing and none with aiming. Every interaction is the second spell acting on what
+the first left (below), and what it left lasts for seconds, so the hard part of a
+combination was never the clock: it was changing spell mid-fight with the number
+keys far from the hand that steers — which is why, the disc in, the number keys
+came out. Slowed rather than stopped, so you can still wait for the creature to
+step into the puddle; and not slowed after every cast, which would put half the
+game in slow motion and slow what you are hunting with it.
 
-Why that, and not a slow after every cast or a chain key of its own: every
-interaction is the second spell acting on what the first left (below), and what it
-left lasts for seconds, so the hard part of a combination was never the clock. It
-was changing spell mid-fight with the number keys far from the hand that steers —
-which is why, the disc in, the number keys came out —
-and aiming a second time at a puddle while a creature walks. The disc takes the
-first, the chain the second, and the slow is the moment to choose in — and to let
-go just as the creature steps into the puddle. A slow on every cast would put half
-the game in slow motion and slow what you are hunting with it; a stop would lose
-the waiting for the moment; a chain key would be a second key for what is only
-choosing the next spell. A chained spell is a tap and waits its wait, so aiming it
-yourself is still how to wind one up.
+(For a while the disc **chained**: brought up just after a spell landed, it lit the
+spells that would act on what that spell left — *Lava* and *Lightning rod* after
+water, *Fire rod* after lava — and letting go on one cast it straight there without
+aiming. It came out again. Aiming before you cast is the game, and a cast that aims
+itself skips the part worth playing.)
 
 **Every spell is drawn in a magic circle.** Thin line art in the
 spell's colour — two rings with marks like writing between them, and an inner
@@ -2299,7 +2291,7 @@ hold in their head on the first screen.
 | **Right Mouse** | **Cast what is in hand** — the web, to start with (§3.2). With the web in hand: |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
 | **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |
-| **Tab** *(hold)* | **The spell disc** — the web and the loadout's five in a ring round the cross, the world slowed to a quarter while it is up; flick toward one and let go to take it. Just after a spell lands it chains: what would act on what that spell left glows, and letting go on it casts it there (§3.2) |
+| **Tab** *(hold)* | **The spell disc** — the web and the loadout's five in a ring round the cross, the world slowed to a quarter while it is up; flick toward one and let go to take it (§3.2) |
 | **Wheel** | The next or last spell in hand |
 | **Q** | **Take hold of the nearest line**, or let go. Hanging from one, **W/S** zip you along it toward or away from where you look, with no gravity in it; run off the end onto whatever it is tied to (*Silk is the road network*, §6) |
 | **E** | The spell tree — your rank, your points, and what they can learn (§3.3) |
@@ -2524,12 +2516,11 @@ whose points buy spells, second tiers, interactions and shorter waits, with five
 spells in the loadout (§3.3). Evolving by chance is parked, its code kept. Douse is a
 spit that leaves puddles, silk's circle is wrapped round its ball, and a sixth
 spell — the Clay Pillar — makes the loadout's limit bite. Holding Tab brings up a
-disc of the spells in hand with the world slowed, and just after a spell lands the
-disc chains: the spells that act on what it left are offered by what they make, and
-cast straight at it.
+disc of the spells in hand with the world slowed. (A chain off the disc, casting the
+spell after a cast at what that cast left, was tried and taken out: aiming is the
+game.)
 Left: more interactions between spells and silk, a second tier for the pillar,
-the tree's numbers played and tuned, and the disc's slow and chain window tuned in
-play.
+the tree's numbers played and tuned, and the disc's slow tuned in play.
 
 **Milestone 9 — The places** *(started)*
 Done: the hunting ground, the Hollow Wood and the gym taken out, with the props

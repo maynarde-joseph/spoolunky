@@ -42,9 +42,7 @@ Right Mouse  (hold)    wind it up: a bigger web, more drops of water, a
                        where it is heading, so keep the cross on it
 Tab  (hold)            the spell disc: silk and your loadout's five, the
                        world slowed while it is up — flick the mouse toward
-                       a spell and let go. Just after a spell lands it
-                       chains: let go on a lit one and it goes straight at
-                       what the last spell left
+                       a spell and let go
 Wheel                  turn through the spells in hand
 E                      the spell tree — catching and eating earn ranks,
                        ranks earn points, points learn spells

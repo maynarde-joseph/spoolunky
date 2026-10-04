@@ -217,8 +217,6 @@ func rewind_spells() -> void:
 		spider.disc.settle()
 	spells.cancel_cast()
 	spells.forget_waits()
-	if spells.chain != null:
-		spells.chain.clear()
 	spells.open_all = false
 	if spider.spell_tree != null:
 		spider.spell_tree.forget_all()

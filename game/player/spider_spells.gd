@@ -79,14 +79,6 @@ var charge := 0.0
 var _cooling := {}
 var _spans := {}
 
-## What the last spell left, and what the spells in hand would make of it: what the
-## disc offers to chain in the moment after a cast. See [SpellChain].
-var chain: SpellChain
-
-## Where a chained spell is going instead of where the cross is, while it is cast:
-## what the last spell left. Empty the rest of the time. See [method cast_chained].
-var _steer := {}
-
 var _spider: SpiderPlayer
 var _growth: SpiderGrowth
 var _traits: SpiderTraits
@@ -122,8 +114,6 @@ var open_all: bool:
 func _ready() -> void:
 	if book.is_empty():
 		book = SpellLibrary.load_spells()
-	if chain == null:
-		chain = SpellChain.new(self)
 
 
 func setup(spider: SpiderPlayer, growth: SpiderGrowth, traits: SpiderTraits,
@@ -134,10 +124,6 @@ func setup(spider: SpiderPlayer, growth: SpiderGrowth, traits: SpiderTraits,
 	_view = view
 	_builder = builder
 	_tree = tree
-	if chain == null:
-		chain = SpellChain.new(self)
-	if _builder != null and not _builder.web_built.is_connected(chain.spun):
-		_builder.web_built.connect(chain.spun)
 	if _tree != null:
 		_tree.changed.connect(_read_the_book)
 		_tree.learned.connect(_on_learned)
@@ -150,8 +136,6 @@ func tree() -> SpellTree:
 
 
 func _process(delta: float) -> void:
-	if chain != null:
-		chain.tick(delta)
 	var ran_out := false
 	for id in _cooling.keys():
 		var left: float = _cooling[id] - delta
@@ -402,7 +386,6 @@ func release_cast() -> bool:
 	if spell != null and spell.form == SpiderSpell.Form.SILK:
 		if _builder == null or not _builder.release_shot():
 			return false
-		chain.note(spell, {"at": _builder.aim_point})
 		cast.emit(spell, _builder.aim_point)
 		return true
 	if not charging:
@@ -439,7 +422,6 @@ func cast_now(spell: SpiderSpell, wound := 0.0) -> bool:
 		var thrown := _builder.shoot()
 		_builder.charge = 0.0
 		if thrown:
-			chain.note(spell, {"at": _builder.aim_point})
 			cast.emit(spell, _builder.aim_point)
 		return thrown
 	if cooling(spell):
@@ -453,32 +435,9 @@ func cast_now(spell: SpiderSpell, wound := 0.0) -> bool:
 	if span > 0.0:
 		_cooling[spell.id] = span
 		_spans[spell.id] = span
-	chain.note(spell, went)
 	cast.emit(spell, went.get("at", _spider.global_position))
 	changed.emit()
 	return true
-
-
-## Casts [param spell] as the chain off the last spell: as a tap, at what that spell
-## left rather than where the cross is — the puddle a spit left, the web a throw
-## spun, the lava a breath made — and a breath held on it for as long as it lasts.
-## False, and nothing cast, if the chain does not offer it or it cannot go yet. See
-## [SpellChain].
-func cast_chained(spell: SpiderSpell) -> bool:
-	if spell == null or chain == null:
-		return false
-	var offer: Dictionary = chain.options().get(spell.id, {})
-	if offer.is_empty() or not offer.get("ready", false):
-		return false
-	var aim: Dictionary = offer.get("aim", {})
-	_steer = aim
-	var went := cast_now(spell, 0.0)
-	_steer = {}
-	if went and not aim.is_empty():
-		var breath := chain.made.get("breath") as FireBreath
-		if breath != null and is_instance_valid(breath):
-			breath.steer_to(_where_now(aim))
-	return went
 
 
 ## What each form does. Returns whether it went, and where.
@@ -551,7 +510,7 @@ func _strike(spell: SpiderSpell, wound: float) -> Dictionary:
 			"" if strike.charged.size() == 1 else "s"])
 	if not said.is_empty():
 		notice.emit("Lightning — " + ", ".join(said))
-	return {"cast": true, "at": at, "strike": strike}
+	return {"cast": true, "at": at}
 
 
 ## Water spat at the cross: a spray of drops out of the spider's jaws, arcing down
@@ -569,7 +528,7 @@ func _douse(spell: SpiderSpell, wound: float) -> Dictionary:
 	if mouthful == null:
 		return {"cast": false}
 	mouthful.landed.connect(_on_spit_landed)
-	return {"cast": true, "at": at, "prey": aim_target().get("prey"), "spit": mouthful}
+	return {"cast": true, "at": at}
 
 
 ## Where a spit of water comes down: on whatever the cross is on — a creature, a
@@ -653,7 +612,7 @@ func _blow(spell: SpiderSpell, wound: float) -> Dictionary:
 		said.append("the lava spirals up in fire")
 	if not said.is_empty():
 		notice.emit("Gust — " + ", ".join(said))
-	return {"cast": true, "at": from + heading * far * 0.5, "whirl": whirl}
+	return {"cast": true, "at": from + heading * far * 0.5}
 
 
 ## The water a gust blown from [param from] along [param heading], [param far]
@@ -784,8 +743,7 @@ func _breathe(spell: SpiderSpell, wound: float) -> Dictionary:
 	if breath == null:
 		return {"cast": false}
 	breath.finished.connect(_on_breath_finished)
-	return {"cast": true, "at": breath_origin() + breath_heading() * breath.reach,
-		"breath": breath}
+	return {"cast": true, "at": breath_origin() + breath_heading() * breath.reach}
 
 
 ## Where a breath of fire comes from, or a spit of water: the spider's jaws, where
@@ -957,8 +915,6 @@ func venom_strength() -> float:
 ## alike, because silk is something to aim at; a lane of wind looks straight
 ## through it to the floor.
 func aim_target(mask := GameLayers.WORLD | GameLayers.WEB_WALK) -> Dictionary:
-	if not _steer.is_empty():
-		return _steered(mask)
 	var from := _view.aim_origin()
 	var forward := _view.aim_forward()
 	var span := cast_reach()
@@ -980,39 +936,6 @@ func aim_target(mask := GameLayers.WORLD | GameLayers.WEB_WALK) -> Dictionary:
 		return {"point": hit.get("position", from), "normal": hit.get("normal", Vector3.UP),
 			"prey": hit.get("collider") as Prey, "hit": true}
 	return {"point": from + forward * span, "normal": Vector3.UP, "prey": null, "hit": false}
-
-
-## Where a chained spell goes instead of the cross: what the last spell left, where
-## it is now. What looks through silk to the floor — a lane of wind, a pillar —
-## sees the floor under it.
-func _steered(mask: int) -> Dictionary:
-	var point := _where_now(_steer)
-	var held: Variant = _steer.get("prey")
-	var quarry := held as Prey if is_instance_valid(held) else null
-	if (mask & GameLayers.WEB_WALK) == 0:
-		return _ground({"point": point + Vector3.UP * body_height() * 0.1, "hit": false}, mask)
-	return {"point": point, "normal": Vector3.UP, "prey": quarry, "hit": true}
-
-
-## Where a chain's [param aim] is now: on the thing it is on, if that is still there
-## — a creature walks, a whirl runs — or where it was.
-func _where_now(aim: Dictionary) -> Vector3:
-	var point: Vector3 = aim.get("point", Vector3.ZERO)
-	var held: Variant = aim.get("node")
-	if not is_instance_valid(held):
-		return point
-	var node := held as Node3D
-	if node == null:
-		return point
-	if node is WebNet:
-		return (node as WebNet).signal_point()
-	if node is WetGround:
-		return (node as WetGround).centre
-	if node is Lava:
-		return (node as Lava).centre
-	if node is WaterSpiral:
-		return (node as WaterSpiral).eye()
-	return node.global_position
 
 
 ## How far a spell goes: as far as silk does. One reach for everything the spider
