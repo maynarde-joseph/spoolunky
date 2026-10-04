@@ -34,6 +34,7 @@ func _sections() -> Array[Callable]:
 		_test_the_tree_screen,
 		_test_the_strip,
 		_test_number_keys,
+		_test_the_disc,
 		_test_spells_leave_through_circles,
 		_test_a_lean_spider_casts_sooner,
 		_test_douse,
@@ -503,6 +504,111 @@ func _test_number_keys() -> void:
 	check(spells.take(2) and spells.begin_cast() and spells.charging, "winding up the second")
 	check(spells.take(4) and not spells.charging and spells.current() == spells.book[3],
 		"a key mid-wind-up drops it and takes its own spell")
+	spells.take(1)
+
+
+## Held, Tab brings the spells in hand up in a ring round the cross and slows the
+## world while it is up; the mouse moves its pointer, not the view, and nothing is
+## cast from behind it; letting go takes what the pointer is on, and the world comes
+## back up to speed. Let go in the middle and nothing changes hands, and a lost
+## key-up, a freed mouse or the disc going away for good gives the clock back all
+## the same.
+func _test_the_disc() -> void:
+	var disc := spider.disc
+	if not check(disc != null, "the spider has a spell disc"):
+		return
+	var on_tab: Array[StringName] = []
+	for action in InputMap.get_actions():
+		for event in InputMap.action_get_events(action):
+			var key_event := event as InputEventKey
+			if key_event != null and key_event.physical_keycode == KEY_TAB:
+				on_tab.append(action)
+	check(on_tab == [&"spell_disc"], "Tab holds it up, and is nothing else (%s)" % str(on_tab))
+	spider.require_captured_mouse = false
+	check(not disc.open() and not disc.is_open,
+		"with only silk known there is nothing to choose between, and it stays down")
+
+	spells.open_all = true
+	var keys := spells.hand()
+	check(disc.slices() == keys, "open, it holds what the number keys hold (%d)" % keys.size())
+	var turned := Vector2(spider.view.yaw, spider.view.pitch)
+	send_action(spider.input_spell_disc)
+	await process_frame
+	check(disc.is_open, "Tab brings it up")
+	var hud := level.get_node_or_null("HUD") as SpiderHUD
+	if hud != null:
+		await process_frame
+		check(hud._disc != null and hud._disc.visible, "and the HUD draws it round the cross")
+	var slowed: bool = await wait_until(
+		func() -> bool: return Engine.time_scale <= disc.slow + 0.001, 900)
+	check(slowed, "the world slows to %d%% while it is up (%.2f)"
+		% [roundi(disc.slow * 100.0), Engine.time_scale])
+	spider.rotate_head(Vector2(300.0, 0.0))
+	await process_frame
+	check(Vector2(spider.view.yaw, spider.view.pitch) == turned and disc.pointer.x > 0.0,
+		"the mouse moves its pointer, and the view holds still")
+	check(disc.pointer.length() <= disc.pointer_reach + 0.001,
+		"the pointer goes no further than the ring (%.0f)" % disc.pointer.length())
+	disc.pointer = Vector2.ZERO
+	disc.steer(SpiderDisc.slice_direction(2, keys.size()) * 100.0)
+	check(disc.pointed() == keys[2], "a flick toward a spell points at it (%s)"
+		% (disc.pointed().display_name if disc.pointed() != null else "nothing"))
+	var round_the_ring := true
+	for i in keys.size():
+		round_the_ring = round_the_ring \
+			and SpiderDisc.slice_at(SpiderDisc.slice_direction(i, keys.size()), keys.size()) == i
+	check(round_the_ring and SpiderDisc.slice_at(Vector2.UP, keys.size()) == 0,
+		"silk at the top and the rest round clockwise, each where it points")
+	send_action(spider.input_shoot)
+	await process_frame
+	check(not spells.charging and not builder.aiming, "nothing is cast from behind it")
+	release_action(spider.input_shoot)
+	release_action(spider.input_spell_disc)
+	await process_frame
+	check(not disc.is_open and spells.current() == keys[2],
+		"letting go takes it in hand (%s)" % spells.current().display_name)
+	var back: bool = await wait_until(func() -> bool: return Engine.time_scale == 1.0, 900)
+	check(back and disc.pace() == 1.0, "and the world comes back up to speed")
+
+	send_action(spider.input_spell_disc)
+	await process_frame
+	disc.steer(Vector2(0.0, disc.dead_zone * 0.5))
+	release_action(spider.input_spell_disc)
+	await process_frame
+	check(not disc.is_open and spells.current() == keys[2],
+		"let go in the middle and nothing changes hands")
+
+	# The key-up lost: the key reads up without an event to say so.
+	send_action(spider.input_spell_disc)
+	await process_frame
+	await process_frame
+	Input.action_release(spider.input_spell_disc)
+	await process_frame
+	check(not disc.is_open, "a lost key-up puts it away all the same")
+	send_action(spider.input_spell_disc)
+	await process_frame
+	spider.require_captured_mouse = true
+	await process_frame
+	check(not disc.is_open, "and so does the mouse coming free")
+	release_action(spider.input_spell_disc)
+	spider.require_captured_mouse = false
+	await wait_until(func() -> bool: return Engine.time_scale == 1.0, 900)
+
+	check(spells.take(2) and spells.begin_cast() and spells.charging, "winding up")
+	check(disc.open() and not spells.charging, "bringing it up gives the wind-up up")
+	disc.settle()
+	check(not disc.is_open and Engine.time_scale == 1.0, "settled, the clock is back at once")
+
+	var spare := SpiderDisc.new()
+	level.add_child(spare)
+	spare.setup(spider, spells)
+	spare.open()
+	await wait_until(func() -> bool: return Engine.time_scale < 1.0, 900)
+	var was := Engine.time_scale
+	spare.free()
+	check(was < 1.0 and Engine.time_scale == 1.0,
+		"a disc taken away mid-slow gives the clock back (%.2f -> %.2f)" % [was, Engine.time_scale])
+	Engine.time_scale = 1.0
 	spells.take(1)
 
 

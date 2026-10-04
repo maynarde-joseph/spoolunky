@@ -212,6 +212,9 @@ func rewind_spells() -> void:
 	if spider == null or spider.spells == null:
 		return
 	var spells := spider.spells
+	# The disc first: left up, it leaves the next check running at a quarter speed.
+	if spider.disc != null:
+		spider.disc.settle()
 	spells.cancel_cast()
 	spells.forget_waits()
 	spells.open_all = false

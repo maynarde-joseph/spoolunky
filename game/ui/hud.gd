@@ -42,6 +42,8 @@ Right Mouse  (hold)    wind it up: a bigger web, more drops of water, a
                        where it is heading, so keep the cross on it
 1 / 2-6 / wheel        take a spell in hand — 1 is silk, 2 to 6 the five
                        spells in your loadout
+Tab  (hold)            the spell disc: the world slows while it is up —
+                       flick the mouse toward a spell and let go
 E                      the spell tree — catching and eating earn ranks,
                        ranks earn points, points learn spells
 F                      wrap prey, then drain it; at a shrine, rest
@@ -90,6 +92,7 @@ var _condition_label: Label
 var _condition_bar: ProgressBar
 var _wind_bar: ProgressBar
 var _crosshair: Crosshair
+var _disc: SpellDisc
 var _spell_strip: VBoxContainer
 var _spell_chips := {}
 var _chip_styles := {}
@@ -125,6 +128,11 @@ func _ready() -> void:
 	_crosshair.name = "Crosshair"
 	add_child(_crosshair)
 	move_child(_crosshair, 0)
+	# Over the cross it rings, and under every panel and screen.
+	_disc = SpellDisc.new()
+	_disc.name = "SpellDisc"
+	add_child(_disc)
+	move_child(_disc, 1)
 	_set_sizes()
 	help_label.text = HELP_TEXT
 	toast_label.modulate.a = 0.0
@@ -186,6 +194,7 @@ func _bind() -> void:
 		return
 
 	_crosshair.spider = _spider
+	_disc.spider = _spider
 	_spider.notice.connect(show_message)
 	_spider.skill_tree_toggled.connect(_on_tree_asked_for)
 	if _spider.traits != null:

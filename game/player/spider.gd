@@ -55,6 +55,7 @@ signal skill_tree_toggled()
 @export var input_next_spell := "spell_next"
 @export var input_prev_spell := "spell_prev"
 @export var input_grapple_style := "grapple_style"
+@export var input_spell_disc := "spell_disc"
 
 ## How much the view opens up at speed. Pure sugar, and most of what makes a
 ## zipline feel fast.
@@ -111,6 +112,9 @@ signal skill_tree_toggled()
 @onready var spells: SpiderSpells = $Spells
 ## What the spider has learned, how far it has come, and what is on its keys.
 @onready var spell_tree: SpellTree = $SpellTree
+## The ring of spells held up round the cross, with the world slowed, while its key
+## is down.
+@onready var disc: SpiderDisc = $Disc
 
 var _spawn_transform: Transform3D
 
@@ -132,6 +136,11 @@ var _base_fov := 0.0
 ## something else started, nor fire before the key has ever registered.
 var _placing_from_key := false
 var _place_key_seen := false
+
+## The same pair for the disc: whether its key brought it up, and whether that key has
+## been seen held since.
+var _disc_from_key := false
+var _disc_key_seen := false
 
 
 func _ready() -> void:
@@ -157,6 +166,7 @@ func _ready() -> void:
 	vitals.setup(self, climb, tether, jaws)
 	live_line.setup(self, growth, view, climb, web_builder)
 	spells.setup(self, growth, traits, view, web_builder, spell_tree)
+	disc.setup(self, spells)
 	spell_tree.open_all = all_spells_open
 	spell_tree.ranked_up.connect(_on_ranked_up)
 	jaws.finished.connect(_on_meal_finished)
@@ -247,6 +257,7 @@ func _physics_process(delta: float) -> void:
 	if global_position.y < kill_plane:
 		global_transform = _spawn_transform
 		velocity = Vector3.ZERO
+		disc.settle()
 		climb.stand_upright()
 		view.settle()
 		respawned.emit()
@@ -256,7 +267,12 @@ func _physics_process(delta: float) -> void:
 ## Mouse look goes straight to the camera rig, which keeps it in world terms.
 ## The body then turns to follow the camera rather than the other way round —
 ## that is what stops the mouse axes scrambling when you walk onto a wall.
+##
+## While the disc is up the mouse moves its pointer instead, and the view holds still.
 func rotate_head(mouse_axis: Vector2) -> void:
+	if disc != null and disc.is_open:
+		disc.steer(mouse_axis)
+		return
 	view.look(mouse_axis)
 
 
@@ -333,11 +349,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.toggle_throwing()
 	elif event.is_action_pressed(input_tether):
 		tether.toggle()
+	# Held, the disc: the spells in hand in a ring round the cross, and the world
+	# slowed while you choose. Letting go takes whatever the pointer is on.
+	elif event.is_action_pressed(input_spell_disc):
+		_disc_from_key = disc.open()
+		_disc_key_seen = false
+	elif event.is_action_released(input_spell_disc):
+		_disc_from_key = false
+		disc.close()
 	# Right mouse casts whatever is in hand, and the first thing in hand is the
 	# web. A tap casts straight away; holding winds it up — a bigger ball of silk,
 	# a whirl that goes further, a longer stun — until you let go.
 	elif event.is_action_pressed(input_shoot):
-		spells.begin_cast()
+		# Nothing is cast from behind the disc: the pointer is where the mouse is.
+		if not disc.is_open:
+			spells.begin_cast()
 	elif event.is_action_released(input_shoot):
 		spells.release_cast()
 	elif event.is_action_pressed(input_next_spell):
@@ -419,6 +445,7 @@ func _hotbar_input(event: InputEvent) -> bool:
 
 func _process(delta: float) -> void:
 	_watch_for_release()
+	_watch_the_disc()
 	_take_aim(delta)
 	jaws.drink(delta)
 	if mends_on_its_own:
@@ -473,6 +500,21 @@ func _watch_for_release() -> void:
 		return
 	_placing_from_key = false
 	web_builder.commit_place()
+
+
+## Puts the disc away when its key is no longer down, in case the key-up was lost —
+## a disc left up is a world left slowed. Only once the key has been seen held, so a
+## disc brought up some other way is left alone.
+func _watch_the_disc() -> void:
+	if not _disc_from_key or not disc.is_open:
+		return
+	if Input.is_action_pressed(input_spell_disc):
+		_disc_key_seen = true
+		return
+	if not _disc_key_seen:
+		return
+	_disc_from_key = false
+	disc.close()
 
 
 ## Feeds the lock while the shoot key is held, and lets go on your behalf if

@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="PackedScene" path="res://addons/character-controller/example/main/player.tscn" id="1_base"]
 [ext_resource type="Script" path="res://game/player/spider.gd" id="2_spider"]
@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://game/player/live_line.gd" id="15_live"]
 [ext_resource type="Script" path="res://game/player/spider_spells.gd" id="16_spells"]
 [ext_resource type="Script" path="res://game/player/spell_tree.gd" id="17_tree"]
+[ext_resource type="Script" path="res://game/player/spider_disc.gd" id="18_disc"]
 
 [node name="Spider" instance=ExtResource("1_base")]
 collision_layer = 2
@@ -63,3 +64,6 @@ script = ExtResource("16_spells")
 
 [node name="SpellTree" type="Node" parent="."]
 script = ExtResource("17_tree")
+
+[node name="Disc" type="Node" parent="."]
+script = ExtResource("18_disc")
