@@ -477,6 +477,31 @@ hand** — 1 is always the web, and 2 to 6 are the five spells in the loadout
 up — a bigger web, a longer breath of fire, more drops of water, a longer stun — over
 the same second the web always took.
 
+**Hold Tab for the disc, and chain off it.** Holding Tab brings the spells in hand
+up in a ring round the cross, in the order of the keys with the web at the top, and
+slows the world to a quarter while it is up. Flick the mouse toward one and let go
+to take it in hand; the mouse moves the disc's pointer instead of the view, so the
+slow is help with choosing and none with aiming. Brought up in the two seconds
+after a spell lands — its drops down, its web stuck, its puddle melted — the disc
+**chains**: the spells that would do something to what that spell left glow, named
+for what they would make (after water, *Lava*, *Lightning rod* and *Whirl*; after a
+web, *Burn web*, *Live web*, *Call back* and the rest; after lava, *Fire rod* and
+*Fire spiral*), and letting go on one casts it as a tap straight at what was left,
+wherever the cross is by then. One that cannot go yet says why on its slice — still
+waiting, or out of a tap's reach — and letting go on it only takes it in hand.
+
+Why that, and not a slow after every cast or a chain key of its own: every
+interaction is the second spell acting on what the first left (below), and what it
+left lasts for seconds, so the hard part of a combination was never the clock. It
+was changing spell mid-fight with the number keys far from the hand that steers,
+and aiming a second time at a puddle while a creature walks. The disc takes the
+first, the chain the second, and the slow is the moment to choose in — and to let
+go just as the creature steps into the puddle. A slow on every cast would put half
+the game in slow motion and slow what you are hunting with it; a stop would lose
+the waiting for the moment; a chain key would be a second key for what is only
+choosing the next spell. A chained spell is a tap and waits its wait, so aiming it
+yourself is still how to wind one up.
+
 **Every spell is drawn in a magic circle.** Thin line art in the
 spell's colour — two rings with marks like writing between them, and an inner
 ring with the spell's own star in it: six points for the web, three for fire, four
@@ -2272,10 +2297,11 @@ hold in their head on the first screen.
 | **Right Mouse** | **Cast what is in hand** — the web, to start with (§3.2). With the web in hand: |
 | **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
 | **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |
-| **1–9** | **Take a spell in hand** — each key is one spell, in the book's order, whether or not you have it yet: 1 the web, 2 Douse, 3 Gust, 4 lightning, 5 fire, 6 the pullback. A key pressed mid-wind-up drops the wind-up and takes its own spell (§3.2) |
-| **Wheel** | The next or last spell you have — growing, and what you eat, opens more |
+| **1, 2–6** | **Take a spell in hand** — 1 is always the web, and 2 to 6 the five spells in the loadout (§3.3). A key pressed mid-wind-up drops the wind-up and takes its own spell (§3.2) |
+| **Wheel** | The next or last spell on the keys |
+| **Tab** *(hold)* | **The spell disc** — the spells in hand in a ring round the cross, the world slowed to a quarter while it is up; flick toward one and let go to take it. Just after a spell lands it chains: what would act on what that spell left glows, and letting go on it casts it there (§3.2) |
 | **Q** | **Take hold of the nearest line**, or let go. Hanging from one, **W/S** zip you along it toward or away from where you look, with no gravity in it; run off the end onto whatever it is tied to (*Silk is the road network*, §6) |
-| **E** | Evolution — what you are, and your odds on what eating could make you |
+| **E** | The spell tree — your rank, your points, and what they can learn (§3.3) |
 | **F** | Wrap the prey you are looking at, then drain it. At a shrine in the Hollow Wood, rest (§12) |
 | **X** | Pull down the web or line you are looking at |
 | **L** | Camera: third person or first person |
@@ -2495,9 +2521,13 @@ doing harm; and ranks earned by catching and eating, opening rows of a spell tre
 whose points buy spells, second tiers, interactions and shorter waits, with five
 spells on the keys (§3.3). Evolving by chance is parked, its code kept. Douse is a
 spit that leaves puddles, silk's circle is wrapped round its ball, and a sixth
-spell — the Clay Pillar — makes the loadout's limit bite.
+spell — the Clay Pillar — makes the loadout's limit bite. Holding Tab brings up a
+disc of the spells in hand with the world slowed, and just after a spell lands the
+disc chains: the spells that act on what it left are offered by what they make, and
+cast straight at it.
 Left: more interactions between spells and silk, a second tier for the pillar,
-and the tree's numbers played and tuned.
+the tree's numbers played and tuned, and the disc's slow and chain window tuned in
+play.
 
 **Milestone 9 — The places** *(started)*
 Done: the hunting ground, the Hollow Wood and the gym taken out, with the props
