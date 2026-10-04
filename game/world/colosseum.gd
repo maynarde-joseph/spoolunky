@@ -15,7 +15,9 @@ extends RefCounted
 ##
 ## And the floor has given way in the middle. Under it are the passages the beasts
 ## were kept in, four metres down, their walls reaching up to where the floor was —
-## a maze to drop into, string silk across and climb out of.
+## a maze to drop into, string silk across and climb out of. At the east end of the
+## middle passage a stair goes on down, under the arena, to a landing over a shaft;
+## the shaft drops into the dungeon, whose first floor lies under the arena.
 ##
 ## Everything is a piece of the kit, most of it stretched: an arch is the kit's
 ## doorway at the size of a storey, a seat row its stairs the length of a segment.
@@ -64,6 +66,20 @@ const PIT_DEPTH := 4.0
 const START := Vector3(-19.0, 0.8, 0.0)
 const START_TURN := -90.0
 
+## The stair down to the dungeon: where its top step is, at the east end of the middle
+## passage; how wide it is, which is the passage's width between its walls; and how
+## far it goes down, two metres to a flight of the kit's stairs.
+const STAIR_TOP := 5.0
+const STAIR_WIDE := 3.7
+const STAIR_DROP := 12.0
+
+## The landing at the foot of the stair, inside: the shaft into the dungeon opens in
+## the middle of its floor.
+const LANDING := Vector2(9.0, 9.0)
+
+## What the HUD calls the way down.
+const STAIR_NAME := "The Stair"
+
 ## The segments the gates are in: east, south, west and north.
 const GATES: Array[int] = [0, SEGMENTS / 4, SEGMENTS / 2, SEGMENTS * 3 / 4]
 
@@ -78,13 +94,40 @@ static func build(level: Node3D) -> void:
 	Site.floor_of(arena, "Sand", ARENA * 2.0, Vector3.ZERO, "straw", hole)
 	_podium(arena)
 	_pit(WorldKit.group(arena, "Pit"))
+	_stair(WorldKit.group(level, "Stair"))
 	var seats := WorldKit.group(level, "Seats")
 	_seats(seats, rng)
 	_facade(WorldKit.group(level, "Facade"), rng)
 	_ruin(WorldKit.group(level, "Ruin"), rng)
 	Site.zone(level, NAME, ARENA + Vector2.ONE * (PODIUM.x + TIER * TIERS + WALK + FACADE + 6.0),
 		32.0)
-	Site.spider(level, START, START_TURN)
+	# The dungeon, its first floor's entrance under the landing, walked into down the
+	# stair rather than started in.
+	var run := DungeonRun.new()
+	run.name = "Dungeon"
+	run.walk_in = true
+	run.position = dungeon_at()
+	level.add_child(run)
+	var spider := Site.spider(level, START, START_TURN)
+	# Out of the world is under the dungeon now, not under the arena.
+	spider.kill_plane = dungeon_at().y - DungeonRun.BELOW - 15.0
+
+
+## Where the dungeon's floors go: the middle of the first floor's entrance, its
+## floor so far down that the top of the shaft in its roof is the landing's floor.
+static func dungeon_at() -> Vector3:
+	var shaft := EntranceRoom.HEIGHT + Rooms.WALL + EntranceRoom.SHAFT_UP
+	return Vector3(landing_middle().x, landing_floor() - shaft, 0.0)
+
+
+## How far down the landing's floor is: the bottom of the passages, and the stair.
+static func landing_floor() -> float:
+	return -PIT_DEPTH - STAIR_DROP
+
+
+## The middle of the landing, where the shaft opens, on its floor.
+static func landing_middle() -> Vector3:
+	return Vector3(STAIR_TOP + STAIR_DROP + LANDING.x * 0.5, landing_floor(), 0.0)
 
 
 ## The ring of segments [param depth] deep starting [param from] out from the edge
@@ -127,7 +170,9 @@ static func _podium(arena: Node3D) -> void:
 ## under it standing up to floor level, with gaps to go through.
 static func _pit(pit: Node3D) -> void:
 	var low := -PIT_DEPTH
-	Site.floor_of(pit, "Bottom", (PIT + Vector2.ONE) * 2.0, Vector3(0.0, low, 0.0), "soil")
+	# Open where the stair goes down, at the east end of the middle passage.
+	Site.floor_of(pit, "Bottom", (PIT + Vector2.ONE) * 2.0, Vector3(0.0, low, 0.0), "soil",
+		Rect2(STAIR_TOP, -STAIR_WIDE * 0.5, PIT.x - STAIR_TOP, STAIR_WIDE))
 	var long_side := (PIT.x + 1.0) * 2.0
 	for sign in [-1.0, 1.0]:
 		KitBlock.make(pit, "Lining%s" % ("North" if sign < 0.0 else "South"), "wall",
@@ -148,6 +193,67 @@ static func _pit(pit: Node3D) -> void:
 		for z in [-PIT.y * 0.72, PIT.y * 0.72]:
 			KitBlock.make(pit, "Cross%d" % pit.get_child_count(), "wall",
 				Vector3(PIT.y * 0.5, PIT_DEPTH, 0.8), WorldKit.at(Vector3(x, low, z), 90.0))
+
+
+# --- the stair down ----------------------------------------------------------
+
+## The way down to the dungeon: a stair going on down from the east end of the middle
+## passage, under the arena, walled either side and roofed once it is under the sand;
+## and at its foot a landing, walled and roofed, with the shaft into the first floor's
+## entrance opening in the middle of its floor. Lit on the way down, and by two
+## braziers on the landing.
+static func _stair(stair: Node3D) -> void:
+	var top := -PIT_DEPTH
+	var bottom := landing_floor()
+	var foot := STAIR_TOP + STAIR_DROP
+	var flights := int(STAIR_DROP / 2.0)
+	for i in flights:
+		# Each flight rises toward its own -Z, turned to rise west, back up to the passage.
+		KitBlock.make(stair, "Flight%d" % (i + 1), "stairs", Vector3(STAIR_WIDE, 2.0, 2.0),
+			WorldKit.at(Vector3(STAIR_TOP + 1.0 + 2.0 * i, top - 2.0 * (i + 1), 0.0), 90.0))
+	var high := top - bottom
+	var side := STAIR_WIDE * 0.5 + 0.5
+	for sign in [-1.0, 1.0]:
+		KitBlock.make(stair, "Wall%s" % ("North" if sign < 0.0 else "South"), "wall",
+			Vector3(foot - STAIR_TOP + 1.0, high, 1.0),
+			WorldKit.at(Vector3((STAIR_TOP - 1.0 + foot) * 0.5, bottom, sign * side)))
+	KitBlock.make(stair, "WallWest", "wall", Vector3(STAIR_WIDE + 2.0, high, 1.0),
+		WorldKit.at(Vector3(STAIR_TOP - 0.5, bottom, 0.0), 90.0))
+	# Roofed from where the passage's floor ends, under the arena's east lining.
+	KitBlock.make(stair, "Roof", "cube5", Vector3(foot - PIT.x, 1.0, STAIR_WIDE + 2.0),
+		WorldKit.at(Vector3((PIT.x + foot) * 0.5, top, 0.0)))
+	# The landing, open over the shaft.
+	var middle := landing_middle()
+	var shaft := EntranceRoom.SHAFT
+	var west := STAIR_TOP - 1.0
+	var east := foot + LANDING.x + 1.0
+	var across := LANDING.y + 2.0
+	Site.floor_of(stair, "Landing", Vector2(LANDING.x + 2.0, across), middle, "stone_dark",
+		Rect2(middle.x - shaft, -shaft, shaft * 2.0, shaft * 2.0))
+	for sign in [-1.0, 1.0]:
+		KitBlock.make(stair, "Landing%s" % ("North" if sign < 0.0 else "South"), "wall",
+			Vector3(LANDING.x + 2.0, high, 1.0),
+			WorldKit.at(Vector3(middle.x, bottom, sign * (LANDING.y + 1.0) * 0.5)))
+		# Either side of where the stair comes in.
+		var reach := (LANDING.y - STAIR_WIDE) * 0.5
+		KitBlock.make(stair, "Landing%sWest" % ("North" if sign < 0.0 else "South"), "wall",
+			Vector3(reach, high, 1.0),
+			WorldKit.at(Vector3(foot - 0.5, bottom, sign * (STAIR_WIDE + reach) * 0.5), 90.0))
+	KitBlock.make(stair, "LandingEast", "wall", Vector3(LANDING.y, high, 1.0),
+		WorldKit.at(Vector3(east - 0.5, bottom, 0.0), 90.0))
+	KitBlock.make(stair, "LandingRoof", "cube5", Vector3(LANDING.x + 2.0, 1.0, across),
+		WorldKit.at(Vector3(middle.x, top, 0.0)))
+	var lights := WorldKit.group(stair, "Lights")
+	Rooms.lamp(lights, "Halfway", Vector3(STAIR_TOP + STAIR_DROP * 0.45, top - 3.0, 0.0),
+		Color(1.0, 0.7, 0.42), 9.0, 1.2)
+	Rooms.lamp(lights, "Foot", Vector3(foot - 1.0, bottom + 3.0, 0.0), Color(1.0, 0.7, 0.42), 9.0, 1.2)
+	var corner := Vector2(middle.x + shaft + (LANDING.x * 0.5 - shaft) * 0.5,
+		shaft + (LANDING.y * 0.5 - shaft) * 0.5)
+	for sign in [-1.0, 1.0]:
+		Rooms.brazier(lights, "Brazier%s" % ("North" if sign < 0.0 else "South"),
+			Vector3(corner.x, bottom, sign * corner.y))
+	Zone.make(stair, STAIR_NAME, Vector3(west, bottom - 1.0, -across * 0.5),
+		Vector3(east, -6.0, across * 0.5), Vector2.ZERO)
 
 
 # --- the seats -------------------------------------------------------------

@@ -557,6 +557,95 @@ func _shape_colosseum(spider: SpiderPlayer) -> void:
 		await run_frames(40)
 		check(spider.is_on_floor() and absf(spider.global_position.y - spot.y) < 0.6,
 			"colosseum: and stands at %s (%s)" % [spot, spider.global_position])
+	await _shape_the_stair(spider)
+
+
+## The way down from the colosseum: a stair from the east end of the middle passage
+## to a landing, with the shaft into the dungeon's first floor opening in its floor —
+## the first floor under the arena, there to walk into rather than started in. The
+## spider walks down the stair to the landing, the HUD naming the stair on the way,
+## and drops down the shaft into the entrance, on Floor 1. Dropping down the pit puts
+## Floor 2 down under the same shaft, and takes up the silk left in Floor 1 but none
+## of what was left in the colosseum.
+func _shape_the_stair(spider: SpiderPlayer) -> void:
+	var run := current_scene.get_node_or_null("Dungeon") as DungeonRun
+	if not check(run != null and run.walk_in and run.plan != null and run.entrance() != null,
+			"colosseum: the dungeon is under it, its first floor laid out to walk into"):
+		return
+	var under := Colosseum.dungeon_at()
+	check(run.floor_number == 1 and run.entrance().global_position.distance_to(under) < 0.01,
+		"colosseum: its entrance under the landing, %.0f m down (%s)"
+		% [-under.y, run.entrance().global_position])
+	check(spider.kill_plane < under.y - 24.0, "colosseum: and out of the world is under it (%.0f)"
+		% spider.kill_plane)
+	var steps: Array[float] = []
+	for x in [6.0, 8.0, 10.0, 12.0]:
+		steps.append(_top(Vector3(x, 0.0, 0.0)))
+	var stepping := true
+	for i in steps.size():
+		var x := 6.0 + 2.0 * i
+		stepping = stepping and absf(steps[i] - (-Colosseum.PIT_DEPTH - (x - Colosseum.STAIR_TOP))) < 1.1
+	check(stepping, "colosseum: a stair goes on down from the east end of the middle passage %s"
+		% str(steps))
+	var middle := Colosseum.landing_middle()
+	var drop := _reach(middle + Vector3.UP * 0.5, middle + Vector3.DOWN * 40.0)
+	check(absf(drop - (middle.y + 0.5 - under.y)) < 0.2,
+		"colosseum: and from the landing at its foot a shaft drops into the entrance (%.1f m)" % drop)
+	# Down the stair on foot.
+	spider.global_position = Vector3(Colosseum.STAIR_TOP - 0.8, -Colosseum.PIT_DEPTH + 0.4, 0.0)
+	spider.velocity = Vector3.ZERO
+	spider.view.face(Vector3.RIGHT)
+	await run_frames(20)
+	var named := {}
+	Input.action_press("move_forward")
+	var walked: bool = await wait_until(func() -> bool:
+		var zone := Zone.at(root.get_tree(), spider.global_position)
+		if zone != null:
+			named[zone.display_name] = true
+		return spider.global_position.x > Colosseum.STAIR_TOP + Colosseum.STAIR_DROP + 0.3 \
+			and spider.global_position.y < Colosseum.landing_floor() + 1.0, 400)
+	Input.action_release("move_forward")
+	check(walked, "colosseum: the spider walks down the stair to the landing (%s)"
+		% spider.global_position)
+	check(named.has(Colosseum.STAIR_NAME), "which the HUD calls %s on the way (%s)"
+		% [Colosseum.STAIR_NAME, ", ".join(PackedStringArray(named.keys()))])
+	# And down the shaft.
+	spider.global_position = middle + Vector3.UP * 0.8
+	spider.velocity = Vector3.ZERO
+	var landed: bool = await wait_until(func() -> bool:
+		return spider.is_on_floor() and spider.global_position.y < under.y + 1.0, 300)
+	var here := Zone.at(root.get_tree(), spider.global_position)
+	check(landed and here != null and here.display_name == "Floor 1" and run.floor_number == 1,
+		"colosseum: down the shaft it lands in the entrance, on Floor 1 (%s, %s)"
+		% [spider.global_position, here.display_name if here != null else "nothing"])
+	# A line left in the arena and one left in the dungeon, and down the pit.
+	var webs := current_scene.get_node("Webs") as Node3D
+	var pattern: WebPattern = null
+	for candidate in spider.web_builder.patterns:
+		if candidate.id == "frame_line":
+			pattern = candidate
+	var up_top := WebStrand.spin(pattern, Vector3(-19.0, 0.2, -4.0), Vector3(-19.0, 3.0, -9.0), 1.0)
+	up_top.place_in(webs)
+	var entry := run.entrance().entry().global_position
+	var down_below := WebStrand.spin(pattern, entry + Vector3(-3.0, -5.5, 0.0),
+		entry + Vector3(3.0, -5.5, 2.0), 1.0)
+	down_below.place_in(webs)
+	await physics_frame
+	spider.global_position = run.way_down().global_position
+	var deeper: bool = await wait_until(func() -> bool: return run.floor_number == 2, 180)
+	await run_frames(5)
+	here = Zone.at(root.get_tree(), spider.global_position)
+	check(deeper and here != null and here.display_name == "Floor 2"
+		and run.entrance().global_position.distance_to(under) < 0.01,
+		"colosseum: down the pit, Floor 2 is put down under the same shaft, the spider in it "
+		+ "(floor %d, %s, in %s)" % [run.floor_number, spider.global_position,
+			here.display_name if here != null else "nothing"])
+	drop = _reach(middle + Vector3.UP * 0.5, middle + Vector3.DOWN * 40.0)
+	check(absf(drop - (middle.y + 0.5 - under.y)) < 0.2,
+		"colosseum: so the stair leads down to Floor 2 now (%.1f m)" % drop)
+	check(is_instance_valid(up_top) and not up_top.is_queued_for_deletion()
+		and (not is_instance_valid(down_below) or down_below.is_queued_for_deletion()),
+		"colosseum: and the silk left in Floor 1 is gone with it, but not what was left up top")
 
 
 func _shape_cathedral() -> void:
