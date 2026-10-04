@@ -487,6 +487,15 @@ things you choose to do, not a second set of controls beside the spells. What it
 costs is a choice before every cast, which the tap pays for — grapple, spell,
 grapple is click, tap, click, tap.
 
+**The grapple waits too.** A second and a half between one grapple and the next.
+Free, a new one went the moment the last landed, so every gap and every dodge in a
+fight came down to clicking again — and a dungeon built of gaps and fights wants
+them to be problems. The wait starts when the line goes out, so a long grapple has
+mostly spent it by the time you land and a chain of short ones is the thing that
+feels it; a click at nothing in reach costs nothing, and letting go of a line was
+never the grapple's to do. The number is one line in `0_grapple.tres`, to tune in
+play.
+
 **Hold right mouse for the disc.** Holding right mouse brings the spells in hand up
 in a ring round the cross, in the hand's order with the grapple at the top, and
 slows the world to a quarter while it is up — after a moment's hold, so a tap is
@@ -2351,7 +2360,7 @@ hold in their head on the first screen.
 | **Space** | Jump. Also the way off a web, which is sticky, and off a line you are hanging from |
 | **Shift** | **Sprint**, out of a pool of a few seconds that fills back up while you walk. It costs more per size class of whatever is on your line, which is what makes hauling something home at a run a decision rather than the obvious move (§2) |
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
-| **Left Mouse** | **Cast what is in hand** — the grapple, to start with (§3.2): **go there, trailing a line** — holding a direction lands you running, letting go stops you there. A surface pulls you over — through any line in the way, since Q is what takes hold of a line; something you already caught comes to you instead. A creature still on its feet is none of those, so the aim reads straight through it to whatever is behind (§2). As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5) |
+| **Left Mouse** | **Cast what is in hand** — the grapple, to start with (§3.2): **go there, trailing a line** — holding a direction lands you running, letting go stops you there. A surface pulls you over — through any line in the way, since Q is what takes hold of a line; something you already caught comes to you instead. A creature still on its feet is none of those, so the aim reads straight through it to whatever is behind (§2). As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5). Then a second and a half before the next |
 | **G** | **Grapple style**: the pull above, or the line — a line from your feet to where you point, with you hanging from it, ready to zip along (*Two grapples*, §7) |
 | **Left Mouse** *(tap, the web in hand)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
 | **Left Mouse** *(hold, the web in hand)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |

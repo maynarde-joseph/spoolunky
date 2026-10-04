@@ -91,7 +91,7 @@ one kept to what the keys do today.
 | *stand on a web* | it holds you — **jump** is how you come off. A line isn't a floor: you hang from it |
 | **Ctrl** | drop onto a dragline (from a wall or ceiling) |
 | **Ctrl** / **Space** | lower / raise yourself on the line |
-| **Left Mouse** | **cast what is in hand** — the **grapple**, to start with: **go there, trailing silk** — hold a direction and you land running, or let go and you stop there. Moving and building are the same act. It goes through lines; **Q** is what takes hold of one. With the web or a spell in hand: tap, or hold to wind it up |
+| **Left Mouse** | **cast what is in hand** — the **grapple**, to start with: **go there, trailing silk** — hold a direction and you land running, or let go and you stop there. Moving and building are the same act. It goes through lines; **Q** is what takes hold of one. Then a second and a half before the next grapple. With the web or a spell in hand: tap, or hold to wind it up |
 | **G** | **grapple style** — the **pull** takes you there; the **line** lays a line from your feet to where you point and hangs you from it, ready to zip along |
 | **Q** | take hold of the nearest line with room to hang from — hang from it and zip along it with **W**/**S**, toward or away from where you look. **Q** or **Space** lets go |
 | **Left Mouse** *on something you've caught, the grapple in hand* | put a line on it and drag it instead — same click, read the only way that makes sense |
@@ -340,8 +340,9 @@ And it says what silk will do. **Bright** when there's something in reach to lan
 on, **faint** when there isn't; **amber, with brackets**, on a creature a shot would
 be thrown at, and a dot where the shot will meet it. The camera sees over things
 the spider can't, so when a ledge is in the way a small **red ring** shows where
-a grapple would really land. An arc round the cross fills while the next shot is
-spun, and while a throw is wound up.
+a grapple would really land. An arc round the cross fills while the spell in hand
+waits to be cast again — the grapple, most of the time — and while a throw is wound
+up.
 
 **Shift sprints, and it runs out.** You have a few seconds of it, and they come
 back on their own while you walk. What makes it worth a pool rather than a free
@@ -380,8 +381,10 @@ Same object, same rules, either way — including whether it holds what hits it.
 ## Spells, ranks and the spell tree
 
 Left mouse casts what is in hand — the grapple, to start with — and holding winds
-a spell up. The grapple and the web are always in hand; everything else is
-learned:
+a spell up. Every spell waits a while after it is cast, the grapple a second and a
+half: long enough that a grapple is a move you choose, short enough to chain. One
+aimed at nothing in reach costs nothing. The grapple and the web are always in hand;
+everything else is learned:
 
 * **Catching and eating earn rank.** Anything taken for keeps — bundled, wrapped,
   or held in a web until it has fought itself out — is experience, more the bigger
@@ -977,7 +980,7 @@ godot --headless --script res://tests/creature_smoke_test.gd
 ```
 
 A fifth casts every spell in the sandbox: the grapple and the web as the first of
-them, the rest
+them — the grapple waiting its second and a half between one and the next — the rest
 learned in the tree — rank from catching and eating, points, rows, the loadout of
 five and the tree on **E** — the strip that shows the hand, and what each spell does
 — to what it lands on, and to the other spells and the silk it meets, before and

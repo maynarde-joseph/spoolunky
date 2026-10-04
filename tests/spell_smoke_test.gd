@@ -139,8 +139,9 @@ func _test_silk_is_a_spell() -> void:
 
 
 ## The grapple is a spell too, and the first: always in hand, cast by left mouse the
-## moment it goes down — the spider goes where the cross is, trailing a line — and
-## never waiting. Its old button is parked.
+## moment it goes down — the spider goes where the cross is, trailing a line. Then it
+## waits a moment for the next, and a click while it waits does nothing but say how
+## long is left; one aimed at nothing in reach costs no wait. Its old button is parked.
 func _test_the_grapple_is_a_spell() -> void:
 	var grapple := spells.by_id("grapple")
 	if not check(grapple != null and spells.current() == grapple,
@@ -167,15 +168,33 @@ func _test_the_grapple_is_a_spell() -> void:
 	send_action(spider.input_shoot)
 	await process_frame
 	release_action(spider.input_shoot)
-	spells.cast.disconnect(listen)
 	check(heard == ["grapple"], "left mouse with it in hand grapples (%s)" % str(heard))
 	check(not spells.charging and not builder.aiming, "on the press, winding nothing up")
+	var wait := spells.cooldown_left(grapple)
+	check(grapple.cooldown > 0.0 and spells.cooling(grapple) and wait > grapple.cooldown - 0.2
+		and wait <= grapple.cooldown, "and waits %.1fs for the next (%.2f left)"
+		% [grapple.cooldown, wait])
+	var said: Array = []
+	var hear := func(text: String) -> void: said.append(text)
+	spells.notice.connect(hear)
+	send_action(spider.input_shoot)
+	await process_frame
+	release_action(spider.input_shoot)
+	spells.notice.disconnect(hear)
+	spells.cast.disconnect(listen)
+	check(heard == ["grapple"] and said.size() == 1 and str(said[0]).begins_with("Grapple"),
+		"a click while it waits grapples nothing, and says how long is left (%s)" % str(said))
 	var went: bool = await wait_until(func() -> bool:
 		return spider.global_position.distance_to(target) < from.distance_to(target) * 0.5, 240)
 	check(went, "and the spider goes there (%.1f m to go of %.1f)"
 		% [spider.global_position.distance_to(target), from.distance_to(target)])
-	check(not spells.cooling(grapple) and spells.cooldown_progress(grapple) == 1.0,
-		"and it waits for nothing")
+	var ready: bool = await wait_until(func() -> bool: return not spells.cooling(grapple), 240)
+	check(ready and spells.cooldown_progress(grapple) == 1.0, "and then the wait runs out")
+	await run_frames(30)
+	aim_at(spider.global_position + Vector3.UP * 400.0)
+	await physics_frame
+	check(not spells.cast_now(grapple) and not spells.cooling(grapple),
+		"a grapple at nothing in reach goes nowhere, and costs no wait")
 
 
 ## A spell is learned in the tree, with the points an Apprentice starts with, in a

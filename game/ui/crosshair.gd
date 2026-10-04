@@ -15,8 +15,8 @@ extends Control
 ##   cannot, so silk can stop short on a ledge the cross is looking past.
 ## * Brackets round a picked creature, and a dot where the shot will meet it —
 ##   ahead of anything moving, because that is where it will be.
-## * An arc round the ring filling while the next shot is spun, and a brighter one
-##   while a throw is wound up.
+## * An arc round the ring filling while the spell in hand waits to be cast again —
+##   the grapple, most of the time — and a brighter one while a throw is wound up.
 
 ## What the cross is over.
 enum Mark {
@@ -88,10 +88,13 @@ func _draw() -> void:
 		_bracket(builder, camera)
 
 	var outer := ring + 5.0
+	var spells := spider.spells
+	var holding := spells.current() if spells != null else null
 	if builder.aiming:
 		_arc(middle, outer, builder.charge, Color(CREATURE_TINT, 1.0), WIDTH + 1.0)
-	elif builder.cooling():
-		_arc(middle, outer, builder.cooldown_progress(), Color(tint, tint.a * 0.7), WIDTH)
+	elif holding != null and spells.cooling(holding):
+		# The wait of what a click would cast: the grapple's, mostly.
+		_arc(middle, outer, spells.cooldown_progress(holding), Color(tint, tint.a * 0.7), WIDTH)
 
 
 ## The ring's radius on screen: [member WebBuilder.shot_pick_angle] as the camera

@@ -474,23 +474,38 @@ func cast_now(spell: SpiderSpell, wound := 0.0) -> bool:
 	if not went.get("cast", false):
 		return false
 	_cast_circle(spell, clampf(wound, 0.0, 1.0))
-	var span := wait_for(spell)
-	if span > 0.0:
-		_cooling[spell.id] = span
-		_spans[spell.id] = span
+	_start_wait(spell)
 	cast.emit(spell, went.get("at", _spider.global_position))
 	changed.emit()
 	return true
 
 
 ## The grapple, cast: the spider's own click on whatever the cross is on — go there,
-## or bring what you caught to you. It goes on the press, winds up nothing and never
-## waits; how many lines it may leave up is the builder's to keep.
+## or bring what you caught to you. It goes on the press and winds up nothing; how
+## many lines it may leave up is the builder's to keep. One that goes makes you wait
+## for the next, like any other spell, so it is a move you pick your moment for
+## rather than one you can keep making; one that finds nothing in reach costs
+## nothing, and letting go of a line is not the grapple's to do.
 func _grapple(spell: SpiderSpell) -> bool:
-	if _spider == null or not _spider.grapple():
+	if _spider == null:
 		return false
+	if cooling(spell):
+		notice.emit("%s — %.1fs" % [spell.display_name, cooldown_left(spell)])
+		return false
+	if not _spider.grapple():
+		return false
+	_start_wait(spell)
 	cast.emit(spell, _builder.aim_point if _builder != null else _spider.global_position)
+	changed.emit()
 	return true
+
+
+## Starts [param spell]'s wait, if it has one.
+func _start_wait(spell: SpiderSpell) -> void:
+	var span := wait_for(spell)
+	if span > 0.0:
+		_cooling[spell.id] = span
+		_spans[spell.id] = span
 
 
 ## What each form does. Returns whether it went, and where.

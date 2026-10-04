@@ -9,5 +9,5 @@ display_name = "Grapple"
 description = "A line out to where you point, and you along it — or, on something you have caught, it along it to you."
 form = 7
 order = -1
-cooldown = 0.0
+cooldown = 1.5
 colour = Color(0.62, 0.9, 0.74, 1)

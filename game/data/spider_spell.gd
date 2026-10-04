@@ -40,7 +40,7 @@ enum Form {
 	EARTH,
 	## The grapple: a line out to where you point and the spider along it — or, with
 	## the cross on something already caught, that along it to the spider. Always in
-	## hand, and never waiting.
+	## hand, with a short wait between one and the next.
 	GRAPPLE,
 }
 
