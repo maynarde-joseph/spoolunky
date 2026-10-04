@@ -57,9 +57,12 @@ game/
              pieces placed by name and stretched into blocks, the paints, day and
              night, zones, and the shrines, marks, shortcuts, lair and training
              posts
+    dungeon/ the dungeon's rooms, the floor plan that lays them out, and the
+             run that puts each floor down
 Pieces/      the kit: walls, pillars, stairs and the rest, as .fbx
 tools/       the import that makes each piece solid, the bake that turns each
-             place into a scene, and the tab check
+             place and each of the dungeon's rooms into a scene, and the tab
+             check
 tests/       seven headless suites and screenshot tools
   support/   what the suites share: the verdict, and the arena a web check runs in
 addons/character-controller/   the movement template the spider is built on
@@ -67,7 +70,8 @@ addons/character-controller/   the movement template the spider is built on
 
 The project opens the colosseum, `game/world/colosseum.tscn`. Each of the other
 places is a scene beside it in `game/world/` — open one in the editor and press
-**F6** to play it. The sandbox the
+**F6** to play it — and so is the dungeon, `game/world/dungeon.tscn`, which starts
+a run down it. The sandbox the
 web, spell and combat suites run in is the character-controller example level
 (`addons/character-controller/example/main/level.tscn`), with the spider, a HUD, a
 `Webs` container and a prey spawner dropped into it. A `Devices` container is made
@@ -708,6 +712,65 @@ pieces. Put that file in `Pieces/` and the kit takes its colours — the stretch
 blocks with it, because they are the kit's own pieces. The ground, sand, paving and
 water are the project's own paints.
 
+## The dungeon
+
+`game/world/dungeon.tscn` is a run down a dungeon: floor after floor of rooms made
+by hand and laid out at random. Open it and press **F6**. You come into the first
+floor down a shaft in the roof of its entrance; somewhere on the floor is a room
+with a pit in it, and dropping down the pit takes you to the next floor, laid out
+afresh. The HUD names the floor you are on, and falling out of the world puts you
+back under the shaft. Nothing lives down there yet.
+
+**Rooms.** Every room is the same square, twenty-four metres across, walled all
+round and roofed — a spider climbs anything, so a room open to the sky is a room it
+leaves. A side can have a doorway in its middle, four metres wide and six high and
+the same in every room, so any two rooms meet; a doorway that leads nowhere stays
+bricked up. There are seven, each a class of its own in `game/world/dungeon/` baked
+to a scene beside it:
+
+* **Entrance** (the way in) — the shaft you come down with the daylight, broken
+  columns round where you land, and two braziers.
+* **Hall** — four great columns round a dais in the middle, braziers on the dais,
+  crates and barrels against the walls.
+* **Gallery** — fourteen metres high, with a balcony all the way round at seven,
+  stairs up to it from two corners, and a fallen chandelier in the middle.
+* **Crypt** — low, the roof no higher than a doorway's frame, with thick columns,
+  stone coffins between them and two candles.
+* **Chasm** (a crossing) — a trench right across the room with spikes at the
+  bottom, and the bridge over it broken in the middle: jump the gap, swing it from
+  the pillars standing up out of the trench, or climb down and up. Its doorways are
+  at the two ends only, so the way through is always over it.
+* **Vault** (a dead end) — one doorway, two rows of columns, and a key and coins
+  on a dais at the far end.
+* **Pit** (the way down) — a shaft through the middle of the floor, glowing at the
+  bottom, where the drop to the next floor is.
+
+Open one in the editor to change it: floors are put down from the rooms' scenes,
+so a change shows on every floor the room turns up on. Each room has marks where
+creatures will stand (`Marks/Spawns`), and the vault one where loot will be left.
+
+**Floors.** `FloorPlan` lays a floor out on a grid of four squares by four, the way
+Spelunky lays its levels out. First a way through: from a room in the top row,
+along the row and dropping to the next at random, down to a room in the bottom row
+— so whatever else the floor holds, there is a way from where you come in to the
+way down. Then rooms off the side of it, some of them dead ends, and now and then a
+second doorway between two rooms already side by side, so a floor is not always a
+tree. Squares left over are rock; a floor has eight rooms at least, and thirteen or
+so as a rule. Each square then gets a room that fits its doorways, turned to line
+them up, picked by what the room says it is for (its `ROLE`): a way in at the
+start, a way down at the end, a dead-end room at most dead ends, a crossing now and
+then where the way runs straight, and a room for anywhere for the rest.
+
+The same seed lays out the same floor. Each floor's seed comes from the run's and
+how deep the floor is, so a run is the same dungeon all the way down: set **Run
+Seed** on the `Run` node to walk one twice, or leave it at nought for a new dungeon
+every time.
+
+To add a room, write a class like the others — the scene it is baked to (`SCENE`),
+the sides it has doorways on (`DOORS`), what it is for (`ROLE`), and a `build` that
+puts its shell up with `Rooms.shell` and furnishes it — add it to `Rooms.ROOMS` and
+bake it. The floor plan finds it there.
+
 ## The kit
 
 `Pieces/` holds the kit: seventy-five pieces as `.fbx` — walls plain, with a door,
@@ -820,8 +883,11 @@ on it, and then fewer hares.
 Every place's scene holds its pieces as real nodes, so anything in it can be
 selected and moved in the editor. Its class — `Colosseum`, `Cathedral`, `Castle`,
 `Aqueduct`, `Watchtower`, `Temple` — is the generator of record, saying where every
-piece goes, and `tools/bake_level.gd` runs it and saves the scene. Name places to
-bake only those:
+piece goes, and `tools/bake_level.gd` runs it and saves the scene. The dungeon's
+rooms are baked the same way, each from its class in `game/world/dungeon/`, and so
+is the dungeon's own scene, which holds only the sky, the spider and the run — the
+floors are put down from the rooms' scenes as you play. Name places, rooms or
+`dungeon` to bake only those:
 
 ```sh
 godot --headless --path . --script res://tools/bake_level.gd -- --force castle aqueduct
@@ -883,9 +949,18 @@ door open and one tower broken; the castle's portcullis low enough to go under,
 its breach open and stairs to its walls; the aqueduct's channel high and walkable
 and broken by a gap a grapple can cross; the watchtower ragged at the top, its
 floors inside and its bridge broken; the temple's gates, tiers, stairs and rim —
-and that the training posts each stand a creature up, one that stands, one that
-runs and one that bites, none seeing past its leash, with a readout that says what
-a web would need:
+then that every room of the dungeon has its doorways where it says, bricked up
+until they are opened and a way through once they are, solid wall everywhere else
+and a roof over it, and what its job needs: a way in under a shaft, a way down that
+knows the spider, a broken bridge over a drop, somewhere to leave the loot; that
+two hundred floors each run from a way in on the top row to a way down on the
+bottom, never fewer than eight rooms, every room reachable, every doorway open from
+both sides into a room with a doorway there, and every room only where it is for,
+the same seed laying out the same floor; and that the dungeon puts a floor down as
+its plan says, with the spider at the way in, and dropping down the pit puts the
+next floor down in its place — and that the training posts each stand a creature
+up, one that stands, one that runs and one that bites, none seeing past its leash,
+with a readout that says what a web would need:
 
 ```sh
 godot --headless --script res://tests/world_smoke_test.gd

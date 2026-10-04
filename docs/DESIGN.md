@@ -809,6 +809,61 @@ move about in the editor.
 It is white until the kit's palette texture is added; the pieces point at it and
 take their colours from it when it is there.
 
+### The dungeon — rooms by hand, floors at random
+
+The game is heading for a dungeon dive, so there is a dungeon: floor after floor of
+rooms, each room made by hand and each floor laid out from them at random. Nothing
+lives in it yet, and how the spider grows stronger as it goes down is still open —
+the one thing settled is that it will not be the roguelike kind, where a run's
+gains are lost when the run ends.
+
+**Rooms are closed boxes.** The places are all open to the sky, and that is right
+for them; a dungeon room has to have a roof. A spider climbs anything, so the only
+thing that keeps it in a room is a ceiling and walls without gaps — a room open to
+the sky is a room it walks out of over the top. Every room is roofed, and its
+doorways are the only ways out. The way in is a shaft in the entrance's roof and
+the way down a shaft through the pit's floor, so even those are holes in a closed
+box rather than an open side.
+
+**One size of room, one size of doorway.** Every room is the same square,
+twenty-four metres across — room to swing a line, string silk between columns and
+put a fight in. Any room can stand in any square of a floor because they are all one
+size, and any two rooms meet because their doorways are all one size, in the
+middle of a side: four metres wide and six high, a way through rather than a
+squeeze, small enough still to read as a door. A room is built once with every
+doorway it can have, each bricked up with a plug, and a floor takes out the plugs
+of the doorways it uses; the rest stay shut. A room with fewer doorways — the
+chasm's two, the vault's one — fits fewer squares, and the floor plan turns a room
+whichever way lines its doorways up.
+
+**Floors are laid out the Spelunky way.** A grid of four squares by four. First a
+way through: from a room in the top row, along the row and dropping to the next at
+random, to a room in the bottom row — so there is always a way from the way in to
+the way down, and it wanders. Then rooms off it, some of them dead ends, and now and
+then a second doorway between two rooms already side by side, so a floor is not
+always a tree. Squares left over are rock. A floor that comes out with fewer than
+eight rooms is laid out again: a way straight down with nothing off it is over
+before it starts.
+
+**Rooms say what they are for, and the floor plan picks by it.** A way in for the
+start, a way down for the end, a dead-end room for most dead ends — the vault,
+where whatever a floor hides will be — a crossing now and then where the way runs
+straight through — the chasm, whose doorways are only at its two ends, so the way
+through is always over its broken bridge — and a room for anywhere for the rest. A
+new room is a class and a line in the list of rooms, and the floor plan finds it.
+
+**Seeds.** The same seed lays out the same floor, and each floor's seed comes from
+the run's and how deep it is, so a run is the same dungeon all the way down, and a
+floor that played badly can be played again by its seed.
+
+**Rooms are scenes; floors are not.** Each room is a class that builds it and a
+scene baked from it, like the places — open the scene, move things, and every floor
+the room turns up on has the change. Floors are put down from the rooms' scenes as
+you go, and the floor above is taken up when you drop to the next, with any silk
+left on it. Each room has marks where creatures will stand, and the vault one where
+loot will be left: that is where the hunt, the bag and whatever the progression
+turns out to be come in.
+
 ### What came before
 
 The rest of this section is the world as it was until the colosseum replaced it:
@@ -2540,6 +2595,17 @@ import, and blocks that take any piece to any size; and six ruined places built
 from it — the colosseum the game opens in, a cathedral, a castle, an aqueduct, a
 watchtower, and the temple that was built first. The spider is held at one size.
 Left: what the game around them is — how they join, and what lives in them.
+
+**Milestone 10 — The dungeon** *(started)*
+Done: seven rooms made by hand from the kit, all one size with one size of
+doorway — an entrance with a shaft down into it, a hall, a gallery with a balcony,
+a crypt, a chasm with a broken bridge, a vault at a dead end and a pit down to the
+next floor — and floors laid out from them at random the way Spelunky lays out its
+levels, from a seed, picking each room by what it is for, with the pit taking you
+down to the next floor (§4, *The dungeon*).
+Left: creatures at the rooms' marks, the bag back and something to find in the
+vault, how the spider grows stronger on the way down (not the roguelike way), more
+rooms, and how the dungeon is reached from the colosseum.
 
 ---
 

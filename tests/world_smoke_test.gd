@@ -23,6 +23,13 @@ extends TestSuite
 ##
 ## None of this looks at how it plays — that is what opening each one is for.
 ##
+## The dungeon is checked room by room and floor by floor: every room the same
+## square, with its doorways where it says, each bricked up until it is opened and a
+## way through once it is, and wall everywhere else; floors laid out from the top row
+## to the bottom with every room reachable and fitted to its doorways, the same seed
+## the same floor; and a floor put down with its doorways lining up room to room, the
+## spider at the way in, and the pit taking it down to the next.
+##
 ## The training dummies are checked here too, on posts stood up for the purpose:
 ## they are part of the world rather than of any one place.
 
@@ -33,6 +40,10 @@ func run_checks() -> void:
 		"the game opens in the colosseum")
 	for place in Site.PLACES:
 		await _test_place(place)
+	for room_id in Rooms.ROOMS:
+		await _test_room(room_id)
+	_test_floor_plans()
+	await _test_the_dungeon()
 	await _test_the_dummies()
 
 
@@ -235,6 +246,245 @@ func _test_place(place: String) -> void:
 		"temple":
 			_shape_temple()
 	release_all()
+
+
+# --- the dungeon ------------------------------------------------------------
+
+## Every room is the same square: its doorways where it says, each bricked up with a
+## plug that stops anything going through until it is opened and a way through once
+## it is, solid wall on every other side, a roof over it, everything in it solid on the
+## world layer, and the marks its job needs.
+func _test_room(room_id: String) -> void:
+	var packed := load(Rooms.scene_of(room_id)) as PackedScene
+	if not check(packed != null, "%s: the room is baked" % room_id):
+		return
+	var room := packed.instantiate() as DungeonRoom
+	if not check(room != null and room.room_id == room_id,
+			"%s: its scene is a room that knows its name" % room_id):
+		return
+	var holder := Node3D.new()
+	holder.add_child(room)
+	await stage(holder)
+	await physics_frame
+	var doors := Rooms.doors_of(room_id)
+	check(room.doors == doors and not doors.is_empty(),
+		"%s: with doorways on %s" % [room_id, _sides(doors)])
+	check(room.height >= Rooms.FRAME.y, "%s: tall enough inside for a doorway's frame (%.0f m)"
+		% [room_id, room.height])
+	var unplugged := PackedStringArray()
+	var gaps := PackedStringArray()
+	for side in 4:
+		var blocked := _reach(_beside_door(side, -3.0), _beside_door(side, 2.0)) >= 0.0
+		if room.has_door(side) and (room.plug(side) == null or not blocked):
+			unplugged.append(Rooms.SIDE_NAMES[side])
+		elif not room.has_door(side) and not blocked:
+			gaps.append(Rooms.SIDE_NAMES[side])
+	check(unplugged.is_empty(), "%s: every doorway bricked up with its plug to begin with %s"
+		% [room_id, unplugged])
+	check(gaps.is_empty(), "%s: and solid wall where there is no doorway %s" % [room_id, gaps])
+	for side in doors:
+		room.open(side)
+	await physics_frame
+	await physics_frame
+	var shut := PackedStringArray()
+	for side in doors:
+		if not room.is_open(side) or _reach(_beside_door(side, -3.0), _beside_door(side, 2.0)) >= 0.0:
+			shut.append(Rooms.SIDE_NAMES[side])
+	check(shut.is_empty(), "%s: opened, every doorway is a way through %s" % [room_id, shut])
+	check(_reach(Vector3(5.0, 2.0, 5.0), Vector3(5.0, 40.0, 5.0)) > 0.0,
+		"%s: and there is a roof over it" % room_id)
+	var loose := PackedStringArray()
+	var bodies := 0
+	for node in all_under(room):
+		var body := node as StaticBody3D
+		if body != null:
+			bodies += 1
+			if body.collision_layer & GameLayers.WORLD == 0:
+				loose.append(body.name)
+	check(bodies > 15 and loose.is_empty(),
+		"%s: all %d solids in it on the world layer %s" % [room_id, bodies, loose])
+	if Rooms.role_of(room_id) != Rooms.ENTRANCE:
+		check(room.spawns().size() >= 2,
+			"%s: with places for creatures to stand (%d)" % [room_id, room.spawns().size()])
+	match Rooms.role_of(room_id):
+		Rooms.ENTRANCE:
+			check(room.entry() != null, "%s: a way in, with a mark where the spider comes in"
+				% room_id)
+		Rooms.EXIT:
+			var drop := room.way_down()
+			check(drop != null and drop.collision_mask & GameLayers.PLAYER != 0,
+				"%s: a way down, with a drop that knows the spider" % room_id)
+	match room_id:
+		"entrance":
+			var entry := room.entry()
+			check(entry != null and _reach(entry.global_position, entry.global_position
+				+ Vector3.UP * 40.0) < 0.0, "entrance: the way in comes down a shaft through its roof")
+		"pit":
+			var drop := room.way_down()
+			check(drop != null and drop.global_position.y < -5.0,
+				"pit: its way down is at the bottom of a shaft")
+			check(_reach(Vector3(0.0, 1.0, 0.0), Vector3(0.0, -15.0, 0.0)) < 0.0,
+				"pit: and the shaft goes on down past it")
+		"chasm":
+			check(_reach(Vector3(0.0, 1.0, 0.0), Vector3(0.0, -8.0, 0.0)) < 0.0,
+				"chasm: its bridge is broken over a drop")
+		"vault":
+			check(room.get_node_or_null("Marks/Loot") != null, "vault: with somewhere to leave the loot")
+	close()
+
+
+## A point [param out] metres out from a room's wall on [param side], through the
+## middle of where its doorway would be, two metres up.
+func _beside_door(side: int, out: float) -> Vector3:
+	return Rooms.FACING[side] * (Rooms.CELL * 0.5 + out) + Vector3.UP * 2.0
+
+
+func _sides(sides: Array[int]) -> String:
+	var named := PackedStringArray()
+	for side in sides:
+		named.append(Rooms.SIDE_NAMES[side])
+	return ", ".join(named)
+
+
+## A floor is laid out the Spelunky way: from a room in the top row to one in the
+## bottom, the way in and the way down at the two ends, every room reachable from the
+## way in, every open doorway open from both sides, every room with a doorway
+## wherever its square has one open, and every room only where what it is for says.
+## Across many floors every room turns up, and no floor is too small to be worth going
+## down to. The same seed lays out the same floor.
+func _test_floor_plans() -> void:
+	var misplaced := PackedStringArray()
+	var unreachable := PackedStringArray()
+	var lopsided := PackedStringArray()
+	var unfit := PackedStringArray()
+	var astray := PackedStringArray()
+	var kinds := {}
+	var sizes := Vector2i(1000, 0)
+	for floor_seed in range(1, 201):
+		var plan := FloorPlan.make(floor_seed)
+		sizes = Vector2i(mini(sizes.x, plan.cells.size()), maxi(sizes.y, plan.cells.size()))
+		if plan.start.y != 0 or plan.finish.y != FloorPlan.ROWS - 1 \
+				or Rooms.role_of(plan.cells[plan.start]["room"]) != Rooms.ENTRANCE \
+				or Rooms.role_of(plan.cells[plan.finish]["room"]) != Rooms.EXIT:
+			misplaced.append(str(floor_seed))
+		if plan.reachable() != plan.cells.size():
+			unreachable.append(str(floor_seed))
+		for cell: Vector2i in plan.cells:
+			var info: Dictionary = plan.cells[cell]
+			var open: Array[int] = []
+			open.assign(info["open"])
+			for side in open:
+				if not plan.is_open(FloorPlan.beside(cell, side), posmod(side + 2, 4)):
+					lopsided.append("%d %s" % [floor_seed, cell])
+			var sides := Rooms.turned(Rooms.doors_of(info["room"]), info["turn"])
+			for side in open:
+				if not sides.has(side):
+					unfit.append("%d %s %s" % [floor_seed, cell, info["room"]])
+			var straight := open.size() == 2 and posmod(open[0] - open[1], 4) == 2
+			match Rooms.role_of(info["room"]):
+				Rooms.ENTRANCE, Rooms.EXIT:
+					if cell != plan.start and cell != plan.finish:
+						astray.append("%d %s %s" % [floor_seed, cell, info["room"]])
+				Rooms.DEAD_END:
+					if open.size() != 1:
+						astray.append("%d %s %s" % [floor_seed, cell, info["room"]])
+				Rooms.CROSSING:
+					if not straight:
+						astray.append("%d %s %s" % [floor_seed, cell, info["room"]])
+			kinds[info["room"]] = int(kinds.get(info["room"], 0)) + 1
+	check(misplaced.is_empty(), "200 floors: each from the way in on the top row to the way "
+		+ "down on the bottom row %s" % misplaced)
+	check(unreachable.is_empty(), "every room on every floor reachable from the way in %s"
+		% unreachable)
+	check(lopsided.is_empty(), "every open doorway open from both sides, into a room %s" % lopsided)
+	check(unfit.is_empty(), "every room with a doorway wherever its square has one open %s" % unfit)
+	check(astray.is_empty(), "every room where it is for: a way in or down only at the two ends, "
+		+ "a room for a dead end only at one, a crossing only on a straight way %s" % astray)
+	check(kinds.size() == Rooms.ROOMS.size(), "every room turns up (%s)" % str(kinds))
+	check(sizes.x >= FloorPlan.LEAST, "a floor is %d to %d rooms, never fewer than %d"
+		% [sizes.x, sizes.y, FloorPlan.LEAST])
+	var once := FloorPlan.make(77)
+	var again := FloorPlan.make(77)
+	check(str(once.cells) == str(again.cells) and once.start == again.start,
+		"the same seed lays out the same floor")
+	check(str(FloorPlan.make(78).cells) != str(once.cells), "and another seed another")
+
+
+## The dungeon opens on a floor put down from the rooms' scenes: a room in every
+## square the plan fills, the doorways between them lining up into ways through and
+## every other side shut, the spider at the way in and on its feet, and the HUD naming
+## the floor. Dropping down the pit puts the next floor down in its place, laid out
+## afresh, the spider in at its way in.
+func _test_the_dungeon() -> void:
+	var packed := load(Dungeon.SCENE) as PackedScene
+	if not check(packed != null, "the dungeon is baked"):
+		return
+	var level := packed.instantiate()
+	var run := level.get_node_or_null("Run") as DungeonRun
+	if not check(run != null, "the dungeon has a run to lay its floors out"):
+		level.free()
+		return
+	run.run_seed = 4242
+	await stage(level)
+	await run_frames(10)
+	var spider := root.get_tree().get_first_node_in_group("spider") as SpiderPlayer
+	if not check(spider != null, "the dungeon has a spider in it"):
+		return
+	spider.require_captured_mouse = false
+	var plan := run.plan
+	if not check(plan != null and run.rooms.size() == plan.cells.size()
+			and plan.cells.size() >= FloorPlan.LEAST,
+			"a floor is put down, a room in every square the plan fills (%d)" % run.rooms.size()):
+		return
+	var astray := PackedStringArray()
+	var shut := PackedStringArray()
+	var leaky := PackedStringArray()
+	for cell: Vector2i in plan.cells:
+		var room: DungeonRoom = run.rooms[cell]
+		var centre := FloorPlan.centre(cell)
+		if room.global_position.distance_to(centre) > 0.01 or room.room_id != plan.cells[cell]["room"]:
+			astray.append(str(cell))
+		for side in 4:
+			var facing := Rooms.FACING[side]
+			var a := centre + facing * (Rooms.CELL * 0.5 - 2.5) + Vector3.UP * 2.0
+			var b := centre + facing * (Rooms.CELL * 0.5 + 2.5) + Vector3.UP * 2.0
+			var open := plan.is_open(cell, side)
+			var blocked := _reach(a, b) >= 0.0
+			if open and blocked:
+				shut.append("%s %s" % [cell, Rooms.SIDE_NAMES[side]])
+			elif not open and not blocked:
+				leaky.append("%s %s" % [cell, Rooms.SIDE_NAMES[side]])
+	check(astray.is_empty(), "each the room the plan says, in its square %s" % astray)
+	check(shut.is_empty(), "every doorway the plan opens is a way through into the next room %s"
+		% shut)
+	check(leaky.is_empty(), "and every other side is wall, or a doorway bricked up %s" % leaky)
+	var way_in := run.entrance().entry().global_position
+	check(Vector2(spider.global_position.x - way_in.x, spider.global_position.z - way_in.z).length()
+		< 1.5, "the spider comes in at the way in")
+	var landed: bool = await wait_until(func() -> bool: return spider.is_on_floor(), 180)
+	check(landed, "and lands on its floor")
+	var here := Zone.at(root.get_tree(), spider.global_position)
+	check(here != null and here.display_name == "Floor 1",
+		"which the HUD calls Floor 1 (%s)" % (here.display_name if here != null else "nothing"))
+	var first := str(plan.cells)
+	var drop := run.way_down()
+	if not check(drop != null, "the floor has a way down"):
+		return
+	spider.global_position = drop.global_position
+	var down: bool = await wait_until(func() -> bool: return run.floor_number == 2, 180)
+	check(down, "dropping down the pit takes the spider down to floor 2")
+	check(run.plan.seed != plan.seed and str(run.plan.cells) != first, "laid out afresh")
+	way_in = run.entrance().entry().global_position
+	check(Vector2(spider.global_position.x - way_in.x, spider.global_position.z - way_in.z).length()
+		< 1.5, "with the spider in at its way in")
+	await run_frames(5)
+	here = Zone.at(root.get_tree(), spider.global_position)
+	check(here != null and here.display_name == "Floor 2",
+		"which the HUD calls Floor 2 (%s)" % (here.display_name if here != null else "nothing"))
+	check(run.get_node_or_null("Floor1") == null and run.get_node_or_null("Floor2") != null,
+		"and the floor above is taken up")
+	release_all()
+	close()
 
 
 ## How high the first solid thing is straight down from high over [param at].
