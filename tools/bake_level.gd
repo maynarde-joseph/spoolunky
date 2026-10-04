@@ -7,10 +7,10 @@ extends SceneTree
 ## Each place in [constant Site.PLACES] has a class that says where every piece goes
 ## — the generator of record — and a scene it is saved to, which is what the game
 ## opens and what you move things about in, in the editor. So does each of the
-## dungeon's rooms in [constant Rooms.ROOMS]. Name them after `--` to bake only those
-## (`-- hall crypt`); name none and everything is baked. A place that already has
-## a scene is left alone unless told otherwise, because building it again throws
-## away anything moved by hand:
+## dungeon's rooms in [constant Rooms.ROOMS], and the dungeon itself. Name them after
+## `--` to bake only those (`-- hall crypt dungeon`); name none and everything is
+## baked. A place that already has a scene is left alone unless told otherwise,
+## because building it again throws away anything moved by hand:
 ##
 ##     godot --headless --path . --script res://tools/bake_level.gd -- --force castle
 ##
@@ -43,17 +43,19 @@ func _run() -> void:
 	quit(1 if failed > 0 else 0)
 
 
-## Everything there is to bake: the places and the dungeon's rooms.
+## Everything there is to bake: the places, the dungeon's rooms, and the dungeon.
 func _all() -> Array[String]:
 	var names: Array[String] = []
-	names.assign(Site.PLACES.keys() + Rooms.ROOMS.keys())
+	names.assign(Site.PLACES.keys() + Rooms.ROOMS.keys() + ["dungeon"])
 	return names
 
 
 func _builder(place: String) -> Script:
 	if Site.PLACES.has(place):
 		return Site.builder(place)
-	return Rooms.builder(place)
+	if Rooms.ROOMS.has(place):
+		return Rooms.builder(place)
+	return load(Rooms.DUNGEON) as Script if place == "dungeon" else null
 
 
 func _bake(place: String, force: bool) -> bool:

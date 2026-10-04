@@ -8,7 +8,7 @@ extends RefCounted
 
 const SCENE := "res://game/world/dungeon/chasm.tscn"
 const DOORS: Array[int] = [Rooms.Side.NORTH, Rooms.Side.SOUTH]
-const ROLE := Rooms.ANY
+const ROLE := Rooms.CROSSING
 const HEIGHT := 14.0
 
 ## Half the trench's width north to south, how deep it is, and the gap in the bridge.

@@ -1,0 +1,63 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://game/world/dungeon/dungeon_run.gd" id="1_a4u0x"]
+[ext_resource type="PackedScene" path="res://game/player/spider.tscn" id="2_5vpix"]
+[ext_resource type="Script" path="res://game/player/spider.gd" id="3_pxard"]
+[ext_resource type="Environment" path="res://addons/character-controller/example/main/underwater.tres" id="4_f4vt5"]
+[ext_resource type="PackedScene" path="res://game/ui/hud.tscn" id="5_0mf2t"]
+[ext_resource type="Script" path="res://game/ui/hud.gd" id="6_1jfko"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_w0jso"]
+sky_top_color = Color(0.07, 0.08, 0.1, 1)
+sky_horizon_color = Color(0.12, 0.13, 0.16, 1)
+ground_bottom_color = Color(0.05, 0.05, 0.06, 1)
+ground_horizon_color = Color(0.09, 0.09, 0.11, 1)
+sun_angle_max = 18.0
+
+[sub_resource type="Sky" id="Sky_sbjpv"]
+sky_material = SubResource("ProceduralSkyMaterial_w0jso")
+
+[sub_resource type="Environment" id="Environment_t2chh"]
+background_mode = 2
+sky = SubResource("Sky_sbjpv")
+ambient_light_source = 2
+ambient_light_color = Color(0.55, 0.6, 0.74, 1)
+ambient_light_energy = 0.42
+tonemap_mode = 2
+tonemap_exposure = 0.85
+ssao_enabled = true
+fog_enabled = true
+fog_light_color = Color(0.07, 0.07, 0.09, 1)
+fog_density = 0.012
+fog_sky_affect = 0.1
+
+[node name="Dungeon" type="Node3D" unique_id=2090603617]
+
+[node name="Sky" type="WorldEnvironment" parent="." unique_id=1274556041]
+environment = SubResource("Environment_t2chh")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1107667970]
+transform = Transform3D(0.5547002, -0.8188504, 0.14762035, 0, 0.17741758, 0.9841357, -0.8320503, -0.5459003, 0.098413564, 15, 100, 10)
+light_color = Color(0.8, 0.86, 1, 1)
+light_energy = 0.7
+shadow_enabled = true
+directional_shadow_max_distance = 160.0
+
+[node name="Run" type="Node3D" parent="." unique_id=977880745]
+script = ExtResource("1_a4u0x")
+
+[node name="Webs" type="Node3D" parent="." unique_id=1881795186]
+
+[node name="Player" type="CharacterBody3D" parent="." unique_id=979570113 instance=ExtResource("2_5vpix")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+collision_layer = 2
+floor_snap_length = 0.5
+script = ExtResource("3_pxard")
+grows_by_eating = false
+start_stage = 2
+all_spells_open = true
+underwater_env = ExtResource("4_f4vt5")
+abilities_path = Array[NodePath]([NodePath("Crouch Ability 3D"), NodePath("Sprint Ability 3D"), NodePath("Walk Ability 3D"), NodePath("Jump Ability 3D"), NodePath("Fly Ability 3D"), NodePath("Swim Ability 3D")])
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1169485978 instance=ExtResource("5_0mf2t")]
+script = ExtResource("6_1jfko")

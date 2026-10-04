@@ -13,7 +13,9 @@ extends RefCounted
 ##
 ## Each room is made by hand, a class of its own, and baked into a scene by
 ## `tools/bake_level.gd`; the floor plan puts the scenes down. Open one in the editor
-## to change it — and bake it again only to start it over.
+## to change it — and bake it again only to start it over. A new room is a class like
+## the others, with the scene it is baked to, the sides it has doorways on and what
+## it is for, added to [constant ROOMS] and baked: the floor plan finds it there.
 
 ## How far across a room is, outside wall to outside wall, and how thick its walls
 ## and its roof are.
@@ -33,12 +35,14 @@ const FACING: Array[Vector3] = [Vector3(0, 0, -1), Vector3(1, 0, 0), Vector3(0, 
 	Vector3(-1, 0, 0)]
 const SIDE_NAMES: Array[String] = ["North", "East", "South", "West"]
 
-## What a room is for on the floor plan: anywhere, the way in, the way down, or off
-## to one side at the end of a way.
+## What a room is for on the floor plan, which picks rooms by it: anywhere, the way
+## in, the way down, off to one side at the end of a way, or across the way where it
+## runs straight through.
 const ANY := "any"
 const ENTRANCE := "entrance"
 const EXIT := "exit"
 const DEAD_END := "dead end"
+const CROSSING := "crossing"
 
 ## Every room, by the name the floor plan and the bake know it by, and the class
 ## that builds it.
@@ -51,6 +55,9 @@ const ROOMS := {
 	"vault": "res://game/world/dungeon/vault_room.gd",
 	"pit": "res://game/world/dungeon/pit_room.gd",
 }
+
+## The scene that sets a run going, and the class that builds it.
+const DUNGEON := "res://game/world/dungeon.gd"
 
 
 ## The class that builds [param room_id], or null.
@@ -73,11 +80,21 @@ static func doors_of(room_id: String) -> Array[int]:
 	return found
 
 
-## What [param room_id] is for: [constant ANY], [constant ENTRANCE], [constant EXIT]
-## or [constant DEAD_END].
+## What [param room_id] is for: [constant ANY], [constant ENTRANCE], [constant EXIT],
+## [constant DEAD_END] or [constant CROSSING].
 static func role_of(room_id: String) -> String:
 	var made := builder(room_id)
 	return made.get_script_constant_map()["ROLE"] if made != null else ANY
+
+
+## Every room that is for [param role], in name order.
+static func with_role(role: String) -> Array[String]:
+	var found: Array[String] = []
+	for room_id: String in ROOMS:
+		if role_of(room_id) == role:
+			found.append(room_id)
+	found.sort()
+	return found
 
 
 ## [param sides] turned [param turns] quarter turns clockwise, seen from above.
