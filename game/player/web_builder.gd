@@ -1073,14 +1073,14 @@ func stop() -> void:
 ## Go to wherever the crosshair is, trailing silk. This is the game's main
 ## verb and it has no mode around it: moving and building are the same act, so
 ## the web ends up being a record of where you went.
-func place() -> void:
+func place() -> bool:
 	if placing_design:
 		place_design()
-		return
+		return true
 	if _awaiting_grapple:
-		return
+		return false
 	if current_pattern() == null:
-		return
+		return false
 	_update_aim()
 	# The pull takes you to a place, not onto silk: it reads straight through a line
 	# to whatever is behind it, and Q is what takes hold of a line. A line grabbing
@@ -1093,7 +1093,7 @@ func place() -> void:
 	if problem != Problem.NONE and (_line_target == null or problem == Problem.LOCKED):
 		_line_target = null
 		notice.emit(problem_text())
-		return
+		return false
 
 	_launched_from = _line_start()
 	_launch_anchored = _anchored()
@@ -1102,12 +1102,13 @@ func place() -> void:
 		aim_normal = Vector3.UP
 	if not building and _climb != null and _climb.shoots_lines():
 		_shoot_line()
-		return
+		return true
 	if _climb != null and _climb.grapple_to(aim_point, aim_normal):
 		_pending_anchor = aim_point
 		_awaiting_grapple = true
-		return
+		return true
 	_arrive_at(aim_point)
+	return true
 
 
 ## The line grapple's whole move: silk from your feet to the cross, and you

@@ -349,17 +349,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.toggle_throwing()
 	elif event.is_action_pressed(input_tether):
 		tether.toggle()
-	# Held, the disc: the spells in hand in a ring round the cross, and the world
-	# slowed while you choose. Letting go takes whatever the pointer is on.
+	# Right mouse held, the disc: the spells in hand in a ring round the cross, and
+	# the world slowed while you choose. Letting go takes whatever the pointer is
+	# on; a tap swaps back to the spell in hand before this one.
 	elif event.is_action_pressed(input_spell_disc):
 		_disc_from_key = disc.open()
 		_disc_key_seen = false
 	elif event.is_action_released(input_spell_disc):
 		_disc_from_key = false
 		disc.close()
-	# Right mouse casts whatever is in hand, and the first thing in hand is the
-	# web. A tap casts straight away; holding winds it up — a bigger ball of silk,
-	# a whirl that goes further, a longer stun — until you let go.
+	# Left mouse casts whatever is in hand, and the first thing in hand is the
+	# grapple. A tap casts straight away; holding winds it up — a bigger ball of
+	# silk, a whirl that goes further, a longer stun — until you let go.
 	elif event.is_action_pressed(input_shoot):
 		# Nothing is cast from behind the disc: the pointer is where the mouse is.
 		if not disc.is_open:
@@ -386,23 +387,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		device_placer.place()
 	elif _device_tool_active() and event.is_action_pressed(input_cancel_anchor):
 		device_placer.stop()
-	# Left mouse is always "silk connects me to that". What it does depends on
-	# what you pointed at, not on a mode you are in: a surface pulls you over
-	# to it — through any line in the way, since Q is what takes hold of a line —
-	# and something you have already caught comes to you instead, which is the
-	# same act read the only way that makes sense for a thing that is already
-	# wrapped up and going nowhere.
+	# The grapple on a button of its own, as it was before it was a spell. Parked,
+	# bound to nothing: it is cast like any other spell now (see [method grapple]).
 	elif event.is_action_pressed(input_place_anchor):
-		# Something already caught comes to you on a line; anything else — a web
-		# included, since calling webs in is the Pullback's — is a surface to
-		# grapple to. [LiveLine] gets asked in between, but it ships set to do
-		# nothing, so by default a creature still on its feet is none of those and
-		# the aim reads through it — a creature standing in front of a wall is a
-		# creature *and* a wall, and a click that means one thing or the other
-		# depending on a couple of pixels costs you confidence in the grapple as
-		# well. See [member LiveLine.move].
-		if not tether.take_aimed() and not live_line.act():
-			web_builder.place()
+		grapple()
 	elif _web_tool_active() and event.is_action_pressed(input_cancel_anchor):
 		web_builder.undo()
 	elif event.is_action_pressed(input_ride):
@@ -412,6 +400,24 @@ func _unhandled_input(event: InputEvent) -> void:
 	else:
 		return
 	get_viewport().set_input_as_handled()
+
+
+## The grapple — the whole of what casting it does. It is always "silk connects me
+## to that", and what that means depends on what you point at, not on a mode you
+## are in: a surface pulls you over to it — through any line in the way, since Q is
+## what takes hold of a line — and something you have already caught comes to you
+## instead, which is the same act read the only way that makes sense for a thing
+## already wrapped up and going nowhere. A web counts as a surface, since calling
+## webs in is the Pullback's. [LiveLine] gets asked in between, but it ships set to
+## do nothing, so by default a creature still on its feet is none of those and the
+## aim reads through it — a creature standing in front of a wall is a creature *and*
+## a wall, and a click that meant one or the other depending on a couple of pixels
+## would cost you confidence in the grapple. See [member LiveLine.move]. True if
+## anything went.
+func grapple() -> bool:
+	if tether.take_aimed() or live_line.act():
+		return true
+	return web_builder.place()
 
 
 ## The number keys: each takes its spell in hand. Returns whether the event was one

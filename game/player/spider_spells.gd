@@ -4,12 +4,15 @@ extends Node3D
 ## What the spider can cast, which of it is in hand, and how long until each is
 ## ready again.
 ##
-## Right mouse casts whatever is in hand: a tap casts it at once, and holding
-## winds it up — bigger, longer — until you let go. The disc takes a spell in hand
-## — silk, always, and the loadout's five — and the wheel moves the hand along
-## them. Each is in a slot, silk in the first: [method take] and [method key_for]
-## count them from 1, which is what the number keys did before they were parked. Silk is still thrown by the [WebBuilder] exactly as it always
-## was; all this decides is that silk is what the key means right now. Every other
+## Left mouse casts whatever is in hand: a tap casts it at once, and holding winds
+## it up — bigger, longer — until you let go. The disc on right mouse takes a spell
+## in hand — the grapple and silk, always, and the loadout's five — a tap of it
+## swaps back to the spell before, and the wheel moves the hand along them. Each is
+## in a slot, the grapple in the first: [method take] and [method key_for] count
+## them from 1, which is what the number keys did before they were parked. The
+## grapple is still the spider's own click (see [method SpiderPlayer.grapple]) and
+## silk is still thrown by the [WebBuilder] exactly as it always was; all this
+## decides is that one of them is what the button means right now. Every other
 ## spell is cast from here.
 ##
 ## The limit is the web's: a wait, never a bill (see §5 of the design). Each
@@ -67,6 +70,9 @@ const SPIRAL_HEAT := 0.4
 
 ## Which spell is in hand, as an index into [member book].
 var selected := 0
+
+## The spell that was in hand before this one, for [method swap_back].
+var _before: SpiderSpell = null
 
 ## True while the cast key is held on a spell other than silk.
 var charging := false
@@ -173,14 +179,21 @@ func by_id(spell_id: String) -> SpiderSpell:
 	return null
 
 
-## Whether [param spell] can be cast by this spider: silk always, anything else
-## once the tree has it learned.
+## Whether [param spell] can be cast by this spider: the grapple and silk always,
+## anything else once the tree has it learned.
 func is_open(spell: SpiderSpell) -> bool:
 	if spell == null:
 		return false
-	if spell.form == SpiderSpell.Form.SILK:
+	if is_innate(spell):
 		return true
 	return _tree != null and _tree.knows_spell(spell.id)
+
+
+## Whether [param spell] is one the spider is born with: the grapple and silk —
+## always in hand, taking no place in the loadout, and learned in no tree.
+func is_innate(spell: SpiderSpell) -> bool:
+	return spell != null and (spell.form == SpiderSpell.Form.SILK
+		or spell.form == SpiderSpell.Form.GRAPPLE)
 
 
 ## Every spell this spider can cast, in order.
@@ -192,19 +205,18 @@ func open_spells() -> Array[SpiderSpell]:
 	return found
 
 
-## What the number keys hold, 1 first: silk, then the loadout. With everything
-## open, every spell in the book, in its order.
+## What is in hand to choose from, first to last: the grapple and silk, then the
+## loadout. With everything open, every spell in the book, in its order.
 func hand() -> Array[SpiderSpell]:
 	var found: Array[SpiderSpell] = []
 	for spell in book:
-		if spell.form == SpiderSpell.Form.SILK:
+		if is_innate(spell):
 			found.append(spell)
-			break
 	if _tree == null:
 		return found
 	if _tree.open_all:
 		for spell in book:
-			if spell.form != SpiderSpell.Form.SILK:
+			if not is_innate(spell):
 				found.append(spell)
 		return found
 	for spell_id in _tree.loadout:
@@ -214,7 +226,7 @@ func hand() -> Array[SpiderSpell]:
 	return found
 
 
-## Whether [param spell] is on a number key.
+## Whether [param spell] is in hand to choose.
 func in_hand(spell: SpiderSpell) -> bool:
 	return hand().has(spell)
 
@@ -240,16 +252,17 @@ func cycle(step := 1) -> bool:
 	if keys.size() < 2:
 		return false
 	var at := maxi(keys.find(current()), 0)
-	selected = book.find(keys[posmod(at + step, keys.size())])
+	_hold(keys[posmod(at + step, keys.size())])
 	changed.emit()
 	notice.emit("%s in hand" % current().display_name)
 	return true
 
 
-## Takes the spell on number key [param key] in hand: silk on 1, the loadout on 2
-## onward. A wind-up under way is given up — the key is the player saying what they
-## want in hand now, and a key that waited on the throw it interrupted would feel
-## dead. False if nothing is on the key, or it is already in hand.
+## Takes the spell in slot [param key] of the hand in hand: the grapple in 1, silk in
+## 2, the loadout from 3. A wind-up under way is given up — choosing is the player
+## saying what they want in hand now, and a choice that waited on the throw it
+## interrupted would feel dead. False if nothing is in the slot, or it is already
+## in hand.
 func take(key: int) -> bool:
 	var keys := hand()
 	var index := key - 1
@@ -262,25 +275,48 @@ func take(key: int) -> bool:
 	if spell == current():
 		return false
 	cancel_cast()
-	selected = book.find(spell)
+	_hold(spell)
 	changed.emit()
 	notice.emit("%s in hand" % spell.display_name)
 	return true
 
 
-## The number key that takes [param spell] in hand, or 0 if it is on none.
+## The slot of the hand [param spell] is in, counted from 1, or 0 if it is in none.
 func key_for(spell: SpiderSpell) -> int:
 	return hand().find(spell) + 1
 
 
-## Takes [param spell_id] in hand. False if it is not on a key.
+## Takes [param spell_id] in hand. False if it is not in hand to choose.
 func select(spell_id: String) -> bool:
 	for spell in hand():
 		if spell.id == spell_id:
-			selected = book.find(spell)
+			_hold(spell)
 			changed.emit()
 			return true
 	return false
+
+
+## Takes back in hand the spell that was in hand before this one: a quick swap
+## between two, the grapple and a spell most of all. False if there was none, it is
+## not in hand any more, or something is being wound up.
+func swap_back() -> bool:
+	if _before == null or _before == current() or not in_hand(_before):
+		return false
+	if charging or (_builder != null and _builder.aiming):
+		return false
+	var back := _before
+	_hold(back)
+	changed.emit()
+	notice.emit("%s in hand" % back.display_name)
+	return true
+
+
+## Puts [param spell] in hand, remembering what was there for [method swap_back].
+func _hold(spell: SpiderSpell) -> void:
+	var was := current()
+	selected = book.find(spell)
+	if was != null and was != spell:
+		_before = was
 
 
 # --- waiting ------------------------------------------------------------
@@ -363,6 +399,8 @@ func begin_cast() -> bool:
 	var spell := current()
 	if spell == null:
 		return false
+	if spell.form == SpiderSpell.Form.GRAPPLE:
+		return _grapple(spell)
 	if spell.form == SpiderSpell.Form.SILK:
 		return _builder != null and _builder.begin_shot()
 	if charging:
@@ -383,6 +421,9 @@ func track(delta: float) -> void:
 ## Let go: casts whatever the wind-up reached.
 func release_cast() -> bool:
 	var spell := current()
+	if spell != null and spell.form == SpiderSpell.Form.GRAPPLE:
+		# Gone on the press: nothing winds up, so letting go does nothing.
+		return false
 	if spell != null and spell.form == SpiderSpell.Form.SILK:
 		if _builder == null or not _builder.release_shot():
 			return false
@@ -415,6 +456,8 @@ func cancel_cast() -> void:
 func cast_now(spell: SpiderSpell, wound := 0.0) -> bool:
 	if spell == null or not is_open(spell) or _spider == null:
 		return false
+	if spell.form == SpiderSpell.Form.GRAPPLE:
+		return _grapple(spell)
 	if spell.form == SpiderSpell.Form.SILK:
 		if _builder == null:
 			return false
@@ -437,6 +480,16 @@ func cast_now(spell: SpiderSpell, wound := 0.0) -> bool:
 		_spans[spell.id] = span
 	cast.emit(spell, went.get("at", _spider.global_position))
 	changed.emit()
+	return true
+
+
+## The grapple, cast: the spider's own click on whatever the cross is on — go there,
+## or bring what you caught to you. It goes on the press, winds up nothing and never
+## waits; how many lines it may leave up is the builder's to keep.
+func _grapple(spell: SpiderSpell) -> bool:
+	if _spider == null or not _spider.grapple():
+		return false
+	cast.emit(spell, _builder.aim_point if _builder != null else _spider.global_position)
 	return true
 
 
@@ -1209,9 +1262,10 @@ func pull_lines_shown() -> int:
 ## them. Quiet: what is new is announced as it is learned — see [method _on_learned].
 func _read_the_book() -> void:
 	if not in_hand(current()):
+		# Back to the grapple, which is always there: something to move with.
 		selected = 0
 		for i in book.size():
-			if book[i].form == SpiderSpell.Form.SILK:
+			if book[i].form == SpiderSpell.Form.GRAPPLE:
 				selected = i
 				break
 		if charging:
@@ -1228,7 +1282,7 @@ func _on_learned(skill: SpellSkill) -> void:
 	opened.emit(spell)
 	var key := key_for(spell)
 	if key > 0:
-		notice.emit("New spell: %s — hold [Tab] to take it in hand" % spell.display_name)
+		notice.emit("New spell: %s — hold right mouse to take it in hand" % spell.display_name)
 	else:
 		notice.emit("New spell: %s — the loadout is full: make room in the tree [E]"
 			% spell.display_name)

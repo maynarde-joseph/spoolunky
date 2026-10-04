@@ -297,13 +297,15 @@ func _refresh() -> void:
 			state.text = text
 		card.modulate = colour
 
-	var slots := PackedStringArray(["Silk"])
+	var slots := PackedStringArray(["Grapple", "Silk"])
 	if _spells != null:
-		var keys := _spells.hand()
-		for i in range(1, keys.size()):
-			slots.append(keys[i].display_name)
+		slots.clear()
+		var innate := 0
+		for spell in _spells.hand():
+			slots.append(spell.display_name)
+			innate += 1 if _spells.is_innate(spell) else 0
 		if not _tree.open_all:
-			for i in range(keys.size(), SpellTree.LOADOUT_SIZE + 1):
+			for i in range(_spells.hand().size(), SpellTree.LOADOUT_SIZE + innate):
 				slots.append("—")
 	_loadout_line.text = "Loadout    " + "    ".join(slots)
 

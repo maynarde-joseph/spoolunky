@@ -26,24 +26,24 @@ Shift                  sprint — it runs out, and it runs out faster the
 walk into a wall       climb it — walls and ceilings are floors to you
 silk is sticky         a web holds you; jump to come off it
 
-Left Mouse             grapple there, trailing a line — hold a way to go
-                       and you land running. Three lines at a time, and a
-                       fourth takes the oldest down. It goes through
-                       lines: Q is what takes hold of one
+Left Mouse             cast what is in hand — the grapple, to start with:
+                       there, trailing a line. Hold a way to go and you
+                       land running. Three lines at a time, and a fourth
+                       takes the oldest down
+Left Mouse  (hold)     wind a spell up: a bigger web, more drops of water,
+                       a longer stun. Brackets on a creature: the silk goes
+                       where it is heading, so keep the cross on it
+Right Mouse  (hold)    the spell disc: the grapple, silk and your loadout's
+                       five, the world slowed while it is up — flick the
+                       mouse toward a spell and let go
+Right Mouse  (tap)     back to the spell you had before — grapple, spell,
+                       grapple
+Wheel                  turn through the spells in hand
 Q                      take hold of the nearest line you can hang from,
-                       or let go
+                       or let go. The grapple goes through lines
 on a line              W/S zip along it, toward or away from where you look
 G                      grapple style: the pull takes you there; the line
                        lays a line from your feet and hangs you from it
-Right Mouse            cast what is in hand — the web, to start with: it
-                       sticks where it lands and wraps what it lands on
-Right Mouse  (hold)    wind it up: a bigger web, more drops of water, a
-                       longer stun. Brackets on a creature: the silk goes
-                       where it is heading, so keep the cross on it
-Tab  (hold)            the spell disc: silk and your loadout's five, the
-                       world slowed while it is up — flick the mouse toward
-                       a spell and let go
-Wheel                  turn through the spells in hand
 E                      the spell tree — catching and eating earn ranks,
                        ranks earn points, points learn spells
 F                      wrap prey, then drain it; at a shrine, rest
@@ -546,14 +546,19 @@ func _on_trait_gained(gift: SpiderTrait, source: String) -> void:
 func _refresh_in_hand(builder: WebBuilder) -> void:
 	var spells := _spider.spells
 	var spell := spells.current() if spells != null else null
-	var more := "    [Tab] spells" if spells != null and spells.hand().size() > 1 else ""
+	var more := "    [hold right mouse] spells" \
+		if spells != null and spells.hand().size() > 1 else ""
+	if spell != null and spell.form == SpiderSpell.Form.GRAPPLE:
+		pattern_label.text = spell.display_name
+		hint_label.text = "Left mouse — go there, trailing a line" + more
+		return
 	if spell == null or spell.form == SpiderSpell.Form.SILK:
 		var chosen := builder.current_pattern()
 		pattern_label.text = "Silk — %s" % chosen.display_name if chosen != null else "Silk"
-		hint_label.text = "Right mouse throws a web — hold for a bigger one" + more
+		hint_label.text = "Left mouse throws a web — hold for a bigger one" + more
 		return
 	pattern_label.text = spell.display_name
-	hint_label.text = "Right mouse casts it — hold to wind it up" + more
+	hint_label.text = "Left mouse casts it — hold to wind it up" + more
 
 
 ## A spell being wound up: how far, and what it will land on.
@@ -646,7 +651,10 @@ func _strip_size(spells: SpiderSpells) -> int:
 	var keys := spells.hand().size()
 	if spells.open_all:
 		return keys
-	return maxi(keys, SpellTree.LOADOUT_SIZE + 1)
+	var innate := 0
+	for spell in spells.hand():
+		innate += 1 if spells.is_innate(spell) else 0
+	return maxi(keys, SpellTree.LOADOUT_SIZE + innate)
 
 
 ## Read off the spells every frame, the same way the silk limits are: a wait

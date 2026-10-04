@@ -1,9 +1,11 @@
 class_name SpiderDisc
 extends Node
 
-## The spell disc: hold its key and the spells in hand come up in a ring round the
-## cross, the world slows to a crawl, and a flick of the mouse toward one and letting
-## go takes it in hand.
+## The spell disc: hold right mouse and the spells in hand come up in a ring round
+## the cross, the world slows to a crawl, and a flick of the mouse toward one and
+## letting go takes it in hand. A tap — let go before it has come up — swaps back to
+## the spell in hand before this one, so going between the grapple and a spell is
+## one click.
 ##
 ## Slowed rather than stopped, so the moment goes on: what you are choosing for is
 ## still moving, only slowly, and you can let go when it gets where you want it. The
@@ -25,14 +27,22 @@ signal closed()
 ## speed when it goes, in real seconds — quick, but not a jolt.
 @export var ease_time := 0.12
 
+## How long the button has to be held before the disc comes up and the world slows,
+## in real seconds. Let go sooner, the pointer still in the middle, and it was a tap.
+@export var hold_time := 0.18
+
 ## How far the mouse has to take the pointer from the middle before it is on a slice,
 ## and how far it can take it, in pixels of mouse travel. Let go inside the first and
 ## nothing changes hands.
 @export var dead_zone := 24.0
 @export var pointer_reach := 120.0
 
-## Whether the disc is up.
+## Whether the disc's button is down: it is up from the press, choosing from then.
 var is_open := false
+
+## Whether it is on screen and the world slowed: held past [member hold_time], or the
+## pointer flicked toward a spell before then.
+var showing := false
 
 ## Where the mouse has taken the pointer since the disc came up, from its middle, in
 ## pixels; down is positive, as on the screen.
@@ -46,6 +56,9 @@ var _pace := 1.0
 
 ## Whether this has the engine's clock slowed, and so has to put it back.
 var _slowing := false
+
+## How long the button has been down, in real seconds.
+var _held := 0.0
 
 
 func _ready() -> void:
@@ -62,6 +75,10 @@ func setup(spider: SpiderPlayer, spells: SpiderSpells) -> void:
 func _process(delta: float) -> void:
 	if is_open and _spider != null and not _spider.accepts_input():
 		close(false)
+	if is_open and not showing:
+		_held += delta / Engine.time_scale if Engine.time_scale > 0.0001 else delta
+		if _held >= hold_time or pointer.length() >= dead_zone:
+			showing = true
 	_pace_the_world(delta)
 
 
@@ -80,20 +97,27 @@ func open() -> bool:
 		return false
 	_spells.cancel_cast()
 	is_open = true
+	showing = false
+	_held = 0.0
 	pointer = Vector2.ZERO
 	opened.emit()
 	return true
 
 
 ## Puts the disc away, and with [param choose] takes in hand whatever the pointer is
-## on. Returns whether anything changed hands.
+## on — or, if it never came up, swaps back to the spell before. Returns whether
+## anything changed hands.
 func close(choose := true) -> bool:
 	if not is_open:
 		return false
 	var spell := pointed() if choose else null
+	var tapped := choose and spell == null and not showing
 	is_open = false
+	showing = false
 	pointer = Vector2.ZERO
 	closed.emit()
+	if tapped:
+		return _spells.swap_back()
 	if spell == null:
 		return false
 	return _spells.take(_spells.key_for(spell))
@@ -116,7 +140,8 @@ func steer(motion: Vector2) -> void:
 	pointer = (pointer + motion).limit_length(pointer_reach)
 
 
-## What the disc offers, in order round it from the top: silk, then the loadout.
+## What the disc offers, in order round it from the top: the grapple and silk, then
+## the loadout.
 func slices() -> Array[SpiderSpell]:
 	if _spells == null:
 		var none: Array[SpiderSpell] = []
@@ -139,7 +164,7 @@ func pointed() -> SpiderSpell:
 
 
 ## How fast the world is going now, against its own pace: [member slow] with the disc
-## up, 1 with it away, and in between while it eases.
+## showing, 1 with it away, and in between while it eases.
 func pace() -> float:
 	return _pace
 
@@ -168,9 +193,9 @@ static func slice_direction(index: int, count: int) -> Vector2:
 ## once the disc is away and the world is up to speed.
 func _pace_the_world(delta: float) -> void:
 	var real := delta / Engine.time_scale if Engine.time_scale > 0.0001 else delta
-	var target := slow if is_open else 1.0
+	var target := slow if showing else 1.0
 	_pace = move_toward(_pace, target, real * absf(1.0 - slow) / maxf(ease_time, 0.001))
-	if is_open or _pace < 1.0:
+	if showing or _pace < 1.0:
 		Engine.time_scale = _pace
 		_slowing = true
 	elif _slowing:

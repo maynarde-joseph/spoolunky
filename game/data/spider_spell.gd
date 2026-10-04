@@ -38,6 +38,10 @@ enum Form {
 	## A pillar of clay raised where you point, that throws what stands there off
 	## its top.
 	EARTH,
+	## The grapple: a line out to where you point and the spider along it — or, with
+	## the cross on something already caught, that along it to the spider. Always in
+	## hand, and never waiting.
+	GRAPPLE,
 }
 
 @export var id := "silk"
