@@ -1,0 +1,338 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://game/world/dungeon/dungeon_room.gd" id="1_nbtxd"]
+[ext_resource type="Material" path="res://game/world/materials/stone_dark.tres" id="2_3csyi"]
+[ext_resource type="Script" path="res://game/world/kit_block.gd" id="3_sg7tk"]
+[ext_resource type="Material" path="res://game/world/materials/soil.tres" id="4_rcejv"]
+[ext_resource type="PackedScene" path="res://Pieces/spikes big.fbx" id="5_46ijw"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_ychno"]
+size = Vector3(22, 0.1, 7)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_072nb"]
+size = Vector3(22, 0.1, 7)
+
+[sub_resource type="BoxMesh" id="BoxMesh_f06d8"]
+size = Vector3(22, 0.1, 8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_7xj1d"]
+size = Vector3(22, 0.1, 8)
+
+[node name="ChasmRoom" type="Node3D" unique_id=902624338]
+script = ExtResource("1_nbtxd")
+room_id = "chasm"
+doors = Array[int]([0, 2])
+height = 14.0
+
+[node name="Shell" type="Node3D" parent="." unique_id=117852477]
+
+[node name="Floor" type="StaticBody3D" parent="Shell" unique_id=1950656772]
+collision_mask = 0
+
+[node name="FloorTop1" type="MeshInstance3D" parent="Shell/Floor" unique_id=468463365]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.04, -7.5)
+material_override = ExtResource("2_3csyi")
+mesh = SubResource("BoxMesh_ychno")
+
+[node name="FloorTop1Shape" type="CollisionShape3D" parent="Shell/Floor" unique_id=1664023054]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.04, -7.5)
+shape = SubResource("BoxShape3D_072nb")
+
+[node name="FloorTop2" type="MeshInstance3D" parent="Shell/Floor" unique_id=1439767046]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.04, 7.5)
+material_override = ExtResource("2_3csyi")
+mesh = SubResource("BoxMesh_ychno")
+
+[node name="FloorTop2Shape" type="CollisionShape3D" parent="Shell/Floor" unique_id=525497274]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.04, 7.5)
+shape = SubResource("BoxShape3D_072nb")
+
+[node name="Roof1" type="StaticBody3D" parent="Shell" unique_id=1402983123]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 14, 0)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+piece = "cube5"
+size = Vector3(24, 1, 24)
+
+[node name="WallNorth1" type="StaticBody3D" parent="Shell" unique_id=1925369157]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -11.5)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+size = Vector3(8, 14, 1)
+
+[node name="WallNorth2" type="StaticBody3D" parent="Shell" unique_id=538187316]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -11.5)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+size = Vector3(8, 14, 1)
+
+[node name="DoorNorth" type="StaticBody3D" parent="Shell" unique_id=1644083845]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -11.5)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+piece = "wall door"
+size = Vector3(8, 8, 1)
+
+[node name="OverNorth" type="StaticBody3D" parent="Shell" unique_id=1352137242]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8, -11.5)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+size = Vector3(8, 6, 1)
+
+[node name="PlugNorth" type="StaticBody3D" parent="Shell" unique_id=625829812]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -11.5)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+size = Vector3(4, 6, 0.9)
+
+[node name="WallEast" type="StaticBody3D" parent="Shell" unique_id=1211557126]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 11.5, 0, 0)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+size = Vector3(22, 14, 1)
+
+[node name="WallSouth1" type="StaticBody3D" parent="Shell" unique_id=1247800249]
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 8, 0, 11.500001)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+size = Vector3(8, 14, 1)
+
+[node name="WallSouth2" type="StaticBody3D" parent="Shell" unique_id=1935675568]
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, -8, 0, 11.499999)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+size = Vector3(8, 14, 1)
+
+[node name="DoorSouth" type="StaticBody3D" parent="Shell" unique_id=1245220067]
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0, 0, 11.5)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+piece = "wall door"
+size = Vector3(8, 8, 1)
+
+[node name="OverSouth" type="StaticBody3D" parent="Shell" unique_id=1785537467]
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0, 8, 11.5)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+size = Vector3(8, 6, 1)
+
+[node name="PlugSouth" type="StaticBody3D" parent="Shell" unique_id=2044668608]
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0, 0, 11.5)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+size = Vector3(4, 6, 0.9)
+
+[node name="WallWest" type="StaticBody3D" parent="Shell" unique_id=1676979497]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -11.5, 0, 0)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+size = Vector3(22, 14, 1)
+
+[node name="Trench" type="Node3D" parent="." unique_id=698396887]
+
+[node name="Bottom" type="StaticBody3D" parent="Trench" unique_id=1003481455]
+collision_mask = 0
+
+[node name="BottomTop1" type="MeshInstance3D" parent="Trench/Bottom" unique_id=446622169]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10.04, 0)
+material_override = ExtResource("4_rcejv")
+mesh = SubResource("BoxMesh_f06d8")
+
+[node name="BottomTop1Shape" type="CollisionShape3D" parent="Trench/Bottom" unique_id=80612739]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10.04, 0)
+shape = SubResource("BoxShape3D_7xj1d")
+
+[node name="SideNorth" type="StaticBody3D" parent="Trench" unique_id=459508757]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10, -4.5)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+size = Vector3(22, 10, 1)
+
+[node name="EndWest" type="StaticBody3D" parent="Trench" unique_id=1864773759]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -11.5, -10, 0)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+size = Vector3(8, 10, 1)
+
+[node name="SideSouth" type="StaticBody3D" parent="Trench" unique_id=1678355565]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10, 4.5)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+size = Vector3(22, 10, 1)
+
+[node name="EndEast" type="StaticBody3D" parent="Trench" unique_id=1582608050]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 11.5, -10, 0)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+size = Vector3(8, 10, 1)
+
+[node name="Spikes1" type="StaticBody3D" parent="Trench" unique_id=1965942306 instance=ExtResource("5_46ijw")]
+transform = Transform3D(0.11354227, 0, -0.9935332, 0, 1, 0, 0.9935332, 0, 0.11354227, -0.7715578, -10, -3.2201037)
+collision_mask = 0
+
+[node name="Spikes2" type="StaticBody3D" parent="Trench" unique_id=1362252552 instance=ExtResource("5_46ijw")]
+transform = Transform3D(0.17645514, 0, -0.98430866, 0, 1, 0, 0.98430866, 0, 0.17645514, 8.36544, -10, 1.976296)
+collision_mask = 0
+
+[node name="Spikes3" type="StaticBody3D" parent="Trench" unique_id=384352968 instance=ExtResource("5_46ijw")]
+transform = Transform3D(0.75350165, 0, -0.657446, 0, 1, 0, 0.657446, 0, 0.75350165, -1.4328661, -10, 0.21924496)
+collision_mask = 0
+
+[node name="Spikes4" type="StaticBody3D" parent="Trench" unique_id=379172644 instance=ExtResource("5_46ijw")]
+transform = Transform3D(0.797099, 0, 0.6038487, 0, 1, 0, -0.6038487, 0, 0.797099, -3.8464694, -10, -1.0383906)
+collision_mask = 0
+
+[node name="Spikes5" type="StaticBody3D" parent="Trench" unique_id=2130522567 instance=ExtResource("5_46ijw")]
+transform = Transform3D(0.9992927, 0, 0.037605263, 0, 1, 0, -0.037605263, 0, 0.9992927, 7.5381355, -10, 1.7957802)
+collision_mask = 0
+
+[node name="Spikes6" type="StaticBody3D" parent="Trench" unique_id=1694823645 instance=ExtResource("5_46ijw")]
+transform = Transform3D(-0.9977471, 0, -0.06708667, 0, 1, 0, 0.06708667, 0, -0.9977471, 1.243784, -10, -2.3171136)
+collision_mask = 0
+
+[node name="Spikes7" type="StaticBody3D" parent="Trench" unique_id=58633613 instance=ExtResource("5_46ijw")]
+transform = Transform3D(0.9878285, 0, 0.15554696, 0, 1, 0, -0.15554696, 0, 0.9878285, -5.01182, -10, -0.40198374)
+collision_mask = 0
+
+[node name="Spikes8" type="StaticBody3D" parent="Trench" unique_id=535826706 instance=ExtResource("5_46ijw")]
+transform = Transform3D(-0.99704134, 0, -0.07686687, 0, 1, 0, 0.07686687, 0, -0.99704134, 6.0517216, -10, -2.1524243)
+collision_mask = 0
+
+[node name="Spikes9" type="StaticBody3D" parent="Trench" unique_id=165962176 instance=ExtResource("5_46ijw")]
+transform = Transform3D(0.97882736, 0, 0.2046875, 0, 1, 0, -0.2046875, 0, 0.97882736, 8.505369, -10, 1.2040224)
+collision_mask = 0
+
+[node name="Spikes10" type="StaticBody3D" parent="Trench" unique_id=1075493338 instance=ExtResource("5_46ijw")]
+transform = Transform3D(-0.8162872, 0, 0.57764626, 0, 1, 0, -0.57764626, 0, -0.8162872, -8.021037, -10, 1.3766141)
+collision_mask = 0
+
+[node name="Spikes11" type="StaticBody3D" parent="Trench" unique_id=868845670 instance=ExtResource("5_46ijw")]
+transform = Transform3D(-0.9893919, 0, 0.14527081, 0, 1, 0, -0.14527081, 0, -0.9893919, -6.08833, -10, 2.8459191)
+collision_mask = 0
+
+[node name="Spikes12" type="StaticBody3D" parent="Trench" unique_id=1693221387 instance=ExtResource("5_46ijw")]
+transform = Transform3D(0.7355022, 0, 0.67752236, 0, 1, 0, -0.67752236, 0, 0.7355022, -1.9152756, -10, -2.6905117)
+collision_mask = 0
+
+[node name="Spikes13" type="StaticBody3D" parent="Trench" unique_id=509501709 instance=ExtResource("5_46ijw")]
+transform = Transform3D(-0.9397611, 0, -0.34183195, 0, 1, 0, 0.34183195, 0, -0.9397611, 6.089878, -10, 0.4205041)
+collision_mask = 0
+
+[node name="Spikes14" type="StaticBody3D" parent="Trench" unique_id=720844641 instance=ExtResource("5_46ijw")]
+transform = Transform3D(-0.20078662, 0, -0.979635, 0, 1, 0, 0.979635, 0, -0.20078662, -2.821054, -10, -3.2092786)
+collision_mask = 0
+
+[node name="Features" type="Node3D" parent="." unique_id=1838186265]
+
+[node name="BridgeNorth" type="StaticBody3D" parent="Features" unique_id=1370643487]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -2.6)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+piece = "cube5"
+size = Vector3(2, 0.5, 2.8)
+
+[node name="PillarWest" type="StaticBody3D" parent="Features" unique_id=1910421977]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, -10, 0)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+piece = "pillar3"
+size = Vector3(1.6, 15, 1.6)
+
+[node name="StumpWest" type="StaticBody3D" parent="Features" unique_id=1116042467]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, -10, 2.2)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+piece = "pillar3"
+size = Vector3(1.2, 6, 1.2)
+
+[node name="BridgeSouth" type="StaticBody3D" parent="Features" unique_id=176502183]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 2.6)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+piece = "cube5"
+size = Vector3(2, 0.5, 2.8)
+
+[node name="PillarEast" type="StaticBody3D" parent="Features" unique_id=1347129632]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, -10, 0)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+piece = "pillar3"
+size = Vector3(1.6, 15, 1.6)
+
+[node name="StumpEast" type="StaticBody3D" parent="Features" unique_id=38565880]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, -10, -2.2)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+piece = "pillar3"
+size = Vector3(1.2, 6, 1.2)
+
+[node name="Lights" type="Node3D" parent="." unique_id=1526168740]
+
+[node name="Deep" type="OmniLight3D" parent="Lights" unique_id=483706232]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -6, 0)
+light_color = Color(0.45, 0.6, 1, 1)
+light_energy = 1.4
+omni_range = 14.0
+omni_attenuation = 1.2
+
+[node name="BrazierNorthWest" type="Node3D" parent="Lights" unique_id=1898854765]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0, -8.5)
+
+[node name="Stand" type="StaticBody3D" parent="Lights/BrazierNorthWest" unique_id=716800655]
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+piece = "pillar"
+size = Vector3(0.45, 0.9, 0.45)
+
+[node name="Bowl" type="StaticBody3D" parent="Lights/BrazierNorthWest" unique_id=1252883005]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+piece = "cylinder1"
+size = Vector3(1.1, 0.45, 1.1)
+
+[node name="Flame" type="OmniLight3D" parent="Lights/BrazierNorthWest" unique_id=524015372]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+light_color = Color(1, 0.68, 0.38, 1)
+light_energy = 1.6
+omni_range = 10.0
+omni_attenuation = 1.2
+
+[node name="BrazierSouthEast" type="Node3D" parent="Lights" unique_id=1046180796]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0, 8.5)
+
+[node name="Stand" type="StaticBody3D" parent="Lights/BrazierSouthEast" unique_id=352400591]
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+piece = "pillar"
+size = Vector3(0.45, 0.9, 0.45)
+
+[node name="Bowl" type="StaticBody3D" parent="Lights/BrazierSouthEast" unique_id=2039782507]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+collision_mask = 0
+script = ExtResource("3_sg7tk")
+piece = "cylinder1"
+size = Vector3(1.1, 0.45, 1.1)
+
+[node name="Flame" type="OmniLight3D" parent="Lights/BrazierSouthEast" unique_id=917209695]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+light_color = Color(1, 0.68, 0.38, 1)
+light_energy = 1.6
+omni_range = 10.0
+omni_attenuation = 1.2
+
+[node name="Marks" type="Node3D" parent="." unique_id=994821134]
+
+[node name="Spawns" type="Node3D" parent="Marks" unique_id=322501578]
+
+[node name="Spawn1" type="Marker3D" parent="Marks/Spawns" unique_id=890241634]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -8)
+
+[node name="Spawn2" type="Marker3D" parent="Marks/Spawns" unique_id=874145993]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 8)
+
+[node name="Spawn3" type="Marker3D" parent="Marks/Spawns" unique_id=1177578857]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 5, 0)
+
+[node name="Spawn4" type="Marker3D" parent="Marks/Spawns" unique_id=44173618]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 5, 0)

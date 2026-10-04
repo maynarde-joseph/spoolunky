@@ -65,6 +65,15 @@ const MOODS := {
 		"sun": Color(1.0, 0.96, 0.88), "sun_energy": 0.85, "sun_from": Vector3(60.0, 80.0, 40.0),
 		"fog": Color(0.7, 0.78, 0.86), "fog_density": 0.0015,
 	},
+	# Underground: no sky to speak of, only what comes down a shaft and the rooms'
+	# own fires — and a haze in the air the length of a room.
+	"deep": {
+		"top": Color(0.07, 0.08, 0.1), "horizon": Color(0.12, 0.13, 0.16),
+		"low": Color(0.05, 0.05, 0.06), "far": Color(0.09, 0.09, 0.11),
+		"ambient": Color(0.55, 0.6, 0.74), "ambient_energy": 0.42,
+		"sun": Color(0.8, 0.86, 1.0), "sun_energy": 0.7, "sun_from": Vector3(15.0, 100.0, 10.0),
+		"fog": Color(0.07, 0.07, 0.09), "fog_density": 0.012,
+	},
 	# High and pale, with the wind taking the colour out of everything.
 	"windy": {
 		"top": Color(0.5, 0.62, 0.78), "horizon": Color(0.8, 0.84, 0.86),

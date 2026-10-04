@@ -6,8 +6,9 @@ extends SceneTree
 ##
 ## Each place in [constant Site.PLACES] has a class that says where every piece goes
 ## — the generator of record — and a scene it is saved to, which is what the game
-## opens and what you move things about in, in the editor. Name places after `--`
-## to bake only those; name none and every place is baked. A place that already has
+## opens and what you move things about in, in the editor. So does each of the
+## dungeon's rooms in [constant Rooms.ROOMS]. Name them after `--` to bake only those
+## (`-- hall crypt`); name none and everything is baked. A place that already has
 ## a scene is left alone unless told otherwise, because building it again throws
 ## away anything moved by hand:
 ##
@@ -30,11 +31,11 @@ func _run() -> void:
 		if not arg.begins_with("-"):
 			wanted.append(arg)
 	if wanted.is_empty():
-		wanted.assign(Site.PLACES.keys())
+		wanted.assign(_all())
 	var failed := 0
 	for place in wanted:
-		if not Site.PLACES.has(place):
-			printerr("no such place: %s (try %s)" % [place, ", ".join(Site.PLACES.keys())])
+		if not _all().has(place):
+			printerr("no such place: %s (try %s)" % [place, ", ".join(_all())])
 			failed += 1
 			continue
 		if not _bake(place, force):
@@ -42,8 +43,21 @@ func _run() -> void:
 	quit(1 if failed > 0 else 0)
 
 
+## Everything there is to bake: the places and the dungeon's rooms.
+func _all() -> Array[String]:
+	var names: Array[String] = []
+	names.assign(Site.PLACES.keys() + Rooms.ROOMS.keys())
+	return names
+
+
+func _builder(place: String) -> Script:
+	if Site.PLACES.has(place):
+		return Site.builder(place)
+	return Rooms.builder(place)
+
+
 func _bake(place: String, force: bool) -> bool:
-	var builder := Site.builder(place)
+	var builder := _builder(place)
 	if builder == null:
 		printerr("no builder for %s" % place)
 		return false
@@ -52,8 +66,11 @@ func _bake(place: String, force: bool) -> bool:
 		print("%s is already baked — left alone. Pass --force to build it again, which" % path)
 		print("  throws away anything that has been moved by hand.")
 		return true
-	var level := Node3D.new()
+	# A room's root is a room, which carries its doorways for the floor plan.
+	var level: Node3D = DungeonRoom.new() if Rooms.ROOMS.has(place) else Node3D.new()
 	level.name = builder.get_global_name()
+	if level is DungeonRoom:
+		(level as DungeonRoom).room_id = place
 	builder.call("build", level)
 	_own(level, level)
 	var nodes := _count(level)

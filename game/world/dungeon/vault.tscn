@@ -1,0 +1,242 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://game/world/dungeon/dungeon_room.gd" id="1_85bir"]
+[ext_resource type="Material" path="res://game/world/materials/stone_dark.tres" id="2_04vbc"]
+[ext_resource type="Script" path="res://game/world/kit_block.gd" id="3_u7h51"]
+[ext_resource type="PackedScene" path="res://Pieces/key.fbx" id="4_8w0bb"]
+[ext_resource type="PackedScene" path="res://Pieces/coin.fbx" id="5_vm2rn"]
+[ext_resource type="PackedScene" path="res://Pieces/box.fbx" id="6_4y0xw"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_1cyrw"]
+size = Vector3(22, 0.1, 22)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_iu8dd"]
+size = Vector3(22, 0.1, 22)
+
+[node name="VaultRoom" type="Node3D" unique_id=1515899012]
+script = ExtResource("1_85bir")
+room_id = "vault"
+doors = Array[int]([2])
+height = 10.0
+
+[node name="Shell" type="Node3D" parent="." unique_id=47661589]
+
+[node name="Floor" type="StaticBody3D" parent="Shell" unique_id=962781122]
+collision_mask = 0
+
+[node name="FloorTop1" type="MeshInstance3D" parent="Shell/Floor" unique_id=829703156]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.04, 0)
+material_override = ExtResource("2_04vbc")
+mesh = SubResource("BoxMesh_1cyrw")
+
+[node name="FloorTop1Shape" type="CollisionShape3D" parent="Shell/Floor" unique_id=373891760]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.04, 0)
+shape = SubResource("BoxShape3D_iu8dd")
+
+[node name="Roof1" type="StaticBody3D" parent="Shell" unique_id=541141218]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+piece = "cube5"
+size = Vector3(24, 1, 24)
+
+[node name="WallNorth" type="StaticBody3D" parent="Shell" unique_id=258802583]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -11.5)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+size = Vector3(24, 10, 1)
+
+[node name="WallEast" type="StaticBody3D" parent="Shell" unique_id=991157420]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 11.5, 0, 0)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+size = Vector3(22, 10, 1)
+
+[node name="WallSouth1" type="StaticBody3D" parent="Shell" unique_id=1145869594]
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 8, 0, 11.500001)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+size = Vector3(8, 10, 1)
+
+[node name="WallSouth2" type="StaticBody3D" parent="Shell" unique_id=1972694135]
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, -8, 0, 11.499999)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+size = Vector3(8, 10, 1)
+
+[node name="DoorSouth" type="StaticBody3D" parent="Shell" unique_id=1180762261]
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0, 0, 11.5)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+piece = "wall door"
+size = Vector3(8, 8, 1)
+
+[node name="OverSouth" type="StaticBody3D" parent="Shell" unique_id=1514250039]
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0, 8, 11.5)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+size = Vector3(8, 2, 1)
+
+[node name="PlugSouth" type="StaticBody3D" parent="Shell" unique_id=1709723072]
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0, 0, 11.5)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+size = Vector3(4, 6, 0.9)
+
+[node name="WallWest" type="StaticBody3D" parent="Shell" unique_id=1313921825]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -11.5, 0, 0)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+size = Vector3(22, 10, 1)
+
+[node name="Features" type="Node3D" parent="." unique_id=1433589942]
+
+[node name="Dais" type="StaticBody3D" parent="Features" unique_id=1370240370]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+piece = "cube5"
+size = Vector3(12, 0.5, 6)
+
+[node name="DaisTop" type="StaticBody3D" parent="Features" unique_id=452247443]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -8.5)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+piece = "cube5"
+size = Vector3(8, 0.5, 4)
+
+[node name="Pedestal" type="StaticBody3D" parent="Features" unique_id=1480898975]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -8.5)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+piece = "cube"
+size = Vector3(1.2, 1.2, 1.2)
+
+[node name="Key" type="StaticBody3D" parent="Features" unique_id=689978382 instance=ExtResource("4_8w0bb")]
+transform = Transform3D(0.8660254, 0, 0.5, 0, 1, 0, -0.5, 0, 0.8660254, 0, 2.2, -8.5)
+collision_mask = 0
+
+[node name="Coin1" type="StaticBody3D" parent="Features" unique_id=1281052891 instance=ExtResource("5_vm2rn")]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 3.1902957, 1, -9.541791)
+collision_mask = 0
+
+[node name="Coin2" type="StaticBody3D" parent="Features" unique_id=1953686690 instance=ExtResource("5_vm2rn")]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 1.9936876, 1, -8.669597)
+collision_mask = 0
+
+[node name="Coin3" type="StaticBody3D" parent="Features" unique_id=1163922706 instance=ExtResource("5_vm2rn")]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 2.350968, 1, -9.012728)
+collision_mask = 0
+
+[node name="Coin4" type="StaticBody3D" parent="Features" unique_id=757603810 instance=ExtResource("5_vm2rn")]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -3.3466532, 1, -10.020431)
+collision_mask = 0
+
+[node name="Coin5" type="StaticBody3D" parent="Features" unique_id=534669922 instance=ExtResource("5_vm2rn")]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -0.44062042, 1, -7.322741)
+collision_mask = 0
+
+[node name="Coin6" type="StaticBody3D" parent="Features" unique_id=1593076649 instance=ExtResource("5_vm2rn")]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -2.3678112, 1, -9.700923)
+collision_mask = 0
+
+[node name="Coin7" type="StaticBody3D" parent="Features" unique_id=1164312725 instance=ExtResource("5_vm2rn")]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -1.3597851, 1, -9.522631)
+collision_mask = 0
+
+[node name="Column11" type="StaticBody3D" parent="Features" unique_id=1843070244]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -2)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+piece = "pillar3"
+size = Vector3(1.2, 10, 1.2)
+
+[node name="Column12" type="StaticBody3D" parent="Features" unique_id=962178612]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 4)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+piece = "pillar3"
+size = Vector3(1.2, 10, 1.2)
+
+[node name="Column13" type="StaticBody3D" parent="Features" unique_id=646988371]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -2)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+piece = "pillar3"
+size = Vector3(1.2, 10, 1.2)
+
+[node name="Column14" type="StaticBody3D" parent="Features" unique_id=1295766642]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 4)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+piece = "pillar3"
+size = Vector3(1.2, 10, 1.2)
+
+[node name="Crate15" type="StaticBody3D" parent="Features" unique_id=645698690 instance=ExtResource("6_4y0xw")]
+transform = Transform3D(0.9781476, 0, 0.2079117, 0, 1, 0, -0.2079117, 0, 0.9781476, -9.5, 0, 5)
+collision_mask = 0
+
+[node name="Crate16" type="StaticBody3D" parent="Features" unique_id=1843749342 instance=ExtResource("6_4y0xw")]
+transform = Transform3D(0.9781476, 0, 0.2079117, 0, 1, 0, -0.2079117, 0, 0.9781476, 9.5, 0, 5.5)
+collision_mask = 0
+
+[node name="Lights" type="Node3D" parent="." unique_id=1682802137]
+
+[node name="BrazierWest" type="Node3D" parent="Lights" unique_id=2056215164]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.5, -9)
+
+[node name="Stand" type="StaticBody3D" parent="Lights/BrazierWest" unique_id=1869933203]
+collision_mask = 0
+script = ExtResource("3_u7h51")
+piece = "pillar"
+size = Vector3(0.45, 0.9, 0.45)
+
+[node name="Bowl" type="StaticBody3D" parent="Lights/BrazierWest" unique_id=1059565989]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+piece = "cylinder1"
+size = Vector3(1.1, 0.45, 1.1)
+
+[node name="Flame" type="OmniLight3D" parent="Lights/BrazierWest" unique_id=386172951]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+light_color = Color(1, 0.68, 0.38, 1)
+light_energy = 1.6
+omni_range = 10.0
+omni_attenuation = 1.2
+
+[node name="BrazierEast" type="Node3D" parent="Lights" unique_id=2039057626]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.5, -9)
+
+[node name="Stand" type="StaticBody3D" parent="Lights/BrazierEast" unique_id=1053082609]
+collision_mask = 0
+script = ExtResource("3_u7h51")
+piece = "pillar"
+size = Vector3(0.45, 0.9, 0.45)
+
+[node name="Bowl" type="StaticBody3D" parent="Lights/BrazierEast" unique_id=1927690720]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+collision_mask = 0
+script = ExtResource("3_u7h51")
+piece = "cylinder1"
+size = Vector3(1.1, 0.45, 1.1)
+
+[node name="Flame" type="OmniLight3D" parent="Lights/BrazierEast" unique_id=499515591]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+light_color = Color(1, 0.68, 0.38, 1)
+light_energy = 1.6
+omni_range = 10.0
+omni_attenuation = 1.2
+
+[node name="Marks" type="Node3D" parent="." unique_id=509300114]
+
+[node name="Loot" type="Marker3D" parent="Marks" unique_id=385197629]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 2.2, -8.5)
+
+[node name="Spawns" type="Node3D" parent="Marks" unique_id=1566871027]
+
+[node name="Spawn1" type="Marker3D" parent="Marks/Spawns" unique_id=547505645]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 5)
+
+[node name="Spawn2" type="Marker3D" parent="Marks/Spawns" unique_id=914646741]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 5)
