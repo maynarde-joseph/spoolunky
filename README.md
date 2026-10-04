@@ -68,10 +68,10 @@ tests/       seven headless suites and screenshot tools
 addons/character-controller/   the movement template the spider is built on
 ```
 
-The project opens the colosseum, `game/world/colosseum.tscn`. Each of the other
-places is a scene beside it in `game/world/` — open one in the editor and press
-**F6** to play it — and so is the dungeon, `game/world/dungeon.tscn`, which starts
-a run down it. The sandbox the
+The project opens the colosseum, `game/world/colosseum.tscn`, with the dungeon
+under it. Each of the other places is a scene beside it in `game/world/` — open one
+in the editor and press **F6** to play it — and so is `game/world/dungeon.tscn`,
+the dungeon on its own, which starts you on its first floor. The sandbox the
 web, spell and combat suites run in is the character-controller example level
 (`addons/character-controller/example/main/level.tscn`), with the spider, a HUD, a
 `Webs` container and a prey spawner dropped into it. A `Devices` container is made
@@ -672,7 +672,9 @@ back where you started.
   outside wall has fallen the way Rome's did, storey by storey to nothing, with the
   stone in heaps. And the floor has given way in the middle: four metres down are
   the passages the beasts were kept in, their walls standing up to where the floor
-  was. You start on the sand at the west end, looking down the arena.
+  was. At the east end of the middle passage a stair goes on down under the arena,
+  to a landing and the shaft into the dungeon (below). You start on the sand at the
+  west end, looking down the arena.
 * **The Cathedral** (`cathedral.tscn`, a grey sky about to rain) — a nave twelve
   metres wide between two rows of piers twelve high, an aisle behind each row, and
   the upper walls going on to twenty-two metres, every bay a window, held up from
@@ -717,12 +719,20 @@ water are the project's own paints.
 
 ## The dungeon
 
-`game/world/dungeon.tscn` is a run down a dungeon: floor after floor of rooms made
-by hand and laid out at random. Open it and press **F6**. You come into the first
-floor down a shaft in the roof of its entrance; somewhere on the floor is a room
-with a pit in it, and dropping down the pit takes you to the next floor, laid out
-afresh. The HUD names the floor you are on, and falling out of the world puts you
-back under the shaft. Nothing lives down there yet.
+The dungeon lies under the colosseum: floor after floor of rooms made by hand and
+laid out at random. Get down into the passages under the arena, go east along the
+middle one, and take the stair down. At its foot is a landing, walled and roofed,
+and in the middle of its floor a shaft: the one in the roof of the first floor's
+entrance, thirty-five metres under the sand. Drop down it, or climb down.
+Somewhere on each floor is a room with a pit in it, and dropping down the pit
+takes you to the next floor, laid out afresh and put down in the last one's place
+— its entrance under the same shaft, so the stair always leads to the floor you
+are on, and the way back up to the colosseum is always open. The HUD names the
+stair and the floor you are on. Nothing lives down there yet.
+
+`game/world/dungeon.tscn` is the dungeon on its own, with no colosseum over it: open
+it and press **F6** and you start in the first floor's entrance, which is quicker for
+trying floors out.
 
 **Rooms.** Every room is the same square, twenty-four metres across, walled all
 round and roofed — a spider climbs anything, so a room open to the sky is a room it
@@ -766,8 +776,8 @@ then where the way runs straight, and a room for anywhere for the rest.
 
 The same seed lays out the same floor. Each floor's seed comes from the run's and
 how deep the floor is, so a run is the same dungeon all the way down: set **Run
-Seed** on the `Run` node to walk one twice, or leave it at nought for a new dungeon
-every time.
+Seed** on the run — the `Dungeon` node in the colosseum, `Run` in `dungeon.tscn` —
+to walk one twice, or leave it at nought for a new dungeon every time.
 
 To add a room, write a class like the others — the scene it is baked to (`SCENE`),
 the sides it has doorways on (`DOORS`), what it is for (`ROLE`), and a `build` that
@@ -888,8 +898,9 @@ selected and moved in the editor. Its class — `Colosseum`, `Cathedral`, `Castl
 `Aqueduct`, `Watchtower`, `Temple` — is the generator of record, saying where every
 piece goes, and `tools/bake_level.gd` runs it and saves the scene. The dungeon's
 rooms are baked the same way, each from its class in `game/world/dungeon/`, and so
-is the dungeon's own scene, which holds only the sky, the spider and the run — the
-floors are put down from the rooms' scenes as you play. Name places, rooms or
+is the dungeon's own scene, which holds only the sky, the spider and the run. The
+colosseum's scene holds a run too, under the arena; either way the floors are put
+down from the rooms' scenes as you play. Name places, rooms or
 `dungeon` to bake only those:
 
 ```sh
@@ -947,7 +958,9 @@ was put, a Huntsman with every spell open, under open sky, in a place the HUD
 names, among stone that is all solid; and then that each place is the shape it
 says — the colosseum walled with a gate at each end and side, its floor fallen
 into the passages and its outside wall fallen on the south, with the spider walking
-on the sand and standing in the passages; the cathedral roofless with its great
+on the sand and standing in the passages, and a stair from the passages down to a
+landing over the shaft into the dungeon, which the spider walks down to the landing
+and drops down the shaft into Floor 1; the cathedral roofless with its great
 door open and one tower broken; the castle's portcullis low enough to go under,
 its breach open and stairs to its walls; the aqueduct's channel high and walkable
 and broken by a gap a grapple can cross; the watchtower ragged at the top, its
@@ -961,9 +974,11 @@ bottom, never fewer than eight rooms, every room reachable, every doorway open f
 both sides into a room with a doorway there, and every room only where it is for,
 the same seed laying out the same floor; and that the dungeon puts a floor down as
 its plan says, with the spider at the way in, and dropping down the pit puts the
-next floor down in its place — and that the training posts each stand a creature
-up, one that stands, one that runs and one that bites, none seeing past its leash,
-with a readout that says what a web would need:
+next floor down in its place, one floor and no further — in the colosseum, under
+the same shaft, taking up the silk left on the floor above and none of what was
+left up top — and that the training posts each stand a creature up, one that
+stands, one that runs and one that bites, none seeing past its leash, with a
+readout that says what a web would need:
 
 ```sh
 godot --headless --script res://tests/world_smoke_test.gd

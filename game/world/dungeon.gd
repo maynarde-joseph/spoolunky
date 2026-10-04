@@ -1,13 +1,16 @@
 class_name Dungeon
 extends RefCounted
 
-## The dungeon: a run down floor after floor of rooms made by hand and laid out at
-## random, under a sky that is mostly rock.
+## The dungeon on its own: a run down floor after floor of rooms made by hand and
+## laid out at random, under a sky that is mostly rock, and nothing over it.
 ##
-## What the scene holds is only what does not change from floor to floor — the sky,
-## the spider and its HUD, and the [DungeonRun] that lays each floor out and puts it
-## down when the scene opens, and the next when the spider drops down the pit. Open
-## it and press F6 to start a run; set the run's seed to walk the same dungeon twice.
+## The game's own way in is the stair from the colosseum, which has a run of its own
+## under the arena (see [Colosseum]). This scene starts the spider in the first
+## floor's entrance instead, which is quicker for trying floors out. It holds only
+## what does not change from floor to floor — the sky, the spider and its HUD, and
+## the [DungeonRun] that lays each floor out and puts it down when the scene opens,
+## and the next when the spider drops down the pit. Open it and press F6; set the
+## run's seed to walk the same dungeon twice.
 ##
 ## This is the generator of record; `tools/bake_level.gd` saves what it makes to
 ## [constant SCENE]. The rooms are scenes of their own, in `game/world/dungeon/`.

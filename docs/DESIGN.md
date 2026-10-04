@@ -775,7 +775,8 @@ bright morning, wind. Nothing lives in any of them yet.
   wall with a gate at each end and side, two tiers of seats, an open walk round
   behind them, and three storeys of arches with an attic over them. The outside
   wall has fallen along the south the way Rome's did, and the floor has given way
-  in the middle over the passages beneath, a maze four metres down.
+  in the middle over the passages beneath, a maze four metres down. From the east
+  end of the middle passage a stair goes on down to the dungeon.
 * **The Cathedral** — nave, aisles, transept and apse; rows of piers twelve high and
   upper walls to twenty-two, held up by flying buttresses; a west front with a rose
   window between two towers, one of them broken. Roofless, some piers fallen, a
@@ -868,10 +869,26 @@ floor that played badly can be played again by its seed.
 **Rooms are scenes; floors are not.** Each room is a class that builds it and a
 scene baked from it, like the places — open the scene, move things, and every floor
 the room turns up on has the change. Floors are put down from the rooms' scenes as
-you go, and the floor above is taken up when you drop to the next, with any silk
+you go, and the floor above is taken up when you drop to the next, with the silk
 left on it. Each room has marks where creatures will stand, and the vault one where
 loot will be left: that is where the hunt, the bag and whatever the progression
 turns out to be come in.
+
+**Under the colosseum, down a stair.** The game opens in the colosseum, and the
+dungeon is under it — not a scene you are sent to, but somewhere you walk to. The
+arena's floor has already fallen into the passages the beasts were kept in, so the
+way down starts where the ruin has already opened the ground: at the east end of
+the middle passage a stair goes on down, under the sand, to a landing walled and
+roofed in the dark, and in the landing's floor is the shaft in the roof of the first
+floor's entrance. Every floor is put down with its entrance in the same place, so
+that shaft always comes up under the landing and the stair always leads to the
+floor you are on — the way back up to the colosseum is never shut. That suits a
+dive that is not a roguelike: nothing is lost by climbing out, and the colosseum
+stays a place to come back to, which is where whatever the spider brings up will
+matter. Floors sit thirty-five metres down, far enough for the deepest of them —
+the pit's shaft — to stay above where falling out of the world begins, and the
+stair runs over the top of the floor, above every room's roof, so it never cuts
+through one.
 
 ### What came before
 
@@ -2611,10 +2628,11 @@ doorway — an entrance with a shaft down into it, a hall, a gallery with a balc
 a crypt, a chasm with a broken bridge, a vault at a dead end and a pit down to the
 next floor — and floors laid out from them at random the way Spelunky lays out its
 levels, from a seed, picking each room by what it is for, with the pit taking you
-down to the next floor (§4, *The dungeon*).
+down to the next floor (§4, *The dungeon*). The dungeon lies under the colosseum,
+down a stair from the beast passages to a landing over the first floor's shaft.
 Left: creatures at the rooms' marks, the bag back and something to find in the
-vault, how the spider grows stronger on the way down (not the roguelike way), more
-rooms, and how the dungeon is reached from the colosseum.
+vault, how the spider grows stronger on the way down (not the roguelike way), and
+more rooms.
 
 ---
 
