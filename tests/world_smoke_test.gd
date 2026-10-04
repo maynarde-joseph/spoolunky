@@ -424,7 +424,9 @@ func _test_the_dungeon() -> void:
 	if not check(run != null, "the dungeon has a run to lay its floors out"):
 		level.free()
 		return
-	run.run_seed = 4242
+	# A run whose second floor has its way down in the same square from the way in as
+	# the first — where one drop once took the spider down two floors.
+	run.run_seed = 12
 	await stage(level)
 	await run_frames(10)
 	var spider := root.get_tree().get_first_node_in_group("spider") as SpiderPlayer
@@ -474,7 +476,9 @@ func _test_the_dungeon() -> void:
 		return
 	spider.global_position = drop.global_position
 	var down: bool = await wait_until(func() -> bool: return run.floor_number == 2, 180)
-	check(down, "dropping down the pit takes the spider down to floor 2")
+	await run_frames(10)
+	check(down and run.floor_number == 2, "dropping down the pit takes the spider down to floor 2, "
+		+ "and no further (%d)" % run.floor_number)
 	check(run.plan.seed != plan.seed and str(run.plan.cells) != first, "laid out afresh")
 	way_in = run.entrance().entry().global_position
 	check(Vector2(spider.global_position.x - way_in.x, spider.global_position.z - way_in.z).length()

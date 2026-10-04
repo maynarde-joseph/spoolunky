@@ -109,17 +109,37 @@ func way_down() -> Area3D:
 ## Down to the next floor: this one taken up, the next laid out and put down in its
 ## place, and the spider in at its way in.
 func descend() -> void:
-	if _going_down:
-		return
-	_going_down = true
 	floor_number += 1
 	build_floor()
 	_going_down = false
 
 
+## The spider has dropped into the way down: once a drop, and only if it really is in
+## it. A floor whose way down is put down where the last one's was — the same square
+## from the way in — hears the spider arrive in it before the spider's move to the
+## way in has reached the physics, and would take it down a second floor at once.
 func _on_way_down(body: Node3D) -> void:
-	if body is SpiderPlayer:
-		descend.call_deferred()
+	if _going_down or not body is SpiderPlayer or not _in_the_drop(body.global_position):
+		return
+	_going_down = true
+	descend.call_deferred()
+
+
+## Whether [param point] is in the way down, or within a body's length of it.
+func _in_the_drop(point: Vector3) -> bool:
+	var drop := way_down()
+	if drop == null:
+		return false
+	for child in drop.get_children():
+		var shape := child as CollisionShape3D
+		var box := shape.shape as BoxShape3D if shape != null else null
+		if box == null:
+			continue
+		var local := shape.global_transform.affine_inverse() * point
+		var half := box.size * 0.5 + Vector3.ONE
+		if absf(local.x) <= half.x and absf(local.y) <= half.y and absf(local.z) <= half.z:
+			return true
+	return false
 
 
 ## The spider at the way in, under the shaft, and that the place it comes back to.
