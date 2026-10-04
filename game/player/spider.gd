@@ -506,7 +506,12 @@ func _watch_for_release() -> void:
 ## a disc left up is a world left slowed. Only once the key has been seen held, so a
 ## disc brought up some other way is left alone.
 func _watch_the_disc() -> void:
-	if not _disc_from_key or not disc.is_open:
+	if not disc.is_open:
+		# Put away some other way — the mouse came free, a fall — so the key no longer
+		# has it, and its key-up, whenever that comes, is nothing to wait for.
+		_disc_from_key = false
+		return
+	if not _disc_from_key:
 		return
 	if Input.is_action_pressed(input_spell_disc):
 		_disc_key_seen = true

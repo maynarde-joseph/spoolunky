@@ -14,6 +14,12 @@ extends Node
 ## for when the keys are too far from the hand that is steering — and, being the same
 ## for every spell in the same place every time, it is soon a flick you do without
 ## looking.
+##
+## Brought up in the moment after a cast, it is a chain as well: the spells that would
+## do something to what that cast left are lit and named for what they would make —
+## lava, a lightning rod, a whirl — and letting go on one casts it there and then, at
+## what the cast left, without aiming it again. Slowed, you can wait for the creature
+## to step into the puddle and let go as it does. See [SpellChain].
 
 ## The disc came up, or went away.
 signal opened()
@@ -34,6 +40,10 @@ signal closed()
 
 ## Whether the disc is up.
 var is_open := false
+
+## Whether it came up in the moment after a cast, and so chains onto it. Settled when
+## it comes up, and kept while it is up, so choosing slowly never loses the chain.
+var chaining := false
 
 ## Where the mouse has taken the pointer since the disc came up, from its middle, in
 ## pixels; down is positive, as on the screen.
@@ -81,23 +91,42 @@ func open() -> bool:
 		return false
 	_spells.cancel_cast()
 	is_open = true
+	chaining = _spells.chain != null and _spells.chain.fresh()
 	pointer = Vector2.ZERO
 	opened.emit()
 	return true
 
 
 ## Puts the disc away, and with [param choose] takes in hand whatever the pointer is
-## on. Returns whether anything changed hands.
+## on — and, if that is offered as a chain, casts it at what the last spell left, or
+## says why it cannot go yet. Returns whether anything changed hands.
 func close(choose := true) -> bool:
 	if not is_open:
 		return false
 	var spell := pointed() if choose else null
+	var offer: Dictionary = offers().get(spell.id, {}) if spell != null else {}
 	is_open = false
+	chaining = false
 	pointer = Vector2.ZERO
 	closed.emit()
 	if spell == null:
 		return false
-	return _spells.take(_spells.key_for(spell))
+	if offer.is_empty():
+		return _spells.take(_spells.key_for(spell))
+	_spells.select(spell.id)
+	if offer.get("ready", false):
+		_spells.cast_chained(spell)
+	else:
+		_spells.notice.emit("%s — %s" % [offer.get("label", ""), offer.get("why", "")])
+	return true
+
+
+## What the disc offers as a chain while it is up, by spell id, as [method
+## SpellChain.options] has it. Empty when it did not come up after a cast.
+func offers() -> Dictionary:
+	if not is_open or not chaining or _spells == null or _spells.chain == null:
+		return {}
+	return _spells.chain.options()
 
 
 ## Puts the disc away without taking anything, and the world's clock straight back

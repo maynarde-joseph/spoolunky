@@ -61,6 +61,12 @@ var colour := Color(1.0, 0.45, 0.12, 1.0)
 ## it goes, every frame it lasts. Null, and it stays where it was breathed.
 var source: SpiderSpells = null
 
+## Held on a point instead of the cross, for a breath chained onto what the spell
+## before it left: it goes there from the jaws for as long as it lasts, wherever the
+## cross goes meanwhile. See [method steer_to].
+var steered := false
+var steer_point := Vector3.ZERO
+
 ## Everything it has burned, first to last, how many webs and lines went up, and
 ## the lava it made of puddles.
 var burned: Array[Prey] = []
@@ -109,6 +115,15 @@ static func breathe(host: Node, from: Vector3, toward: Vector3, far: float, seco
 	return breath
 
 
+## Holds it on [param point] for the rest of its length, instead of on the cross.
+func steer_to(point: Vector3) -> void:
+	steered = true
+	steer_point = point
+	var toward := point - origin
+	if toward.length_squared() > 0.000001:
+		heading = toward.normalized()
+
+
 ## Whether it is still being breathed.
 func burning() -> bool:
 	return _age < lasts
@@ -137,7 +152,7 @@ func _physics_process(delta: float) -> void:
 	_age += delta
 	if source != null and is_instance_valid(source):
 		origin = source.breath_origin()
-		var toward := source.breath_heading()
+		var toward := (steer_point - origin) if steered else source.breath_heading()
 		if toward.length_squared() > 0.000001:
 			heading = toward.normalized()
 		global_position = origin

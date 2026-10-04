@@ -8,6 +8,10 @@ extends Control
 ##
 ## The ring goes round in the order of the number keys, silk at the top, so a spell
 ## is always in the same place: the disc is learned as a set of flicks, not read.
+##
+## Up in the moment after a cast, it chains: the slices that would do something to
+## what the cast left glow, and say what they would make; the rest dim. One that cannot
+## go yet says why — still waiting, or too far to reach it.
 
 ## The ring's inside and outside, in the HUD's 1920x1080 units, and the gap left
 ## between two slices along the inside.
@@ -66,16 +70,20 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color(DIM, DIM.a * _shown))
 	var pointed := disc.pointed_index()
 	var holding := spells.current()
+	var offers := disc.offers()
 	for i in count:
 		_slice(middle, inner, outer, i, count, keys[i], i == pointed, keys[i] == holding,
-			spells)
-	_centre(middle, inner, disc, keys, pointed, holding)
+			spells, offers.get(keys[i].id, {}), disc.chaining)
+	_centre(middle, inner, disc, keys, pointed, holding, offers)
 
 
 ## One slice: filled, lit in the spell's colour when the pointer is on it, with its
-## name, its key and how long it has still to wait.
+## name, its key and how long it has still to wait — and while chaining, glowing with
+## what it would make if it is [param offer]ed, dimmed if it is not.
 func _slice(middle: Vector2, inner: float, outer: float, index: int, count: int,
-		spell: SpiderSpell, lit: bool, in_hand: bool, spells: SpiderSpells) -> void:
+		spell: SpiderSpell, lit: bool, in_hand: bool, spells: SpiderSpells, offer: Dictionary,
+		chaining: bool) -> void:
+	var shown := _shown * (0.4 if chaining and offer.is_empty() and not lit else 1.0)
 	var share := TAU / float(count)
 	var mid_turn := -PI * 0.5 + share * float(index)
 	# Pushed out a little when lit, so the eye finds it before the colour does.
@@ -86,10 +94,13 @@ func _slice(middle: Vector2, inner: float, outer: float, index: int, count: int,
 	var waiting := spells.cooling(spell)
 	var outline := Color(tint.r, tint.g, tint.b, 1.0 if lit else 0.55)
 	var points := _sector(centre, inner, outer, mid_turn - share * 0.5, mid_turn + share * 0.5)
-	draw_colored_polygon(points, Color(fill, fill.a * _shown))
+	draw_colored_polygon(points, Color(fill, fill.a * shown))
 	var closed := points.duplicate()
 	closed.append(points[0])
-	draw_polyline(closed, Color(outline, outline.a * _shown), 3.0 if lit else 1.5, true)
+	if not offer.is_empty() and offer.get("ready", false):
+		draw_polyline(closed, Color(tint, 0.35 * shown), 9.0, true)
+		outline.a = 1.0
+	draw_polyline(closed, Color(outline, outline.a * shown), 3.0 if lit else 1.5, true)
 
 	var font := get_theme_default_font()
 	var label_turn := (inner + outer) * 0.5
@@ -98,22 +109,31 @@ func _slice(middle: Vector2, inner: float, outer: float, index: int, count: int,
 	var room := 2.0 * label_turn * sin(share * 0.5) - 26.0
 	var name_tint := tint if not waiting else FAINT
 	_text(font, label_at + Vector2(0.0, -4.0), spell.display_name, SpiderHUD.BODY_SIZE,
-		Color(name_tint, _shown), room)
+		Color(name_tint, shown), room)
 	var under := "%.1fs" % spells.cooldown_left(spell) if waiting else ("in hand" if in_hand else "")
+	var under_tint := FAINT
+	if not offer.is_empty():
+		var ready: bool = offer.get("ready", false)
+		under = offer.get("label", "") if ready \
+			else "%s · %s" % [offer.get("label", ""), offer.get("why", "")]
+		under_tint = Color(1.0, 1.0, 1.0, 0.95) if ready else FAINT
 	if under != "":
 		_text(font, label_at + Vector2(0.0, 20.0), under, SpiderHUD.SMALL_SIZE,
-			Color(FAINT, FAINT.a * _shown), room)
+			Color(under_tint, under_tint.a * shown), room)
 	var key_at := centre + Vector2.from_angle(mid_turn) * (outer - 18.0)
 	_text(font, key_at + Vector2(0.0, 6.0), str(index + 1), SpiderHUD.SMALL_SIZE,
-		Color(tint, 0.9 * _shown))
+		Color(tint, 0.9 * shown))
 
 
-## The middle: what letting go now takes in hand, and a mark on the inside of the ring
-## where the pointer is heading.
+## The middle: what letting go now does — takes a spell in hand, or casts the chain
+## it is offered as — and a mark on the inside of the ring where the pointer is heading.
 func _centre(middle: Vector2, inner: float, disc: SpiderDisc, keys: Array[SpiderSpell],
-		pointed: int, holding: SpiderSpell) -> void:
+		pointed: int, holding: SpiderSpell, offers: Dictionary) -> void:
 	var font := get_theme_default_font()
 	draw_circle(middle, inner - GAP * 2.0, Color(FILL, 0.88 * _shown))
+	if disc.chaining:
+		_text(font, middle + Vector2(0.0, -inner * 0.42), "chain", SpiderHUD.SMALL_SIZE,
+			Color(FAINT, FAINT.a * _shown))
 	if pointed < 0:
 		var keep := holding.display_name if holding != null else ""
 		_text(font, middle + Vector2(0.0, -6.0), "keep", SpiderHUD.SMALL_SIZE,
@@ -122,8 +142,15 @@ func _centre(middle: Vector2, inner: float, disc: SpiderDisc, keys: Array[Spider
 			Color(FAINT, FAINT.a * _shown))
 		return
 	var spell := keys[pointed]
-	_text(font, middle + Vector2(0.0, 10.0), spell.display_name, SpiderHUD.TITLE_SIZE,
-		Color(spell.colour, _shown), (inner - GAP * 2.0) * 1.8)
+	var offer: Dictionary = offers.get(spell.id, {})
+	if not offer.is_empty() and offer.get("ready", false):
+		_text(font, middle + Vector2(0.0, 10.0), offer.get("label", ""), SpiderHUD.TITLE_SIZE,
+			Color(spell.colour, _shown), (inner - GAP * 2.0) * 1.8)
+		_text(font, middle + Vector2(0.0, 38.0), spell.display_name, SpiderHUD.SMALL_SIZE,
+			Color(FAINT, FAINT.a * _shown), (inner - GAP * 2.0) * 1.6)
+	else:
+		_text(font, middle + Vector2(0.0, 10.0), spell.display_name, SpiderHUD.TITLE_SIZE,
+			Color(spell.colour, _shown), (inner - GAP * 2.0) * 1.8)
 	var mark := middle + disc.pointer.normalized() * (inner - GAP * 3.5)
 	draw_circle(mark, 6.0, Color(SHADOW, SHADOW.a * _shown))
 	draw_circle(mark, 4.5, Color(spell.colour, _shown))

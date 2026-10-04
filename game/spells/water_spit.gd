@@ -78,8 +78,8 @@ var colour := Color(0.36, 0.74, 0.9, 1.0)
 ## How many drops it threw.
 var thrown := 0
 
-## Everything it soaked, the webs and lines it wet, and the puddles it left, in the
-## order it reached them.
+## Everything it soaked, the webs and lines it wet, and the puddles it left — made,
+## or made bigger — in the order it reached them.
 var soaked: Array[Prey] = []
 var wet_webs: Array[WebStructure] = []
 var puddles: Array[WetGround] = []
@@ -277,6 +277,8 @@ func _come_down(point: Vector3, normal: Vector3) -> void:
 		var wet := node as WetGround
 		if wet != null and not wet.is_queued_for_deletion() and wet.holds(point):
 			wet.swell(puddle_wide, lasts)
+			if not puddles.has(wet):
+				puddles.append(wet)
 			return
 	var puddle := WetGround.puddle(get_parent(), point, normal, puddle_wide, lasts, colour)
 	if puddle != null:
