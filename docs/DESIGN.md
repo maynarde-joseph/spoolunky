@@ -3,8 +3,10 @@
 > You are a magic spider with an empty field. Fence it, stock it with flies, keep
 > them well, and cook them with spells. Every fly you sell builds the next pen.
 
-**Where it stands now.** A first playable farm: one field, one crop (flies), the
-structures to keep them, a kitchen of six spells, and a market. Frogs and other
+**Where it stands now.** A first playable farm: one field, one livestock (flies)
+with a starter pen and wild flies drawn in, crops to feed them and to season
+them, the structures to keep them, spells that wind up and work on the world and
+the kitchen alike, and a market. Frogs and other
 creatures that use flies are the next layer (§7). The old hunting game — webs,
 the spell tree, the ruins and the dungeon — is on `claude/eager-gauss-g1mosx`.
 
@@ -22,15 +24,19 @@ grapples anywhere it can see, its silk catches, and its magic cooks.
 
 ## 2. The loop
 
-1. **Build.** Fence a pen (§3), put in a trough and a pond.
-2. **Stock.** Buy a brood of flies into the pen.
+1. **Build.** Fence a pen (§3), put in a trough and a pond; plant crops.
+2. **Stock.** A new farm starts with a pen of four flies. More come from compost
+   heaps, which breed, and as **wild flies**, drawn in from off the land by
+   troughs, compost heaps and melon patches. A wild fly is the farm's once it is in
+   a pen: wrap it and drag it in, blow it in with a gust, or leave a gate open for
+   it and shut it behind.
 3. **Keep.** Flies get hungry and thirsty; they go to the trough and the pond on
-   their own. Kept well they grow and their grade climbs (§4). A compost heap
-   breeds more.
+   their own. Kept well they grow and their grade climbs (§4). Troughs do not fill
+   themselves: melons and berries do.
 4. **Harvest.** Silk wraps a fly instantly — no partial wraps — and left mouse on
-   the bundle puts a line on it. Drag it to a prep table; it goes onto the table.
-5. **Cook.** Each kitchen spell is one step on the bundle (§5). F takes the dish
-   into the bag.
+   the bundle puts a line on it. Drag it off; a prep table takes it onto its top.
+5. **Cook.** Each kitchen spell is one step on any bundle it reaches (§5); herbs
+   season one on a prep table. F takes the dish into the bag.
 6. **Sell.** F at the market empties the bag into coins. Build more.
 
 ## 3. Land and pens
@@ -60,15 +66,21 @@ Per fly (`Insect`), all numbers in `game/data/insects/fly.tres`:
   flies' grade slips back.
 - **Room**: each fly wants `space` m². A pen with more flies than room grows them
   all slower and keeps them worse.
-- **Troughs** hold six meals and refill one every ten seconds, so a trough keeps a
-  few flies fed and a crowd hungry.
+- **Troughs** are built with six meals and hold twelve. They do not refill: F
+  with fruit in the bag tips it in — a melon is six meals, berries three.
+- **Crops** (melon patch, berry bush, herb bed) ripen on their own and F picks
+  them into the bag. Melons draw wild flies.
 - **Compost heaps** breed: every 30 s, if the pen has two grown, content flies,
   water, and room for one more, a hatchling crawls out.
 
 ## 5. The kitchen
 
-Every spell but silk is exactly one step, done to the bundle on a prep table when
-the spell is cast at the table or at the bundle (`Prep`):
+Spells wind up while the key is held — bigger, further, longer — with their
+circle forming, and go when it is let go. Every spell but silk does something to
+live flies (the gust shoves them, lightning stuns them, the water spiral holds
+one, fire scares them, clay throws them, the pullback hauls bundles in) and is
+exactly one kitchen step on any bundle it reaches, wherever it lies (`Prep`). The
+prep table holds a bundle still while you work, and is where herbs go on:
 
 | Spell | Step | × worth |
 |-------|------|---------|
@@ -78,16 +90,19 @@ the spell is cast at the table or at the bundle (`Prep`):
 | Clay Crust | crust | 1.3 |
 | Fire Breath | cook | 1.6 |
 | Pullback | pull | 1.2 |
+| *herbs (F at a table)* | season | 1.25 |
 
-Rules: dry only what is washed; a crust seals it (only fire gets in after); pull
-only what is cooked; nothing is done twice. Cooked unwashed is *gritty* (×0.6);
+Rules: dry only what is washed; season before cooking; a crust seals it (only fire
+gets in after); pull only what is cooked; nothing is done twice. A lingering
+breath of fire still cooks whatever it is swept across — careful where you point
+it. Cooked unwashed is *gritty* (×0.6);
 taken off uncooked it is *raw* (×0.5). A dish is worth the fly's value × weight
 (0.3 for a hatchling to 1 grown) × grade (A1 1.0, A2 1.25, A3 1.6, A4 2.1, A5 2.8)
 × the steps. The best dish is about six times a plain roast.
 
 The water spell is the water spiral — what used to need water and wind together
 is now one spell. Spells no longer work off each other: what they work on is the
-food.
+flies and the food.
 
 ## 6. The spider
 

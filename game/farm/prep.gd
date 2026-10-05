@@ -14,6 +14,10 @@ extends RefCounted
 ##   cooked — so wash, dry and tenderise first.
 ## * **Pull what is cooked.** Raw meat does not come apart on a thread.
 ##
+## Herbs from the herb bed are a seventh step, done by hand: F at the prep table
+## with herbs in the bag seasons what is on it, any time before it is cooked or
+## sealed in clay.
+##
 ## Cooking is what turns a bundle into a dish. A bundle can be taken off the table
 ## raw, and sells for half; one cooked without being washed first comes out gritty.
 
@@ -24,6 +28,7 @@ enum Step {
 	CRUST,      ## the clay
 	COOK,       ## fire
 	PULL,       ## the pullback
+	SEASON,     ## herbs, by hand at the prep table
 }
 
 ## What each step multiplies a dish's worth by.
@@ -34,6 +39,7 @@ const WORTH := {
 	Step.CRUST: 1.3,
 	Step.COOK: 1.6,
 	Step.PULL: 1.2,
+	Step.SEASON: 1.25,
 }
 
 ## What a dish cooked without being washed first is worth, against the same dish
@@ -52,6 +58,7 @@ const DONE := {
 	Step.CRUST: "sealed in clay",
 	Step.COOK: "cooked",
 	Step.PULL: "pulled",
+	Step.SEASON: "seasoned",
 }
 
 ## Each step as something to do, for the readout.
@@ -62,6 +69,7 @@ const VERB := {
 	Step.CRUST: "Crust",
 	Step.COOK: "Cook",
 	Step.PULL: "Pull",
+	Step.SEASON: "Season",
 }
 
 
@@ -93,7 +101,7 @@ static func why_not(done: Array[int], step: int) -> String:
 		return "It is already %s" % DONE[step]
 	var cooked := done.has(Step.COOK)
 	match step:
-		Step.WASH, Step.DRY, Step.TENDERISE:
+		Step.WASH, Step.DRY, Step.TENDERISE, Step.SEASON:
 			if cooked:
 				return "It is cooked — too late to %s it" % String(VERB[step]).to_lower()
 			if done.has(Step.CRUST):
@@ -135,6 +143,8 @@ static func dish_name(insect: String, done: Array[int]) -> String:
 			words.append("Pulled")
 		if done.has(Step.TENDERISE):
 			words.append("Tender")
+		if done.has(Step.SEASON):
+			words.append("Herbed")
 		if done.has(Step.DRY):
 			words.append("Crispy")
 		if not done.has(Step.WASH):
@@ -145,6 +155,8 @@ static func dish_name(insect: String, done: Array[int]) -> String:
 		words.append("Clay-wrapped")
 	if done.has(Step.TENDERISE):
 		words.append("Tender")
+	if done.has(Step.SEASON):
+		words.append("Herbed")
 	if done.has(Step.DRY):
 		words.append("Air-dried")
 	elif done.has(Step.WASH):
@@ -165,6 +177,6 @@ static func done_text(done: Array[int]) -> String:
 static func next_text(done: Array[int]) -> String:
 	var said := PackedStringArray()
 	for step in Step.values():
-		if can_do(done, step):
+		if step != Step.SEASON and can_do(done, step):
 			said.append(VERB[step])
 	return " · ".join(said)

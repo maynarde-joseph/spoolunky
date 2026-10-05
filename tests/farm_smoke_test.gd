@@ -1,9 +1,11 @@
 extends TestSuite
 
 ## Headless check on the farm: the land and what its fences make of it, what it
-## costs to build and where things can go, and the flies — kept in their pen, going
-## to the trough when they are hungry and the pond when they are thirsty, growing
-## and climbing the grades when they are kept well, and breeding in a compost heap.
+## costs to build and where things can go, where flies come from — a starter pen,
+## and wild flies drawn in — and the flies themselves: kept in their pen, going to
+## the trough when they are hungry and the pond when they are thirsty, growing and
+## climbing the grades when they are kept well, and breeding in a compost heap. And
+## the crops: ripening, picked, and tipped into a trough.
 ##
 ##     godot --headless --path . --script res://tests/farm_smoke_test.gd
 
@@ -11,11 +13,13 @@ extends TestSuite
 func run_checks() -> void:
 	_check_grid()
 	await _check_building()
-	await _check_stock()
+	await _check_starter()
+	await _check_wild()
 	await _check_keeping()
 	await _check_suffering()
 	await _check_gate()
 	await _check_breeding()
+	await _check_crops()
 
 
 # --- the land, as data --------------------------------------------------------
@@ -111,30 +115,64 @@ func _check_building() -> void:
 	close()
 
 
-# --- stock ----------------------------------------------------------------
+# --- where flies come from -------------------------------------------------
 
-func _check_stock() -> void:
+## A new farm is given a pen with flies in it, and charges nothing for it.
+func _check_starter() -> void:
+	var room := FarmRoom.make(false, Vector3.ZERO, 250)
+	var farm := FarmRoom.farm_of(room)
+	farm.starter = true
+	farm.cells = 24
+	await stage(room)
+	await run_frames(3)
+	var pen := farm.grid.region_id(Farm.STARTER_FROM + Vector2i(1, 1))
+	check(farm.grid.is_pen(pen), "a new farm starts with a pen")
+	check(farm.has_in(pen, "trough") and farm.has_in(pen, "pond"), "with a trough and a pond in it")
+	var flies := farm.insects_in(pen)
+	check(flies.size() == Farm.STARTER_FLIES.size() and not flies[0].wild,
+		"and %d flies of its own in it" % flies.size())
+	check(farm.coins == 250, "for nothing (%d coins left)" % farm.coins)
+	var table := false
+	for built in farm.structures():
+		table = table or built is PrepTable
+	check(table, "and a prep table by the gate")
+	var back := 0
+	for built in farm.structures():
+		back += farm.demolish(built)
+	check(back == 0, "what was given is not sold back")
+	close()
+
+
+## Troughs, compost heaps and melon patches draw wild flies; a wild fly hangs about
+## near what drew it, and is the farm's once it is in a pen.
+func _check_wild() -> void:
 	var room := FarmRoom.make(false)
 	await stage(room)
 	var farm := FarmRoom.farm_of(room)
-	var fly := Catalogue.insect("fly")
-	check(fly != null and fly.body != null, "the fly is in the catalogue, with a body")
-	check(Catalogue.insects().size() == 1, "and it is the farm's only stock")
-	var outside := farm.grid.centre_of(Vector2i(0, 0))
-	check(not farm.stock_reason(fly, outside).is_empty() and farm.stock(fly, outside).is_empty(),
-		"a brood will not go down outside a pen")
-	var pen := FarmRoom.pen(farm, Vector2i(2, 2), Vector2i(7, 7))
-	var before := farm.coins
-	var brood := farm.stock(fly, farm.grid.centre_of(Vector2i(4, 4)))
+	check(farm.call_wild() == null, "with nothing built, nothing draws a fly in")
+	farm.build(Catalogue.structure("trough"), Vector2i(5, 5))
+	var drawn: Array[Insect] = []
+	for i in 4:
+		var fly := farm.call_wild()
+		if fly != null:
+			drawn.append(fly)
+	check(drawn.size() == Farm.WILD_PER_LURE, "a trough draws wild flies in, %d at most (%d)"
+		% [Farm.WILD_PER_LURE, drawn.size()])
 	await run_frames(2)
-	check(brood.size() == fly.brood_size and farm.coins == before - fly.brood_cost,
-		"inside one, a brood of %d is bought and put down" % brood.size())
-	var inside := 0
-	for insect in brood:
-		inside += 1 if insect.region() == pen else 0
-	check(inside == brood.size(), "every hatchling lands in the pen")
-	check(not brood.is_empty() and brood[0].growth < 0.05 and brood[0].radius() < fly.adult_radius * 0.6,
-		"hatchlings start small (%.2fm against %.2fm grown)" % [brood[0].radius(), fly.adult_radius])
+	if drawn.is_empty():
+		close()
+		return
+	var fly := drawn[0]
+	check(fly.wild and not fly.in_pen() and fly.describe().begins_with("Wild"),
+		"a wild fly is on open ground, and nobody's: %s" % fly.describe())
+	var lure := farm.structure_at(Vector2i(5, 5)).global_position
+	await run_frames(400)
+	var near := Vector2(fly.global_position.x - lure.x, fly.global_position.z - lure.z).length()
+	check(near < Insect.LOOSE_RANGE + 2.0, "it hangs about near what drew it (%.1fm off)" % near)
+	farm.build_run(Catalogue.structure("fence"), Vector2i(8, 8), Vector2i(11, 11))
+	fly.global_position = farm.grid.centre_of(Vector2i(9, 9)) + Vector3.UP * 0.8
+	await run_frames(3)
+	check(not fly.wild and fly.in_pen(), "put in a pen, it is the farm's")
 	close()
 
 
@@ -165,7 +203,8 @@ func _check_keeping() -> void:
 		fed = fed or flies[0].hunger < 0.2
 		watered = watered or flies[1].thirst < 0.2
 	check(strays == 0, "flies keep to their pen, fliers or not (%d frames out)" % strays)
-	check(fed and trough.portions < Trough.PORTIONS + 1, "a hungry fly goes to the trough and eats")
+	check(fed and trough.portions < Trough.BUILT_WITH, "a hungry fly goes to the trough and eats (%d meals left)"
+		% trough.portions)
 	check(watered, "a thirsty one goes to the pond and drinks")
 	check(flies[2].is_grown(), "kept well, a fly grows to market weight (%.0f%%)" % (flies[2].growth * 100.0))
 	check(flies[2].quality > 0.0 and flies[2].content,
@@ -246,3 +285,44 @@ func _quick_fly() -> InsectSpecies:
 	quick.hunger_time = 30.0
 	quick.thirst_time = 30.0
 	return quick
+
+
+# --- crops ----------------------------------------------------------------
+
+## A crop ripens on its own, is picked into the bag, and fruit fills a trough —
+## which does not fill itself.
+func _check_crops() -> void:
+	var room := FarmRoom.make(true, Vector3(0.0, 0.6, 9.0))
+	await stage(room)
+	var farm := FarmRoom.farm_of(room)
+	var spider := FarmRoom.spider_of(room)
+	await run_frames(10)
+	var trough := farm.build(Catalogue.structure("trough"), Vector2i(5, 9)) as Trough
+	var full := trough.portions
+	await run_frames(120)
+	check(trough.portions == full and full == Trough.BUILT_WITH, "a trough is built with %d meals and does not fill itself"
+		% full)
+	var patch := farm.build(Catalogue.structure("melon_patch"), Vector2i(6, 9)) as CropPlot
+	check(patch != null and patch.draws_flies(), "a melon patch goes in, and draws wild flies")
+	check(not patch.is_ripe() and patch.pick() == null, "it starts unripe, and nothing can be picked")
+	await run_frames(60)
+	check(patch.growth > 0.0, "it ripens on its own (%.0f%%)" % (patch.growth * 100.0))
+	patch.growth = 1.0
+	FarmRoom.aim(spider, patch.global_position + Vector3(0.0, 0.3, 0.0))
+	spider.global_position = patch.global_position + Vector3(0.0, 0.6, 2.0)
+	await run_frames(3)
+	FarmRoom.aim(spider, patch.global_position + Vector3(0.0, 0.3, 0.0))
+	check(spider.interact_hint().begins_with("F — pick"), "ripe, F picks it: %s" % spider.interact_hint())
+	check(spider.interact() and spider.bag.count_produce("feed") == 1 and not patch.is_ripe(),
+		"into the bag, and it starts again")
+	trough.portions = 0
+	spider.global_position = trough.global_position + Vector3(0.0, 0.6, 2.0)
+	await run_frames(3)
+	FarmRoom.aim(spider, trough.global_position + Vector3(0.0, 0.3, 0.0))
+	check(spider.interact() and trough.portions == 6 and spider.bag.count_produce("feed") == 0,
+		"F at the trough tips the melon in: six meals")
+	var herbs := farm.build(Catalogue.structure("herb_bed"), Vector2i(8, 9)) as CropPlot
+	herbs.growth = 1.0
+	check(herbs.pick().use == "herb", "a herb bed grows herbs, for the kitchen")
+	close()
+

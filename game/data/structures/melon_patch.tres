@@ -4,11 +4,11 @@
 
 [resource]
 script = ExtResource("1_script")
-id = "prep_table"
-display_name = "Prep Table"
-description = "Holds a wrapped fly still while you cook it with spells. F with herbs in the bag seasons it; F takes the finished dish into the bag."
-category = "Kitchen"
-sort_order = 70
-cost = 40
+id = "melon_patch"
+display_name = "Melon Patch"
+description = "Melons, ripe every 45 seconds: F picks one, and a melon is six meals in a trough. Rotting fruit draws wild flies in."
+category = "Crops"
+sort_order = 80
+cost = 20
 placement = 2
 footprint = Vector2i(1, 1)

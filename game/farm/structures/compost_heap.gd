@@ -61,6 +61,10 @@ func breed() -> Insect:
 	return hatchling
 
 
+func draws_flies() -> bool:
+	return true
+
+
 func reach_radius() -> float:
 	return 0.6
 

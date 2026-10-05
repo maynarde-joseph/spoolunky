@@ -6,9 +6,12 @@
 script = ExtResource("1_script")
 id = "gust"
 display_name = "Gust"
-description = "Wind down a lane in front of you. It dries a washed bundle, and dried skin crisps when it cooks."
+description = "Wind down a lane in front of you. It blows flies along with it — over fences, into a pen — and dries any washed bundle in its way."
 form = 2
 order = 2
-cooldown = 1.2
 colour = Color(0.82, 0.94, 0.9, 1)
 sigil = 8
+cooldown = 2.0
+size = Vector2(1, 1.5)
+duration = Vector2(0.5, 0.8)
+travel = Vector2(5, 10)

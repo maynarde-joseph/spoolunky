@@ -111,6 +111,22 @@ var table: Node3D = null
 ## Whether it was being kept well last it was looked at: in a pen, fed and watered.
 var content := false
 
+## Whether it is wild: drawn in off the land by something it wants, and nobody's
+## until it is in a pen. A wild fly that finds itself in one — carried in, or come
+## in through an open gate that was then shut — is the farm's from then on.
+var wild := false
+
+## What a wild fly was drawn here by — a trough, a compost heap, a melon patch —
+## and whether it has one. It hangs about near it.
+var lure := Vector3.ZERO
+var has_lure := false
+
+var _stunned := 0.0
+var _shoved := 0.0
+var _held := 0.0
+var _held_at := Vector3.ZERO
+var _flung := 0.0
+
 var _rng := RandomNumberGenerator.new()
 var _farm: Farm
 var _home := Vector3.ZERO
@@ -164,9 +180,35 @@ func _physics_process(delta: float) -> void:
 		_lie(delta)
 		return
 	_keep(delta)
+	_fit()
+	# Something has hold of it: a spell, not its own legs. It goes where it is put,
+	# pen or no pen — which is how a gust drives a fly where you want it.
+	if _held > 0.0:
+		_held = maxf(0.0, _held - delta)
+		var to := _held_at - global_position
+		velocity = to * 8.0
+		move_and_slide()
+		return
+	if _shoved > 0.0:
+		_shoved = maxf(0.0, _shoved - delta)
+		velocity.x = move_toward(velocity.x, 0.0, delta * 4.0)
+		velocity.z = move_toward(velocity.z, 0.0, delta * 4.0)
+		velocity.y = move_toward(velocity.y, 0.0, delta * 8.0) if flies() \
+			else velocity.y - _gravity * delta
+		move_and_slide()
+		return
+	if _stunned > 0.0:
+		_stunned = maxf(0.0, _stunned - delta)
+		velocity.x = 0.0
+		velocity.z = 0.0
+		velocity.y = 0.0 if is_on_floor() else velocity.y - _gravity * delta
+		motion_mode = CharacterBody3D.MOTION_MODE_GROUNDED
+		move_and_slide()
+		if _stunned <= 0.0:
+			_settle_mode()
+		return
 	_decide(delta)
 	_move(delta)
-	_fit()
 
 
 # --- what it is ----------------------------------------------------------
@@ -230,9 +272,12 @@ func describe() -> String:
 		wants.append("hungry")
 	if thirst >= PECKISH:
 		wants.append("thirsty")
-	if not content and wants.is_empty():
+	if not content and wants.is_empty() and not wild:
 		wants.append("not penned" if not in_pen() else "crowded")
-	var line := "%s · %s · %s" % [label, _size_word(), Dish.grade_name(grade())]
+	var line := "%s%s · %s · %s" % ["Wild " if wild else "", label if not wild else label.to_lower(),
+		_size_word(), Dish.grade_name(grade())]
+	if is_stunned():
+		wants.append("stunned")
 	if not wants.is_empty():
 		line += " · " + ", ".join(wants)
 	return line
@@ -267,6 +312,9 @@ func _keep(delta: float) -> void:
 	thirst = minf(1.0, thirst + delta / maxf(kind.thirst_time, 1.0))
 	var suffering := hunger >= STARVING or thirst >= STARVING
 	var penned := in_pen()
+	if wild and penned:
+		wild = false
+		has_lure = false
 	content = penned and not suffering
 	if content:
 		var room := _farm.room_in(region()) if _farm != null else 1.0
@@ -365,8 +413,10 @@ func _pick_wander_target() -> void:
 		_target = _farm.grid.point_in(here, _rng, radius() + 0.15)
 		return
 	# Loose on open ground, or with no farm at all: somewhere near, on the same
-	# ground if there is ground to keep to.
+	# ground if there is ground to keep to — and for a wild fly, near what drew it.
 	var from := global_position if _farm != null else _home
+	if wild and has_lure:
+		from = lure
 	for attempt in 6:
 		var angle := _rng.randf() * TAU
 		var reach := _rng.randf_range(0.5, LOOSE_RANGE)
@@ -472,6 +522,81 @@ func _settle_mode() -> void:
 		up_direction = Vector3.UP
 
 
+# --- what spells do to it -------------------------------------------------
+
+## Knocked out for [param seconds]: it stops, and a flier drops to the ground.
+func stun(seconds: float) -> void:
+	if state == State.BUNDLE or seconds <= 0.0:
+		return
+	_stunned = maxf(_stunned, seconds)
+	_goal = null
+	state = State.WANDER
+
+
+func is_stunned() -> bool:
+	return _stunned > 0.0 and state != State.BUNDLE
+
+
+## Blown along at [param push] for [param seconds], over fences and all.
+func shove(push: Vector3, seconds := 0.6) -> void:
+	if state == State.BUNDLE:
+		return
+	_shoved = maxf(_shoved, seconds)
+	_stunned = 0.0
+	_settle_mode()
+	velocity = push
+
+
+func is_shoved() -> bool:
+	return _shoved > 0.0
+
+
+## Kept at [param point] for [param seconds], going nowhere: what a water spiral
+## does to the first fly it reaches.
+func hold_at(point: Vector3, seconds: float) -> void:
+	if state == State.BUNDLE:
+		return
+	_held_at = point
+	_held = maxf(_held, seconds)
+
+
+func is_held() -> bool:
+	return _held > 0.0 and state != State.BUNDLE
+
+
+## Frightened off [param from]: it heads away from it for a while.
+func scare(from: Vector3) -> void:
+	if state == State.BUNDLE or is_stunned():
+		return
+	var away := global_position - from
+	away.y = 0.0
+	if away.length_squared() < 0.0001:
+		away = Vector3.FORWARD
+	_goal = null
+	state = State.WANDER
+	_target = global_position + away.normalized() * LOOSE_RANGE
+	_wander_left = 2.5
+
+
+## Hauled through the air to [param point], a bundle on a line of silk: what the
+## pullback does.
+func fling_to(point: Vector3) -> void:
+	if state != State.BUNDLE or table != null:
+		return
+	var gap := point - global_position
+	var flat := Vector3(gap.x, 0.0, gap.z)
+	var time := clampf(flat.length() / 9.0, 0.25, 1.2)
+	velocity = flat / time + Vector3.UP * (_gravity * time * 0.5 + gap.y / time)
+	_flung = time
+
+
+## A wild fly, drawn here by something at [param at].
+func draw_to(at: Vector3) -> void:
+	wild = true
+	lure = at
+	has_lure = true
+
+
 # --- silk ----------------------------------------------------------------
 
 ## Wrapped on the spot: a bundle from now on. It stops whatever it was doing and
@@ -526,6 +651,11 @@ func _lie(delta: float) -> void:
 		velocity = Vector3.ZERO
 		if is_instance_valid(table) and table.has_method("hold_point"):
 			global_position = _resting_on(table)
+		return
+	if _flung > 0.0:
+		_flung = maxf(0.0, _flung - delta)
+		velocity.y -= _gravity * delta
+		move_and_slide()
 		return
 	var pull := _tow_pull
 	_tow_pull = Vector3.ZERO

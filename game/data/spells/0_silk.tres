@@ -6,9 +6,12 @@
 script = ExtResource("1_script")
 id = "silk"
 display_name = "Silk"
-description = "A ball of silk, thrown. Whatever insect it hits is wrapped on the spot — a bundle, ready for a line: left-click it to tether it and drag it off."
+description = "A ball of silk, thrown — hold to wind up a bigger ball that is easier to land. Whatever fly it hits is wrapped on the spot; left-click the bundle to tether it and drag it off."
 form = 0
 order = 0
-cooldown = 0.6
 colour = Color(0.78, 0.84, 0.96, 1)
 sigil = 6
+cooldown = 0.6
+size = Vector2(0.12, 0.35)
+duration = Vector2(0, 0)
+travel = Vector2(0, 0)

@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 id = "trough"
 display_name = "Fruit Trough"
-description = "Rotting fruit for six. Every fly in the pen eats here, and it fills itself back up slowly — too many mouths and some go hungry."
+description = "Fruit for the pen: every fly in it eats here. It does not fill itself — F with melons or berries in the bag tips them in. It draws wild flies too."
 category = "Care"
 sort_order = 20
 cost = 30

@@ -5,12 +5,14 @@ extends Node3D
 ##
 ## Let go of the key and the spider breathes it for a moment, and it follows the
 ## cross while it lasts, so it can be swept. It goes as far as its reach or the
-## first wall, whichever is nearer, opening a little on the way. Cast at a prep
-## table it cooks what is on it — see [SpiderSpells]. Looks only: nothing in the
-## world burns.
+## first wall, whichever is nearer, opening a little on the way. A fly it reaches
+## flees it; a bundle it reaches is cooked — see [SpiderSpells].
 
 ## It has died down.
 signal finished(breath: FireBreath)
+
+## It reached [param insect], the first time it did.
+signal touched(breath: FireBreath, insect: Insect)
 
 const GROUP := "fire_breaths"
 
@@ -39,6 +41,9 @@ var colour := Color(1.0, 0.45, 0.12, 1.0)
 ## The caster it follows: its jaws are where it comes from and its cross is where
 ## it goes, every frame it lasts. Null, and it stays where it was breathed.
 var source: SpiderSpells = null
+
+## Everything it has reached.
+var reached: Array[Insect] = []
 
 var _age := 0.0
 var _length := 0.0
@@ -112,6 +117,12 @@ func _physics_process(delta: float) -> void:
 			heading = toward.normalized()
 		global_position = origin
 	_length = _clear_reach() * clampf(_age / FLARE, 0.0, 1.0)
+	if burning():
+		for node in get_tree().get_nodes_in_group(Insect.GROUP):
+			var insect := node as Insect
+			if insect != null and not reached.has(insect) and holds(insect.global_position, insect.radius()):
+				reached.append(insect)
+				touched.emit(self, insect)
 	if not burning() and _age >= lasts + FLARE:
 		finished.emit(self)
 		queue_free()

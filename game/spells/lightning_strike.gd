@@ -2,8 +2,8 @@ class_name LightningStrike
 extends Node3D
 
 ## Lightning, called down where the spider pointed: a crooked bolt out of the sky,
-## a few short forks off it, and a flash that lights the farm for a moment. Cast at
-## a prep table it tenderises what is on it — see [SpiderSpells]. Looks only.
+## a few short forks off it, and a flash that lights the farm for a moment. What it does
+## to the flies it strikes is the spell's — see [SpiderSpells].
 
 const GROUP := "lightning"
 

@@ -6,8 +6,8 @@ extends Node3D
 ## The land is a [FarmGrid]. Everything built on it is a [FarmStructure] under
 ## Structures, and every insect raised on it is an [Insect] under Insects. This is
 ## where the rules for putting things down live — what it costs, whether there is
-## room, whether a brood has a pen to go in — and where an insect asks what its pen
-## has for it: food, water, room, comfort.
+## room, the starter pen a new farm is given, the wild flies the farm draws in —
+## and where an insect asks what its pen has for it: food, water, room, comfort.
 ##
 ## There is one farm in a scene, and anything that wants it asks with
 ## [method of].
@@ -27,8 +27,19 @@ const GROUP := "farm"
 ## What a structure taken down gives back, as a share of what it cost.
 const REFUND := 0.5
 
-## How far from where a brood is put down its hatchlings land, in metres.
-const BROOD_SPREAD := 0.9
+## How often a wild fly may turn up, in seconds; how many each lure draws at most,
+## and how many there can be about the farm at once.
+const WILD_EVERY := 14.0
+const WILD_PER_LURE := 2
+const WILD_MOST := 10
+
+## How far from what drew it a wild fly turns up, in metres.
+const WILD_FROM := Vector2(9.0, 15.0)
+
+## The starter pen a new farm is given: its corners, its gate, and what is in it.
+const STARTER_FROM := Vector2i(8, 15)
+const STARTER_TO := Vector2i(12, 19)
+const STARTER_FLIES := [0.25, 0.5, 0.8, 1.0]
 
 ## How many cells a side the land is, and how wide each is, in metres.
 @export var cells := 24
@@ -40,6 +51,12 @@ const BROOD_SPREAD := 0.9
 		coins = value
 		coins_changed.emit(coins)
 
+## Whether a new, empty farm is given a starter pen with flies in it.
+@export var starter := true
+
+## Whether wild flies are drawn in by troughs, compost heaps and melon patches.
+@export var wild_flies := true
+
 var grid: FarmGrid
 
 var _structures: Array[FarmStructure] = []
@@ -50,6 +67,7 @@ var _by_region := {}
 var _room := {}
 var _room_frame := -1
 var _rng := RandomNumberGenerator.new()
+var _wild_left := WILD_EVERY * 0.5
 
 
 ## The farm [param node] is on, or null if its scene has none.
@@ -78,6 +96,66 @@ func _ready() -> void:
 		if built != null and not _structures.has(built):
 			_take_on(built)
 	_relayout()
+	if starter and _structures.is_empty() and insects().is_empty():
+		_build_starter()
+
+
+func _physics_process(delta: float) -> void:
+	if not wild_flies:
+		return
+	_wild_left -= delta
+	if _wild_left <= 0.0:
+		_wild_left = WILD_EVERY
+		call_wild()
+
+
+## The pen a new farm starts with, for nothing: fenced, with a gate on the south
+## side, a trough and a pond in it, a few flies, and a prep table outside the gate.
+func _build_starter() -> void:
+	var kept := coins
+	coins = 1000000
+	build_run(Catalogue.structure("fence"), STARTER_FROM, STARTER_TO)
+	build_gate(Catalogue.structure("gate"), Vector3i(FarmGrid.ACROSS_Z, STARTER_FROM.x + 2, STARTER_TO.y))
+	build(Catalogue.structure("trough"), STARTER_FROM)
+	build(Catalogue.structure("pond"), STARTER_TO - Vector2i(2, 2))
+	build(Catalogue.structure("prep_table"), Vector2i(STARTER_TO.x + 1, STARTER_TO.y - 1))
+	for built in _structures:
+		built.paid = 0
+	coins = kept
+	var fly := Catalogue.insect("fly")
+	var middle := grid.middle_of(grid.footprint_cells(STARTER_FROM + Vector2i(1, 1), Vector2i(2, 2)))
+	for grown: float in STARTER_FLIES:
+		add_insect(fly, _spot_near(middle, grid.region_id(grid.cell_at(middle))), grown)
+
+
+## Draws a wild fly in to one of the farm's lures, if there is room for another.
+## Returns it, or null.
+func call_wild() -> Insect:
+	var lures: Array[FarmStructure] = []
+	for built in _structures:
+		if built.draws_flies():
+			lures.append(built)
+	if lures.is_empty():
+		return null
+	var about := 0
+	for insect in insects():
+		about += 1 if insect.wild else 0
+	if about >= mini(WILD_MOST, lures.size() * WILD_PER_LURE):
+		return null
+	var lure := lures[_rng.randi_range(0, lures.size() - 1)]
+	var at := lure.global_position
+	var spot := at
+	for attempt in 10:
+		var angle := _rng.randf() * TAU
+		spot = at + Vector3(cos(angle), 0.0, sin(angle)) * _rng.randf_range(WILD_FROM.x, WILD_FROM.y)
+		var cell := grid.cell_at(spot)
+		if not grid.in_bounds(cell) or not grid.is_pen(grid.region_id(cell)):
+			break
+	var fly := add_insect(Catalogue.insect("fly"), spot, _rng.randf_range(0.3, 1.0))
+	fly.quality = _rng.randf_range(0.0, 0.25)
+	fly.draw_to(at)
+	notice.emit("A wild fly has come for the %s" % lure.kind.display_name.to_lower())
+	return fly
 
 
 func _holder(holder_name: String) -> Node3D:
@@ -303,50 +381,20 @@ func gate_moved() -> void:
 	_relayout()
 
 
-# --- stock ---------------------------------------------------------------
-
-## Why a brood of [param species] cannot be put down at [param where], or nothing.
-func stock_reason(species: InsectSpecies, where: Vector3) -> String:
-	if species == null:
-		return "Nothing to put down"
-	var at := grid.cell_at(where)
-	if not grid.in_bounds(at):
-		return "Not on the farm"
-	if not grid.is_pen(grid.region_id(at)):
-		return "Put them in a pen — closed in on every side — or they will wander off"
-	if not can_afford(species.brood_cost):
-		return "Not enough coins — %d" % species.brood_cost
-	return ""
-
-
-## Buys a brood of [param species] and puts the hatchlings down round
-## [param where]. Returns them; empty, with a notice saying why, if they could not
-## go there.
-func stock(species: InsectSpecies, where: Vector3) -> Array[Insect]:
-	var hatched: Array[Insect] = []
-	var reason := stock_reason(species, where)
-	if not reason.is_empty():
-		notice.emit(reason)
-		return hatched
-	spend(species.brood_cost)
-	var here := grid.region_id(grid.cell_at(where))
-	for i in maxi(species.brood_size, 1):
-		hatched.append(add_insect(species, _spot_near(where, here), 0.0))
-	return hatched
-
+# --- stock ----------------------------------------------------------------
 
 ## Somewhere near [param where] on the same ground, for a hatchling to land.
 func _spot_near(where: Vector3, region_id: int) -> Vector3:
 	for attempt in 8:
 		var angle := _rng.randf() * TAU
-		var spot := where + Vector3(cos(angle), 0.0, sin(angle)) * _rng.randf_range(0.2, BROOD_SPREAD)
+		var spot := where + Vector3(cos(angle), 0.0, sin(angle)) * _rng.randf_range(0.2, 0.9)
 		if grid.region_id(grid.cell_at(spot)) == region_id:
 			return Vector3(spot.x, where.y, spot.z)
 	return where
 
 
 ## Puts one [param species] down at [param where], [param grown] of the way to
-## market weight. No charge: for a compost heap, and for checks.
+## market weight: a hatchling from a compost heap, a starter fly, a wild one.
 func add_insect(species: InsectSpecies, where: Vector3, grown := 0.0) -> Insect:
 	var insect := Insect.of(species, grown)
 	var lift := 0.0

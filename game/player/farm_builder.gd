@@ -11,8 +11,7 @@ extends Node3D
 ## Fence goes up a run at a time: left mouse on one corner of the grid, then on the
 ## opposite one, and the outline of the rectangle between them goes up — a pen in
 ## two clicks. Corners in a row make a straight run. A gate goes on one edge, on its
-## own or in place of a length of fence. A brood of flies goes anywhere inside a
-## pen.
+## own or in place of a length of fence.
 ##
 ## X takes down whatever built thing the cross is on, for half what it cost —
 ## building or not.
@@ -28,10 +27,9 @@ const GRID_SHOWN := 4
 const GOOD := Color(0.45, 1.0, 0.55, 0.45)
 const BAD := Color(1.0, 0.35, 0.3, 0.45)
 
-## Whether the spider is building, and what: a structure, or a brood of flies.
+## Whether the spider is building, and what.
 var active := false
 var kind: StructureKind = null
-var species: InsectSpecies = null
 
 ## How many quarter turns what is in hand is turned.
 var quarter := 0
@@ -92,19 +90,6 @@ func begin(what: StructureKind) -> void:
 		return
 	active = true
 	kind = what
-	species = null
-	has_start = false
-	_ghost_key = ""
-	notice.emit(hint())
-
-
-## Starts putting down broods of [param what], from the shop.
-func begin_stock(what: InsectSpecies) -> void:
-	if what == null:
-		return
-	active = true
-	kind = null
-	species = what
 	has_start = false
 	_ghost_key = ""
 	notice.emit(hint())
@@ -118,7 +103,6 @@ func stop() -> void:
 		return
 	active = false
 	kind = null
-	species = null
 	_clear()
 
 
@@ -138,12 +122,6 @@ func place() -> bool:
 	if not aimed:
 		notice.emit("Point at the farm's ground")
 		return false
-	if species != null:
-		var hatched := farm.stock(species, cursor)
-		if hatched.is_empty():
-			return false
-		notice.emit("%d %s in the pen" % [hatched.size(), _plural(species, hatched.size())])
-		return true
 	match kind.placement:
 		StructureKind.Placement.RUN:
 			var corner := farm.grid.corner_at(cursor)
@@ -201,9 +179,6 @@ func hint() -> String:
 	if not active:
 		return ""
 	var farm := Farm.of(self)
-	if species != null:
-		return "%s brood (%d) — %d coins · left click in a pen · right click to stop" \
-			% [species.display_name, species.brood_size, species.brood_cost]
 	if kind == null:
 		return ""
 	match kind.placement:
@@ -233,9 +208,7 @@ func _update() -> void:
 		_show_ghost(null)
 		_draw_grid(farm)
 		return
-	if species != null:
-		reason = farm.stock_reason(species, cursor)
-	elif kind.placement == StructureKind.Placement.RUN:
+	if kind.placement == StructureKind.Placement.RUN:
 		var corner := farm.grid.corner_at(cursor)
 		reason = farm.run_reason(kind, run_start, corner) if has_start else ""
 		if not has_start and not farm.grid.on_land(cursor):
@@ -296,8 +269,6 @@ func _show_ghost(farm: Farm) -> void:
 ## What decides the ghost's shape: anything that changes it means building it
 ## again, and nothing else does.
 func _ghost_shape_key(farm: Farm) -> String:
-	if species != null:
-		return "stock"
 	if kind.placement == StructureKind.Placement.RUN:
 		if not has_start:
 			return "post"
@@ -307,14 +278,6 @@ func _ghost_shape_key(farm: Farm) -> String:
 
 
 func _build_ghost(farm: Farm) -> Node3D:
-	if species != null:
-		var marker := Node3D.new()
-		marker.name = "Ghost"
-		WorldKit.cylinder(marker, "Spot", 0.8, 0.04, WorldKit.at(Vector3(0.0, 0.03, 0.0)), "white",
-			false, -1.0, 24)
-		WorldKit.ball(marker, "Egg", Vector3(0.18, 0.24, 0.18), WorldKit.at(Vector3(0.0, 0.25, 0.0)),
-			"white", false)
-		return marker
 	if kind.placement == StructureKind.Placement.RUN:
 		var holder := Node3D.new()
 		holder.name = "Ghost"
@@ -337,8 +300,6 @@ func _build_ghost(farm: Farm) -> Node3D:
 
 ## Where the ghost stands.
 func _ghost_place(farm: Farm) -> Transform3D:
-	if species != null:
-		return Transform3D(Basis.IDENTITY, cursor)
 	match kind.placement:
 		StructureKind.Placement.RUN:
 			if not has_start:
@@ -401,8 +362,3 @@ static func _paint(colour: Color) -> StandardMaterial3D:
 	paint.cull_mode = BaseMaterial3D.CULL_DISABLED
 	paint.albedo_color = colour
 	return paint
-
-
-static func _plural(what: InsectSpecies, count: int) -> String:
-	var word := what.display_name.to_lower()
-	return word if count == 1 else (word.trim_suffix("y") + "ies" if word.ends_with("y") else word + "s")

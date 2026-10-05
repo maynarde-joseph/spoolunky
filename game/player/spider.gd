@@ -261,9 +261,19 @@ func interact() -> bool:
 		notify("Nothing to do here")
 		return false
 	if target is Insect:
-		var why := (target as Insect).cut_free()
+		var bundle := target as Insect
+		if not bundle.steps.is_empty():
+			# Something the kitchen has started on is a dish wherever it lies.
+			if bag.is_full():
+				notify("Your bag is full — sell what is in it at the market")
+				return false
+			var dish := bundle.take()
+			bag.add(dish)
+			notify("%s — %d coins at market" % [dish.label(), dish.value()])
+			return true
+		var why := bundle.cut_free()
 		if why.is_empty():
-			notify("Cut the %s free" % (target as Insect).kind.display_name.to_lower())
+			notify("Cut the %s free" % bundle.kind.display_name.to_lower())
 			return true
 		notify(why)
 		return false
@@ -321,7 +331,7 @@ func _interactable_under(collider: Variant) -> Node3D:
 
 ## Whether F does anything to [param thing]: a gate, a table, the market.
 func _does_something(thing: Node3D) -> bool:
-	if thing is MarketStall or thing is PrepTable:
+	if thing is MarketStall or thing is PrepTable or thing is Trough or thing is CropPlot:
 		return true
 	return thing is Fence and (thing as Fence).is_gate
 
@@ -342,7 +352,11 @@ func interact_hint() -> String:
 	if target == null:
 		return ""
 	if target is Insect:
-		return "F — cut the %s free" % (target as Insect).kind.display_name.to_lower()
+		var bundle := target as Insect
+		if not bundle.steps.is_empty():
+			var dish := bundle.as_dish()
+			return "F — take the %s (%d)" % [dish.title(), dish.value()]
+		return "F — cut the %s free" % bundle.kind.display_name.to_lower()
 	return String(target.call("interact_hint", self))
 
 
@@ -350,12 +364,25 @@ func interact_hint() -> String:
 
 func _process(delta: float) -> void:
 	_watch_the_disc()
+	_take_aim(delta)
 	climb.haul = tether.drag_factor()
 	view.update(body_height, climb.view_up())
 	_rush(delta)
 	if body != null:
 		body.visible = view.third_person
 		body.animate(delta, _horizontal_velocity.length())
+
+
+## Winds the spell in hand up while the cast key is held, and lets go on the
+## player's behalf if the key-up never came — the mouse freed mid-wind-up is
+## enough to lose one.
+func _take_aim(delta: float) -> void:
+	if not spells.charging:
+		return
+	if accepts_input() and Input.is_action_pressed(input_cast) and not builder.active:
+		spells.track(delta)
+	else:
+		spells.release_cast()
 
 
 ## Opens the view up with speed. The speed is the one along the surface, which is
@@ -369,7 +396,9 @@ func _rush(delta: float) -> void:
 		_base_fov = camera.fov
 	var reference: float = maxf(move_speed * 2.5, 0.001)
 	var rush := clampf(_horizontal_velocity.length() / reference - 0.2, 0.0, 1.0)
-	camera.fov = lerpf(camera.fov, _base_fov + rush * speed_fov_gain,
+	# Winding a spell up widens the view, over the spider's back where it is going.
+	var aiming := clampf(view.aim_blend, 0.0, 1.0) * view.aim_fov_gain
+	camera.fov = lerpf(camera.fov, _base_fov + rush * speed_fov_gain + aiming,
 		clampf(delta * 6.0, 0.0, 1.0))
 
 

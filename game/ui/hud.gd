@@ -21,13 +21,17 @@ Q  let go of the line
 Right mouse  cast what is in hand
 1–7 / wheel / hold Tab  pick a spell
 
+Right mouse: tap to cast, hold to wind a spell up bigger
 Silk  wraps a fly on the spot
-Water Spiral  washes · Gust  dries · Lightning  tenderises
-Clay Crust  seals it in clay · Fire Breath  cooks · Pullback  pulls cooked meat
-— cast them at a prep table with a bundle on it
+Water Spiral  holds a fly, washes bundles · Gust  blows flies along, dries
+Lightning  stuns flies, tenderises · Fire Breath  scares flies, cooks
+Pullback  hauls bundles to you, pulls cooked meat · Clay  a pillar, or a crust on a bundle
 
-F  open a gate · take a dish off a table · sell at the market · cut a bundle free
-E  the shop: build fences, gates, troughs, ponds, a compost heap, prep tables, buy flies
+Wild flies come to troughs, compost heaps and melons: catch them, or let them
+in through a gate and shut it behind them.
+F  gates · pick ripe crops · fruit into a trough · herbs on a fly at the table
+   take a dish · sell at the market · cut a plain bundle free
+E  the shop: fences, gates, troughs, ponds, crops, a compost heap, prep tables
 X  take down what the cross is on, for half back
 L  camera   O  the spider's look   T  free the mouse   H  hide this"""
 
@@ -210,11 +214,7 @@ func shop() -> ShopScreen:
 
 
 func _on_chosen(what: Resource) -> void:
-	if _spider == null:
-		return
-	if what is InsectSpecies:
-		_spider.builder.begin_stock(what as InsectSpecies)
-	else:
+	if _spider != null:
 		_spider.builder.begin(what as StructureKind)
 
 
@@ -228,15 +228,21 @@ func _refresh_corner() -> void:
 		_coins.text = "%d coins" % _farm.coins
 		var living := 0
 		var grown := 0
+		var wild := 0
 		for insect in _farm.insects():
-			if not insect.is_bundle():
-				living += 1
-				grown += 1 if insect.is_grown() else 0
-		_farm_line.text = "%d fl%s · %d grown · %d pen%s" % [living, "y" if living == 1 else "ies",
-			grown, _farm.grid.pens().size(), "" if _farm.grid.pens().size() == 1 else "s"]
+			if insect.is_bundle():
+				continue
+			if insect.wild:
+				wild += 1
+				continue
+			living += 1
+			grown += 1 if insect.is_grown() else 0
+		_farm_line.text = "%d fl%s · %d grown · %d wild about · %d pen%s" % [living,
+			"y" if living == 1 else "ies", grown, wild, _farm.grid.pens().size(),
+			"" if _farm.grid.pens().size() == 1 else "s"]
 	var bag := _spider.bag
-	_bag_line.text = "Bag  %d / %d dishes · %d coins" % [bag.count(), SpiderInventory.CAPACITY,
-		bag.total_value()]
+	_bag_line.text = "Bag  %d / %d · %d dish%s, %d coins" % [bag.count() + bag.produce.size(),
+		SpiderInventory.CAPACITY, bag.count(), "" if bag.count() == 1 else "es", bag.total_value()]
 	_build_line.text = _spider.builder.hint() if _spider.builder.active else ""
 
 
@@ -278,6 +284,8 @@ func aimed_text() -> String:
 			return (node as Insect).describe()
 		if node is FarmStructure:
 			return (node as FarmStructure).describe()
+		if node is ClayPillar:
+			return "Clay pillar"
 		if node is MarketStall:
 			return (node as MarketStall).describe(_spider)
 		node = node.get_parent()
@@ -309,6 +317,8 @@ func _refresh_strip() -> void:
 		var step := Prep.step_for(spell.form)
 		var verb := "Wrap" if step < 0 else String(Prep.VERB[step])
 		var wait := "  %.1fs" % spells.cooldown_left(spell) if spells.cooling(spell) else ""
+		if spell == holding and spells.charging:
+			wait = "  " + "▮".repeat(roundi(spells.charge * 8.0)) + "▯".repeat(8 - roundi(spells.charge * 8.0))
 		line.text = "%s %d  %s — %s%s" % ["▶" if spell == holding else "  ", spells.key_for(spell),
 			spell.display_name, verb, wait]
 		line.modulate.a = 1.0 if spell == holding else 0.62
@@ -316,6 +326,8 @@ func _refresh_strip() -> void:
 
 func _refresh_bag() -> void:
 	var lines := PackedStringArray()
+	for picked in _spider.bag.produce:
+		lines.append(picked.label())
 	var dishes := _spider.bag.dishes
 	for i in range(maxi(0, dishes.size() - 8), dishes.size()):
 		lines.append("%s  %d" % [dishes[i].label(), dishes[i].value()])

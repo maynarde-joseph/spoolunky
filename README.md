@@ -2,15 +2,17 @@
 
 *(working title — the repository is still `spoolunky`)*
 
-A farming game in Godot 4.6. You are a magic spider with an empty field and a few
-coins, and you turn it into a fly farm. Fence off pens, put in troughs, ponds and a
-compost heap, buy a brood of flies and raise them — fed, watered and with room to
-move they grow to market weight and their grade climbs from A1 to A5, the way a
-herd is raised for marbling rather than just for weight. Then you harvest: a ball
-of silk wraps a fly on the spot, a line drags the bundle to a prep table, and your
-spells cook it — the water spiral washes it, the gust dries it, lightning
-tenderises it, clay seals it in a crust, fire cooks it and the pullback pulls it.
-Into the bag it goes, and the market buys the bag. Expand the empire.
+A farming game in Godot 4.6. You are a magic spider with a field, a few coins and a
+starter pen of flies, and you turn it into a fly empire. Fence off pens, put in
+troughs, ponds and compost heaps, and grow melons and berries to feed them —
+fed, watered and with room to move, flies grow to market weight and their grade
+climbs from A1 to A5, the way a herd is raised for marbling rather than just for
+weight. Wild flies come for your troughs and fruit: catch them, or leave a gate
+open and shut it behind them. Then you harvest: a ball of silk wraps a fly on the
+spot, a line drags the bundle off, and your spells cook it — the water spiral
+washes it, the gust dries it, lightning tenderises it, clay seals it in a crust,
+fire cooks it and the pullback pulls it — with herbs from the herb bed on top.
+Into the bag it goes, and the market buys the bag.
 
 The game used to be a dungeon crawler about hunting with webs and a spell tree;
 that is all still on the `claude/eager-gauss-g1mosx` branch. This branch kept the
@@ -22,9 +24,9 @@ away. The design notes are in [`docs/DESIGN.md`](docs/DESIGN.md).
 
 ```
   BUILD                 STOCK              KEEP                  HARVEST
- fence a pen,      →   a brood of     →   flies eat, drink,  →  silk wraps one,
- trough, pond,         flies in it        grow, breed in the     a line drags it
- compost heap                             compost heap           to a prep table
+ fence a pen,      →   the starter    →   flies eat fruit,   →  silk wraps one,
+ trough, pond,         herd, wild         drink, grow, breed     a line drags it
+ crops, compost        flies caught       in the compost heap    off to cook
       ↑                                                                │
       │                     SELL                   COOK                ↓
       └──────────────  the market buys  ←  each spell is one step: wash, dry,
@@ -40,10 +42,10 @@ away. The design notes are in [`docs/DESIGN.md`](docs/DESIGN.md).
 | *walk into a wall* | climb it — walls, fences and ceilings are floors to a spider |
 | **Left mouse** | **grapple** to wherever the cross is — or, on a wrapped fly, put a line on it and drag it |
 | **Q** | let go of the line |
-| **Right mouse** | cast the spell in hand |
+| **Right mouse** | cast the spell in hand — tap for a quick one, hold to wind it up bigger, further, longer |
 | **1–7**, wheel, hold **Tab** | pick a spell (Tab brings up the spell disc and slows the world while you choose) |
-| **F** | open/shut a gate · take the dish off a prep table · sell at the market · cut a plain bundle free · put the bundle on your line onto a table |
-| **E** | the shop: build, and buy flies |
+| **F** | open/shut a gate · pick a ripe crop · tip fruit into a trough · season the fly on a prep table with herbs · take a dish (off a table, or any bundle you have started cooking) · sell at the market · cut a plain bundle free |
+| **E** | the shop |
 | *while building* | left mouse puts it down, **R** turns it, right mouse puts it away |
 | **X** | take down whatever built thing the cross is on, for half back |
 | **L** / **O** | camera: third or first person / the spider's look |
@@ -61,12 +63,21 @@ pen with its gate open is open ground, so the flies wander out.
 |-----------|------|--------------|
 | Fence | 5 a length | makes pens |
 | Gate | 20 | a way in and out; open, the pen is not a pen |
-| Fruit Trough | 30 | feeds the pen — six meals, refilling slowly |
+| Fruit Trough | 30 | feeds the pen: built with six meals, holds twelve, and only fills when you tip fruit in |
 | Pond (2×2) | 45 | water for the pen, never runs dry |
 | Sugar Bowl | 25 | flies keep better: grade climbs half again as fast |
 | Shade Tree | 35 | flies keep better, and it is something to climb |
 | Compost Heap | 60 | two grown flies and room to spare: a new fly now and then |
-| Prep Table | 40 | where a catch is made into a dish |
+| Prep Table | 40 | holds a bundle still while you cook it; F seasons it with herbs, and takes the dish |
+| Melon Patch | 20 | a melon every 45 s — six meals of feed; draws wild flies |
+| Berry Bush | 15 | berries every 20 s — three meals of feed |
+| Herb Bed | 15 | herbs every 30 s — season a fly at the prep table |
+
+A new farm starts with a pen of four flies, a trough, a pond and a prep table.
+After that flies come two ways: a compost heap breeds them, and troughs, compost
+heaps and melon patches draw **wild flies** in from off the land. A wild fly is
+nobody's until it is in a pen — wrap it and drag it in (F cuts it free), blow it in
+with a gust, or leave the gate open until it wanders in and shut it.
 
 A fly is kept well when it is in a pen and neither starving nor parched. Kept well
 it grows (slower if the pen is crowded) and its grade climbs; let it go hungry or
@@ -75,18 +86,23 @@ pen is doing.
 
 ## The kitchen
 
-| Spell | Step | Rules |
-|-------|------|-------|
-| Silk | wraps a fly on the spot | — |
-| Water Spiral | wash | before it is crusted or cooked |
-| Gust | dry | after washing |
-| Summon Lightning | tenderise | before it is crusted or cooked |
-| Clay Crust | crust | before cooking; nothing else gets in after |
-| Fire Breath | cook | makes it a dish |
-| Pullback | pull | only once it is cooked |
+Every spell winds up while the key is held, its magic circle forming, and each
+does something in the world as well as its step on any bundle it reaches —
+lying on a table, or anywhere else:
+
+| Spell | In the world | On a bundle | Rules |
+|-------|--------------|-------------|-------|
+| Silk | wraps a fly on the spot (wound up: a bigger ball) | — | — |
+| Water Spiral | runs along the ground; holds the first fly it meets | wash | before it is crusted or cooked |
+| Gust | blows flies down its lane — over fences, into pens | dry | after washing |
+| Summon Lightning | stuns every fly it strikes | tenderise | before it is crusted or cooked |
+| Clay Crust | a pillar out of the ground that throws you or a fly up | crust (aimed at a bundle) | before cooking; nothing else gets in after |
+| Fire Breath | flies flee it; sweep it while it lasts | cook | makes it a dish |
+| Pullback | hauls every loose bundle in reach to your feet | pull | only once it is cooked |
+| *herbs, F at a prep table* | — | season | before it is crusted or cooked |
 
 The name says what was done — *Roast Fly*, *Gritty Roast Fly* (cooked unwashed),
-*Pulled Tender Crispy Clay-baked Fly*. A dish's worth is the fly's value × how far
+*Pulled Tender Herbed Crispy Clay-baked Fly*. A dish's worth is the fly's value × how far
 it grew × its grade (A1 ×1 to A5 ×2.8) × what the kitchen did; anything taken off
 the table uncooked sells for half.
 

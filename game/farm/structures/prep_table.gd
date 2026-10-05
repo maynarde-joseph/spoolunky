@@ -3,6 +3,9 @@ extends FarmStructure
 
 ## Where a catch is made into a dish.
 ##
+## The kitchen spells work on a bundle wherever it lies, but the table holds one
+## still and in one place while you work, seasons it — F with herbs in the bag —
+## and plates it: F takes what is on it off as a dish.
 ## Drag a bundle up to it and the bundle is put down on top and stays there: the
 ## line comes off, and every kitchen spell cast at the table — or at the bundle on
 ## it — is a step done to it (see [Prep]). F takes what is on it off as a [Dish],
@@ -103,6 +106,9 @@ func describe() -> String:
 
 func interact_hint(spider: SpiderPlayer) -> String:
 	if bundle != null:
+		if spider != null and spider.bag.count_produce("herb") > 0 \
+				and Prep.can_do(bundle.steps, Prep.Step.SEASON):
+			return "F — season it with herbs"
 		var dish := bundle.as_dish()
 		return "F — take the %s (%d)" % [dish.title(), dish.value()]
 	if spider != null and spider.tether.is_towing():
@@ -120,6 +126,11 @@ func interact(spider: SpiderPlayer) -> bool:
 		var towed := spider.tether.cargo as Insect
 		spider.tether.cut()
 		return take_on(towed)
+	if spider.bag.count_produce("herb") > 0 and Prep.can_do(bundle.steps, Prep.Step.SEASON):
+		spider.bag.take_produce("herb")
+		bundle.apply(Prep.Step.SEASON)
+		spider.notify("Seasoned with herbs — %s" % bundle.as_dish().label())
+		return true
 	if spider.bag.is_full():
 		spider.notify("Your bag is full — sell what is in it at the market")
 		return false

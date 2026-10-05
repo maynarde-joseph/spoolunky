@@ -1,17 +1,17 @@
 class_name Trough
 extends FarmStructure
 
-## Rotting fruit for the pen it stands in. Every fly in the pen eats here, a
-## portion a meal, and it fills itself back up a portion at a time — so a trough
-## keeps a few flies fed and a crowd of them hungry.
+## Fruit for the pen it stands in. Every fly in the pen eats here, a meal at a time,
+## and it does not fill itself: F with fruit in the bag tips it in — a melon is six
+## meals, berries three. Grow the fruit, or the flies go hungry. It draws wild flies
+## in, too.
 
-## How many meals it holds, and how long it takes to put one back, in seconds.
-const PORTIONS := 6
-const REFILL := 10.0
+## How many meals it holds, and how many it is built with.
+const PORTIONS := 12
+const BUILT_WITH := 6
 
-var portions := PORTIONS
+var portions := BUILT_WITH
 
-var _refill_left := REFILL
 var _grain: MeshInstance3D
 
 
@@ -37,17 +37,6 @@ func draw(on: Node3D, solid: bool) -> void:
 	_show_fill()
 
 
-func _physics_process(delta: float) -> void:
-	if portions >= PORTIONS:
-		_refill_left = REFILL
-		return
-	_refill_left -= delta
-	if _refill_left <= 0.0:
-		_refill_left = REFILL
-		portions += 1
-		_show_fill()
-
-
 func has_food_for(_insect: Insect) -> bool:
 	return portions > 0
 
@@ -69,5 +58,38 @@ func _show_fill() -> void:
 	_grain.position.y = 0.08 + depth * 0.5
 
 
+## Tips [param meals] of fruit in, up to what it holds. Returns how many went in.
+func add_feed(meals: int) -> int:
+	var went := clampi(meals, 0, PORTIONS - portions)
+	portions += went
+	_show_fill()
+	return went
+
+
 func describe() -> String:
 	return "Fruit trough · %d of %d meals" % [portions, PORTIONS]
+
+
+func interact_hint(spider: SpiderPlayer) -> String:
+	if spider == null or spider.bag.count_produce("feed") == 0:
+		return ""
+	return "F — tip fruit in" if portions < PORTIONS else ""
+
+
+func interact(spider: SpiderPlayer) -> bool:
+	if spider == null:
+		return false
+	if portions >= PORTIONS:
+		spider.notify("The trough is full")
+		return false
+	var fruit := spider.bag.take_produce("feed")
+	if fruit == null:
+		spider.notify("No fruit in the bag — grow melons or berries to fill the trough")
+		return false
+	var went := add_feed(fruit.meals)
+	spider.notify("%s in the trough — %d meals" % [fruit.display_name, portions])
+	return went > 0
+
+
+func draws_flies() -> bool:
+	return true

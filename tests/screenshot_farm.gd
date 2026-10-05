@@ -6,18 +6,18 @@ extends SceneTree
 ##     xvfb-run -a godot --rendering-driver opengl3 --resolution 1280x720 \\
 ##         --path . --script res://tests/screenshot_farm.gd -- stocked
 ##
-## `empty` photographs the farm as a new game finds it. `stocked` builds a pen
-## first — fence, gate, trough, pond, compost heap, sugar bowl — puts flies in it,
-## and a wrapped fly half-cooked on a prep table beside it, and photographs that.
+## `start` photographs the farm as a new game finds it: the starter pen. `stocked`
+## adds crops, a compost heap, a sugar bowl and a few wild flies drawn in, and puts
+## a wrapped fly half-cooked on the starter's prep table, and photographs that.
 ## The shots land in the user data folder as `farm_<setup>_<view>.png`; the paths
 ## are printed on the way out.
 
 const VIEWS := {
 	"start": [],
-	"above": [Vector3(-26.0, 30.0, 34.0), Vector3(0.0, 0.0, 4.0)],
-	"pen": [Vector3(-9.0, 4.5, 15.0), Vector3(-3.0, 0.6, 6.0)],
-	"kitchen": [Vector3(4.6, 2.4, 13.4), Vector3(5.0, 0.8, 9.0)],
-	"market": [Vector3(-8.0, 3.0, 19.0), Vector3(-8.0, 1.2, 27.5)],
+	"above": [Vector3(-22.0, 26.0, 30.0), Vector3(-2.0, 0.0, 10.0)],
+	"pen": [Vector3(-10.0, 4.5, 18.5), Vector3(-4.0, 0.6, 10.0)],
+	"crops": [Vector3(4.0, 3.0, 18.0), Vector3(2.0, 0.4, 10.0)],
+	"kitchen": [Vector3(3.6, 2.4, 16.4), Vector3(3.0, 0.8, 13.0)],
 }
 
 
@@ -68,29 +68,27 @@ func _run() -> void:
 	quit()
 
 
-## A pen of six by five cells west of the middle, with all a pen needs, and flies.
+## Crops beside the starter pen, a compost heap and a sugar bowl in it, and wild
+## flies drawn in.
 func _stock(farm: Farm) -> void:
-	var fence := Catalogue.structure("fence")
-	var from := Vector2i(6, 13)
-	var to := Vector2i(12, 18)
-	farm.build_run(fence, from, to)
-	farm.build_gate(Catalogue.structure("gate"), Vector3i(FarmGrid.ACROSS_Z, 9, 18))
-	farm.build(Catalogue.structure("trough"), Vector2i(7, 14))
-	farm.build(Catalogue.structure("pond"), Vector2i(10, 14))
-	farm.build(Catalogue.structure("compost_heap"), Vector2i(7, 16))
-	farm.build(Catalogue.structure("sugar_bowl"), Vector2i(11, 16))
-	farm.build(Catalogue.structure("shade_tree"), Vector2i(9, 17))
-	farm.build(Catalogue.structure("prep_table"), Vector2i(14, 15))
-	var fly := Catalogue.insect("fly")
-	var middle := farm.grid.centre_of(Vector2i(9, 15))
-	for i in 7:
-		farm.add_insect(fly, middle + Vector3(randf_range(-2.0, 2.0), 0.0, randf_range(-1.5, 1.5)),
-			[0.2, 0.5, 1.0][i % 3])
+	farm.build(Catalogue.structure("melon_patch"), Vector2i(13, 15))
+	farm.build(Catalogue.structure("berry_bush"), Vector2i(14, 15))
+	farm.build(Catalogue.structure("herb_bed"), Vector2i(13, 16))
+	farm.build(Catalogue.structure("compost_heap"), Vector2i(9, 18))
+	farm.build(Catalogue.structure("sugar_bowl"), Vector2i(11, 15))
+	for built in farm.structures():
+		if built is CropPlot:
+			(built as CropPlot).growth = 0.9
+	for i in 4:
+		farm.call_wild()
 
 
-## A grown fly, wrapped, on the table, washed and cooked.
+## A grown fly, wrapped, on the starter's table, washed, tenderised and cooked.
 func _kitchen(farm: Farm) -> void:
-	var table := farm.structure_at(Vector2i(14, 15)) as PrepTable
+	var table: PrepTable = null
+	for built in farm.structures():
+		if built is PrepTable:
+			table = built
 	var fly := farm.add_insect(Catalogue.insect("fly"), table.global_position + Vector3(0.0, 1.5, 0.0), 1.0)
 	fly.quality = 0.7
 	fly.wrap()

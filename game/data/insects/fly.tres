@@ -20,5 +20,3 @@ hunger_time = 40.0
 thirst_time = 55.0
 space = 3.0
 value = 12
-brood_cost = 20
-brood_size = 4

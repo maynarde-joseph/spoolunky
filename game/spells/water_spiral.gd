@@ -1,80 +1,183 @@
 class_name WaterSpiral
 extends Node3D
 
-## A whirl of water and wind: a funnel of water turning on its point, with streaks
-## of spray round it to show which way. It rises where it is cast, spins for a
-## moment and sinks away. Cast at a prep table it washes what is on it — see
-## [SpiderSpells]. Looks only.
+## A whirl of water and wind, sent along the ground from the spider's feet the way
+## the cross points: a funnel of water turning on its point, with streaks of spray
+## round it to show which way. It rides whatever the ground does, breaks on the
+## first wall it meets, and runs out where its wind-up sends it.
 ##
-## It was once lifted out of a puddle by a gust; now it is a spell of its own.
+## The first live fly it reaches it catches and holds — round and round in the
+## water, going nowhere, for a few seconds: easy to wrap. Every bundle it passes it
+## washes (see [SpiderSpells]).
+
+## It reached a bundle, or caught a fly. The spell decides what that means.
+signal touched(whirl: WaterSpiral, insect: Insect)
 
 const GROUP := "water_spirals"
 
-## How fast it turns, in radians a second.
+## How fast it turns, in radians a second. Looks only.
 const SWIRL := 9.0
 
-## How long it takes to rise, and to sink away, in seconds.
+## How long it takes to rise, and to sink away once it is spent, in seconds.
 const RISE := 0.15
 const FADE := 0.35
 
-## How much of the spray round it shows.
+## How high off its floor a wall has to stand to stop it, as a share of its radius.
+const WALL_AT := 0.5
+
+## How far up from its floor it reaches, as a share of its radius: tall enough to
+## have a fly in the air, or a bundle on a table.
+const REACH_UP := 2.2
+
 const STREAK_ALPHA := 0.6
 
-## How wide it is, from the middle to the rim, in metres, and how long it spins.
+## How wide it is, from the middle to the rim; how far it goes and how fast; and how
+## long it holds what it catches.
 var radius := 1.0
-var spins := 1.0
+var distance := 6.0
+var speed := 6.0
+var hold_for := 3.0
 
 var colour := Color(0.36, 0.74, 0.9, 1.0)
 
+## Which way it is going, flat across the ground, and how far it has come.
+var heading := Vector3.FORWARD
+var travelled := 0.0
+
+## What it has hold of, while it holds it, and every bundle it has reached.
+var caught: Insect = null
+var reached: Array[Insect] = []
+
 var _age := 0.0
+var _hold_left := 0.0
+var _spent_at := -1.0
 var _view: Node3D
 var _water: StandardMaterial3D
 var _streaks: StandardMaterial3D
 
 
-## Raises one under [param host] standing on [param at], [param wide] metres from
-## the middle to the rim, spinning for [param seconds].
-static func rise(host: Node, at: Vector3, wide: float, seconds := 1.0,
-		tint := Color(0.36, 0.74, 0.9, 1.0)) -> WaterSpiral:
+## Sends one out from [param from] under [param host], along [param toward] laid
+## flat, [param wide] metres from the middle to the rim, [param far] metres at
+## [param pace] metres a second, holding what it catches for [param holds] seconds.
+static func send(host: Node, from: Vector3, toward: Vector3, wide: float, far: float,
+		pace: float, holds: float, tint := Color(0.36, 0.74, 0.9, 1.0)) -> WaterSpiral:
 	if host == null:
 		return null
+	var flat := Vector3(toward.x, 0.0, toward.z)
 	var whirl := WaterSpiral.new()
 	whirl.name = "WaterSpiral"
 	whirl.radius = maxf(wide, 0.05)
-	whirl.spins = maxf(seconds, 0.1)
+	whirl.distance = maxf(far, 0.0)
+	whirl.speed = maxf(pace, 0.01)
+	whirl.hold_for = maxf(holds, 0.1)
 	whirl.colour = tint
+	whirl.heading = flat.normalized() if flat.length_squared() > 0.000001 else Vector3.FORWARD
 	whirl.add_to_group(GROUP)
 	whirl.add_to_group("spell_effects")
 	host.add_child(whirl)
-	whirl.global_position = at
+	whirl.global_position = whirl._floor_under(from)
 	return whirl
-
-
-## Whether it is still spinning; after this it sinks away.
-func spinning() -> bool:
-	return _age < spins
 
 
 func _ready() -> void:
 	_build_view()
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	_age += delta
-	if _age >= spins + FADE:
+	if caught != null:
+		_hold(delta)
+	elif spinning():
+		_travel(delta)
+		_touch()
+	elif _age >= _spent_at + FADE:
 		queue_free()
 		return
-	_view.rotate_y(-SWIRL * delta)
-	var rising := clampf(_age / RISE, 0.0, 1.0)
-	var sinking := clampf((_age - spins) / FADE, 0.0, 1.0)
-	var height := rising * (1.0 - sinking)
-	_view.scale = Vector3(radius, radius * maxf(height, 0.02), radius)
-	_water.albedo_color.a = 0.28 * (1.0 - sinking)
-	_streaks.albedo_color.a = STREAK_ALPHA * (1.0 - sinking)
+	_update_view(delta)
 
 
-## A funnel of water with three arms of spray spiralling down it. Built at a radius
-## of one and scaled, so its size is one number.
+func spinning() -> bool:
+	return _spent_at < 0.0
+
+
+## Whether [param point] is inside it.
+func holds(point: Vector3, margin := 0.0) -> bool:
+	var offset := point - global_position
+	if offset.y < -radius * 0.5 - margin or offset.y > radius * REACH_UP + margin:
+		return false
+	return Vector2(offset.x, offset.z).length() <= radius + margin
+
+
+## The middle of it, a little off its floor: where it holds what it catches.
+func eye() -> Vector3:
+	return global_position + Vector3.UP * radius * 0.6
+
+
+func _travel(delta: float) -> void:
+	var step := minf(speed * delta, distance - travelled)
+	if step <= 0.0:
+		_spend()
+		return
+	var from := global_position
+	var to := from + heading * step
+	var lift := Vector3.UP * radius * WALL_AT
+	var query := PhysicsRayQueryParameters3D.create(from + lift, to + lift, GameLayers.WORLD)
+	var wall := get_world_3d().direct_space_state.intersect_ray(query)
+	if not wall.is_empty():
+		_spend()
+		return
+	global_position = _floor_under(to)
+	travelled += step
+
+
+func _floor_under(point: Vector3) -> Vector3:
+	if not is_inside_tree():
+		return point
+	var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * radius * WALL_AT,
+		point + Vector3.DOWN * radius * (WALL_AT + 1.5), GameLayers.WORLD)
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	return point if hit.is_empty() else hit.get("position", point)
+
+
+## Bundles it reaches are washed as it passes; the first live fly it reaches it
+## catches.
+func _touch() -> void:
+	for node in get_tree().get_nodes_in_group(Insect.GROUP):
+		var insect := node as Insect
+		if insect == null or insect.is_queued_for_deletion() or reached.has(insect):
+			continue
+		if not holds(insect.global_position, insect.radius()):
+			continue
+		reached.append(insect)
+		if insect.is_bundle():
+			touched.emit(self, insect)
+			continue
+		caught = insect
+		_hold_left = hold_for
+		insect.hold_at(eye(), 0.1)
+		touched.emit(self, insect)
+		return
+
+
+func _hold(delta: float) -> void:
+	if not is_instance_valid(caught) or caught.is_bundle():
+		caught = null
+		_spend()
+		return
+	_hold_left -= delta
+	caught.hold_at(eye(), maxf(delta * 2.0, 0.05))
+	if _hold_left <= 0.0:
+		caught = null
+		_spend()
+
+
+func _spend() -> void:
+	if spinning():
+		_spent_at = _age
+
+
+# --- what you can see ----------------------------------------------------
+
 func _build_view() -> void:
 	_view = Node3D.new()
 	_view.name = "View"
@@ -122,3 +225,13 @@ func _build_view() -> void:
 	spray.material_override = _streaks
 	spray.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_view.add_child(spray)
+
+
+func _update_view(delta: float) -> void:
+	_view.rotate_y(-SWIRL * delta)
+	var rising := clampf(_age / RISE, 0.0, 1.0)
+	var sinking := clampf((_age - _spent_at) / FADE, 0.0, 1.0) if not spinning() else 0.0
+	var height := rising * (1.0 - sinking)
+	_view.scale = Vector3(radius, radius * 1.6 * maxf(height, 0.02), radius)
+	_water.albedo_color.a = 0.28 * (1.0 - sinking)
+	_streaks.albedo_color.a = STREAK_ALPHA * (1.0 - sinking)

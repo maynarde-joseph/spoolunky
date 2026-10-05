@@ -6,9 +6,12 @@
 script = ExtResource("1_script")
 id = "lightning"
 display_name = "Summon Lightning"
-description = "Lightning, called down where you point. It tenderises the meat on the table — any time before it is cooked or sealed in clay."
+description = "Lightning, called down where you point. Every fly it strikes is stunned and drops; every bundle it strikes is tenderised."
 form = 3
 order = 3
-cooldown = 1.5
 colour = Color(0.98, 0.92, 0.55, 1)
 sigil = 4
+cooldown = 3.0
+size = Vector2(1.2, 2.4)
+duration = Vector2(2.5, 4)
+travel = Vector2(0, 0)

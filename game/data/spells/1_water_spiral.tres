@@ -6,9 +6,12 @@
 script = ExtResource("1_script")
 id = "water_spiral"
 display_name = "Water Spiral"
-description = "Water and wind together: a spiral that runs along the ground to what you point at and washes it. Wash a bundle first — anything cooked unwashed comes out gritty."
+description = "Water and wind together: a spiral that runs along the ground the way you point — further the longer you hold. The first fly it reaches is held in it, going nowhere; every bundle it passes is washed."
 form = 1
 order = 1
-cooldown = 1.5
 colour = Color(0.36, 0.74, 0.9, 1)
 sigil = 5
+cooldown = 3.0
+size = Vector2(0.7, 1.0)
+duration = Vector2(2.5, 4)
+travel = Vector2(7, 14)

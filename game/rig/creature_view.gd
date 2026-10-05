@@ -75,7 +75,7 @@ func _process(delta: float) -> void:
 	if _insect != null:
 		motion.top_speed = maxf(_insect.pace() / unit, 0.5)
 	motion.climb = velocity.y / unit
-	motion.effort = 0.0
+	motion.effort = 0.8 if _insect != null and _insect.is_held() else 0.0
 	_turn(delta, flat, velocity)
 	_stand(delta)
 
@@ -86,6 +86,10 @@ func _pose() -> CreatureMotion.Pose:
 		return CreatureMotion.Pose.FLYING
 	if _insect.is_bundle():
 		return CreatureMotion.Pose.CURLED
+	if _insect.is_stunned():
+		return CreatureMotion.Pose.SPENT
+	if _insect.is_held():
+		return CreatureMotion.Pose.STRUGGLING
 	if _insect.on_its_feet():
 		return CreatureMotion.Pose.WALKING
 	return CreatureMotion.Pose.FLYING

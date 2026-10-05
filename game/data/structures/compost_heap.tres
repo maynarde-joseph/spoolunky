@@ -6,7 +6,7 @@
 script = ExtResource("1_script")
 id = "compost_heap"
 display_name = "Compost Heap"
-description = "Where flies breed. Now and then, while two grown flies live in its pen and the pen has room and water, a new fly crawls out of it."
+description = "Where flies breed. Now and then, while two grown flies live in its pen and the pen has room and water, a new fly crawls out of it. It draws wild flies in, too."
 category = "Care"
 sort_order = 60
 cost = 60

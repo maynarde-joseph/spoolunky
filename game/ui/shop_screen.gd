@@ -1,8 +1,8 @@
 class_name ShopScreen
 extends Control
 
-## The shop, on [E]: everything the farm can build, row by row — pens, care, the
-## kitchen — and the stock to put in it, with what each costs.
+## The shop, on [E]: everything the farm can build, row by row — pens, care,
+## crops, the kitchen — with what each costs.
 ##
 ## A card is a button. Press one and the screen goes and the spider has it in hand,
 ## to put down on the farm (see [FarmBuilder]). Something the farm cannot afford yet
@@ -12,7 +12,7 @@ extends Control
 ## Built in code from the resources, like the spell tree it grew out of: a new
 ## .tres in the structures folder is a new card, with nothing here to edit.
 
-## Something was picked: a [StructureKind] or an [InsectSpecies].
+## Something was picked: a [StructureKind].
 signal chosen(what: Resource)
 
 const CARD := Vector2(300.0, 150.0)
@@ -20,8 +20,8 @@ const CARD_GAP := 12.0
 const ROW_GAP := 12.0
 const ROW_HEADER := 170.0
 
-## The rows, in order: the structures' own categories, then the stock.
-const ROWS := ["Pens", "Care", "Kitchen", "Stock"]
+## The rows, in order: the structures' own categories.
+const ROWS := ["Pens", "Care", "Crops", "Kitchen"]
 
 const AFFORD := Color(1.0, 0.98, 0.82, 1.0)
 const SHORT := Color(0.52, 0.54, 0.60, 1.0)
@@ -149,13 +149,9 @@ func _build() -> void:
 
 func _row(category: String) -> HBoxContainer:
 	var entries: Array[Resource] = []
-	if category == "Stock":
-		for kind in Catalogue.insects():
+	for kind in Catalogue.structures():
+		if kind.category == category:
 			entries.append(kind)
-	else:
-		for kind in Catalogue.structures():
-			if kind.category == category:
-				entries.append(kind)
 	if entries.is_empty():
 		return null
 	var line := HBoxContainer.new()
@@ -242,33 +238,22 @@ func _refresh() -> void:
 
 ## What the card for [param id] is for.
 func _what(id: String) -> Resource:
-	if id.begins_with("stock_"):
-		return Catalogue.insect(id.trim_prefix("stock_"))
 	return Catalogue.structure(id)
 
 
 static func _id(what: Resource) -> String:
-	if what is InsectSpecies:
-		return "stock_" + (what as InsectSpecies).id
 	return (what as StructureKind).id
 
 
 static func _name(what: Resource) -> String:
-	if what is InsectSpecies:
-		var kind := what as InsectSpecies
-		return "%s brood (%d)" % [kind.display_name, kind.brood_size]
 	return (what as StructureKind).display_name
 
 
 static func _about(what: Resource) -> String:
-	if what is InsectSpecies:
-		return (what as InsectSpecies).description
 	return (what as StructureKind).description
 
 
 static func _cost(what: Resource) -> int:
-	if what is InsectSpecies:
-		return (what as InsectSpecies).brood_cost
 	return (what as StructureKind).cost if what != null else 0
 
 

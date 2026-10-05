@@ -31,6 +31,10 @@ static func make(with_spider := true, start := Vector3(0.0, 0.6, 9.0), coins := 
 	farm.cells = CELLS
 	farm.cell_size = CELL
 	farm.coins = coins
+	# A check builds what it needs: no starter pen, and no wild flies turning up in
+	# the middle of it.
+	farm.starter = false
+	farm.wild_flies = false
 	room.add_child(farm)
 	if with_spider:
 		var spider := (load("res://game/player/spider.tscn") as PackedScene).instantiate() as SpiderPlayer

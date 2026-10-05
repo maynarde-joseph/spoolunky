@@ -6,7 +6,7 @@ extends Resource
 ## quickly it comes on, and what it is worth at the end.
 ##
 ## Drop a new .tres built from this script into [code]res://game/data/insects/[/code]
-## and it is in the shop, with nothing else to edit: one [Insect] serves every kind
+## and it is in the game, with nothing else to edit: one [Insect] serves every kind
 ## and takes its body and its numbers from here.
 ##
 ## The farming is the numbers in [code]Keeping[/code]. Kept fed, watered and with
@@ -66,7 +66,3 @@ extends Resource
 ## What one grown, grade A1, plain roast is worth, in coins. Everything else is
 ## a share of this: see [Dish].
 @export var value := 20
-
-## What a brood costs in the shop, and how many hatchlings it is.
-@export var brood_cost := 30
-@export var brood_size := 3

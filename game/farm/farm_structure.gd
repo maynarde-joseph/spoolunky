@@ -48,6 +48,8 @@ static func make(of_kind: StructureKind) -> FarmStructure:
 			made = ShadeTree.new()
 		"compost_heap":
 			made = CompostHeap.new()
+		"melon_patch", "berry_bush", "herb_bed":
+			made = CropPlot.new()
 		"prep_table":
 			made = PrepTable.new()
 		_:
@@ -137,6 +139,11 @@ func has_food_for(_insect: Insect) -> bool:
 
 ## [param insect] eats here. Returns whether there was anything for it.
 func feed(_insect: Insect) -> bool:
+	return false
+
+
+## Whether it draws wild flies in to the farm.
+func draws_flies() -> bool:
 	return false
 
 

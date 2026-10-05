@@ -3,7 +3,7 @@ extends Node3D
 
 ## A gust of wind, blown down a lane in front of the spider: streaks of air side by
 ## side across the lane, blowing on as they fade. Cast at a prep table it dries
-## what is on it — see [SpiderSpells]. Looks only: nothing in the world is moved.
+## what is on it — see [SpiderSpells]. What it does to the flies it reaches is the spell's — see [SpiderSpells].
 
 const GROUP := "gusts"
 

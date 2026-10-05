@@ -6,9 +6,12 @@
 script = ExtResource("1_script")
 id = "fire"
 display_name = "Fire Breath"
-description = "Fire out of your jaws along the cross. It cooks what is on the table, and cooking is what makes a bundle a dish."
+description = "Fire out of your jaws along the cross, for as long as you wound it up; sweep it while it lasts. Flies flee it. A bundle it touches is cooked — the step that makes it a dish."
 form = 4
 order = 4
-cooldown = 1.5
 colour = Color(1, 0.45, 0.12, 1)
 sigil = 3
+cooldown = 3.0
+size = Vector2(3.5, 6)
+duration = Vector2(0.6, 1.4)
+travel = Vector2(0, 0)
