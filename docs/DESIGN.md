@@ -471,35 +471,26 @@ press, and something leaves the spider and does its work where it lands. The
 rest are the same verb with other things behind it, so they share the web's
 keys, its reach, its wind-up and its kind of limit.
 
-**Left mouse casts whatever is in hand, and the disc picks what is in hand** —
-the grapple and the web always, and the five spells in the loadout (§3.3); a tap
-of right mouse swaps back to the spell before, and the wheel turns through them
-too. (The number keys picked them until the disc came, and are parked: bound to
-nothing, one line each to bring back.) A tap casts at once; holding winds it
+**Right mouse casts whatever is in hand, and the disc picks what is in hand** —
+the web always, and the five spells in the loadout (§3.3); a tap of Tab swaps back
+to the spell before, and the wheel turns through them too. (The number keys picked
+them until the disc came, and are parked: bound to nothing, one line each to bring
+back.) A tap casts at once; holding winds it
 up — a bigger web, a longer breath of fire, more drops of water, a longer stun — over
 the same second the web always took.
 
-**The grapple is a spell.** It is the first in the book and always in hand, and
-the one in hand to begin with, so left mouse still takes you where you point the
-moment you press it — but it is chosen like any other spell, and the button that
-casts it casts everything. One button to act, one to choose: moving is one of the
-things you choose to do, not a second set of controls beside the spells. What it
-costs is a choice before every cast, which the tap pays for — grapple, spell,
-grapple is click, tap, click, tap.
+**The grapple is not a spell.** Left mouse grapples, always, and waits for nothing;
+right mouse casts; Tab chooses. For a while the grapple was a spell — the first in
+the book, cast by left mouse like everything else, with the disc on right mouse —
+and then it had a wait as well, a second and a half. Both came out. Moving is what
+you do most, and a choice in front of it, even one a tap pays for, was a choice in
+front of every step; and a wait on it put one there too. Moving stays free, and
+the spells are what you spend.
 
-**The grapple waits too.** A second and a half between one grapple and the next.
-Free, a new one went the moment the last landed, so every gap and every dodge in a
-fight came down to clicking again — and a dungeon built of gaps and fights wants
-them to be problems. The wait starts when the line goes out, so a long grapple has
-mostly spent it by the time you land and a chain of short ones is the thing that
-feels it; a click at nothing in reach costs nothing, and letting go of a line was
-never the grapple's to do. The number is one line in `0_grapple.tres`, to tune in
-play.
-
-**Hold right mouse for the disc.** Holding right mouse brings the spells in hand up
-in a ring round the cross, in the hand's order with the grapple at the top, and
-slows the world to a quarter while it is up — after a moment's hold, so a tap is
-only a tap and never a stutter in the world. Flick the mouse toward one and let go to take it in hand;
+**Hold Tab for the disc.** Holding Tab brings the spells in hand up in a ring round
+the cross, in the loadout's order with the web at the top, and slows the world to a
+quarter while it is up — after a moment's hold, so a tap is only a tap and never a
+stutter in the world. Flick the mouse toward one and let go to take it in hand;
 the mouse moves the disc's pointer instead of the view, so the slow is help with
 choosing and none with aiming. Every interaction is the second spell acting on what
 the first left (below), and what it left lasts for seconds, so the hard part of a
@@ -741,8 +732,8 @@ together, a wet one whose webs survive its own fire, one that lives on the
 Pullback. Skills are resources in `game/data/skills/`, and the tree grows a card
 for a new one with nothing else to edit.
 
-**The loadout is five.** The grapple and silk are always in hand and take no
-slot; five more ride with them on the disc. A spell learned goes into the loadout if there is room; the
+**The loadout is five.** Silk is always in hand and takes no slot; five more ride
+with it on the disc. A spell learned goes into the loadout if there is room; the
 tree screen (**E**) takes a spell out or puts one in. There are six spells beside
 the web, so the limit bites: one of them stays out, and which one is a choice.
 
@@ -2377,12 +2368,13 @@ hold in their head on the first screen.
 | **Space** | Jump. Also the way off a web, which is sticky, and off a line you are hanging from |
 | **Shift** | **Sprint**, out of a pool of a few seconds that fills back up while you walk. It costs more per size class of whatever is on your line, which is what makes hauling something home at a run a decision rather than the obvious move (§2) |
 | *walk into a wall* | Climb it. Keep going for the ceiling. |
-| **Left Mouse** | **Cast what is in hand** — the grapple, to start with (§3.2): **go there, trailing a line** — holding a direction lands you running, letting go stops you there. A surface pulls you over — through any line in the way, since Q is what takes hold of a line; something you already caught comes to you instead. A creature still on its feet is none of those, so the aim reads straight through it to whatever is behind (§2). As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5). Then a second and a half before the next |
+| **Left Mouse** | **Go there, trailing a line** — holding a direction lands you running, letting go stops you there. A surface pulls you over — through any line in the way, since Q is what takes hold of a line; something you already caught comes to you instead. A creature still on its feet is none of those, so the aim reads straight through it to whatever is behind (§2). As far as silk reaches, which grows with you (§7). Three lines at a time — a fourth takes the oldest down (§5). No wait between one and the next |
 | **G** | **Grapple style**: the pull above, or the line — a line from your feet to where you point, with you hanging from it, ready to zip along (*Two grapples*, §7) |
-| **Left Mouse** *(tap, the web in hand)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
-| **Left Mouse** *(hold, the web in hand)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |
-| **Right Mouse** *(hold)* | **The spell disc** — the grapple, the web and the loadout's five in a ring round the cross, the world slowed to a quarter while it is up; flick toward one and let go to take it (§3.2) |
-| **Right Mouse** *(tap)* | Back to the spell in hand before this one |
+| **Right Mouse** | **Cast what is in hand** — the web, to start with (§3.2). With the web in hand: |
+| **Right Mouse** *(tap)* | **Shoot a web.** A surface gets one built against it, something alive gets wrapped where it stands, a miss runs out at the end of its reach. The same reach the grapple has, and a web thrown near the end of it is thinner (§7). With the cross on a creature, the silk is thrown at where it will be (*Leading what the cross is on*, below). Then a short wait before the next (§5) |
+| **Right Mouse** *(hold)* | **Wind up a ball of silk**, held over the spider's back where you can see it. The longer you hold, the bigger the web and the wider the ball's catch — up to the biggest this body can spin, in about a second. The view lifts above the spider and widens while you hold |
+| **Tab** *(hold)* | **The spell disc** — the web and the loadout's five in a ring round the cross, the world slowed to a quarter while it is up; flick toward one and let go to take it (§3.2) |
+| **Tab** *(tap)* | Back to the spell in hand before this one |
 | **Wheel** | The next or last spell in hand |
 | **Q** | **Take hold of the nearest line**, or let go. Hanging from one, **W/S** zip you along it toward or away from where you look, with no gravity in it; run off the end onto whatever it is tied to (*Silk is the road network*, §6) |
 | **E** | The spell tree — your rank, your points, and what they can learn (§3.3) |
@@ -2606,11 +2598,12 @@ doing harm; and ranks earned by catching and eating, opening rows of a spell tre
 whose points buy spells, second tiers, interactions and shorter waits, with five
 spells in the loadout (§3.3). Evolving by chance is parked, its code kept. Douse is a
 spit that leaves puddles, silk's circle is wrapped round its ball, and a sixth
-spell — the Clay Pillar — makes the loadout's limit bite. The grapple is a spell
-like the rest: left mouse casts what is in hand, holding right mouse brings up a
-disc of the spells in hand with the world slowed, and a tap of it swaps back. (A chain off the disc, casting the
-spell after a cast at what that cast left, was tried and taken out: aiming is the
-game.)
+spell — the Clay Pillar — makes the loadout's limit bite. Left mouse grapples and
+right mouse casts what is in hand; holding Tab brings up a disc of the spells in
+hand with the world slowed, and a tap of it swaps back. (A chain off the disc,
+casting the spell after a cast at what that cast left, was tried and taken out:
+aiming is the game. So was the grapple as a spell, cast from the same button as
+everything else and then given a wait: moving stays free.)
 Left: more interactions between spells and silk, a second tier for the pillar,
 the tree's numbers played and tuned, and the disc's slow tuned in play.
 
