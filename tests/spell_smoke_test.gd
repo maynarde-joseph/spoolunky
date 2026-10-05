@@ -28,7 +28,7 @@ func _sections() -> Array[Callable]:
 	return [
 		_test_the_book,
 		_test_silk_is_a_spell,
-		_test_the_grapple_is_a_spell,
+		_test_the_grapple_is_its_own,
 		_test_learning_a_spell,
 		_test_ranks,
 		_test_the_tree,
@@ -67,13 +67,12 @@ func _test_the_book() -> void:
 	if not check(not book.is_empty(), "there is a book of spells (%d)" % book.size()):
 		return
 	var first := book[0]
-	check(first.id == "grapple" and first.form == SpiderSpell.Form.GRAPPLE,
-		"and the grapple is the first spell in it")
+	check(first.id == "silk" and first.form == SpiderSpell.Form.SILK,
+		"and the web is the first spell in it")
 	check(spells.is_open(first) and spells.key_for(first) == 1, "known from the start, first in hand")
 	check(spells.current() == first, "and in hand to begin with")
-	var silk := spells.by_id("silk")
-	check(silk != null and book.size() > 1 and book[1] == silk and spells.is_open(silk)
-		and spells.key_for(silk) == 2, "the web after it, known from the start as well")
+	var silk := first
+	check(spells.by_id("grapple") == null, "the grapple is not one: it has a button of its own")
 	var ids := {}
 	var nameless := PackedStringArray()
 	for spell in book:
@@ -83,8 +82,8 @@ func _test_the_book() -> void:
 	check(nameless.is_empty(), "every spell has a name and says what it does %s" % nameless)
 	check(ids.size() == book.size(), "and no two share an id")
 	check(SpellLibrary.find("silk") != null, "the library finds one by id")
-	# Every spell but the grapple and silk is learned in the tree, and the tree only
-	# teaches what there is.
+	# Every spell but silk is learned in the tree, and the tree only teaches what
+	# there is.
 	var tree := spider.spell_tree
 	var unlearnable := PackedStringArray()
 	for spell in book:
@@ -106,8 +105,8 @@ func _test_the_book() -> void:
 	check(strays.is_empty(),
 		"and every skill is about a spell, and stands on skills, that exist %s" % strays)
 	var open := spells.open_spells()
-	check(open.size() == 2 and open[0] == first and open[1] == silk,
-		"an Apprentice who has learned nothing has the grapple and silk and nothing else")
+	check(open.size() == 1 and open[0] == silk,
+		"an Apprentice who has learned nothing has silk and nothing else")
 
 
 ## Left mouse throws a web, through the spells: silk in hand is the web builder's
@@ -138,63 +137,44 @@ func _test_silk_is_a_spell() -> void:
 	check(not spells.cast_now(silk), "a second cast waits for it")
 
 
-## The grapple is a spell too, and the first: always in hand, cast by left mouse the
-## moment it goes down — the spider goes where the cross is, trailing a line. Then it
-## waits a moment for the next, and a click while it waits does nothing but say how
-## long is left; one aimed at nothing in reach costs no wait. Its old button is parked.
-func _test_the_grapple_is_a_spell() -> void:
-	var grapple := spells.by_id("grapple")
-	if not check(grapple != null and spells.current() == grapple,
-			"the grapple, in hand to begin with"):
-		return
+## The grapple is not a spell: it is left mouse, always — go where the cross is,
+## trailing a line — and it waits for nothing, so the next goes the moment one lands.
+## Right mouse casts what is in hand.
+func _test_the_grapple_is_its_own() -> void:
+	var grapples := InputMap.action_get_events(spider.input_place_anchor)
+	check(grapples.size() == 1 and grapples[0] is InputEventMouseButton
+		and (grapples[0] as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT,
+		"left mouse is the grapple's own button")
 	var casts := InputMap.action_get_events(spider.input_shoot)
 	check(casts.size() == 1 and casts[0] is InputEventMouseButton
-		and (casts[0] as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT,
-		"left mouse casts what is in hand")
-	check(InputMap.action_get_events(spider.input_place_anchor).is_empty(),
-		"and the grapple's own button is parked, bound to nothing")
+		and (casts[0] as InputEventMouseButton).button_index == MOUSE_BUTTON_RIGHT,
+		"and right mouse casts what is in hand")
 	var slab := add_slab(Vector3(-60, 0.0, 120), Vector3(30, 0.5, 30))
 	await physics_frame
-	var start := slab.global_position + Vector3(0, 0.25, 6.0)
+	var start := slab.global_position + Vector3(0, 0.25, 12.0)
 	stand_on(start)
 	await run_frames(15)
-	var target := start + Vector3.FORWARD * spells.cast_reach() * 0.6
-	aim_at(target)
-	await physics_frame
 	var heard: Array = []
 	var listen := func(spell: SpiderSpell, _at: Vector3) -> void: heard.append(spell.id)
 	spells.cast.connect(listen)
-	var from := spider.global_position
-	send_action(spider.input_shoot)
-	await process_frame
-	release_action(spider.input_shoot)
-	check(heard == ["grapple"], "left mouse with it in hand grapples (%s)" % str(heard))
-	check(not spells.charging and not builder.aiming, "on the press, winding nothing up")
-	var wait := spells.cooldown_left(grapple)
-	check(grapple.cooldown > 0.0 and spells.cooling(grapple) and wait > grapple.cooldown - 0.2
-		and wait <= grapple.cooldown, "and waits %.1fs for the next (%.2f left)"
-		% [grapple.cooldown, wait])
-	var said: Array = []
-	var hear := func(text: String) -> void: said.append(text)
-	spells.notice.connect(hear)
-	send_action(spider.input_shoot)
-	await process_frame
-	release_action(spider.input_shoot)
-	spells.notice.disconnect(hear)
+	var step := minf(spells.cast_reach() * 0.45, 9.0)
+	for leg in 2:
+		var from := spider.global_position
+		var target := start + Vector3.FORWARD * step * (leg + 1)
+		aim_at(target)
+		await physics_frame
+		send_action(spider.input_place_anchor)
+		await process_frame
+		release_action(spider.input_place_anchor)
+		var went: bool = await wait_until(func() -> bool:
+			return spider.global_position.distance_to(target) < from.distance_to(target) * 0.5, 240)
+		check(went, "left mouse takes the spider there%s (%.1f m to go of %.1f)"
+			% [", and again the moment it lands" if leg == 1 else "",
+				spider.global_position.distance_to(target), from.distance_to(target)])
+		await wait_until(func() -> bool: return not builder._awaiting_grapple, 240)
 	spells.cast.disconnect(listen)
-	check(heard == ["grapple"] and said.size() == 1 and str(said[0]).begins_with("Grapple"),
-		"a click while it waits grapples nothing, and says how long is left (%s)" % str(said))
-	var went: bool = await wait_until(func() -> bool:
-		return spider.global_position.distance_to(target) < from.distance_to(target) * 0.5, 240)
-	check(went, "and the spider goes there (%.1f m to go of %.1f)"
-		% [spider.global_position.distance_to(target), from.distance_to(target)])
-	var ready: bool = await wait_until(func() -> bool: return not spells.cooling(grapple), 240)
-	check(ready and spells.cooldown_progress(grapple) == 1.0, "and then the wait runs out")
-	await run_frames(30)
-	aim_at(spider.global_position + Vector3.UP * 400.0)
-	await physics_frame
-	check(not spells.cast_now(grapple) and not spells.cooling(grapple),
-		"a grapple at nothing in reach goes nowhere, and costs no wait")
+	check(heard.is_empty() and not spells.charging and not builder.aiming,
+		"casting nothing and winding nothing up on the way (%s)" % str(heard))
 
 
 ## A spell is learned in the tree, with the points an Apprentice starts with, in a
@@ -212,23 +192,19 @@ func _test_learning_a_spell() -> void:
 	check(not spells.is_open(douse), "not known to begin with")
 	check(spells.opens_with(douse).contains(tree.rank_name(skill.row)),
 		"and it says where it is learned (%s)" % spells.opens_with(douse))
-	check(spells.cycle(1) and spells.current().id == "silk" and spells.cycle(1)
-		and spells.current().id == "grapple", "so the wheel turns between the grapple and silk")
+	check(not spells.cycle(1), "so the wheel has nothing else to take in hand")
 	check(tree.points() == SpellTree.POINTS_PER_RANK,
 		"an Apprentice has %d points to spend (%d)" % [SpellTree.POINTS_PER_RANK, tree.points()])
 	check(tree.learn(skill), "learned")
 	check(spells.is_open(douse) and heard.has("douse"), "and it is known, and says so")
-	check(spells.key_for(douse) == 3,
-		"in the first slot after the grapple's and silk's (%d)" % spells.key_for(douse))
+	check(spells.key_for(douse) == 2, "in the first slot after silk's (%d)" % spells.key_for(douse))
 	check(tree.points() == SpellTree.POINTS_PER_RANK - skill.cost, "for its point")
-	check(spells.select("silk") and spells.cycle(1) and spells.current() == douse,
-		"the wheel takes it in hand")
-	check(spells.cycle(1) and spells.current().id == "grapple",
-		"and comes round to the grapple again")
-	check(spells.take(3) and spells.current() == douse, "and so does its slot")
+	check(spells.cycle(1) and spells.current() == douse, "the wheel takes it in hand")
+	check(spells.cycle(1) and spells.current().id == "silk", "and comes round to silk again")
+	check(spells.take(2) and spells.current() == douse, "and so does its slot")
 	tree.forget_all()
-	check(not spells.is_open(douse) and spells.current().id == "grapple",
-		"forgotten, it is shut, and the hand comes off it, back onto the grapple")
+	check(not spells.is_open(douse) and spells.current().id == "silk",
+		"forgotten, it is shut, and the hand comes off it, back onto silk")
 	spells.opened.disconnect(listen)
 
 
@@ -413,18 +389,18 @@ func _test_the_tree() -> void:
 	tree.earn(100000.0)
 	for spell_id in ["douse", "gust", "pullback", "lightning", "fire"]:
 		tree.learn(tree.by_id(spell_id))
-	check(tree.loadout.size() == SpellTree.LOADOUT_SIZE and spells.hand().size() == 7,
-		"five spells fill the loadout, after the grapple and silk (%s)" % str(tree.loadout))
+	check(tree.loadout.size() == SpellTree.LOADOUT_SIZE and spells.hand().size() == 6,
+		"five spells fill the loadout, after silk (%s)" % str(tree.loadout))
 	var sixth := spells.by_id("earth")
 	check(tree.learn(tree.by_id("earth")) and spells.is_open(sixth) and spells.key_for(sixth) == 0,
 		"a sixth is known, but not in the loadout: it is full")
 	check(not tree.slot("earth"), "and there is no room for it")
 	check(tree.unslot("gust") and tree.slot("earth"), "until one comes off")
-	check(spells.key_for(sixth) == 7 and spells.key_for(spells.by_id("pullback")) == 4,
+	check(spells.key_for(sixth) == 6 and spells.key_for(spells.by_id("pullback")) == 3,
 		"then it goes in the last slot, and the rest move up (%d, %d)"
 		% [spells.key_for(sixth), spells.key_for(spells.by_id("pullback"))])
-	check(spells.select("douse") and tree.unslot("douse") and spells.current().id == "grapple",
-		"a spell taken out of the loadout while in hand leaves the grapple in hand")
+	check(spells.select("douse") and tree.unslot("douse") and spells.current().id == "silk",
+		"a spell taken out of the loadout while in hand leaves silk in hand")
 	spells.open_all = true
 	check(spells.hand().size() == spells.book.size(),
 		"with everything open, every spell is in hand, past the five (%d)" % spells.hand().size())
@@ -492,23 +468,19 @@ func _test_the_strip() -> void:
 	var strip := hud.get_node_or_null(NodePath("SpellStrip")) as Control
 	if not check(strip != null, "which has a strip of spells"):
 		return
-	check(hud._spell_chips.size() == SpellTree.LOADOUT_SIZE + 2,
-		"a chip each for the grapple and silk, and one for each of the loadout's five (%d)"
-		% hud._spell_chips.size())
+	check(hud._spell_chips.size() == SpellTree.LOADOUT_SIZE + 1,
+		"a chip for silk and one for each of the loadout's five (%d)" % hud._spell_chips.size())
 	var chip := hud._spell_chips.get(0) as Control
-	var first := chip.get_node_or_null(NodePath("Row/Lines/State")) as Label if chip != null \
+	var state := chip.get_node_or_null(NodePath("Row/Lines/State")) as Label if chip != null \
 		else null
-	if check(first != null, "the grapple has a chip"):
-		check(first.text == "in hand · ready", "which says it is in hand and ready (%s)"
-			% first.text)
-	check(hud.pattern_label.text.begins_with("Grapple"),
+	if check(state != null, "silk has a chip"):
+		check(state.text == "in hand · ready", "which says it is in hand and ready (%s)"
+			% state.text)
+	check(hud.pattern_label.text.begins_with("Silk"),
 		"the readout over the bar says what is in hand (%s)" % hud.pattern_label.text)
-	check(hud.hint_label.text.contains("Left mouse"),
-		"and what left mouse does with it (%s)" % hud.hint_label.text)
-	var silk_chip := hud._spell_chips.get(1) as Control
-	var state := silk_chip.get_node_or_null(NodePath("Row/Lines/State")) as Label \
-		if silk_chip != null else null
-	var empty := hud._spell_chips.get(2) as Control
+	check(hud.hint_label.text.contains("Right mouse"),
+		"and what right mouse does with it (%s)" % hud.hint_label.text)
+	var empty := hud._spell_chips.get(1) as Control
 	var line := empty.get_node_or_null(NodePath("Row/Lines/State")) as Label if empty != null \
 		else null
 	check(line != null and line.text.begins_with("empty"),
@@ -516,7 +488,7 @@ func _test_the_strip() -> void:
 	spider.spell_tree.grant("gust")
 	await process_frame
 	await process_frame
-	var filled := (hud._spell_chips.get(2) as Control).get_node_or_null(
+	var filled := (hud._spell_chips.get(1) as Control).get_node_or_null(
 		NodePath("Row/Lines/Name")) as Label
 	check(filled != null and filled.text == "Gust",
 		"a spell learned fills the first of them (%s)" % (filled.text if filled != null else "—"))
@@ -605,13 +577,11 @@ func _test_the_disc() -> void:
 			var key_event := event as InputEventKey
 			if key_event != null and key_event.physical_keycode == KEY_TAB:
 				on_tab.append(action)
-	check(on_right == [&"spell_disc"],
-		"right mouse holds it up, and is nothing else (%s)" % str(on_right))
-	check(on_tab.is_empty(), "and Tab is free again (%s)" % str(on_tab))
+	check(on_tab == [&"spell_disc"], "Tab holds it up, and is nothing else (%s)" % str(on_tab))
+	check(on_right == [&"web_shoot"], "and right mouse casts (%s)" % str(on_right))
 	spider.require_captured_mouse = false
-	check(disc.open() and disc.slices().size() == 2,
-		"with nothing learned it still offers the grapple and silk")
-	disc.settle()
+	check(not disc.open() and not disc.is_open,
+		"with only silk known there is nothing to choose between, and it stays down")
 
 	spells.open_all = true
 	var keys := spells.hand()
@@ -620,7 +590,7 @@ func _test_the_disc() -> void:
 	send_action(spider.input_spell_disc)
 	await process_frame
 	check(disc.is_open and not disc.showing and Engine.time_scale == 1.0,
-		"right mouse brings it up, but not on screen nor the world slowed until it is held")
+		"Tab brings it up, but not on screen nor the world slowed until it is held")
 	var shown: bool = await wait_until(func() -> bool: return disc.showing, 600)
 	check(shown, "held a moment, it shows")
 	var hud := level.get_node_or_null("HUD") as SpiderHUD
@@ -646,7 +616,7 @@ func _test_the_disc() -> void:
 		round_the_ring = round_the_ring \
 			and SpiderDisc.slice_at(SpiderDisc.slice_direction(i, keys.size()), keys.size()) == i
 	check(round_the_ring and SpiderDisc.slice_at(Vector2.UP, keys.size()) == 0,
-		"the grapple at the top and the rest round clockwise, each where it points")
+		"silk at the top and the rest round clockwise, each where it points")
 	send_action(spider.input_shoot)
 	await process_frame
 	check(not spells.charging and not builder.aiming, "nothing is cast from behind it")
@@ -689,7 +659,7 @@ func _test_the_disc() -> void:
 	disc.steer(SpiderDisc.slice_direction(0, keys.size()) * 100.0)
 	release_action(spider.input_spell_disc)
 	await process_frame
-	check(spells.current().id == "grapple", "a quick flick toward a spell takes it")
+	check(spells.current().id == "silk", "a quick flick toward a spell takes it")
 
 	# The key-up lost: the key reads up without an event to say so.
 	send_action(spider.input_spell_disc)
@@ -2566,7 +2536,7 @@ func _test_fire_spiral() -> void:
 ## key, and every interaction, to an Apprentice — but no tier and no point — and
 ## shut again when it takes the book back.
 func _test_the_whole_book_open() -> void:
-	check(spells.open_spells().size() == 2, "an Apprentice has the grapple and silk and nothing else")
+	check(spells.open_spells().size() == 1, "an Apprentice has silk and nothing else")
 	spells.open_all = true
 	check(spells.open_spells().size() == spells.book.size(),
 		"with the whole book open, it has all %d" % spells.book.size())
@@ -2579,8 +2549,8 @@ func _test_the_whole_book_open() -> void:
 	check(spells.select("silk") and spells.cycle(1) and spells.current().id == "douse",
 		"and the wheel takes the next in hand")
 	spells.open_all = false
-	check(spells.open_spells().size() == 2 and spells.current().id == "grapple",
-		"shut again, it is back to the grapple")
+	check(spells.open_spells().size() == 1 and spells.current().id == "silk",
+		"shut again, it is back to silk")
 
 
 ## The lines [param web] was walked round on: both ends on its own anchors.

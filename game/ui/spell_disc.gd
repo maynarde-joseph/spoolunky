@@ -1,13 +1,13 @@
 class_name SpellDisc
 extends Control
 
-## The spell disc on screen: the spells in hand in a ring round the cross while right
-## mouse is held, the one the pointer is on lit in its own colour, and its name in the
+## The spell disc on screen: the spells in hand in a ring round the cross while Tab
+## is held, the one the pointer is on lit in its own colour, and its name in the
 ## middle. Everything it shows is read off the spider's [SpiderDisc] every frame, so
 ## it can only show what letting go will do.
 ##
-## The ring goes round in the hand's order, the grapple at the top, so a spell is
-## always in the same place: the disc is learned as a set of flicks, not read.
+## The ring goes round in the hand's order, silk at the top, so a spell is always in
+## the same place: the disc is learned as a set of flicks, not read.
 
 ## The ring's inside and outside, in the HUD's 1920x1080 units, and the gap left
 ## between two slices along the inside.

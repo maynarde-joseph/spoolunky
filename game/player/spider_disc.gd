@@ -1,11 +1,10 @@
 class_name SpiderDisc
 extends Node
 
-## The spell disc: hold right mouse and the spells in hand come up in a ring round
-## the cross, the world slows to a crawl, and a flick of the mouse toward one and
-## letting go takes it in hand. A tap — let go before it has come up — swaps back to
-## the spell in hand before this one, so going between the grapple and a spell is
-## one click.
+## The spell disc: hold Tab and the spells in hand come up in a ring round the
+## cross, the world slows to a crawl, and a flick of the mouse toward one and letting
+## go takes it in hand. A tap — let go before it has come up — swaps back to the spell
+## in hand before this one, so going between two spells is one press.
 ##
 ## Slowed rather than stopped, so the moment goes on: what you are choosing for is
 ## still moving, only slowly, and you can let go when it gets where you want it. The

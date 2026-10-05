@@ -349,18 +349,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		web_builder.toggle_throwing()
 	elif event.is_action_pressed(input_tether):
 		tether.toggle()
-	# Right mouse held, the disc: the spells in hand in a ring round the cross, and
-	# the world slowed while you choose. Letting go takes whatever the pointer is
-	# on; a tap swaps back to the spell in hand before this one.
+	# Tab held, the disc: the spells in hand in a ring round the cross, and the world
+	# slowed while you choose. Letting go takes whatever the pointer is on; a tap
+	# swaps back to the spell in hand before this one.
 	elif event.is_action_pressed(input_spell_disc):
 		_disc_from_key = disc.open()
 		_disc_key_seen = false
 	elif event.is_action_released(input_spell_disc):
 		_disc_from_key = false
 		disc.close()
-	# Left mouse casts whatever is in hand, and the first thing in hand is the
-	# grapple. A tap casts straight away; holding winds it up — a bigger ball of
-	# silk, a whirl that goes further, a longer stun — until you let go.
+	# Right mouse casts whatever is in hand, and the first thing in hand is the web.
+	# A tap casts straight away; holding winds it up — a bigger ball of silk, a whirl
+	# that goes further, a longer stun — until you let go.
 	elif event.is_action_pressed(input_shoot):
 		# Nothing is cast from behind the disc: the pointer is where the mouse is.
 		if not disc.is_open:
@@ -387,8 +387,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		device_placer.place()
 	elif _device_tool_active() and event.is_action_pressed(input_cancel_anchor):
 		device_placer.stop()
-	# The grapple on a button of its own, as it was before it was a spell. Parked,
-	# bound to nothing: it is cast like any other spell now (see [method grapple]).
+	# Left mouse is always the grapple, a button of its own: see [method grapple].
 	elif event.is_action_pressed(input_place_anchor):
 		grapple()
 	elif _web_tool_active() and event.is_action_pressed(input_cancel_anchor):

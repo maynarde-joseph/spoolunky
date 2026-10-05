@@ -297,7 +297,7 @@ func _refresh() -> void:
 			state.text = text
 		card.modulate = colour
 
-	var slots := PackedStringArray(["Grapple", "Silk"])
+	var slots := PackedStringArray(["Silk"])
 	if _spells != null:
 		slots.clear()
 		var innate := 0
