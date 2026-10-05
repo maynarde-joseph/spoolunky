@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="StructureKind" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/structure_kind.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "shade_tree"
+display_name = "Shade Tree"
+description = "Somewhere out of the sun. Every fly in the pen keeps a little better, and its grade climbs faster."
+category = "Care"
+sort_order = 50
+cost = 35
+placement = 2
+footprint = Vector2i(1, 1)

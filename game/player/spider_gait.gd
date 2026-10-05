@@ -16,15 +16,13 @@ extends SkeletonModifier3D
 ## sliding: nothing on the ground ever moves.
 ##
 ## Footholds are found by looking, not assumed. A spider has no floor, so a foot
-## is put on whatever is under where it would rest — a wall, a ceiling, a thread —
-## and in an inside corner the front feet land on the wall ahead before the body
+## is put on whatever is under where it would rest — a wall, a ceiling, a fence
+## rail — and in an inside corner the front feet land on the wall ahead before the body
 ## has turned to it, which is most of what makes climbing read as climbing.
 
 enum Stance {
 	GROUND,     ## stuck to something, walking or standing
 	AIR,        ## falling or jumping
-	HANGING,    ## on a dragline
-	RIDING,     ## clipped onto a line and sliding
 	GRAPPLING,  ## hauling itself somewhere on silk
 }
 
@@ -53,10 +51,6 @@ var stance: Stance = Stance.GROUND
 ## How the body is moving through the world, in metres per second.
 var velocity := Vector3.ZERO
 
-## The line being hung from or ridden: its two ends, in the world.
-var line_a := Vector3.ZERO
-var line_b := Vector3.ZERO
-
 ## How far into winding a throw up, 0 to 1, and where the ball is being held.
 var aim := 0.0
 var ball := Vector3.ZERO
@@ -66,11 +60,8 @@ var feeding := false
 ## Which way a line on the spider pulls, in the world. Zero when nothing is towed.
 var towing := Vector3.ZERO
 
-## How far wings spread the legs in a fall, 0 to 1.
-var spread := 0.0
-
 ## What footholds are looked for on, and what to leave out of the looking.
-var mask := GameLayers.WORLD | GameLayers.WEB_WALK
+var mask := GameLayers.WORLD
 var exclude: Array[RID] = []
 
 
@@ -296,10 +287,9 @@ func _aim_foot(leg: Leg, world: Transform3D, thorax: Transform3D, up: Vector3,
 			_foothold(leg, world, hip, up, unit)
 		Stance.AIR:
 			# Legs out and a little up, feeling for anything: a falling spider
-			# spreads itself wide, and wings spread it wider.
+			# spreads itself wide.
 			var flail := sin(_clock * 9.0 + float(leg.pair) * 1.7 + leg.side) * 0.035
-			leg.target = world * (leg.home + Vector3.UP * (0.3 + 0.1 * spread + flail)
-				+ leg.out * (0.06 + 0.16 * spread))
+			leg.target = world * (leg.home + Vector3.UP * (0.3 + flail) + leg.out * 0.06)
 		Stance.GRAPPLING:
 			# Tucked, and the front pair reaching for where it is going.
 			var tuck := SpiderRig.hip_of(leg.pair, leg.side) + leg.out * 0.34 + Vector3.DOWN * 0.1
@@ -307,20 +297,6 @@ func _aim_foot(leg: Leg, world: Transform3D, thorax: Transform3D, up: Vector3,
 				tuck = SpiderRig.hip_of(leg.pair, leg.side) + Vector3.FORWARD * 0.52 \
 					+ leg.out * 0.14 + Vector3.UP * 0.06
 			leg.target = world * tuck
-		Stance.HANGING:
-			# The body hangs with its back to the anchor, so up is up the line: the
-			# front legs reach along it and the back ones hang out wide.
-			var hang := SpiderRig.hip_of(leg.pair, leg.side) + leg.out * 0.28 + Vector3.UP * 0.55
-			if leg.pair >= 2:
-				hang = leg.home + Vector3.UP * 0.22 + leg.out * 0.1
-			leg.target = world * hang
-		Stance.RIDING:
-			if leg.pair < 3:
-				# Three pairs gripping the line overhead, like hands on a pulley.
-				var reach_up := hip + up * unit * 0.5
-				leg.target = Geometry3D.get_closest_point_to_segment(reach_up, line_a, line_b)
-			else:
-				leg.target = world * (leg.home + Vector3.UP * 0.15)
 	# Winding a throw up: the front pair comes off the ground to hold the ball.
 	if aim > 0.01 and leg.pair == 0:
 		var hold := ball + world.basis.x.normalized() * leg.side * unit * 0.09

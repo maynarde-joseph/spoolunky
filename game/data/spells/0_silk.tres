@@ -1,12 +1,14 @@
 [gd_resource type="Resource" script_class="SpiderSpell" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://game/data/spider_spell.gd" id="1_spell"]
+[ext_resource type="Script" path="res://game/data/spider_spell.gd" id="1_script"]
 
 [resource]
-script = ExtResource("1_spell")
+script = ExtResource("1_script")
 id = "silk"
 display_name = "Silk"
-description = "A web, thrown. It sticks where it lands and wraps what it lands on."
+description = "A ball of silk, thrown. Whatever insect it hits is wrapped on the spot — a bundle, ready for a line: left-click it to tether it and drag it off."
 form = 0
 order = 0
+cooldown = 0.6
 colour = Color(0.78, 0.84, 0.96, 1)
+sigil = 6

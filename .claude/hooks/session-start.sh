@@ -2,7 +2,7 @@
 # Puts a Godot binary on PATH so the smoke suites can run in this session.
 #
 # "Remote" below means Claude Code running in a cloud container rather than on
-# someone's machine. Nothing here has anything to do with silk.
+# someone's machine.
 #
 # Without one, the only local check is gdparse, which reads syntax and nothing
 # else: an undeclared identifier, a renamed method, a wrong argument count and a
@@ -93,13 +93,11 @@ most mistakes, the suites are the only thing that catches the rest:
 
     python3 tools/check_tabs.py
     gdparse <file>.gd
-    godot --headless --path . --script res://tests/web_smoke_test.gd    # ~75s
-    godot --headless --path . --script res://tests/climb_smoke_test.gd  # ~40s
-    godot --headless --path . --script res://tests/world_smoke_test.gd  # ~25s
-    godot --headless --path . --script res://tests/creature_smoke_test.gd  # ~85s
-    godot --headless --path . --script res://tests/spell_smoke_test.gd  # ~25s
-    godot --headless --path . --script res://tests/ecosystem_smoke_test.gd  # ~10s
-    godot --headless --path . --script res://tests/combat_smoke_test.gd  # ~2m
+    godot --headless --path . --script res://tests/movement_smoke_test.gd  # ~10s
+    godot --headless --path . --script res://tests/creature_smoke_test.gd  # ~10s
+    godot --headless --path . --script res://tests/farm_smoke_test.gd      # ~40s
+    godot --headless --path . --script res://tests/kitchen_smoke_test.gd   # ~20s
+    godot --headless --path . --script res://tests/world_smoke_test.gd     # ~15s
 
 Each suite prints a line per check and exits non-zero if any fail.
 INFO

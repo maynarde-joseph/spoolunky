@@ -3,24 +3,15 @@ extends Node3D
 
 ## A ball of silk in flight.
 ##
-## The other way to make a web: instead of the web appearing where the
-## crosshair is, a bolt of silk flies there and opens out where it lands. It
-## travels, so it can miss, and it takes a moment, so a moving target has to be
-## led. Put the cross on a creature and the builder does that sum — see
-## [method intercept] — because how long the silk will take is the one thing the
-## screen never tells you. The bolt itself flies dead straight either way.
-##
-## It holds the line it was fired along. It used to be pulled down a little,
-## which meant the honest thing — aim at a wall, hit the wall — was only true
-## up close, and the crosshair quietly stopped meaning anything past that.
-## Leading something that is moving is a skill; compensating for a drop the
-## crosshair does not show you is just a wrong crosshair.
+## Right mouse with silk in hand throws one. It travels, so it can miss, and it
+## takes a moment, so a moving fly has to be led — put the cross on one and the
+## spider does that sum (see [method intercept]), because how long the silk will
+## take is the one thing the screen never tells you. It flies dead straight either
+## way, and whatever insect it touches is wrapped on the spot.
 
-## Landed. The point and the surface normal are where it opened out, the prey
-## is whatever it hit if that was something alive, and the heading is the way
-## the bolt was travelling — which is what decides the web's plane, because a
-## web faces the way the silk came from.
-signal landed(at: Vector3, normal: Vector3, prey: Node3D, heading: Vector3)
+## Landed. The point and the surface normal are where it struck, and the insect
+## is whatever it hit, if it hit one.
+signal landed(at: Vector3, normal: Vector3, insect: Insect, heading: Vector3)
 
 ## Gave up without hitting anything worth opening on.
 signal fizzled()
@@ -29,35 +20,20 @@ signal fizzled()
 ## least 0.3m tall, so a spiderling's silk is not a crawl. See [method pace_for].
 const SPEED := 26.0
 
-## How big the ball of silk is, and so how close it has to pass to catch
-## something alive: it takes a creature when the ball touches the creature's
-## hitbox, which is this plus [method Prey.hit_radius]. It is also the size the
-## bead is drawn, so what you watch fly is what hits.
-##
-## The world is hit with a ray and anything alive with this swept ball, which is
-## the split that makes the shot playable. A wall is a wall and deserves no
-## forgiveness — a web has to land on the surface it is built against. A fly is
-## five centimetres across and wandering, and a hairline will never touch one.
-##
-## It used to be far bigger than the ball — bigger than the web being thrown,
-## and never less than two and a half body lengths — on the reasoning that "did
-## the web cover it" was the honest question. It turned out to answer yes to
-## nearly everything: sixty centimetres either side of the line for a
-## spiderling's tap and a metre and a half wound up, against a fly five
-## centimetres across, so every shot anywhere near a creature was a catch and
-## where you aimed stopped mattering.
+## How big the ball of silk is, and so how close it has to pass to catch an
+## insect: it takes one when the ball touches the insect's hitbox. It is also the
+## size the bead is drawn, so what you watch fly is what hits.
 @export var catch_radius := 0.05
 
 ## How far it will travel before giving up, in metres.
-@export var range_limit := 90.0
+@export var range_limit := 60.0
 
 ## And how long, in seconds. A shot that finds nothing has to stop being a
 ## shot: without this, silk fired at open sky is a node quietly flying away
 ## from the level for ever.
 @export var lifetime := 2.0
 
-## What the bead is drawn in, and how brightly it glows. Silk's own by default;
-## a bolt of fire is thrown by the same code and only looks different.
+## What the bead is drawn in, and how brightly it glows.
 @export var colour := Color(0.10, 0.11, 0.14, 1.0)
 @export var glow := 0.9
 
@@ -137,7 +113,7 @@ func limit_to(distance: float) -> void:
 
 
 ## Which way it is travelling. Read off the bolt rather than remembered from the
-## trigger, so a web opens facing the way the silk actually arrived.
+## trigger.
 func heading() -> Vector3:
 	if _velocity.length_squared() < 0.000001:
 		return Vector3.FORWARD
@@ -167,14 +143,14 @@ func _physics_process(delta: float) -> void:
 	var space := get_world_3d().direct_space_state
 	var query := PhysicsRayQueryParameters3D.create(global_position,
 		global_position + step,
-		GameLayers.WORLD | GameLayers.WEB_WALK, _exclude)
+		GameLayers.WORLD, _exclude)
 	var hit := space.intersect_ray(query)
 	var reach := 1.0
 	if not hit.is_empty():
 		var landing: Vector3 = hit.get("position", global_position)
 		reach = clampf((landing - global_position).length() / distance, 0.0, 1.0)
 
-	# And anything alive, generously — but never through the wall in front of it.
+	# And any insect, generously — but never through the wall in front of it.
 	var creature := _creature_along(step, reach)
 	if creature != null:
 		_land_on(creature)
@@ -189,36 +165,34 @@ func _physics_process(delta: float) -> void:
 		_give_up()
 
 
-## The nearest creature the ball touches during this frame's step — passing
-## within [member catch_radius] of its hitbox — and never past what the world
-## stopped it at.
-func _creature_along(step: Vector3, reach: float) -> Prey:
+## The nearest insect the ball touches during this frame's step — passing within
+## [member catch_radius] of its hitbox — and never past what the world stopped it
+## at. Bundles are passed over: they are wrapped already.
+func _creature_along(step: Vector3, reach: float) -> Insect:
 	var span: float = maxf(step.length_squared(), 0.000001)
-	var best: Prey = null
+	var best: Insect = null
 	var soonest := 2.0
-	for node in get_tree().get_nodes_in_group("prey"):
-		var creature := node as Prey
-		if creature == null or not is_instance_valid(creature) or creature.eaten:
+	for node in get_tree().get_nodes_in_group(Insect.GROUP):
+		var insect := node as Insect
+		if insect == null or not is_instance_valid(insect) or insect.is_bundle():
 			continue
-		var offset := creature.global_position - global_position
-		# Ahead of the bolt, not beside or behind it. Without this the first
-		# frame of every shot sweeps up whatever happens to be standing next to
-		# the spider, including things it was pointedly not aimed at.
+		var offset := insect.global_position - global_position
+		# Ahead of the bolt, not beside or behind it.
 		if offset.dot(step) < 0.0:
 			continue
 		var along := clampf(offset.dot(step) / span, 0.0, reach)
 		if along >= soonest:
 			continue
-		if (offset - step * along).length() > catch_radius + creature.hit_radius():
+		if (offset - step * along).length() > catch_radius + insect.radius() * Insect.HITBOX_SCALE:
 			continue
 		soonest = along
-		best = creature
+		best = insect
 	return best
 
 
-func _land_on(creature: Prey) -> void:
+func _land_on(insect: Insect) -> void:
 	_spent = true
-	landed.emit(creature.global_position, Vector3.UP, creature, heading())
+	landed.emit(insect.global_position, Vector3.UP, insect, heading())
 	queue_free()
 
 
@@ -232,12 +206,7 @@ func _land(hit: Dictionary) -> void:
 	_spent = true
 	var at: Vector3 = hit.get("position", global_position)
 	var normal: Vector3 = hit.get("normal", Vector3.UP)
-	var struck := hit.get("collider") as Node3D
-	var prey := struck as Prey
-	if prey != null:
-		# Open out on the thing rather than on the skin of it.
-		at = prey.global_position
-	landed.emit(at, normal, prey, heading())
+	landed.emit(at, normal, null, heading())
 	queue_free()
 
 

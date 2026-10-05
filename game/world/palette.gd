@@ -5,7 +5,7 @@ extends RefCounted
 ## everything painted with it.
 ##
 ## The look the creatures have — smooth parts in a few flat colours, matte, no
-## detail — put on bark, stone, leaves and water. A colour lives in one place.
+## detail — put on wood, stone, leaves and water. A colour lives in one place.
 ## [constant PAINTS] says what each one is when the world is first built, and
 ## the bake writes each one out to [constant DIR] the first time; from then on
 ## the file is the paint, so changing a colour is changing that one file, and
@@ -20,15 +20,13 @@ const PAINTS := {
 	# Wood: the pale of a cut face, and the dark inside an old log.
 	"wood_light": {"colour": Color(0.79, 0.64, 0.45)},
 	"wood_dark": {"colour": Color(0.42, 0.29, 0.19)},
-	# Plain colours: the middle of a flower, a birch's bark and the marks on it, an
-	# egg, dry grass, and the dark of a way in.
+	# Plain colours: the middle of a flower, sugar, an egg, straw, and the dark of
+	# a pot.
 	"yellow": {"colour": Color(0.92, 0.74, 0.2)},
 	"white": {"colour": Color(0.9, 0.9, 0.86)},
 	"black": {"colour": Color(0.09, 0.09, 0.1)},
 	"straw": {"colour": Color(0.84, 0.72, 0.44)},
-	# Grey, for a tree long dead, and the moss on everything.
 	"stone_dark": {"colour": Color(0.41, 0.42, 0.43)},
-	"moss": {"colour": Color(0.3, 0.38, 0.22)},
 	# The ground, and what grows in it.
 	"grass": {"colour": Color(0.3, 0.46, 0.21)},
 	"soil": {"colour": Color(0.36, 0.26, 0.18)},
@@ -38,39 +36,24 @@ const PAINTS := {
 	"leaf_dark": {"colour": Color(0.19, 0.37, 0.18)},
 	"petal_red": {"colour": Color(0.86, 0.22, 0.24)},
 	"petal_yellow": {"colour": Color(0.96, 0.82, 0.26)},
-	"petal_purple": {"colour": Color(0.58, 0.36, 0.78)},
 	"petal_white": {"colour": Color(0.95, 0.94, 0.9)},
-	# What grows to be eaten: a toadstool's cap and stalk, a berry, and the
-	# fungus that lights a cave.
-	"cap": {"colour": Color(0.66, 0.3, 0.2)},
-	"stem": {"colour": Color(0.88, 0.84, 0.74)},
-	"berry": {"colour": Color(0.62, 0.12, 0.2)},
-	"glowcap": {"colour": Color(0.46, 0.9, 0.78), "glow": 1.2},
-	# The forest floor: a toadstool's red cap, an acorn in its cup, and the leaves
-	# that came down last autumn.
-	"cap_red": {"colour": Color(0.78, 0.16, 0.12)},
-	"acorn": {"colour": Color(0.58, 0.4, 0.2)},
-	"acorn_cup": {"colour": Color(0.4, 0.31, 0.19)},
-	"leaf_fallen": {"colour": Color(0.64, 0.42, 0.18)},
-	"leaf_rust": {"colour": Color(0.56, 0.27, 0.13)},
-	# Wild honeycomb, and the paper of a wasps' nest.
-	"honey": {"colour": Color(0.86, 0.64, 0.2)},
-	"paper": {"colour": Color(0.7, 0.66, 0.58)},
-	# Shelf fungus, growing out of a trunk.
-	"fungus_shelf": {"colour": Color(0.74, 0.55, 0.32)},
-	# Wood the water has had, bleached pale.
-	"driftwood": {"colour": Color(0.66, 0.62, 0.55)},
-	# The old stone of the ruins, warmer than rock, in two tones.
-	"ruin": {"colour": Color(0.6, 0.57, 0.5)},
-	"ruin_dark": {"colour": Color(0.47, 0.44, 0.39)},
 	# Wild rock, a shade darker than stone anyone has cut.
 	"rock": {"colour": Color(0.44, 0.43, 0.41)},
 	"rock_dark": {"colour": Color(0.34, 0.33, 0.31)},
+	# The farm: fruit mash in a trough, clay for a crust, the market's striped
+	# canvas, a gate's paint, the road, and the farm's own grass.
+	"fruit_mash": {"colour": Color(0.62, 0.38, 0.22)},
+	"grain": {"colour": Color(0.86, 0.72, 0.38)},
+	"clay": {"colour": Color(0.62, 0.42, 0.26)},
+	"canvas_red": {"colour": Color(0.78, 0.2, 0.18)},
+	"canvas_cream": {"colour": Color(0.95, 0.9, 0.78)},
+	"gate_red": {"colour": Color(0.6, 0.2, 0.15)},
+	"dirt": {"colour": Color(0.52, 0.4, 0.27)},
+	"meadow": {"colour": Color(0.36, 0.52, 0.24)},
 	# Water, see-through.
 	"pond": {"colour": Color(0.2, 0.42, 0.46, 0.8), "rough": 0.2},
-	# For the shapes built a point at a time — the valley's ground, the inside of a
-	# hollow log — whose colour is carried on the points rather than on the
-	# material.
+	# For shapes built a point at a time, whose colour is carried on the points
+	# rather than on the material.
 	"painted": {"colour": Color(1.0, 1.0, 1.0), "painted": true},
 }
 

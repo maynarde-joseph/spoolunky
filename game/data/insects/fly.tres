@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="InsectSpecies" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/data/insect_species.gd" id="1_script"]
+[ext_resource type="Resource" path="res://game/data/bodies/fly.tres" id="2_body"]
+
+[resource]
+script = ExtResource("1_script")
+id = "fly"
+display_name = "Fly"
+description = "The farm's one crop. Eats anything, drinks a lot, grows in a minute and breeds in a compost heap."
+sort_order = 30
+body = ExtResource("2_body")
+adult_radius = 0.28
+flying = true
+hover = Vector2(0.5, 1.6)
+move_speed = 1.8
+grow_time = 75.0
+grade_time = 200.0
+hunger_time = 40.0
+thirst_time = 55.0
+space = 3.0
+value = 12
+brood_cost = 20
+brood_size = 4

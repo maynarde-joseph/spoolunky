@@ -1,69 +1,45 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="PackedScene" path="res://addons/character-controller/example/main/player.tscn" id="1_base"]
 [ext_resource type="Script" path="res://game/player/spider.gd" id="2_spider"]
-[ext_resource type="Script" path="res://game/player/spider_growth.gd" id="4_growth"]
-[ext_resource type="Script" path="res://game/player/web_builder.gd" id="5_builder"]
-[ext_resource type="Script" path="res://game/player/spider_climb.gd" id="6_climb"]
-[ext_resource type="Script" path="res://game/player/spider_camera.gd" id="7_view"]
-[ext_resource type="Script" path="res://game/player/spider_body.gd" id="8_body"]
-[ext_resource type="Script" path="res://game/player/spider_inventory.gd" id="9_bag"]
-[ext_resource type="Script" path="res://game/player/device_placer.gd" id="10_place"]
-[ext_resource type="Script" path="res://game/player/silk_tether.gd" id="11_tether"]
-[ext_resource type="Script" path="res://game/player/spider_traits.gd" id="12_traits"]
-[ext_resource type="Script" path="res://game/player/spider_feeding.gd" id="13_feeding"]
-[ext_resource type="Script" path="res://game/player/spider_vitals.gd" id="14_vitals"]
-[ext_resource type="Script" path="res://game/player/live_line.gd" id="15_live"]
-[ext_resource type="Script" path="res://game/player/spider_spells.gd" id="16_spells"]
-[ext_resource type="Script" path="res://game/player/spell_tree.gd" id="17_tree"]
-[ext_resource type="Script" path="res://game/player/spider_disc.gd" id="18_disc"]
+[ext_resource type="Script" path="res://game/player/spider_climb.gd" id="3_climb"]
+[ext_resource type="Script" path="res://game/player/spider_grapple.gd" id="4_grapple"]
+[ext_resource type="Script" path="res://game/player/spider_camera.gd" id="5_view"]
+[ext_resource type="Script" path="res://game/player/spider_body.gd" id="6_body"]
+[ext_resource type="Script" path="res://game/player/spider_inventory.gd" id="7_bag"]
+[ext_resource type="Script" path="res://game/player/silk_tether.gd" id="8_tether"]
+[ext_resource type="Script" path="res://game/player/spider_spells.gd" id="9_spells"]
+[ext_resource type="Script" path="res://game/player/spider_disc.gd" id="10_disc"]
+[ext_resource type="Script" path="res://game/player/farm_builder.gd" id="11_builder"]
 
 [node name="Spider" instance=ExtResource("1_base")]
 collision_layer = 2
 collision_mask = 1
 script = ExtResource("2_spider")
 
-[node name="Growth" type="Node" parent="."]
-script = ExtResource("4_growth")
-
-[node name="WebBuilder" type="Node3D" parent="."]
-script = ExtResource("5_builder")
-
 [node name="Climb" type="Node3D" parent="."]
-script = ExtResource("6_climb")
+script = ExtResource("3_climb")
+
+[node name="Grapple" type="Node3D" parent="."]
+script = ExtResource("4_grapple")
 
 [node name="View" type="Node3D" parent="."]
-script = ExtResource("7_view")
+script = ExtResource("5_view")
 
 [node name="Body" type="Node3D" parent="."]
-script = ExtResource("8_body")
+script = ExtResource("6_body")
 
 [node name="Bag" type="Node" parent="."]
-script = ExtResource("9_bag")
-
-[node name="DevicePlacer" type="Node3D" parent="."]
-script = ExtResource("10_place")
+script = ExtResource("7_bag")
 
 [node name="Tether" type="Node3D" parent="."]
-script = ExtResource("11_tether")
-
-[node name="Traits" type="Node" parent="."]
-script = ExtResource("12_traits")
-
-[node name="Feeding" type="Node" parent="."]
-script = ExtResource("13_feeding")
-
-[node name="Vitals" type="Node" parent="."]
-script = ExtResource("14_vitals")
-
-[node name="LiveLine" type="Node3D" parent="."]
-script = ExtResource("15_live")
+script = ExtResource("8_tether")
 
 [node name="Spells" type="Node3D" parent="."]
-script = ExtResource("16_spells")
-
-[node name="SpellTree" type="Node" parent="."]
-script = ExtResource("17_tree")
+script = ExtResource("9_spells")
 
 [node name="Disc" type="Node" parent="."]
-script = ExtResource("18_disc")
+script = ExtResource("10_disc")
+
+[node name="Builder" type="Node3D" parent="."]
+script = ExtResource("11_builder")

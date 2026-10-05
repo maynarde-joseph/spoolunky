@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="StructureKind" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/structure_kind.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "fence"
+display_name = "Fence"
+description = "A length of wooden fence. Click one corner of the grid and then the opposite one: the outline between them goes up. Closed in on every side, it is a pen."
+category = "Pens"
+sort_order = 0
+cost = 5
+placement = 0
+footprint = Vector2i(1, 1)

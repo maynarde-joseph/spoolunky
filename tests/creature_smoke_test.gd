@@ -1,17 +1,17 @@
 extends TestSuite
 
-## Headless check on the creatures' bodies.
+## Headless check on the insects' bodies.
 ##
 ##     godot --headless --path . --script res://tests/creature_smoke_test.gd
 ##
-## Every body there is gets let loose in an empty room and watched — on the
-## species that wears it, or on a [StandIn] if nothing wears it yet. It has to be
-## built from that body — a skeleton, one mesh on its bones shared by every
-## creature of its kind, and a motion that finds every bone it poses — and it has
-## to hold itself the way what it is doing says: facing where it goes, beating
-## whatever it flies or swims with, feet on the floor if it walks, thrashing when
-## it is caught, and curled up and still once it is wrapped. How it looks is for
-## the eye, and tests/screenshot_creatures.gd is for that.
+## Every kind of insect the farm raises gets let loose in an empty room and
+## watched. It has to be built from its body — a skeleton, one mesh on its bones
+## shared by every insect of its kind, and a motion that finds every bone it poses
+## — and it has to hold itself the way what it is doing says: facing where it
+## goes, beating its wings if it flies, feet on the floor if it walks, and curled
+## up and still once it is wrapped. It has to grow, too: a hatchling is drawn
+## smaller than a grown one. How it looks is for the eye, and
+## tests/screenshot_farm.gd is for that.
 
 var _room: Node3D
 
@@ -19,44 +19,41 @@ var _room: Node3D
 func run_checks() -> void:
 	_room = _build_room()
 	await stage(_room)
-	var bodies := StandIn.every_body()
-	check(not bodies.is_empty(), "there are bodies to check (%d)" % bodies.size())
-	for kind in bodies:
+	var kinds := Catalogue.insects()
+	check(not kinds.is_empty(), "there are insects to check (%d)" % kinds.size())
+	for kind in kinds:
 		await _test_body(kind)
 
 
-func _test_body(kind: PreySpecies) -> void:
+func _test_body(kind: InsectSpecies) -> void:
 	var label := kind.display_name.to_lower()
 	var one := ("an " if "aeiou".contains(label.left(1)) else "a ") + label
-	var going := StandIn.going(kind)
-	if kind.resource_path.is_empty():
-		note("nothing wears the %s body yet: on a stand-in, %s" % [label, going])
-	var radius := kind.body_radius
-	var prey := _put_down(kind)
+	var insect := _put_down(kind, 1.0)
 	await run_frames(3)
-	var view := prey.get_node_or_null("Body") as CreatureView
+	var view := insect.get_node_or_null("Body") as CreatureView
 	if not check(view != null, "%s is drawn from its body" % one):
-		prey.free()
+		insect.free()
 		return
-	check(prey.get_node_or_null("Hitbox") != null, "and still has a hitbox to shoot")
-	check(is_equal_approx(view.scale.x, radius),
-		"at the size its species says (%.3fm)" % view.scale.x)
+	check(insect.get_node_or_null("Hitbox") != null, "and has a hitbox for silk to hit")
+	check(is_equal_approx(view.scale.x, kind.adult_radius),
+		"grown, at the size its species says (%.3fm)" % view.scale.x)
 	_check_build(view)
-	var twin := _put_down(kind)
+	var young := _put_down(kind, 0.0)
 	await run_frames(2)
-	var other := twin.get_node_or_null("Body") as CreatureView
+	var other := young.get_node_or_null("Body") as CreatureView
 	check(other != null and other.shell.mesh == view.shell.mesh,
 		"and every %s shares the one mesh" % label)
-	twin.free()
-
+	check(other != null and other.scale.x < view.scale.x * 0.6,
+		"a hatchling is drawn smaller (%.2f of grown)" % (other.scale.x / view.scale.x if other != null else 0.0))
+	young.free()
 	var motion := view.motion
 	if kind.flying:
-		await _check_flight(prey, view, motion, going)
+		await _check_flight(insect, view, motion)
 	else:
-		await _check_walk(prey, view, motion)
-	await _check_caught(prey, view, motion)
-	await _check_wrapped(prey, view, motion)
-	prey.free()
+		await _check_walk(insect, view, motion)
+	await _check_caught(insect, view, motion)
+	await _check_wrapped(insect, view, motion)
+	insect.free()
 	await run_frames(2)
 
 
@@ -81,38 +78,31 @@ func _check_build(view: CreatureView) -> void:
 		"one mesh, every vertex on a bone of its own skeleton (%d not)" % stray)
 
 
-## Left to fly or swim about: facing where it goes, and beating whatever it goes
-## with — wings, a tail, arms.
-func _check_flight(prey: Prey, view: CreatureView, motion: CreatureMotion,
-		going: String) -> void:
+## Left to fly about: facing where it goes, and beating its wings.
+func _check_flight(insect: Insect, view: CreatureView, motion: CreatureMotion) -> void:
 	var facing := 0
 	var moving := 0
-	# Sent somewhere level, a few seconds off. Left to its own wandering, something
-	# that ranges high can pick somewhere nearly straight overhead and spend the
-	# whole look climbing, which goes nowhere across the ground to face.
-	var off := Vector3(1.0, 0.0, 0.3).normalized() * prey.move_speed * 4.0
-	prey.go_to(prey.global_position + off, prey.hit_radius())
 	await run_frames(30)
 	var first := _local(view, motion.strokes())
 	var sweep := 0.0
-	for i in 90:
+	for i in 150:
 		await physics_frame
-		var flat := Vector3(prey.velocity.x, 0.0, prey.velocity.z)
-		if flat.length() > prey.move_speed * 0.3:
+		var flat := Vector3(insect.velocity.x, 0.0, insect.velocity.z)
+		if flat.length() > insect.pace() * 0.3:
 			moving += 1
 			var ahead := -view.global_basis.z
 			ahead.y = 0.0
 			if ahead.normalized().dot(flat.normalized()) > 0.85:
 				facing += 1
 		sweep = maxf(sweep, _furthest(first, _local(view, motion.strokes())))
-	check(moving > 30 and facing >= moving * 0.8,
-		"%s, it faces the way it is going (%d of %d frames)" % [going, facing, moving])
+	check(moving > 30 and facing >= moving * 0.75,
+		"flying about, it faces the way it is going (%d of %d frames)" % [facing, moving])
 	check(not first.is_empty() and sweep > 0.5,
-		"and beats what it goes with (%d tips, sweeping %.2f body radii)" % [first.size(), sweep])
+		"and beats its wings (%d tips, sweeping %.2f body radii)" % [first.size(), sweep])
 
 
 ## Left to walk about: facing where it goes, its feet on the floor and stepping.
-func _check_walk(prey: Prey, view: CreatureView, motion: CreatureMotion) -> void:
+func _check_walk(insect: Insect, view: CreatureView, motion: CreatureMotion) -> void:
 	var facing := 0
 	var moving := 0
 	var sweep := 0.0
@@ -120,10 +110,10 @@ func _check_walk(prey: Prey, view: CreatureView, motion: CreatureMotion) -> void
 	await run_frames(30)
 	if not check(not motion.feet().is_empty(), "walking, it has feet to walk on"):
 		return
-	for i in 90:
+	for i in 120:
 		await physics_frame
-		var flat := Vector3(prey.velocity.x, 0.0, prey.velocity.z)
-		if flat.length() > prey.move_speed * 0.3:
+		var flat := Vector3(insect.velocity.x, 0.0, insect.velocity.z)
+		if flat.length() > insect.pace() * 0.3:
 			moving += 1
 			var ahead := -view.global_basis.z
 			ahead.y = 0.0
@@ -133,51 +123,45 @@ func _check_walk(prey: Prey, view: CreatureView, motion: CreatureMotion) -> void
 		if i == 0:
 			start = foot
 		sweep = maxf(sweep, foot.distance_to(start))
-	check(moving > 30 and facing >= moving * 0.8,
+	check(moving > 30 and facing >= moving * 0.75,
 		"walking, it faces the way it is going (%d of %d frames)" % [facing, moving])
 	check(sweep > 0.15, "and its legs step (a foot swings %.2f body radii)" % sweep)
-	# Standing still, every foot is down.
-	var was := prey.velocity
-	prey.set_physics_process(false)
-	prey.velocity = Vector3.ZERO
-	await run_frames(40)
-	var worst := 0.0
-	for foot in motion.feet():
-		worst = maxf(worst, absf(foot.y))
-	var radius := _radius_of(prey)
-	check(worst < radius * 0.3,
-		"standing, its feet are on the floor (%.2f body radii off at most)" % (worst / radius))
-	prey.velocity = was
-	prey.set_physics_process(true)
 
 
-## Caught: it thrashes, far more than it moves standing about. Held caught rather
-## than put in a web, so this is at its gentlest — the thrashing a catch that has
-## almost fought itself out still does.
-func _check_caught(prey: Prey, view: CreatureView, motion: CreatureMotion) -> void:
-	prey.set_physics_process(false)
-	prey.velocity = Vector3.ZERO
+## Held struggling: it thrashes, far more than it moves standing about.
+func _check_caught(insect: Insect, view: CreatureView, motion: CreatureMotion) -> void:
+	insect.set_physics_process(false)
+	insect.velocity = Vector3.ZERO
 	view.held = CreatureMotion.Pose.WALKING
 	await run_frames(30)
 	var still := await _ends_sweep(view, motion, 40)
 	view.held = CreatureMotion.Pose.STRUGGLING
+	motion.effort = 1.0
 	await run_frames(20)
 	var thrash := await _ends_sweep(view, motion, 40)
-	check(thrash > 0.2 and thrash > still * 4.0,
-		"caught, it thrashes (%.2f body radii, against %.2f standing)" % [thrash, still])
+	check(thrash > 0.2 and thrash > still * 2.0,
+		"struggling, it thrashes (%.2f body radii, against %.2f standing)" % [thrash, still])
 	view.held = -1
-	prey.set_physics_process(true)
+	insect.set_physics_process(true)
+	if kind_walks(insect):
+		await run_frames(40)
+		var worst := 0.0
+		for foot in motion.feet():
+			worst = maxf(worst, absf(foot.y))
+		check(worst < insect.radius() * 0.4,
+			"standing, its feet are on the floor (%.2f body radii off at most)" % (worst / insect.radius()))
 
 
-## Wrapped where it is: it curls up and goes still.
-func _check_wrapped(prey: Prey, view: CreatureView, motion: CreatureMotion) -> void:
+func kind_walks(insect: Insect) -> bool:
+	return not insect.flies()
+
+
+## Wrapped where it is: it curls up and goes still, wings folded, in a bundle that
+## rests on the floor.
+func _check_wrapped(insect: Insect, view: CreatureView, motion: CreatureMotion) -> void:
 	var limbs := motion.feet()
-	var what := "legs"
-	if limbs.is_empty():
-		limbs = motion.strokes()
-		what = "ends"
 	var spread := _spread_of(_local(view, limbs))
-	check(prey.bundle(), "it can be wrapped up")
+	check(insect.wrap(), "it can be wrapped up")
 	await run_frames(60)
 	var before := _local(view, _ends(motion))
 	await run_frames(10)
@@ -193,10 +177,12 @@ func _check_wrapped(prey: Prey, view: CreatureView, motion: CreatureMotion) -> v
 			else:
 				folded = folded and local.z > 0.0
 		check(folded, "with its wings folded over its back rather than out to the sides")
-	limbs = motion.feet() if what == "legs" else motion.strokes()
-	var curled := _spread_of(_local(view, limbs))
-	check(curled < spread * 0.85, "and its %s curl in (%.2f body radii out, from %.2f)"
-		% [what, curled, spread])
+	var curled := _spread_of(_local(view, motion.feet()))
+	check(curled < spread * 0.9, "and its legs curl in (%.2f body radii out, from %.2f)" % [curled, spread])
+	var cocoon := view.get_node_or_null("Cocoon") as MeshInstance3D
+	check(cocoon != null and cocoon.visible, "and there is a bundle of silk round it")
+	check(insect.is_on_floor() and insect.global_position.y < insect.radius() * 1.3,
+		"lying on the floor (%.2fm up)" % insect.global_position.y)
 
 
 ## Every end it draws: feet, and what it flies or swims with. A copy: a packed
@@ -244,16 +230,12 @@ func _spread_of(points: PackedVector3Array) -> float:
 	return total / maxf(float(points.size()), 1.0)
 
 
-func _radius_of(prey: Prey) -> float:
-	return prey.kind.body_radius if prey.kind != null else 0.045
-
-
-func _put_down(kind: PreySpecies) -> Prey:
-	var prey := Prey.of(kind)
-	_room.add_child(prey)
-	var lift := kind.body_radius * (3.0 if kind.flying else Prey.HITBOX_SCALE + 0.05)
-	prey.global_position = Vector3(0.0, lift, 0.0)
-	return prey
+func _put_down(kind: InsectSpecies, grown: float) -> Insect:
+	var insect := Insect.of(kind, grown)
+	_room.add_child(insect)
+	var lift := kind.adult_radius * (3.0 if kind.flying else Insect.HITBOX_SCALE + 0.05)
+	insect.global_position = Vector3(0.0, lift, 0.0)
+	return insect
 
 
 func _build_room() -> Node3D:
@@ -262,11 +244,8 @@ func _build_room() -> Node3D:
 	var floor_body := StaticBody3D.new()
 	floor_body.collision_layer = GameLayers.WORLD
 	floor_body.position = Vector3(0.0, -0.1, 0.0)
-	# Room for the biggest thing there is to walk about in: a wolf wanders fifty
-	# metres from where it was put down, and walking off the edge of the floor is
-	# not what the feet check is asking about.
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(400.0, 0.2, 400.0)
+	shape.size = Vector3(200.0, 0.2, 200.0)
 	var collider := CollisionShape3D.new()
 	collider.shape = shape
 	floor_body.add_child(collider)

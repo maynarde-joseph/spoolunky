@@ -1,28 +1,26 @@
 class_name Crosshair
 extends Control
 
-## The cross in the middle of the screen, and what it can tell you about the silk.
+## The cross in the middle of the screen, and what it can tell you.
 ##
-## Everything it draws is read off the answers the grapple and the shot act on, so
+## Everything it draws is read off the answers the grapple and the silk act on, so
 ## it cannot promise what they will not do:
 ##
 ## * A dot in the middle of the view, and a ring round it the size of the pick: a
-##   creature whose outline reaches inside the ring is what a shot will be thrown at.
-## * Bright when silk has something in reach to land on, faint when it has not, and
-##   warm when a creature is picked.
+##   fly whose outline reaches inside the ring is what a ball of silk is thrown at.
+## * Bright when the grapple has something in reach, faint when it has not, and
+##   warm when a fly is picked.
 ## * A small ring where the grapple will really land, whenever that is not the
-##   middle. The camera sits above the spider and sees over things the spider
-##   cannot, so silk can stop short on a ledge the cross is looking past.
-## * Brackets round a picked creature, and a dot where the shot will meet it —
-##   ahead of anything moving, because that is where it will be.
-## * An arc round the ring filling while the spell in hand waits to be cast again,
-##   and a brighter one while a throw is wound up.
+##   middle. The camera sits above the spider and sees over things it cannot.
+## * Brackets round a picked fly, and a dot where the silk will meet it — ahead of
+##   it, because that is where it will be.
+## * An arc round the ring filling while the spell in hand waits to be cast again.
 
 ## What the cross is over.
 enum Mark {
 	NOTHING,   ## nothing in reach: a grapple has nowhere to go
 	SURFACE,   ## somewhere silk can land
-	CREATURE,  ## a creature a shot would be thrown at
+	CREATURE,  ## a fly a ball of silk would be thrown at
 }
 
 const DOT := 2.5
@@ -39,7 +37,7 @@ var spider: SpiderPlayer
 ## What it was over when it last drew, and the creature it bracketed — so a check
 ## can ask what the player was shown rather than work it out again.
 var mark: Mark = Mark.NOTHING
-var target: Prey = null
+var target: Insect = null
 
 
 func _ready() -> void:
@@ -55,14 +53,20 @@ func _process(_delta: float) -> void:
 	queue_redraw()
 
 
-## Works out what the cross is over, from the builder's own answers. Every frame
-## before drawing, and on its own for anything that wants to know without drawing.
+## Works out what the cross is over, from the grapple's and the silk's own
+## answers. Every frame before drawing, and on its own for anything that wants to
+## know without drawing.
 func read() -> void:
-	var builder := spider.web_builder if spider != null else null
-	target = builder.shot_target() if builder != null else null
+	target = null
+	if spider == null or spider.spells == null:
+		mark = Mark.NOTHING
+		return
+	var holding := spider.spells.current()
+	if holding != null and holding.form == SpiderSpell.Form.SILK and not spider.builder.active:
+		target = spider.spells.shot_target()
 	if target != null:
 		mark = Mark.CREATURE
-	elif builder != null and builder.aim_valid:
+	elif spider.grappler.aim():
 		mark = Mark.SURFACE
 	else:
 		mark = Mark.NOTHING
@@ -70,69 +74,65 @@ func read() -> void:
 
 func _draw() -> void:
 	var middle := size * 0.5
-	var builder := spider.web_builder if spider != null else null
 	var camera := spider.view.camera if spider != null and spider.view != null else null
-	if builder == null or camera == null:
+	if camera == null:
 		_ring(middle, 8.0, NOTHING_TINT)
 		return
 	if target != null and not is_instance_valid(target):
 		read()
 	var tint: Color = [NOTHING_TINT, SURFACE_TINT, CREATURE_TINT][mark]
 	var ring := pick_radius()
-
 	_ring(middle, ring, tint)
 	_dot(middle, DOT, tint)
 	if mark == Mark.SURFACE:
-		_landing(builder, camera, middle, ring)
+		_landing(camera, middle, ring)
 	elif mark == Mark.CREATURE:
-		_bracket(builder, camera)
-
-	var outer := ring + 5.0
+		_bracket(camera)
 	var spells := spider.spells
 	var holding := spells.current() if spells != null else null
-	if builder.aiming:
-		_arc(middle, outer, builder.charge, Color(CREATURE_TINT, 1.0), WIDTH + 1.0)
-	elif holding != null and spells.cooling(holding):
+	if holding != null and spells.cooling(holding):
 		# The wait of what right mouse would cast.
-		_arc(middle, outer, spells.cooldown_progress(holding), Color(tint, tint.a * 0.7), WIDTH)
+		_arc(middle, ring + 5.0, spells.cooldown_progress(holding), Color(tint, tint.a * 0.7), WIDTH)
 
 
-## The ring's radius on screen: [member WebBuilder.shot_pick_angle] as the camera
-## draws it, in the same units as everything else here.
+## The ring's radius on screen: [member SpiderSpells.pick_angle] as the camera draws
+## it.
 func pick_radius() -> float:
 	if spider == null or spider.view == null or spider.view.camera == null:
 		return 8.0
 	var camera := spider.view.camera
-	var angle := maxf(spider.web_builder.shot_pick_angle, 0.0)
+	var angle := maxf(spider.spells.pick_angle, 0.0)
 	var per := size.y * 0.5 / tan(deg_to_rad(camera.fov) * 0.5)
 	return maxf(per * tan(deg_to_rad(angle)), 7.0)
 
 
 ## Where the grapple will really land, when that is not the middle of the view.
-func _landing(builder: WebBuilder, camera: Camera3D, middle: Vector2, ring: float) -> void:
-	if camera.is_position_behind(builder.aim_point):
+func _landing(camera: Camera3D, middle: Vector2, ring: float) -> void:
+	var point := spider.grappler.aim_point
+	if camera.is_position_behind(point):
 		return
-	var lands := camera.unproject_position(builder.aim_point)
+	var lands := camera.unproject_position(point)
 	if lands.distance_to(middle) <= ring:
 		return
 	_line(middle, lands, Color(OFFSET_TINT, 0.35), 1.0)
 	_ring(lands, 5.0, OFFSET_TINT)
 
 
-## Brackets round the picked creature, and a dot where the shot will meet it.
-func _bracket(builder: WebBuilder, camera: Camera3D) -> void:
+## Brackets round the picked fly, and a dot where the silk will meet it.
+func _bracket(camera: Camera3D) -> void:
 	var at := target.global_position
 	if camera.is_position_behind(at):
 		return
 	var centre := camera.unproject_position(at)
-	var edge := camera.unproject_position(at + camera.global_basis.x * target.hit_radius())
+	var edge := camera.unproject_position(at + camera.global_basis.x * target.radius() * Insect.HITBOX_SCALE)
 	var half := maxf(centre.distance_to(edge), 6.0) + 4.0
 	var arm := half * 0.45
 	for corner in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
 		var tip: Vector2 = centre + corner * half
 		_line(tip, tip - Vector2(corner.x * arm, 0.0), CREATURE_TINT, WIDTH)
 		_line(tip, tip - Vector2(0.0, corner.y * arm), CREATURE_TINT, WIDTH)
-	var lead := builder.shot_lead(target)
+	var lead := SilkShot.intercept(spider.view.aim_origin(), SilkShot.pace_for(spider.body_height),
+		at, target.velocity)
 	if camera.is_position_behind(lead):
 		return
 	var ahead := camera.unproject_position(lead)

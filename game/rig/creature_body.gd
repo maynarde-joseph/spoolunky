@@ -4,14 +4,15 @@ extends Resource
 ## What a creature looks like and how it moves: the bones, the mesh skinned to
 ## them, and the motion that poses them.
 ##
-## Each kind of animal is a script that extends this — [InsectBody] is the first —
-## and each species of that kind is a .tres of it, so what makes a wasp look
-## different from a bee is numbers in a file. A [PreySpecies] points at one, and
-## [method make_view] puts it together under the creature.
+## Each kind of animal is a script that extends this — [InsectBody] is the one the
+## farm raises — and each species of that kind is a .tres of it, so what makes a
+## wasp look different from a bee is numbers in a file. An [InsectSpecies] points
+## at one, and [method make_view] puts it together under the creature.
 ##
 ## A body is drawn in its own unit, the creature's body radius. The view is scaled
-## by the species' [member PreySpecies.body_radius], so the body says what shape
-## the creature is and the species says how big it is.
+## by how big the insect is — its species' [member InsectSpecies.adult_radius],
+## and how far it has grown — so the body says what shape the creature is and the
+## insect says how big it is.
 
 ## Built the first time a creature wears this body, and shared by every one after:
 ## the bones are each creature's own, but what hangs off them is the same.

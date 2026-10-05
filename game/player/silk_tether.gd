@@ -1,13 +1,11 @@
 class_name SilkTether
 extends Node3D
 
-## A line from the spider to something it is dragging along.
+## A line from the spider to a bundle it is dragging along.
 ##
-## Catching things and moving things were separate problems until this: a
-## bundle used to be a thing you walked back to, which meant the larder had to
-## come to you or you had to eat where you stood. A tether makes a catch into
-## cargo. Hook it, and it comes with you — over walls, along silk, off the end
-## of a zipline.
+## It is how a catch gets from the pen to the kitchen. Wrap an insect, left-click
+## the bundle, and it comes with you — over fences, up walls, through a gate — until
+## you let go (Q) or it reaches a prep table, which takes it off the line.
 ##
 ## It is a rope, not a rod. Slack does nothing at all: walk towards the thing
 ## you are towing and the line sags and drags on the floor. Only past its
@@ -30,19 +28,19 @@ const WALL_REACH := 4096.0
 
 ## How much line is left paid out once it is reeled in, in body heights. Past
 ## this the cargo is hauled along.
-@export var rope_bodies := 6.0
+@export var rope_bodies := 3.0
 
 ## How fast a long shot is wound back in, in metres per second. Hooking
 ## something across the room does not snap it to your feet; it comes in.
 @export var reel_speed := 7.0
 
 ## Overstretch this many times the rope's length and the silk gives way. High
-## on purpose: the line is meant to drag things through corners, not to be a
-## tripwire that punishes a long grapple.
+## on purpose: the line is meant to drag things round corners and over fences, not
+## to be a tripwire that punishes a long grapple.
 @export var snap_strain := 3.5
 
 ## How hard the cargo is pulled back to the end of its line, per second.
-@export var haul_force := 9.0
+@export var haul_force := 40.0
 
 ## How hard a snagged catch is lifted, on top of being pulled along.
 ##
@@ -73,7 +71,7 @@ const WALL_REACH := 4096.0
 ##
 ## Bounded rather than infinite: past this the catch really is somewhere the line
 ## cannot get it out of, and a leash with no end is worse than a break.
-@export_range(1.0, 6.0, 0.25) var snag_slack := 3.0
+@export_range(1.0, 6.0, 0.25) var snag_slack := 1.75
 
 ## How fast a snagged catch is worked upward, in metres a second.
 ##
@@ -83,8 +81,8 @@ const WALL_REACH := 4096.0
 ## the same numbers threw a catch to three metres over a wall of one.
 @export var snag_climb := 2.2
 
-## How much the cargo slows you down, per size class over the first. Towing a
-## wasp home should be a decision, not a free ride.
+## How much the cargo slows you down, for every unit of its weight over the first
+## — see [method Insect.weight]. A grown wasp is a haul.
 @export_range(0.0, 0.5, 0.01) var haul_drag := 0.13
 
 @export var rope_segments := 12
@@ -93,10 +91,9 @@ const WALL_REACH := 4096.0
 @export_range(0.5, 1.0, 0.01) var rope_damping := 0.96
 @export var rope_color := Color(0.92, 0.94, 1.0, 0.85)
 
-var cargo: Node3D = null
+var cargo: Insect = null
 
 var _spider: SpiderPlayer
-var _growth: SpiderGrowth
 var _view: SpiderCamera
 var _climb: SpiderClimb
 var _rope := PackedVector3Array()
@@ -113,12 +110,9 @@ var _view_node: MeshInstance3D
 
 ## Handed its parts by the spider. Not read off the parent in _ready(), because
 ## a child is ready before its parent is and the spider's own pieces are not
-## assigned yet at that point — which reads as a null silk pool the first time
-## anything asks the line to cost something.
-func setup(spider: SpiderPlayer, growth: SpiderGrowth,
-		view: SpiderCamera, climb: SpiderClimb) -> void:
+## assigned yet at that point.
+func setup(spider: SpiderPlayer, view: SpiderCamera, climb: SpiderClimb) -> void:
 	_spider = spider
-	_growth = growth
 	_view = view
 	_climb = climb
 
@@ -130,11 +124,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if cargo == null:
 		return
-	if _eaten_off_the_line():
-		_let_go("")
-		return
 	if not _still_there():
-		_let_go("The line came back empty")
+		_let_go("")
 		return
 
 	var hand := _hand()
@@ -158,27 +149,14 @@ func _physics_process(delta: float) -> void:
 
 # --- hooking ------------------------------------------------------------
 
-## Hooks whatever is under the crosshair, or cuts the line if already towing.
-func toggle() -> bool:
-	if cargo != null:
-		var was := cargo
-		_let_go("Let the %s go" % _label(was))
-		return true
-	var target := aimed_cargo()
-	if target == null:
-		notice.emit("Nothing to put a line on — wrap it first")
-		return false
-	return hook(target)
-
-
-## Puts a line on something.
-func hook(target: Node3D) -> bool:
+## Puts a line on a bundle.
+func hook(target: Insect) -> bool:
 	if target == null or not is_instance_valid(target) or cargo != null:
 		return false
 	if _spider == null:
 		return false
 	if not can_carry(target):
-		notice.emit("Not something you can drag along")
+		notice.emit("Wrap it first — only a bundle will come on a line")
 		return false
 	# Paid out to wherever it is. A long shot is a long line, and then it reels.
 	_rope_length = maxf(_resting_length(), _hand().distance_to(target.global_position))
@@ -187,7 +165,8 @@ func hook(target: Node3D) -> bool:
 	cargo = target
 	_watch_cargo(true)
 	_reset_rope(_hand(), target.global_position)
-	notice.emit("Hooked the %s" % _label(target))
+	notice.emit("The %s is on your line — drag it to a prep table, or Q to let go" \
+		% _label(target).to_lower())
 	hooked.emit(target)
 	return true
 
@@ -222,39 +201,22 @@ func drag_factor() -> float:
 	return 1.0 / (1.0 + maxf(cargo_weight() - 1.0, 0.0) * haul_drag)
 
 
-## Anything already dealt with — a bundle, a wrapped catch, a catch that has
-## worn itself out — and anything you put down yourself. A thing still fighting
-## is not cargo: wrap it first, which is what the wrapping is for.
-##
-## Webs are not cargo any more. Dragging one home on a rope was fiddly and it made
-## the catch depend on the trip — walk it through a corner and half of it spilled.
-## Calling a web in, catches and all, is the Pullback's now: see
-## [method SpiderSpells.pullable_webs].
+## A bundle — something wrapped — lying anywhere but on a prep table. Something
+## still on its feet is not cargo: wrap it first, which is what the silk is for.
 func can_carry(target: Node3D) -> bool:
-	if target == null or not is_instance_valid(target):
+	var insect := target as Insect
+	if insect == null or not is_instance_valid(insect) or insect.is_queued_for_deletion():
 		return false
-	var prey := target as Prey
-	if prey != null:
-		# Not one still hanging in a web. Taking the web takes everything in it
-		# now, so a catch that is in one has nothing left to gain from a line —
-		# and while it counted as cargo, a click meant for the web picked the
-		# creature out of it instead the moment that creature tired out or got
-		# wrapped. Eating one where it hangs is still F, at fang reach.
-		if prey.eaten or prey.held_by() != null:
-			return false
-		# A carcass is dead weight, the same as a bundle: something to drag home.
-		return prey.wrapped or prey.is_secured() or prey.is_dead()
-	return target is SilkDevice
+	return insect.is_bundle() and insect.table == null
 
 
 ## The thing worth hooking along the line of sight, near or far.
 ##
-## Picked by how close it sits to the line rather than by a cone, and the
-## tolerance is a slice of the screen with a ceiling on it — the same shape as
-## the line pick, and for the same reason. A bundle is a small deliberate
-## target, so a click that merely passed one on its way to a wall is a grapple
-## and must stay one.
-func aimed_cargo() -> Node3D:
+## Picked by how close it sits to the line of sight rather than by a cone, and
+## the tolerance is a slice of the screen with a floor and a ceiling on it. A
+## bundle is a small deliberate target, so a click that merely passed one on its
+## way to a wall is a grapple and must stay one.
+func aimed_cargo() -> Insect:
 	if _view == null or _spider == null:
 		return null
 	var origin := _view.aim_origin()
@@ -262,124 +224,36 @@ func aimed_cargo() -> Node3D:
 	var wall := _wall_distance(origin, forward)
 	var height := _height()
 
-	var best: Node3D = null
+	var best: Insect = null
 	var best_gap := INF
-	for group in ["prey", "silk_devices"]:
-		for node in get_tree().get_nodes_in_group(group):
-			var target := node as Node3D
-			if target == null or not can_carry(target):
-				continue
-			var offset := target.global_position - origin
-			var along := offset.dot(forward)
-			if along <= 0.0 or along > wall:
-				continue
-			if reach > 0.0 and along > reach:
-				continue
-			var gap := (offset - forward * along).length()
-			if gap > _aim_tolerance(along, height) or gap >= best_gap:
-				continue
-			best_gap = gap
-			best = target
+	for node in get_tree().get_nodes_in_group(Insect.GROUP):
+		var target := node as Insect
+		if target == null or not can_carry(target):
+			continue
+		var offset := target.global_position - origin
+		var along := offset.dot(forward)
+		if along <= 0.0 or along > wall:
+			continue
+		if reach > 0.0 and along > reach:
+			continue
+		var gap := (offset - forward * along).length()
+		if gap > _aim_tolerance(along, height) or gap >= best_gap:
+			continue
+		best_gap = gap
+		best = target
 	return best
 
 
 ## How far off the line of sight something can sit at that distance and still be
 ## what you meant: a slice of the screen, with a floor and a ceiling on it.
-##
-## Only cargo is picked this way, and only because a bundle is small enough to be
-## a point. A web is not — see [method _aimed_web], which casts at the thing
-## itself because this rule finds a web roughly one time in fifteen.
 func _aim_tolerance(along: float, height: float) -> float:
 	return clampf(along * 0.05, height * 0.5, height * 2.0)
 
 
-## The net along the line of sight, near or far: what stands between the cross and a
-## catch behind it.
-func aimed_web() -> WebStructure:
-	var found := _aimed_web()
-	return found.get("web") as WebStructure if not found.is_empty() else null
-
-
-## The same, with how far down the line of sight it was hit, so a click can tell
-## which of a web and a bundle was actually in front.
-##
-## Cast against the web's own colliders rather than measured against its origin
-## point. The point version looked reasonable and was almost never right: a web is
-## a surface metres across and the tolerance is a slice of the screen — half a
-## metre at ten — so only a shot at the dead centre landed. Probed across the face
-## of a sheet web it found it **once in fifteen**, and the other fourteen clicks
-## fell through to the grapple, which is exactly what it looked like in play.
-func _aimed_web() -> Dictionary:
-	if _view == null or _spider == null:
-		return {}
-	var origin := _view.aim_origin()
-	var forward := _view.aim_forward()
-	var space := get_world_3d().direct_space_state
-	var exclude: Array[RID] = [_spider.get_rid()]
-	# WORLD as well as WEB, so the nearest hit wins and a web on the far side of a
-	# wall is not something you can see, let alone take down.
-	var query := PhysicsRayQueryParameters3D.create(origin,
-		origin + forward * WALL_REACH, GameLayers.WORLD | GameLayers.WEB, exclude)
-	# The sticky face is an Area3D, and it is the part of a web you can see and
-	# therefore the part you point at.
-	query.collide_with_areas = true
-	var hit := space.intersect_ray(query)
-	if hit.is_empty():
-		return {}
-	var web := _web_under(hit.get("collider"))
-	# A line is too thin to stand in front of anything.
-	if web == null or not web.can_be_collected():
-		return {}
-	var along: float = origin.distance_to(hit["position"])
-	if reach > 0.0 and along > reach:
-		return {}
-	return {"web": web, "along": along}
-
-
-## The web a collider belongs to. A web's catch area and walkway are children of
-## it, so this walks up rather than asking the collider itself.
-func _web_under(collider: Variant) -> WebStructure:
-	var node := collider as Node
-	while node != null:
-		var web := node as WebStructure
-		if web != null:
-			return web
-		node = node.get_parent()
-	return null
-
-
 ## What left mouse asks the tether first, and whether it dealt with the click: a
-## catch under the crosshair comes to you on a line, rather than the grapple hauling
-## you over to stand next to it.
-##
-## A web under it does not come to you any more. Calling webs in, catches and all,
-## is the Pullback's — see [method SpiderSpells.pullable_webs] — and a click that did
-## what the spell does, for nothing, made the spell pointless and the click a
-## gamble: a grapple meant for the wall behind a web took the web down instead. So a
-## web is a surface like any other, and the click on one is a grapple to it.
-##
-## It still stands in the way, though. Whichever of a web and a bundle is nearer
-## along the line of sight is the thing you pointed at, so a bundle behind a web is
-## not hooked through it: the click grapples to the web.
+## bundle under the cross comes on a line, rather than the grapple hauling you
+## over to stand next to it.
 func take_aimed() -> bool:
-	var target := aimed_cargo()
-	if target == null:
-		return false
-	var found := _aimed_web()
-	if not found.is_empty() and float(found["along"]) < _along_aim(target.global_position):
-		return false
-	return grab_aimed()
-
-
-## How far down the line of sight something sits.
-func _along_aim(point: Vector3) -> float:
-	if _view == null:
-		return INF
-	return (point - _view.aim_origin()).dot(_view.aim_forward())
-
-
-## Puts a line on the catch under the crosshair, and says whether it did.
-func grab_aimed() -> bool:
 	if cargo != null:
 		return false
 	var target := aimed_cargo()
@@ -421,8 +295,8 @@ func _haul(delta: float, hand: Vector3, tail: Vector3) -> void:
 		return
 	var along := offset / span
 	var pull := along * (span - _rope_length) * haul_force
-	var prey := cargo as Prey
-	if prey != null:
+	var bundle := cargo
+	if bundle != null:
 		# Pulling hard and the catch is not coming: it is against something. Ramp
 		# a lift in and it goes over, then let go twice as fast as it built so the
 		# swing settles the moment the catch is moving again.
@@ -432,18 +306,17 @@ func _haul(delta: float, hand: Vector3, tail: Vector3) -> void:
 		# own undoing: the catch rises, rising counts as moving, moving cancels
 		# the lift, the catch drops back. Projected onto the line, going up is not
 		# progress, so the lift holds until the catch is actually coming.
-		if shifted.dot(along) < _height() * 0.02:
+		# Only a line drawn well past its length counts: a bundle lying still and
+		# just starting to come is not caught on anything.
+		if span > _rope_length * 1.25 and shifted.dot(along) < _height() * 0.02:
 			_snagged += delta
 		else:
 			_snagged = maxf(0.0, _snagged - delta * 2.0)
 		var ramp := clampf(_snagged / maxf(snag_patience, 0.01), 0.0, 1.0)
 		var lift := Vector3.ZERO
-		if ramp > 0.0 and prey.velocity.y < snag_climb * ramp:
+		if ramp > 0.0 and bundle.velocity.y < snag_climb * ramp:
 			lift = Vector3.UP * snag_lift * ramp
-		prey.tow((pull + lift) * delta)
-		return
-	# A device has no physics of its own, so it simply comes along.
-	cargo.global_position = tail + along * (span - _rope_length)
+		bundle.tow((pull + lift) * delta)
 
 
 func _simulate_rope(delta: float, hand: Vector3, tail: Vector3) -> void:
@@ -504,52 +377,41 @@ func _let_go(text: String) -> void:
 
 # --- odds and ends ------------------------------------------------------
 
-## Told when the thing on the line is drained, rather than working it out
-## afterwards from the fact that it is gone.
-##
-## Which is what the old version did, and it was a race it usually lost: eating
-## happens on an input frame and frees the creature at the end of it, so by the
-## tether's next physics tick there was nothing left to ask. All it could see was
-## a cargo that had vanished, so every meal came back as "the line came back
-## empty" — a success reported as a failure, every time.
+## Watches the bundle on the line for leaving it: put on a prep table, cut free,
+## or made into a dish. Each of those takes it off the line, quietly — the table or
+## the knife has already said what happened.
 func _watch_cargo(watching: bool) -> void:
-	var prey := cargo as Prey
-	if prey == null:
+	if cargo == null or not is_instance_valid(cargo):
 		return
 	if watching:
-		if not prey.eaten_by_spider.is_connected(_on_cargo_eaten):
-			prey.eaten_by_spider.connect(_on_cargo_eaten)
-	elif prey.eaten_by_spider.is_connected(_on_cargo_eaten):
-		prey.eaten_by_spider.disconnect(_on_cargo_eaten)
+		if not cargo.docked.is_connected(_on_cargo_docked):
+			cargo.docked.connect(_on_cargo_docked)
+		if not cargo.freed.is_connected(_on_cargo_gone):
+			cargo.freed.connect(_on_cargo_gone)
+		if not cargo.taken.is_connected(_on_cargo_gone):
+			cargo.taken.connect(_on_cargo_gone)
+	else:
+		if cargo.docked.is_connected(_on_cargo_docked):
+			cargo.docked.disconnect(_on_cargo_docked)
+		if cargo.freed.is_connected(_on_cargo_gone):
+			cargo.freed.disconnect(_on_cargo_gone)
+		if cargo.taken.is_connected(_on_cargo_gone):
+			cargo.taken.disconnect(_on_cargo_gone)
 
 
-## You ate it. That is what a tether is for, so the line goes quietly: a report
-## here would land on top of the one that just said what you got out of it.
-func _on_cargo_eaten(prey: Prey) -> void:
-	if prey != cargo:
-		return
-	_let_go("")
+func _on_cargo_docked(insect: Insect, table: Node3D) -> void:
+	if insect == cargo and table != null:
+		_let_go("")
 
 
-## Whether the cargo went because the spider drained it, rather than because it
-## stopped existing for some other reason. The signal above is what usually
-## catches this; this is for the tick where the flag is set and the signal has
-## not been reached yet.
-func _eaten_off_the_line() -> bool:
-	if not is_instance_valid(cargo):
-		return false
-	var prey := cargo as Prey
-	return prey != null and prey.eaten
+func _on_cargo_gone(insect: Insect) -> void:
+	if insect == cargo:
+		_let_go("")
 
 
 func _still_there() -> bool:
-	if not is_instance_valid(cargo) or cargo.is_queued_for_deletion():
-		return false
-	var prey := cargo as Prey
-	if prey != null and prey.eaten:
-		return false
-	var device := cargo as SilkDevice
-	return device == null or not device.is_queued_for_deletion()
+	return cargo != null and is_instance_valid(cargo) and not cargo.is_queued_for_deletion() \
+		and cargo.is_bundle() and cargo.table == null
 
 
 ## Where the line leaves the spider — a little above where it stands, so the
@@ -559,35 +421,20 @@ func _hand() -> Vector3:
 	return _spider.global_position + up * _height() * 0.4
 
 
-func _label(target: Node3D) -> String:
-	if target == null:
-		return "thing"
-	var prey := target as Prey
-	if prey != null:
-		return prey.species
-	var device := target as SilkDevice
-	return device.label() if device != null else target.name
+func _label(target: Insect) -> String:
+	if target == null or not is_instance_valid(target) or target.kind == null:
+		return "bundle"
+	return target.kind.display_name
 
 
-## What is on the line, in size classes — one when there is nothing. What slows
-## the spider down ([method drag_factor]) and what makes a sprint cost more
-## ([method SpiderVitals.sprint_effort]) are the same number, read from here so
-## they cannot drift apart.
+## How heavy what is on the line is, one when there is nothing: what slows the
+## spider down — see [method drag_factor].
 func cargo_weight() -> float:
-	return _weight_of(cargo) if is_towing() else 1.0
-
-
-func _weight_of(target: Node3D) -> float:
-	var prey := target as Prey
-	return float(prey.size_class) if prey != null else 1.0
+	return cargo.weight() if is_towing() else 1.0
 
 
 func _height() -> float:
-	return _growth.current_stage().body_height if _growth != null else 0.35
-
-
-func _quality() -> float:
-	return _growth.current_stage().silk_quality if _growth != null else 1.0
+	return _spider.body_height if _spider != null else 0.7
 
 
 func _build_view() -> void:

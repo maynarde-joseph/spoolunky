@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="StructureKind" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/structure_kind.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "compost_heap"
+display_name = "Compost Heap"
+description = "Where flies breed. Now and then, while two grown flies live in its pen and the pen has room and water, a new fly crawls out of it."
+category = "Care"
+sort_order = 60
+cost = 60
+placement = 2
+footprint = Vector2i(1, 1)

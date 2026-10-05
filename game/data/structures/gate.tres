@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="StructureKind" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/structure_kind.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "gate"
+display_name = "Gate"
+description = "A gate in a fence, put up on its own or swapped in for a length already there. F opens and shuts it — and a pen with its gate open is not a pen: the flies wander out."
+category = "Pens"
+sort_order = 10
+cost = 20
+placement = 1
+footprint = Vector2i(1, 1)

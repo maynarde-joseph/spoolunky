@@ -9,38 +9,24 @@ extends Node3D
 ## is replaced by a pull into the surface, and the camera comes along for the
 ## ride.
 ##
-## It also owns the dragline: drop off a ceiling on a thread, pay it out, reel
-## it back in, or let go.
+## It also carries out the grapple: once [SpiderGrapple] has picked a point, this
+## hauls the body over to it and puts it down on the surface there. There is no
+## hanging from silk any more — a line is how you get somewhere, not somewhere to
+## be.
 
 enum Mode {
 	## In the air, normal gravity, looking for something to grab.
 	AIRBORNE,
 	## Stuck to a surface, whatever angle it is.
 	ATTACHED,
-	## Swinging from a line of silk.
-	HANGING,
-	## Hanging from a line and zipping along it.
-	RIDING,
-	## Hauling itself to a point it is about to anchor silk to.
+	## Hauling itself along a line of silk to where the grapple struck.
 	GRAPPLING,
-}
-
-## What left mouse does with a surface it is pointed at.
-enum GrappleStyle {
-	## Hauls the spider over to it, trailing the line behind.
-	PULL,
-	## Lays a line from the spider's feet to it and hangs the spider from the near
-	## end, ready to zip along it — see [member zip_speed].
-	LINE,
 }
 
 signal mode_changed(mode: Mode)
 signal surface_changed(normal: Vector3)
 signal jumped()
 signal grappled(point: Vector3, normal: Vector3)
-signal line_dropped(anchor: Vector3)
-signal line_cut()
-signal notice(text: String)
 
 ## How far up a surface has to face to be walked as a floor, and how far down to
 ## be walked as a ceiling, as the y of its up. Anything between is climbed: see
@@ -71,27 +57,6 @@ const STEEP_KEEP := 0.85
 ## camera's reading of the keys on it to be a steady one the walk can always settle
 ## back onto: a floor, a ceiling, a gentle slope. See [method _carry_over].
 const SETTLE_UP := 0.5
-
-## How far under a line the body hangs, in body heights: like something on a pulley.
-const HANG := 0.45
-
-## How much of a line has to have room for the body hanging under it before it is
-## offered as a ride at all, in body heights: a ride, not a step. See
-## [method room_to_hang].
-const RIDE_LEAST := 3.0
-
-## How big the body is, hanging, from its middle out, in body heights: a little
-## under its collider, so a line that only grazes something still rides.
-const HANG_BODY := 0.3
-
-## How far apart the points tried along a line are, looking for room to hang, in
-## body heights. A ride has to be [constant RIDE_LEAST] long, so this cannot step
-## over one.
-const ROOM_STEP := 1.0
-
-## How long what [method room_to_hang] found about a line is taken as still true, in
-## milliseconds: the readout asks every frame, and the world hardly changes in that.
-const ROOM_KEPT := 250
 
 
 @export_group("Climbing")
@@ -135,8 +100,8 @@ const ROOM_KEPT := 250
 ## with it.
 ##
 ## Deliberately far gentler than [member deceleration], which exists to stop you
-## the moment you let go of a key: speed that came from somewhere else — off the end
-## of a line, out of a fall — is a skid you can use, not something wiped out in four
+## the moment you let go of a key: speed that came from somewhere else — off a
+## grapple, out of a fall — is a skid you can use, not something wiped out in four
 ## frames. Let go, though, and it brakes like anything else.
 @export var skid_damping := 1.6
 @export var deceleration := 18.0
@@ -145,9 +110,9 @@ const ROOM_KEPT := 250
 ## so a jump off a wall actually leaves the wall.
 @export var release_grace := 0.22
 
-## Surfaces to climb: the world, and silk. Standing on your own web is the
-## whole point of having one.
-@export_flags_3d_physics var climbable_layers := GameLayers.WORLD | GameLayers.WEB_WALK
+## Surfaces to climb: the land and everything built on it — a fence, a trough,
+## the market's awning.
+@export_flags_3d_physics var climbable_layers := GameLayers.WORLD
 
 ## Colliders in this group cannot be climbed — glass, grease, a hot pipe.
 @export var no_climb_group := "no_climb"
@@ -157,75 +122,22 @@ const ROOM_KEPT := 250
 @export_range(10.0, 180.0, 5.0) var carry_release_angle := 50.0
 
 
-@export_group("Dragline")
+@export_group("Grapple")
 
-## Longest line the spider can pay out, in body heights.
-@export var max_line_bodies := 40.0
-
-## Pay-out and reel-in speed, in body heights per second.
-@export var line_speed_bodies := 8.0
-
-## Sideways push while hanging, for swinging yourself somewhere useful.
-@export var swing_force := 4.0
-
-## Air drag on a swinging spider, so a pendulum eventually settles.
-@export var swing_damping := 0.6
-
-@export var line_color := Color(0.95, 0.96, 1, 0.92)
-
-
-@export_group("Zip lines")
-
-## How far the spider will reach to take hold of a line with Q, in body heights.
-@export var grab_reach := 9.0
-
-## How quickly a zip gets up to speed, and how quickly it stops once the keys are
-## let go, in body heights per second per second. Gravity has no say in either: a
-## line is a rail you pull yourself along, as quick up it as down it.
-@export var zip_push := 45.0
-@export var zip_brake := 45.0
-
-## Fastest a zip goes, in body heights per second.
-@export var zip_speed := 22.0
-
-## Upward kick when letting go, so coming off a line clears whatever is under it.
-@export var launch_lift := 2.5
-
-## How fast the spider hauls itself to an anchor point, in body heights per
-## second. Building a web is walking the frame, so this wants to be brisk.
+## How fast the spider hauls itself to where the grapple struck, in body heights
+## per second. It is how you get about the farm, so this wants to be brisk.
 @export var grapple_speed := 26.0
 
 ## Give up on a grapple after this long, so a blocked one cannot hang.
 @export var grapple_timeout := 2.5
 
 ## Longest a grapple should take, however far it goes. Without this, reaching
-## across a courtyard at a spiderling's 6 m/s is a nine-second commute — which
-## is the tedium unlimited range was supposed to remove, not add.
+## across the farm at a walking pace is a nine-second commute — which is the
+## tedium a grapple is there to remove, not add.
 @export var grapple_max_travel := 1.1
-
-## Which grapple the spider has. Two are kept so they can be played back to back:
-## the pull, which takes you there, and the line, which lays one to zip along.
-@export var grapple_style := GrappleStyle.PULL
-
-## How much quicker silk is underfoot than anything else. A web you spun is
-## ground you built, and ground you built should beat walking round.
-@export var silk_speed_bonus := 1.5
-
-## How much further the spider's feet reach for silk it is already on, in
-## multiples of the ordinary reach. A spider does not fall off its own web:
-## once you are on silk it holds you, and you leave it by jumping.
-@export var silk_stick_reach := 2.5
-
 
 var mode: Mode = Mode.AIRBORNE
 var surface_normal := Vector3.UP
-var line_anchor := Vector3.ZERO
-var line_length := 0.0
-
-## The line being hung from, how far along it, and how fast.
-var ride_web: WebStrand = null
-var ride_distance := 0.0
-var ride_speed := 0.0
 
 ## Where a grapple is heading, and the surface waiting at the other end.
 var grapple_target := Vector3.ZERO
@@ -234,20 +146,15 @@ var grapple_normal := Vector3.UP
 ## Speed along the surface, for head bob and footsteps.
 var tangent_velocity := Vector3.ZERO
 
-## Standing on silk rather than on the world, which is quicker underfoot.
-var on_silk := false
-
 ## What speed is multiplied by while dragging something. Written by the tether;
 ## one means empty-handed.
 var haul := 1.0
 
-## How much of a fall wings cancel, 0 for none. Written by the spider from its
-## traits. There is no glide key: a spider with wings glides, the same way a
-## spider with legs walks, which is one fewer thing to hold down.
-var glide := 0.0
+## How tall the body is, in metres. Everything here that is measured in body
+## heights is measured against this; the spider sets it.
+var body_height := 0.7
 
 var _spider: CharacterController3D
-var _growth: SpiderGrowth
 var _view: SpiderCamera
 var _facing := Vector3.FORWARD
 var _current_up := Vector3.UP
@@ -256,9 +163,6 @@ var _grace := 0.0
 ## Seconds left of a grapple landing's spring: see [member landing_time].
 var _landing := 0.0
 
-## What [method room_to_hang] last found, by line: when, for which body and near
-## where, and the stretch.
-var _room_seen := {}
 var _previous_up := Vector3.ZERO
 var _swap_cooldown := 0.0
 var _grapple_time := 0.0
@@ -283,21 +187,14 @@ var _walked_pitch := 0.0
 
 ## How far this grapple has to go, measured when it started.
 var _grapple_span := 0.0
-var _silk_warning := 0.0
-var _line_mesh: ImmediateMesh
-var _line_instance: MeshInstance3D
-var _line_material: StandardMaterial3D
 
 
-func setup(spider: CharacterController3D, growth: SpiderGrowth,
-		view: SpiderCamera) -> void:
+func setup(spider: CharacterController3D, view: SpiderCamera) -> void:
 	_spider = spider
-	_growth = growth
 	_view = view
 	_facing = -spider.global_basis.z
 	_current_up = Vector3.UP
 	surface_normal = Vector3.UP
-	_build_line_visual()
 
 
 ## True while this component is driving the body. Water and free-fly are left
@@ -310,31 +207,8 @@ func is_attached() -> bool:
 	return mode == Mode.ATTACHED
 
 
-func is_hanging() -> bool:
-	return mode == Mode.HANGING
-
-
-## The line the spider is hanging from, or null.
-##
-## The builder asks before it takes an old line down, because dropping the player
-## out of the air is the game taking the controls off them.
-func holding_line() -> WebStrand:
-	if mode == Mode.RIDING and is_instance_valid(ride_web):
-		return ride_web
-	return null
-
-
-func is_riding() -> bool:
-	return mode == Mode.RIDING
-
-
 func is_grappling() -> bool:
 	return mode == Mode.GRAPPLING
-
-
-## Ground speed along the line, for the HUD and the speed rush on the camera.
-func ride_velocity() -> float:
-	return absf(ride_speed)
 
 
 ## True when the spider is on something it could not stand on upright.
@@ -418,36 +292,26 @@ func update_orientation(delta: float) -> void:
 	if mode == Mode.GRAPPLING:
 		# Roll onto the surface on the way in, so arrival is not a snap.
 		_blend_up(grapple_normal, delta)
-	elif mode == Mode.AIRBORNE or mode == Mode.RIDING:
+	elif mode == Mode.AIRBORNE:
 		_blend_up(Vector3.UP, delta)
-	elif mode == Mode.HANGING:
-		var to_anchor := line_anchor - _spider.global_position
-		_blend_up(to_anchor.normalized() if to_anchor.length() > 0.001 else Vector3.UP, delta)
 	var target := _orientation_basis(_current_up)
 	var current := _spider.global_basis.orthonormalized()
 	var weight := clampf(orientation_speed * delta, 0.0, 1.0)
 	_spider.global_basis = Basis(current.get_rotation_quaternion().slerp(
 		target.get_rotation_quaternion(), weight))
-	_draw_line()
 
 
 ## One step of spider movement.
-func step(delta: float, input_axis: Vector2, want_jump: bool, want_sprint: bool,
-		want_line_out: bool, want_line_in: bool, want_release: bool) -> void:
+func step(delta: float, input_axis: Vector2, want_jump: bool, want_sprint: bool) -> void:
 	if _spider == null:
 		return
 	_grace = maxf(0.0, _grace - delta)
 	_landing = maxf(0.0, _landing - delta)
 	_swap_cooldown = maxf(0.0, _swap_cooldown - delta)
-	_silk_warning = maxf(0.0, _silk_warning - delta)
 	if mode == Mode.GRAPPLING:
 		_step_grappling(delta)
-	elif mode == Mode.RIDING:
-		_step_riding(delta, input_axis, want_jump, want_release)
-	elif mode == Mode.HANGING:
-		_step_hanging(delta, input_axis, want_line_out, want_line_in, want_release)
 	else:
-		_step_surface(delta, input_axis, want_jump, want_sprint, want_line_out)
+		_step_surface(delta, input_axis, want_jump, want_sprint)
 
 
 ## Stands the body the right way up on the spot, rather than rolling it there.
@@ -473,32 +337,26 @@ func stand_upright() -> void:
 func release() -> void:
 	if mode != Mode.AIRBORNE:
 		_set_mode(Mode.AIRBORNE)
-	ride_web = null
-	ride_speed = 0.0
-	line_length = 0.0
 	_landing = 0.0
 	_forget_walk()
 	if _spider != null:
 		_spider.up_direction = Vector3.UP
-	_draw_line()
 
 
 # --- surfaces -----------------------------------------------------------
 
 func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
-		want_sprint: bool, want_line_out: bool) -> void:
+		want_sprint: bool) -> void:
 	var height := _body_height()
 	var wish := _walk(input_axis)
 	var hit := _find_surface(height, wish)
 
 	if hit.is_empty() or _grace > 0.0:
-		on_silk = false
 		_forget_walk()
 		_set_mode(Mode.AIRBORNE)
 		_move_airborne(delta, input_axis)
 		return
 
-	_note_surface(hit.get("collider"))
 	# The frame the keys were read in on the way here. In the air that is the
 	# level one the air steers by, whatever the body is still rolling through.
 	var before := _current_up if mode == Mode.ATTACHED else Vector3.UP
@@ -506,12 +364,6 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 	_carry_over(before, input_axis)
 	_set_mode(Mode.ATTACHED)
 
-	if want_line_out:
-		if _can_hang_from(hit):
-			_drop_line(hit)
-		else:
-			_warn("Nothing overhead to hang from")
-		return
 	if want_jump:
 		_leap(input_axis)
 		return
@@ -556,15 +408,10 @@ func _step_surface(delta: float, input_axis: Vector2, want_jump: bool,
 func _move_airborne(delta: float, input_axis: Vector2) -> void:
 	var wish := _wish_direction(input_axis, Vector3.UP)
 	var velocity := _spider.velocity
-	var spread := clampf(glide, 0.0, 0.9)
-	# Wings only work against a fall. On the way up they are neither help nor
-	# hindrance, so a jump is the same height with them as without — the trait
-	# changes how you come down, which is the part worth having.
-	var lift: float = spread if velocity.y < 0.0 else 0.0
-	velocity.y -= _spider.gravity * (1.0 - lift) * delta
+	velocity.y -= _spider.gravity * delta
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
-	var target := wish * _spider.speed * (1.0 + spread)
-	var steering: float = _spider.air_control * (1.0 + spread * 3.0)
+	var target := wish * _spider.speed
+	var steering: float = _spider.air_control
 	horizontal = horizontal.lerp(target, clampf(acceleration * steering * delta, 0.0, 1.0))
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
@@ -595,10 +442,7 @@ func _leap(input_axis: Vector2) -> void:
 func _find_surface(height: float, wish: Vector3) -> Dictionary:
 	var space := _spider.get_world_3d().direct_space_state
 	var origin := _spider.global_position
-	# Silk already underfoot is worth looking harder for. A thread is a couple
-	# of centimetres across, so an ordinary reach loses it the moment the body
-	# drifts, and losing it means falling off something you were stuck to.
-	var reach := height * stick_reach * (silk_stick_reach if on_silk else 1.0)
+	var reach := height * stick_reach
 	var up := _current_up
 	var forward := _facing
 	var right := forward.cross(up)
@@ -724,142 +568,19 @@ func _adopt_surface(raw_normal: Vector3, roll := true) -> void:
 	surface_changed.emit(normal)
 
 
-## Whether what is underfoot is silk rather than world. Read off the collider
-## the surface probe found, so it costs nothing to know.
-func _note_surface(collider: Variant) -> void:
-	var body := collider as CollisionObject3D
-	on_silk = body != null and (body.collision_layer & GameLayers.WEB_WALK) != 0
-
-
 func _surface_speed(want_sprint: bool) -> float:
 	var speed := _spider.speed
 	if want_sprint:
 		speed *= _spider.sprint_speed_multiplier
 	var steepness := clampf(1.0 - maxf(0.0, _current_up.dot(Vector3.UP)), 0.0, 1.0)
 	speed *= lerpf(1.0, steep_speed_factor, steepness)
-	if on_silk:
-		speed *= silk_speed_bonus
 	return speed * haul
-
-
-# --- dragline -----------------------------------------------------------
-
-## True if the surface is steep or overhead — you cannot dangle from the floor
-## you are standing on.
-func _can_hang_from(surface_hit: Dictionary) -> bool:
-	var normal: Vector3 = surface_hit.get("normal", Vector3.UP)
-	return normal.dot(Vector3.UP) < 0.7
-
-
-func _drop_line(surface_hit: Dictionary) -> void:
-	var height := _body_height()
-	var start_length := height * 0.9
-	line_anchor = surface_hit.get("position", _spider.global_position + _current_up * height * 0.5)
-	line_length = start_length
-	_spider.velocity = Vector3.ZERO
-	_set_mode(Mode.HANGING)
-	line_dropped.emit(line_anchor)
-
-
-func _cut_line() -> void:
-	if mode != Mode.HANGING:
-		return
-	_grace = release_grace
-	_set_mode(Mode.AIRBORNE)
-	line_cut.emit()
-
-
-func _step_hanging(delta: float, input_axis: Vector2, want_out: bool, want_in: bool,
-		want_release: bool) -> void:
-	if want_release:
-		_cut_line()
-		return
-
-	var height := _body_height()
-	var travel := height * line_speed_bodies * delta
-
-	if want_out:
-		var room: float = height * max_line_bodies - line_length
-		var amount := minf(travel, maxf(room, 0.0))
-		if amount <= 0.0:
-			_warn("The line is fully paid out")
-		else:
-			line_length += amount
-	elif want_in:
-		var amount := minf(travel, line_length - height * 0.9)
-		if amount > 0.0:
-			line_length -= amount
-		else:
-			# Back at the top — grab whatever the line is anchored to.
-			var wish_up := _wish_direction(input_axis, Vector3.UP)
-			var hit := _find_surface(height, wish_up)
-			if not hit.is_empty():
-				_adopt_surface(hit["normal"], false)
-				_set_mode(Mode.ATTACHED)
-				return
-
-	var velocity := _spider.velocity
-	velocity.y -= _spider.gravity * delta
-
-	# Swing: push sideways relative to where you are looking.
-	var wish := _wish_direction(input_axis, Vector3.UP)
-	velocity += wish * swing_force * height * delta * 10.0
-	velocity = velocity.lerp(Vector3.ZERO, clampf(swing_damping * delta, 0.0, 1.0))
-
-	# Rope constraint: nothing beyond the length of silk paid out.
-	var to_anchor := line_anchor - _spider.global_position
-	var distance := to_anchor.length()
-	if distance > line_length and distance > 0.001:
-		var rope := to_anchor / distance
-		var outward := velocity.dot(-rope)
-		if outward > 0.0:
-			velocity += rope * outward
-		velocity += rope * (distance - line_length) / maxf(delta, 0.0001) * 0.5
-
-	_spider.velocity = velocity
-	_spider.up_direction = Vector3.UP
-	_spider.move_and_slide()
-	tangent_velocity = Vector3.ZERO
-
-	# Swung into something climbable while pushing towards it? Grab it.
-	if wish.length_squared() > 0.01:
-		var reach_hit := _find_surface(height, wish)
-		if not reach_hit.is_empty():
-			var normal: Vector3 = reach_hit.get("normal", Vector3.UP)
-			if wish.normalized().dot(-normal) > 0.2:
-				_adopt_surface(normal, false)
-				_set_mode(Mode.ATTACHED)
-				line_cut.emit()
-
-
-func _warn(text: String) -> void:
-	if _silk_warning > 0.0:
-		return
-	_silk_warning = 2.0
-	notice.emit(text)
 
 
 # --- grappling ----------------------------------------------------------
 
-## How far the feet are below the middle of the body, in body heights: where a
-## line the spider lays from where it stands starts, and how high over a line the
-## body rides when standing on one.
+## How far the feet are below the middle of the body, in body heights.
 const FEET := 0.4
-
-
-## Whether left mouse lays a line rather than pulling the spider anywhere.
-func shoots_lines() -> bool:
-	return grapple_style == GrappleStyle.LINE
-
-
-## Swaps between the two grapples, and says which one you have now.
-func toggle_grapple_style() -> void:
-	if shoots_lines():
-		grapple_style = GrappleStyle.PULL
-		notice.emit("Grapple: pull — it takes you there")
-	else:
-		grapple_style = GrappleStyle.LINE
-		notice.emit("Grapple: line — it lays a line and hangs you from it; W zips along")
 
 
 ## Where the spider's feet are: under the body, along whatever it calls up.
@@ -878,9 +599,8 @@ func fling(push: Vector3) -> void:
 	_spider.velocity = push
 
 
-## Hauls the spider to a point it is going to anchor silk to. Building a web is
-## a journey around its frame rather than a thing done at arm's length, so every
-## anchor is somewhere the spider actually went.
+## Hauls the spider to [param point], landing it on the surface facing
+## [param normal]. False if a grapple is already under way.
 func grapple_to(point: Vector3, normal: Vector3) -> bool:
 	if mode == Mode.GRAPPLING or _spider == null:
 		return false
@@ -945,222 +665,6 @@ func _arrive() -> void:
 		_surface_speed(false) * (1.0 + landing_speed))
 	tangent_velocity = _spider.velocity
 	grappled.emit(point, normal)
-
-
-# --- zip lines ----------------------------------------------------------
-
-## Takes hold of the nearest line in reach — the one you are looking at, if any —
-## or lets go of the one you are hanging from. Returns true if anything happened.
-## This is Q, and the only way onto a line: the grapple takes you to places, not
-## onto silk. Only a line with room to hang from is taken: see [method room_to_hang].
-func toggle_ride() -> bool:
-	if mode == Mode.RIDING:
-		_launch_off_line()
-		return true
-	var strand := _find_ridable()
-	if strand == null:
-		notice.emit("No line in reach to hang from")
-		return false
-	return clip_on(strand, _spider.global_position)
-
-
-## The line Q would take hold of now, or null: what the readout offers.
-func line_to_take() -> WebStrand:
-	return _find_ridable() if mode != Mode.RIDING else null
-
-
-## The best line to take hold of: near enough to reach, and roughly the way the
-## player is looking so grabbing is aimed rather than accidental.
-func _find_ridable() -> WebStrand:
-	var height := _body_height()
-	var reach := height * grab_reach
-	var origin := _spider.global_position
-	var look := _view.aim_forward() if _view != null else _facing
-
-	var best: WebStrand = null
-	var best_score := -INF
-	for node in _spider.get_tree().get_nodes_in_group("silk_webs"):
-		var strand := node as WebStrand
-		if strand == null or strand.pattern == null or strand.is_queued_for_deletion():
-			continue
-		var point := Geometry3D.get_closest_point_to_segment(origin,
-			strand.point_a, strand.point_b)
-		var distance := origin.distance_to(point)
-		if distance > reach or not has_room_to_hang(strand, origin):
-			continue
-		var towards := point - origin
-		var aim := 1.0 if towards.length() < 0.001 else towards.normalized().dot(look)
-		var score := aim - distance / reach
-		if score > best_score:
-			best_score = score
-			best = strand
-	return best
-
-
-## Hangs the spider from [param strand] at the point of it nearest [param at] that
-## has room for the body, carrying whatever speed it had along the line into the zip.
-## What Q does, and what the line grapple does with the line it has just laid. Returns false, and says so, if there is no line
-## to hang from, or no room to hang from it: only a ride that works is offered.
-func clip_on(strand: WebStrand, at: Vector3) -> bool:
-	if strand == null or not is_instance_valid(strand) or _spider == null:
-		return false
-	var room := room_to_hang(strand, at)
-	var height := _body_height()
-	if room.y - room.x < height * RIDE_LEAST:
-		notice.emit("No room to hang from that line")
-		return false
-	ride_web = strand
-	var point := Geometry3D.get_closest_point_to_segment(at, strand.point_a, strand.point_b)
-	ride_distance = clampf(strand.point_a.distance_to(point), room.x + height * 0.05,
-		room.y - height * 0.05)
-	ride_speed = _spider.velocity.dot(_ride_axis())
-	_forget_walk()
-	_grace = 0.0
-	_set_mode(Mode.RIDING)
-	_hang()
-	_spider.velocity = _ride_axis() * ride_speed
-	return true
-
-
-## Hanging from a line and zipping along it: W towards where the camera looks
-## along the line, S away from it, and nothing held brakes to a stop. Gravity has
-## no say in any of it — the line is a rail you pull yourself along, as quick up it
-## as down it. Run off either end and you come off it carrying the speed, free to
-## take hold of whatever the end is tied to; Space or Q lets go anywhere.
-func _step_riding(delta: float, input_axis: Vector2, want_jump: bool, want_release: bool) -> void:
-	if not is_instance_valid(ride_web) or ride_web.is_queued_for_deletion():
-		_launch_off_line()
-		return
-	if want_jump or want_release:
-		_launch_off_line()
-		return
-
-	var height := _body_height()
-	var axis := _ride_axis()
-	var length := ride_web.point_a.distance_to(ride_web.point_b)
-	var look := _view.forward() if _view != null else _facing
-	var way: float = signf(look.dot(axis))
-	if way == 0.0:
-		way = 1.0
-	var push := clampf(input_axis.y, -1.0, 1.0) * way
-	if absf(push) > 0.1:
-		ride_speed = move_toward(ride_speed, push * zip_speed * height, zip_push * height * delta)
-	else:
-		ride_speed = move_toward(ride_speed, 0.0, zip_brake * height * delta)
-
-	ride_distance += ride_speed * delta
-	if (ride_distance <= 0.0 and ride_speed < 0.0) or (ride_distance >= length and ride_speed > 0.0):
-		ride_distance = clampf(ride_distance, 0.0, length)
-		_hang()
-		_launch_off_line(true)
-		return
-	ride_distance = clampf(ride_distance, 0.0, length)
-	_hang()
-	_spider.velocity = axis * ride_speed
-	tangent_velocity = _spider.velocity
-
-
-## Puts the body under the line where it has got to, hanging like something on a
-## pulley.
-func _hang() -> void:
-	var point := ride_web.point_a + _ride_axis() * ride_distance
-	_spider.global_position = point - Vector3.UP * _body_height() * HANG
-
-
-## Whether [param strand] is a ride that works near [param near]: a stretch of it at
-## least [constant RIDE_LEAST] body heights long with room for the body hanging
-## under it. See [method room_to_hang].
-func has_room_to_hang(strand: WebStrand, near: Vector3) -> bool:
-	var room := room_to_hang(strand, near)
-	return room.y - room.x >= _body_height() * RIDE_LEAST
-
-
-## The stretch of [param strand] with room for the body hanging under it, the one
-## nearest [param near]: from where to where along it, in metres from its first end,
-## or (-1, -1) if it has room nowhere.
-##
-## The body is a ball a little smaller than it is, hung where [method _hang] hangs
-## it and swept along the line both ways from the first place it fits, so the
-## stretch ends where the line runs too close to the floor, into a wall, or into
-## whatever it is tied to. A line laid along the ground has none: hanging from it
-## would put the body in the ground.
-func room_to_hang(strand: WebStrand, near: Vector3) -> Vector2:
-	var none := Vector2(-1.0, -1.0)
-	if strand == null or not is_instance_valid(strand) or _spider == null \
-			or not _spider.is_inside_tree():
-		return none
-	var length := strand.point_a.distance_to(strand.point_b)
-	if length < 0.001:
-		return none
-	var height := _body_height()
-	var id := strand.get_instance_id()
-	var seen: Array = _room_seen.get(id, [])
-	if not seen.is_empty() and Time.get_ticks_msec() - int(seen[0]) < ROOM_KEPT \
-			and is_equal_approx(float(seen[1]), height) \
-			and (seen[2] as Vector3).distance_to(near) < height:
-		return seen[3]
-	var axis := (strand.point_b - strand.point_a) / length
-	var drop := Vector3.DOWN * height * HANG
-	var ball := SphereShape3D.new()
-	ball.radius = height * HANG_BODY
-	var query := PhysicsShapeQueryParameters3D.new()
-	query.shape = ball
-	query.collision_mask = GameLayers.WORLD
-	query.exclude = [_spider.get_rid()]
-	var space := _spider.get_world_3d().direct_space_state
-	# The first place along it with room, out from the point nearest [param near].
-	var start := clampf(axis.dot(near - strand.point_a), 0.0, length)
-	var step := height * ROOM_STEP
-	var found := -1.0
-	for i in ceili(length / step) + 1:
-		for side: float in [1.0, -1.0]:
-			var at := start + side * step * float(i)
-			if at < 0.0 or at > length or (i == 0 and side < 0.0):
-				continue
-			query.transform = Transform3D(Basis.IDENTITY, strand.point_a + axis * at + drop)
-			if space.intersect_shape(query, 1).is_empty():
-				found = at
-				break
-		if found >= 0.0:
-			break
-	var room := none
-	if found >= 0.0:
-		query.transform = Transform3D(Basis.IDENTITY, strand.point_a + axis * found + drop)
-		query.motion = axis * (length - found)
-		var ahead: float = space.cast_motion(query)[0] * (length - found)
-		query.motion = -axis * found
-		var behind: float = space.cast_motion(query)[0] * found
-		room = Vector2(found - behind, found + ahead)
-	if _room_seen.size() > 32:
-		# Lines come and go: what was found about ones long gone is no use to keep.
-		_room_seen.clear()
-	_room_seen[id] = [Time.get_ticks_msec(), height, near, room]
-	return room
-
-
-## Comes off the line, carrying the zip's speed. Let go of on purpose, it gives a
-## little lift and a moment before anything can take hold again, the way a jump
-## does; run off [param at_end], it goes straight on into whatever the line is tied
-## to, which takes hold at once.
-func _launch_off_line(at_end := false) -> void:
-	var thrown := _ride_axis() * ride_speed
-	ride_web = null
-	ride_speed = 0.0
-	ride_distance = 0.0
-	_grace = 0.0 if at_end else release_grace
-	_set_mode(Mode.AIRBORNE)
-	_spider.velocity = thrown
-	if not at_end:
-		_spider.velocity += Vector3.UP * launch_lift * _body_height()
-
-
-func _ride_axis() -> Vector3:
-	if not is_instance_valid(ride_web):
-		return Vector3.FORWARD
-	var axis := ride_web.point_b - ride_web.point_a
-	if axis.length_squared() < 0.000001:
-		return Vector3.FORWARD
-	return axis.normalized()
 
 
 # --- helpers ------------------------------------------------------------
@@ -1521,17 +1025,11 @@ func _set_mode(new_mode: Mode) -> void:
 		var into := _spider.velocity.dot(-_current_up)
 		if into > 0.0:
 			_spider.velocity += _current_up * into
-	if new_mode != Mode.HANGING:
-		line_length = 0.0
-	if new_mode != Mode.RIDING:
-		ride_web = null
 	mode_changed.emit(new_mode)
 
 
 func _body_height() -> float:
-	if _growth == null:
-		return 0.25
-	return _growth.current_stage().body_height
+	return maxf(body_height, 0.01)
 
 
 func _in_water() -> bool:
@@ -1540,32 +1038,3 @@ func _in_water() -> bool:
 		return false
 	var ray := swim.get_node_or_null("RayCast3D") as RayCast3D
 	return ray != null and ray.is_colliding()
-
-
-func _build_line_visual() -> void:
-	_line_material = StandardMaterial3D.new()
-	_line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_line_material.vertex_color_use_as_albedo = true
-	_line_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_line_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_line_mesh = ImmediateMesh.new()
-	_line_instance = MeshInstance3D.new()
-	_line_instance.name = "Dragline"
-	_line_instance.mesh = _line_mesh
-	_line_instance.material_override = _line_material
-	_line_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_line_instance.top_level = true
-	add_child(_line_instance)
-	_line_instance.transform = Transform3D.IDENTITY
-
-
-func _draw_line() -> void:
-	if _line_mesh == null:
-		return
-	_line_mesh.clear_surfaces()
-	if mode != Mode.HANGING:
-		return
-	var height := _body_height()
-	var attach := _spider.global_position + _current_up * height * 0.45
-	WebGeometry.draw_line_into(_line_mesh, _line_material, line_anchor, attach,
-		maxf(height * 0.05, 0.004), line_color)

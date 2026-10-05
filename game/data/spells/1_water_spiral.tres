@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SpiderSpell" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/spider_spell.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "water_spiral"
+display_name = "Water Spiral"
+description = "Water and wind together: a spiral that runs along the ground to what you point at and washes it. Wash a bundle first — anything cooked unwashed comes out gritty."
+form = 1
+order = 1
+cooldown = 1.5
+colour = Color(0.36, 0.74, 0.9, 1)
+sigil = 5

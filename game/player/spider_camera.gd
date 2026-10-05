@@ -65,7 +65,7 @@ const FOCUS_REACH := 512.0
 ## it too and two things lerping one number is two things fighting.
 @export var aim_fov_gain := 9.0
 
-## How far into the aim the rig is, 0 to 1. Written by the web builder.
+## How far into the aim the rig is, 0 to 1: raises the pivot and opens the view.
 var aim_blend := 0.0
 
 ## What the arm refuses to pass through.
@@ -92,9 +92,9 @@ var aim_blend := 0.0
 ## Wider than [member collide_with], and the two are not the same question. That
 ## one is what the camera refuses to pass through; this is what counts as "the
 ## thing you are pointing at". A creature does not stop a camera and is very much
-## something you aim at — leave prey out of this and the cross reads straight
-## through a wasp to the floor behind it, and the silk goes where the floor is.
-@export_flags_3d_physics var aim_at_layers := 53
+## something you aim at — leave insects out of this and the cross reads straight
+## through a fly to the floor behind it, and the silk goes where the floor is.
+@export_flags_3d_physics var aim_at_layers := 5
 
 var yaw := 0.0
 var pitch := 0.0
@@ -404,8 +404,6 @@ func aim_focus() -> Vector3:
 	if collider != null:
 		exclude.append(collider.get_rid())
 	var query := PhysicsRayQueryParameters3D.create(origin, far, aim_at_layers, exclude)
-	# A web's sticky face is an Area3D, and it is the part of a web you point at.
-	query.collide_with_areas = true
 	var hit := space.intersect_ray(query)
 	if hit.is_empty():
 		return far

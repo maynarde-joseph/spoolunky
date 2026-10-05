@@ -3,24 +3,14 @@ extends Node3D
 
 ## A jet of fire out of the spider's jaws, along the cross.
 ##
-## Let go of the wind-up and the spider breathes it for as long as the wind-up gave
-## it, and it follows the cross while it lasts — so it is swept: across a creature,
-## along a line, through the web that is holding what you want burned. It goes as
-## far as its reach or the first wall, whichever is nearer, opening a little on the
-## way.
-##
-## What is in it burns the way fire burns, for as long as it is in it: a fifth of
-## the harm to something bare, all of it to something wrapped or held in silk (see
-## [method Prey.burn]). And silk burns. Every web and line it touches goes up — a web
-## with the frame it was walked round on — and what a web held drops out of it,
-## burned. A wet web does not: see [WetSilk]. It stands in the flame while what it
-## holds burns, which is how a catch is roasted without losing the web it is in.
-##
-## And water melts. A puddle it reaches turns to lava where it lies, burning
-## whatever stands in it — see [Lava].
+## Let go of the key and the spider breathes it for a moment, and it follows the
+## cross while it lasts, so it can be swept. It goes as far as its reach or the
+## first wall, whichever is nearer, opening a little on the way. Cast at a prep
+## table it cooks what is on it — see [SpiderSpells]. Looks only: nothing in the
+## world burns.
 
-## It has died down: everything it burned, and how many webs and lines went up.
-signal finished(breath: FireBreath, burned: Array[Prey], webs: int, lines: int)
+## It has died down.
+signal finished(breath: FireBreath)
 
 const GROUP := "fire_breaths"
 
@@ -33,24 +23,13 @@ const SPREAD := 0.2
 ## is up, in seconds.
 const FLARE := 0.12
 
-## How many points along it are tried against a web's silk, each frame.
-const SAMPLES := 24
-
-## How long a puddle it turns to lava stays molten, in seconds, and how much of a
-## creature's health the lava takes a second, as a share of what the flame burns a
-## second.
-const LAVA_LASTS := 6.0
-const LAVA_HEAT := 0.25
-
 ## Where it comes out, which way it goes, and how far it could go, in metres.
 var origin := Vector3.ZERO
 var heading := Vector3.FORWARD
 var reach := 2.0
 
-## How long it is breathed for, in seconds, and how much of a creature's health it
-## takes every second it is in it, wrapped all the way.
+## How long it is breathed for, in seconds.
 var lasts := 1.0
-var harm := 0.4
 
 ## How wide it is at the jaws, from its middle, in metres.
 var mouth := 0.03
@@ -60,13 +39,6 @@ var colour := Color(1.0, 0.45, 0.12, 1.0)
 ## The caster it follows: its jaws are where it comes from and its cross is where
 ## it goes, every frame it lasts. Null, and it stays where it was breathed.
 var source: SpiderSpells = null
-
-## Everything it has burned, first to last, how many webs and lines went up, and
-## the lava it made of puddles.
-var burned: Array[Prey] = []
-var webs_burned := 0
-var lines_burned := 0
-var melted: Array[Lava] = []
 
 var _age := 0.0
 var _length := 0.0
@@ -81,11 +53,10 @@ var _light: OmniLight3D
 
 
 ## Breathes one under [param host] from [param from] along [param toward], out to
-## [param far] metres, for [param seconds], taking [param hurt] of a creature's
-## health every second it is in it, for a caster [param body] metres tall. With
-## [param follow], it goes where that caster's cross goes while it lasts.
+## [param far] metres, for [param seconds], for a caster [param body] metres tall.
+## With [param follow], it goes where that caster's cross goes while it lasts.
 static func breathe(host: Node, from: Vector3, toward: Vector3, far: float, seconds: float,
-		hurt: float, body: float, tint := Color(1.0, 0.45, 0.12, 1.0),
+		body: float, tint := Color(1.0, 0.45, 0.12, 1.0),
 		follow: SpiderSpells = null) -> FireBreath:
 	if host == null or toward.length_squared() < 0.000001 or far <= 0.0:
 		return null
@@ -95,7 +66,6 @@ static func breathe(host: Node, from: Vector3, toward: Vector3, far: float, seco
 	breath.heading = toward.normalized()
 	breath.reach = far
 	breath.lasts = maxf(seconds, 0.05)
-	breath.harm = hurt
 	breath.mouth = maxf(body * MOUTH, 0.005)
 	breath.colour = tint
 	breath.source = follow
@@ -142,12 +112,8 @@ func _physics_process(delta: float) -> void:
 			heading = toward.normalized()
 		global_position = origin
 	_length = _clear_reach() * clampf(_age / FLARE, 0.0, 1.0)
-	if burning():
-		_burn_creatures(delta)
-		_burn_silk()
-		_melt_puddles()
-	elif _age >= lasts + FLARE:
-		finished.emit(self, burned, webs_burned, lines_burned)
+	if not burning() and _age >= lasts + FLARE:
+		finished.emit(self)
 		queue_free()
 
 
@@ -165,102 +131,6 @@ func _clear_reach() -> float:
 	if hit.is_empty():
 		return reach
 	return origin.distance_to(hit["position"])
-
-
-## Everything in the flame burns, a little every frame it is in it.
-func _burn_creatures(delta: float) -> void:
-	for node in get_tree().get_nodes_in_group("prey"):
-		var creature := node as Prey
-		if creature == null or not is_instance_valid(creature) or creature.eaten:
-			continue
-		if not holds(creature.global_position, creature.hit_radius()):
-			continue
-		if creature.burn(harm * delta) > 0.0 and not burned.has(creature):
-			burned.append(creature)
-			SpellFlash.burst(get_parent(), creature.global_position, colour,
-				creature.hit_radius() * 2.5, 0.4)
-
-
-## Every web and line it touches goes up, a web with its frame — unless it is wet.
-## What a web held burns as it goes, held in silk as it is: a second of the flame.
-func _burn_silk() -> void:
-	var catching: Array[WebStructure] = []
-	for node in get_tree().get_nodes_in_group("silk_webs"):
-		var web := node as WebStructure
-		if web != null and not web.is_queued_for_deletion() and not WetSilk.is_wet(web) \
-				and _touches(web):
-			catching.append(web)
-	if catching.is_empty():
-		return
-	var frames: Array[WebStructure] = []
-	for web in catching:
-		var net := web as WebNet
-		if net == null:
-			continue
-		for line in net.frame():
-			if not catching.has(line) and not frames.has(line) and not WetSilk.is_wet(line):
-				frames.append(line)
-	for web in catching + frames:
-		for held in web.snared_prey():
-			var creature := held as Prey
-			if creature != null and is_instance_valid(creature) and creature.burn(harm) > 0.0 \
-					and not burned.has(creature):
-				burned.append(creature)
-		_flare(web)
-		web.tear()
-		if web is WebNet:
-			webs_burned += 1
-		elif not frames.has(web):
-			lines_burned += 1
-
-
-## Every puddle the flame reaches turns to lava where it lies.
-func _melt_puddles() -> void:
-	if _length <= 0.0:
-		return
-	for node in get_tree().get_nodes_in_group(WetGround.GROUP):
-		var wet := node as WetGround
-		if wet == null or wet.is_queued_for_deletion() or not wet.is_wet():
-			continue
-		var along := clampf((wet.centre - origin).dot(heading), 0.0, _length)
-		var nearest := origin + heading * along
-		if nearest.distance_to(wet.centre) > radius_at(along) + wet.radius:
-			continue
-		wet.dry()
-		var pool := Lava.melt(get_parent(), wet.centre, wet.up, wet.radius, LAVA_LASTS,
-			harm * LAVA_HEAT)
-		if pool != null:
-			melted.append(pool)
-
-
-## Whether the flame touches any of [param web]'s silk.
-func _touches(web: WebStructure) -> bool:
-	if _length <= 0.0:
-		return false
-	var strand := web as WebStrand
-	if strand != null:
-		var pair := Geometry3D.get_closest_points_between_segments(origin,
-			origin + heading * _length, strand.point_a, strand.point_b)
-		return pair[0].distance_to(pair[1]) <= radius_at((pair[0] - origin).dot(heading))
-	for i in range(SAMPLES + 1):
-		var point := origin + heading * _length * float(i) / float(SAMPLES)
-		if holds(web.nearest_silk(point)):
-			return true
-	return false
-
-
-## Fire running along [param web] as it goes: a bloom at both ends of a line and in
-## its middle, or one over the whole of a web.
-func _flare(web: WebStructure) -> void:
-	var strand := web as WebStrand
-	if strand != null:
-		for share: float in [0.0, 0.5, 1.0]:
-			SpellFlash.burst(get_parent(), strand.point_a.lerp(strand.point_b, share), colour,
-				mouth * 4.0, 0.5)
-		return
-	var net := web as WebNet
-	if net != null:
-		SpellFlash.burst(get_parent(), net.signal_point(), colour, maxf(net.radius, 0.05), 0.5)
 
 
 # --- what you can see ----------------------------------------------------

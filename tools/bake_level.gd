@@ -2,21 +2,21 @@ extends SceneTree
 
 ## Builds places from their generators and saves each as a scene of real nodes.
 ##
-##     godot --headless --path . --script res://tools/bake_level.gd -- colosseum castle
+##     godot --headless --path . --script res://tools/bake_level.gd -- farm
 ##
-## Each place in [constant Site.PLACES] has a class that says where every piece goes
+## Each place in [constant Site.PLACES] has a class that says where everything goes
 ## — the generator of record — and a scene it is saved to, which is what the game
-## opens and what you move things about in, in the editor. So does each of the
-## dungeon's rooms in [constant Rooms.ROOMS], and the dungeon itself. Name them after
-## `--` to bake only those (`-- hall crypt dungeon`); name none and everything is
-## baked. A place that already has a scene is left alone unless told otherwise,
-## because building it again throws away anything moved by hand:
+## opens and what you move things about in, in the editor. Name them after `--` to
+## bake only those; name none and everything is baked. A place that already has a
+## scene is left alone unless told otherwise, because building it again throws away
+## anything moved by hand:
 ##
-##     godot --headless --path . --script res://tools/bake_level.gd -- --force castle
+##     godot --headless --path . --script res://tools/bake_level.gd -- --force farm
 ##
 ## Nothing is added to the tree while a place builds, so nothing in it runs: the
-## spider does not set itself up and the blocks do not fit their looks, and what is
-## saved is exactly what the generator said and no more.
+## spider does not set itself up, and what is saved is exactly what the generator
+## said and no more. The paints are written out first, so the scene points at
+## their files.
 
 
 func _initialize() -> void:
@@ -43,19 +43,15 @@ func _run() -> void:
 	quit(1 if failed > 0 else 0)
 
 
-## Everything there is to bake: the places, the dungeon's rooms, and the dungeon.
+## Everything there is to bake.
 func _all() -> Array[String]:
 	var names: Array[String] = []
-	names.assign(Site.PLACES.keys() + Rooms.ROOMS.keys() + ["dungeon"])
+	names.assign(Site.PLACES.keys())
 	return names
 
 
 func _builder(place: String) -> Script:
-	if Site.PLACES.has(place):
-		return Site.builder(place)
-	if Rooms.ROOMS.has(place):
-		return Rooms.builder(place)
-	return load(Rooms.DUNGEON) as Script if place == "dungeon" else null
+	return Site.builder(place)
 
 
 func _bake(place: String, force: bool) -> bool:
@@ -68,11 +64,9 @@ func _bake(place: String, force: bool) -> bool:
 		print("%s is already baked — left alone. Pass --force to build it again, which" % path)
 		print("  throws away anything that has been moved by hand.")
 		return true
-	# A room's root is a room, which carries its doorways for the floor plan.
-	var level: Node3D = DungeonRoom.new() if Rooms.ROOMS.has(place) else Node3D.new()
+	Palette.save_missing()
+	var level := Node3D.new()
 	level.name = builder.get_global_name()
-	if level is DungeonRoom:
-		(level as DungeonRoom).room_id = place
 	builder.call("build", level)
 	_own(level, level)
 	var nodes := _count(level)

@@ -1,6 +1,0 @@
-[gd_resource type="StandardMaterial3D" format=3]
-
-[resource]
-resource_name = "leaf_rust"
-albedo_color = Color(0.56, 0.27, 0.13, 1)
-roughness = 0.88

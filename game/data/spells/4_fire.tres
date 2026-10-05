@@ -1,17 +1,14 @@
 [gd_resource type="Resource" script_class="SpiderSpell" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://game/data/spider_spell.gd" id="1_spell"]
+[ext_resource type="Script" path="res://game/data/spider_spell.gd" id="1_script"]
 
 [resource]
-script = ExtResource("1_spell")
+script = ExtResource("1_script")
 id = "fire"
 display_name = "Fire Breath"
-description = "Fire out of your jaws along the cross, for a moment after you let go — longer and further the longer you hold — and you can sweep it while it lasts. Silk burns: the more of a thing is wrapped, the harder it burns, and any web or line the flame touches goes up, dropping what the web held. A wet web stands, and what it holds burns in it. A puddle turns to lava."
-form = 3
+description = "Fire out of your jaws along the cross. It cooks what is on the table, and cooking is what makes a bundle a dish."
+form = 4
 order = 4
-cooldown = 6.0
-size = Vector2(3.5, 5)
-duration = Vector2(0.6, 1.4)
-power = Vector2(0.4, 0.45)
-sigil = 3
+cooldown = 1.5
 colour = Color(1, 0.45, 0.12, 1)
+sigil = 3

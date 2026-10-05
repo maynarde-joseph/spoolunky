@@ -1,17 +1,14 @@
 [gd_resource type="Resource" script_class="SpiderSpell" load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://game/data/spider_spell.gd" id="1_spell"]
+[ext_resource type="Script" path="res://game/data/spider_spell.gd" id="1_script"]
 
 [resource]
-script = ExtResource("1_spell")
+script = ExtResource("1_script")
 id = "earth"
-display_name = "Clay Pillar"
-description = "A square pillar of clay, raised where you point. What stands there is stunned and thrown off its top; stand there yourself and you go up higher than you can jump. A web it comes up under is flung. It stands for ten seconds."
+display_name = "Clay Crust"
+description = "Clay raised up round what is on the table, sealing it in a crust: cooked in it, it comes out clay-baked. Nothing else gets in once it is sealed."
 form = 6
 order = 6
-cooldown = 5.0
-size = Vector2(3, 5)
-duration = Vector2(10, 10)
-power = Vector2(0.06, 0.1)
-sigil = 9
+cooldown = 1.5
 colour = Color(0.62, 0.42, 0.26, 1)
+sigil = 9

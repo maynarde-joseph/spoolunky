@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="StructureKind" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/data/structure_kind.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "prep_table"
+display_name = "Prep Table"
+description = "Drag a wrapped fly onto it and it stays put while you work: cast at it to wash, dry, tenderise, crust, cook and pull it, then F to take the dish."
+category = "Kitchen"
+sort_order = 70
+cost = 40
+placement = 2
+footprint = Vector2i(1, 1)
