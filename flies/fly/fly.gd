@@ -5,7 +5,8 @@ extends Node3D
 ## path round and round, and the first silk that touches it takes it.
 ##
 ## Taken, it is wrapped where it was and goes on a line behind the spider — see
-## [FlyLine] — and at the exit it goes in the bag. Nothing else happens to a fly:
+## [FlyLine]. There it is a jump in the air, eaten when spent; whatever is still on
+## the line at the exit goes in the bag. Nothing else happens to a fly:
 ## it does not dodge, it does not wander, and a web sitting on a wall does not
 ## catch one that flies into it. The only ways to take one are a thrown web that
 ## touches it and a web called back through it.
@@ -20,6 +21,7 @@ enum State {
 	FREE,    ## hovering or on its path
 	CAUGHT,  ## wrapped, and on a line behind the spider
 	BAGGED,  ## in the bag at the exit
+	EATEN,   ## eaten off the line for a jump
 }
 
 const GROUP := "flies"
@@ -93,6 +95,34 @@ func catch_it() -> bool:
 	_glow.visible = false
 	caught.emit(self)
 	return true
+
+
+## Eaten off the line, for a jump in the air: a puff of silk where it was, and
+## gone.
+func eat() -> void:
+	state = State.EATEN
+	var puff := MeshInstance3D.new()
+	puff.name = "Puff"
+	var ball := SphereMesh.new()
+	ball.radius = 0.3
+	ball.height = 0.6
+	ball.radial_segments = 12
+	ball.rings = 6
+	puff.mesh = ball
+	var paint := StandardMaterial3D.new()
+	paint.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	paint.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	paint.albedo_color = Color(1.0, 0.85, 0.45, 0.8)
+	puff.material_override = paint
+	puff.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	get_parent().add_child(puff)
+	puff.global_position = global_position
+	var grow := puff.create_tween()
+	grow.set_parallel(true)
+	grow.tween_property(puff, "scale", Vector3.ONE * 3.0, 0.3)
+	grow.tween_property(paint, "albedo_color:a", 0.0, 0.3)
+	grow.chain().tween_callback(puff.queue_free)
+	queue_free()
 
 
 ## Into the bag.

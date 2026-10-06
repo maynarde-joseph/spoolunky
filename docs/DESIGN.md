@@ -25,8 +25,11 @@ A line to where you point, and you're pulled along it fast. Pulls are capped at
   the air. The line follows a moving web until the spider lands on it.
 * **Won't hold on** slick metal. The line flickers red and you stay put.
 * **One in the air.** It's spent the moment it goes, and it comes back the
-  moment you land on the ground or on a web. On the ground it is effectively
-  always there.
+  moment you land on the ground or on a web that has stuck. A web still in
+  flight gives it back once, and not again until you next land. That keeps your
+  idea of grappling elsewhere from a ridden web, but rules out
+  throw → grapple on → throw → grapple on chained forever. On the ground it is
+  effectively always there.
 * **Where it ends**: on a floor you land running, keeping the pull's speed
   along it. On a wall just under a ledge (within 1.4 m of the lip) you go over
   the lip. On any other wall you cling for a moment, and jump kicks you off the
@@ -43,8 +46,9 @@ throws a 1 m web and a full second's wind-up throws a 2.4 m web.
 What leaves the spider is a whole web, flying face first at 22 m/s for up to
 36 m:
 
-* **Ride it.** Grapple onto it in flight and you're standing on it, carried
-  along. Landing on it gives the grapple back. Jumping off keeps its speed.
+* **Ride it, and commit to it.** Grapple onto it in flight and you're standing
+  on it, carried along. Jumping off a web in flight is only a small hop, with
+  none of its speed. A ride is a way to wherever the web lands, not a sling.
 * **It sticks where its middle lands,** lying flat against the surface, and it
   becomes ground. The spider walks on it at any angle: up a wall, across a
   ceiling. Walking off its rim onto a floor, onto the top of a wall, or onto
@@ -57,23 +61,36 @@ What leaves the spider is a whole web, flying face first at 22 m/s for up to
 * **Moving things** carry it: a web on a platform or a door goes where they go.
   A web on a crate holds the crate.
 * **Thrown at nothing,** it comes apart at the end of its reach. If you're
-  riding it, you fall with its speed.
+  riding it, it stops dead first and you drop where it stopped, with none of
+  its speed. A shot into the open sky only carries you in a straight line,
+  and you stall at the end of it.
 
-A level sets how many webs you can have out at once, usually two. That limit is
-what makes the Pullback part of the loop.
+A level sets how many webs you can have out at once, two by default. That limit
+is what makes the Pullback part of the loop.
+
+**Why the riding rules.** Throwing a web and grappling onto it turned out to be the
+strongest move in the game: a shot at the sky bought huge airtime and a fall onto
+any safe ground, which flattened rooms built around getting somewhere. A
+dragline that sprang the rider back to the throw point was tried and felt wrong.
+The three rules above work together instead: one refund per landing, no
+momentum off a flying web, and a dead stop at the end of reach.
 
 ### Pullback (E / middle mouse)
 
-Every web in reach (60 m) flies home at 44 m/s, through walls.
+First thrown, first home: each press calls your oldest web (within 60 m), and it
+flies home at 44 m/s, through walls. Press again for the next.
 
-* **It takes what it passes.** Every fly along a web's way home is wrapped. Each
-  web comes straight back to where you are standing, so where you stand when you
-  call aims the recall. A faint line from each web to the spider shows the path.
+* **It comes to you,** not to where it was thrown from. Where you stand when you
+  call aims the recall, which is the whole of the "call it back through a fly"
+  puzzle, and it's how a crate gets onto a plate (stand on the plate). Calling
+  webs back to their throw points would turn both into "throw from the right
+  spot", which is a weaker puzzle and harder to read.
+* **It takes what it passes.** Every fly along a web's way home is wrapped.
 * **It brings what it held.** A web on a crate brings the crate and drops it at
   your feet. This is the only way to move a crate.
-* **The web underfoot stays.** Standing (or riding) on a web, you call home all
-  the others. This is how two webs climb a wall that one can't: stand on the
-  higher one, call the lower one home, and throw it higher.
+* **The web underfoot is skipped.** Standing (or riding) on a web, a call takes
+  the oldest of the others. This is how two webs climb a wall that one can't:
+  stand on the higher one, call the lower one home, and throw it higher.
 * Its silk counts as yours the moment it's called.
 
 ## Surfaces and things
@@ -82,20 +99,37 @@ Every web in reach (60 m) flies home at 44 m/s, through walls.
 |-------|------|
 | Stone (pale, 2 m panels) | webs stick, grapples hold, walkable as floor |
 | Slick (dark striped metal) | webs slide off, grapples slip, still walkable as floor |
-| Fly | hovers or flies a path. Taken only by a flying web or a returning one |
+| Fly | hovers or flies a path. Taken only by a flying web or a returning one. On your line it's an air jump |
 | Crate | webs stick to it. Only the Pullback moves it. Heavy enough for a plate |
 | Plate | powers its channel while a crate is on it. A spider is too light |
 | Door | slides open by a set offset while its channel is powered |
 | Platform | follows its path back and forth or round. Runs only while its channel (if any) is powered |
 | Hazard (red) | touch it and the level restarts |
-| Exit bag | red ring while shut, gold once the level's flies are caught. Walk in to finish |
+| Exit bag | open from the start unless the level asks for flies first. Walk in to finish |
+
+## Flies
+
+Catching flies on its own felt like a chore, so flies now feed movement. Every
+caught fly trails on your line, and **Space in the air eats the newest one for
+another jump**: a double jump you collect. Gold beads on the HUD show how many
+you're carrying.
+
+Eating a fly doesn't cost you score. The bag counts every fly you caught this
+run, eaten or not, so there's never a reason to hold back a jump. A level's
+score is its time and its fly count, and the two records are kept separately,
+because the fastest route rarely catches everything.
+
+This lets levels hang flies in front of gaps that need them, as Celeste does
+with its dash crystals. In First Thread, the last pad is slick and 9 m out:
+too far for a running jump (about 6.5 m), with nothing to grapple or stick a
+web to. You catch the fly on the ledge and spend it in mid-air.
 
 ## How the levels use them
 
 Each level has a single lesson and then a twist on it.
 
-1. **First Thread**: jumping, grappling across a gap, grappling over a lip, and
-   catching flies with silk.
+1. **First Thread**: jumping, grappling across a gap, grappling over a lip,
+   catching flies with silk, and spending a fly as a jump to clear a slick gap.
 2. **Silk Stairs**: you can't climb, but you can climb webs. The wall's top band is
    slick, so the last web has to reach over it. With two webs, the Pullback has
    to leapfrog them.
@@ -122,7 +156,7 @@ take hold of it.
 | spider | 0.7 m tall, runs 9 m/s, jumps 1.5 m, falls at 24 m/s² |
 | grapple | 24 m reach, 34 m/s or 0.6 s, one in the air |
 | silk | 1 to 2.4 m webs, 22 m/s, 36 m reach, 0.2 s between throws |
-| pullback | 60 m reach, 44 m/s home, 0.35 s between calls |
+| pullback | oldest web first, 60 m reach, 44 m/s home, 0.15 s between calls |
 | fly | 0.32 m hit radius, drawn about five times life size |
 
 All of these are constants at the top of their scripts in `flies/player/` and

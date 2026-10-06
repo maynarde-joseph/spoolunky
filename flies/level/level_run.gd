@@ -4,13 +4,16 @@ extends Node3D
 ## A level being played: built from its data, with the spider in it, the clock
 ## running, and the bag waiting at the exit.
 ##
-## The clock starts the first time the spider moves. The exit opens when the
-## spider has the flies the level asks for — all of them, unless it says fewer.
-## Fall out of the level or touch the red and it starts again at once: a restart
-## is a key away (R) and costs nothing but the time.
+## The clock starts the first time the spider moves. The exit is open from the
+## start, unless the level asks for so many flies first. Every fly caught on the
+## way counts in the bag — the ones eaten for jumps as well: the score, against
+## the clock, and eating one costs nothing but the fly's place on the line. Fall
+## out of the
+## level or touch the red and it starts again at once: a restart is a key away (R)
+## and costs nothing but the time.
 
-## Done: the flies are in the bag. [param best] is the best time before this one,
-## or a negative number for none.
+## Done: the spider is in the bag, and [member bagged] flies with it. [param best]
+## is the best time before this one, or a negative number for none.
 signal finished(time: float, best: float)
 
 ## Asked to start again: a fall, a hazard, or R.
@@ -31,7 +34,15 @@ var hud: GameHUD
 var world: Node3D
 
 var flies_total := 0
+
+## How many flies the bag wants before it opens: none, unless the level says.
 var flies_needed := 0
+
+## How many went in the bag at the end.
+var bagged := 0
+
+## Every fly caught this run, eaten or not.
+var _caught := 0
 var time := 0.0
 var running := false
 var done := false
@@ -74,17 +85,18 @@ func _ready() -> void:
 	flies_total = get_tree().get_nodes_in_group(Fly.GROUP).filter(
 		func(n: Node) -> bool: return world.is_ancestor_of(n)).size()
 	var asked := int(level.get("flies_needed", 0))
-	flies_needed = flies_total if asked <= 0 else mini(asked, flies_total)
+	flies_needed = clampi(asked, 0, flies_total)
 
 	weaver = Weaver.new()
 	weaver.name = "Weaver"
-	weaver.max_webs = maxi(int(level.get("webs", 3)), 1)
+	weaver.max_webs = maxi(int(level.get("webs", 2)), 1)
 	weaver.kill_y = float(level.get("kill_y", -20.0))
 	weaver.require_captured_mouse = require_captured_mouse
 	weaver.container = world
 	add_child(weaver)
 	weaver.put_at(_start.translated(Vector3.UP * 0.4))
 	weaver.fell.connect(func() -> void: lose("Fell"))
+	weaver.fly_caught.connect(func(_fly: Fly) -> void: _caught += 1)
 	if exit != null:
 		exit.entered.connect(_try_exit)
 		exit.set_open(flies_needed == 0)
@@ -118,9 +130,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## How many flies are on the spider's line.
+## How many flies the spider has caught this run, eaten for jumps or not.
 func caught() -> int:
-	return weaver.fly_line.count() if weaver != null else 0
+	return _caught
 
 
 ## Powers [param channel] on or off — a plate pressed or let up. A channel is on
@@ -151,10 +163,10 @@ func _try_exit() -> void:
 				"y" if flies_needed - caught() == 1 else "ies"])
 		return
 	done = true
+	bagged = caught()
 	weaver.fly_line.pour_into(exit.mouth())
 	var best := best_time()
-	if source != "" and (best < 0.0 or time < best):
-		_keep_best(time)
+	_keep_best(time, bagged)
 	finished.emit(time, best)
 
 
@@ -164,15 +176,39 @@ func best_time() -> float:
 
 
 static func best_for(path: String) -> float:
+	return float(_record(path).get("time", -1.0))
+
+
+## The most flies this level has been finished with, or a negative number.
+static func best_bag_for(path: String) -> int:
+	return int(_record(path).get("flies", -1))
+
+
+static func _record(path: String) -> Dictionary:
 	if path == "":
-		return -1.0
-	var all := _progress()
-	return float(all.get(path, -1.0))
+		return {}
+	var kept: Variant = _progress().get(path)
+	if kept is Dictionary:
+		return kept
+	if kept is float or kept is int:
+		return {"time": float(kept)}
+	return {}
 
 
-func _keep_best(seconds: float) -> void:
+## Keeps [param seconds] if it is the best time yet, and [param flies] if it is the
+## fullest bag yet: two records, kept apart, since the quickest way through a level
+## is seldom the one that brings every fly home.
+func _keep_best(seconds: float, flies: int) -> void:
+	if source == "":
+		return
 	var all := _progress()
-	all[source] = snappedf(seconds, 0.001)
+	var record := _record(source)
+	var best := float(record.get("time", -1.0))
+	if best < 0.0 or seconds < best:
+		record["time"] = snappedf(seconds, 0.001)
+	if flies > int(record.get("flies", -1)):
+		record["flies"] = flies
+	all[source] = record
 	var file := FileAccess.open(PROGRESS, FileAccess.WRITE)
 	if file != null:
 		file.store_string(JSON.stringify(all, "\t"))

@@ -56,6 +56,9 @@ func _ready() -> void:
 			line += "   (yours)"
 		if best >= 0.0:
 			line += "   — best " + GameHUD.clock_text(best)
+		var bag := LevelRun.best_bag_for(level["path"])
+		if bag >= 0:
+			line += "   · most flies bagged %d" % bag
 		_list.add_item(line)
 	if not _levels.is_empty():
 		_list.select(0)

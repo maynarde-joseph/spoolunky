@@ -13,6 +13,10 @@ extends Node3D
 ## middle stops it; its rim passes through things, or a web thrown along a floor
 ## would stick to the floor the moment it left.
 ##
+## Ridden to the end of its reach without finding anything, it stops dead and comes
+## apart, and the rider drops where it is with none of its speed: a ride only goes
+## somewhere if the web lands on something.
+##
 ## A web on something that moves goes with it. A web on a slick surface does not
 ## stick at all — it slides off and comes apart, and the silk is the spider's
 ## again. Thrown at nothing, it goes as far as silk goes and comes apart there.
@@ -56,7 +60,6 @@ const UNFURL := 0.16
 
 ## How fast a web called back comes home, in metres a second.
 const RETURN_SPEED := 44.0
-
 ## How long coming apart takes.
 const FADE := 0.35
 
@@ -73,6 +76,10 @@ var velocity := Vector3.ZERO
 
 ## How much further it will fly before it comes apart.
 var range_left := 36.0
+
+## Whether it ran out of reach with the spider on it and stopped dead: its rider is
+## left where it was, at a stand.
+var stalled := false
 
 ## The spider that threw it.
 var weaver: Node3D
@@ -218,7 +225,17 @@ func _fly(delta: float) -> void:
 	global_position = from + step
 	range_left -= distance
 	if range_left <= 0.0:
+		# Out of silk with nothing found. Ridden, it stops dead before it comes apart,
+		# so the rider drops where it is with none of the web's speed: a ride only
+		# goes somewhere if the web lands on something.
+		stalled = _ridden()
+		velocity = Vector3.ZERO
 		_come_apart()
+
+
+func _ridden() -> bool:
+	return weaver != null and weaver.has_method("standing_web") \
+		and weaver.call("standing_web") == self
 
 
 ## What the web's middle meets this frame, if anything: a ray down its middle, so

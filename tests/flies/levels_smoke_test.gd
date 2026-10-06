@@ -220,11 +220,13 @@ func climb(run: LevelRun, limit := 150) -> bool:
 	return left
 
 
-## Calls every web home and waits for them to arrive.
+## Calls every web home — first thrown, first home, a press each — and waits for
+## them to arrive.
 func pull(run: LevelRun) -> void:
 	var weaver := run.weaver
-	await wait_until(func() -> bool: return weaver.pullback._cooling <= 0.0, 30)
-	weaver.pullback.cast()
+	while weaver.pullback.next_web() != null:
+		await wait_until(func() -> bool: return weaver.pullback._cooling <= 0.0, 30)
+		weaver.pullback.cast()
 	await wait_until(func() -> bool:
 		return get_root().get_tree().get_nodes_in_group(ThrownWeb.GROUP).filter(
 			func(n: Node) -> bool: return (n as ThrownWeb).state == ThrownWeb.State.RETURNING
@@ -276,7 +278,25 @@ func _first_thread() -> void:
 		% where(run))
 	await stop(run)
 	check(await catch(run, fly_near(Vector3(-2.5, 5.6, -46))), "the fly on the ledge")
-	check(await finish(run, Vector3(0, 4, -48)), "and the bag takes the flies")
+	var weaver := run.weaver
+	var flies := weaver.fly_line.count()
+	await go(run, Vector3(0, 4, -42.6), 0.3)
+	await stop(run)
+	aim(run, Vector3(0, 4, -64))
+	check(weaver.grapple.aimed().get("slick", true) or weaver.grapple.aimed().is_empty(),
+		"the last pad is slick: nothing for the grapple")
+	await go(run, Vector3(0, 4, -49.6), 0.3, true)
+	weaver.drive(Vector2(0.0, 1.0), true)
+	await run_frames(22)
+	weaver.drive(Vector2(0.0, 1.0), true)
+	await run_frames(3)
+	check(weaver.fly_line.count() == flies - 1, "a jump in the air eats a fly off the line")
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
+	weaver.drive(Vector2.ZERO)
+	check(weaver.global_position.z < -59.0 and weaver.global_position.y > 3.9,
+		"and makes a gap one jump could not (%s)" % where(run))
+	check(await finish(run, Vector3(0, 4, -66)), "and the bag")
+	check(run.bagged == 3, "with every fly counted, the eaten one too (%d)" % run.bagged)
 
 
 func _silk_stairs() -> void:

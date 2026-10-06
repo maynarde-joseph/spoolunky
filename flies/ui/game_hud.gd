@@ -60,7 +60,7 @@ func _ready() -> void:
 	_place(_news, 0.5, 1.0, Rect2(-500, -150, 1000, 36))
 	_help = _label(Vector2.ZERO, FONT_SIZE - 4)
 	_place(_help, 0.5, 1.0, Rect2(-700, -44, 1400, 30))
-	_help.text = "WASD run · Space jump · LEFT MOUSE grapple · RIGHT MOUSE silk (hold to grow) · E / MIDDLE MOUSE pullback · R restart · Esc pause"
+	_help.text = "WASD run · Space jump (in the air: eat a fly) · LEFT MOUSE grapple · RIGHT MOUSE silk (hold to grow) · E / MIDDLE MOUSE pullback · R restart · Esc pause"
 
 	_result = PanelContainer.new()
 	_result.name = "Result"
@@ -124,10 +124,9 @@ func _process(delta: float) -> void:
 	if run == null or run.weaver == null:
 		return
 	_flies.text = "FLIES  %d / %d" % [run.caught(), run.flies_total]
-	if run.flies_needed < run.flies_total:
-		_flies.text += "   (need %d)" % run.flies_needed
-	_flies.modulate = Color(1.0, 0.85, 0.4) if run.caught() >= run.flies_needed \
-		else Color.WHITE
+	if run.flies_needed > 0 and run.caught() < run.flies_needed:
+		_flies.text += "   (the bag wants %d)" % run.flies_needed
+	_flies.modulate = Color(1.0, 0.85, 0.4) if run.caught() > 0 else Color(1, 1, 1, 0.8)
 	_clock.text = clock_text(run.time)
 	_news_left -= delta
 	_news.modulate.a = clampf(_news_left, 0.0, 1.0)
@@ -143,6 +142,7 @@ func _on_finished(seconds: float, best: float) -> void:
 		line += "   new best!"
 	else:
 		line += "   best %s" % clock_text(best)
+	line += "\n%d of %d flies" % [run.bagged, run.flies_total]
 	line += "\n\nEnter — next level    R — again    Esc — menu"
 	_result_text.text = line
 	_result.visible = true
@@ -201,6 +201,13 @@ func _draw_cross() -> void:
 		else:
 			_cross.draw_arc(at, 8.0, 0.0, TAU, 24,
 				Color(1.0, 0.4, 0.35, 0.9) if flash else Color(1, 1, 1, 0.4), 2.0, true)
+	# Flies on the line, each a jump in the air: gold beads under the silk.
+	var jumps := weaver.fly_line.count()
+	var row := Vector2(middle.x - 16.0 * float(jumps - 1) * 0.5, _cross.size.y - 64.0)
+	for i in jumps:
+		var at := row + Vector2(16.0 * float(i), 0.0)
+		_cross.draw_circle(at, 6.5, Color(0.1, 0.1, 0.14, 0.75))
+		_cross.draw_circle(at, 4.5, Color(1.0, 0.8, 0.3, 0.95))
 
 
 ## A small gold bead over every fly still out, so they can be found across a

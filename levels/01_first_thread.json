@@ -1,6 +1,6 @@
 {
 	"name": "First Thread",
-	"webs": 3,
+	"webs": 2,
 	"flies_needed": 0,
 	"kill_y": -15.0,
 	"par": 25.0,
@@ -188,11 +188,31 @@
 			"loop": true
 		},
 		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				-64
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				10,
+				5,
+				10
+			],
+			"surface": "slick"
+		},
+		{
 			"type": "exit",
 			"pos": [
 				0,
 				4,
-				-48
+				-66
 			],
 			"rot": [
 				0.0,
@@ -204,9 +224,9 @@
 			"type": "piece",
 			"piece": "pillar3",
 			"pos": [
-				-5,
+				-4,
 				4,
-				-49.5
+				-68
 			],
 			"rot": [
 				0.0,
@@ -219,9 +239,9 @@
 			"type": "piece",
 			"piece": "pillar3",
 			"pos": [
-				5,
 				4,
-				-49.5
+				4,
+				-68
 			],
 			"rot": [
 				0.0,
@@ -236,14 +256,14 @@
 			"pos": [
 				0,
 				4,
-				-50.5
+				-69
 			],
 			"rot": [
 				0.0,
 				0.0,
 				0.0
 			],
-			"surface": "stone"
+			"surface": "slick"
 		}
 	]
 }

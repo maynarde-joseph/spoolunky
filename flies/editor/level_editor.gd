@@ -651,7 +651,7 @@ func _build_ui() -> void:
 	bar.add_child(_small("Webs"))
 	_webs_spin = _spin(1, 6, 1)
 	bar.add_child(_webs_spin)
-	bar.add_child(_small("Flies needed (0 = all)"))
+	bar.add_child(_small("Bag wants (flies)"))
 	_needed_spin = _spin(0, 50, 1)
 	bar.add_child(_needed_spin)
 	bar.add_child(_small("Fall at y"))
@@ -760,7 +760,7 @@ func _refresh_settings() -> void:
 	if _name_edit == null:
 		return
 	_name_edit.text = String(level.get("name", "New level"))
-	_webs_spin.set_value_no_signal(float(level.get("webs", 3)))
+	_webs_spin.set_value_no_signal(float(level.get("webs", 2)))
 	_needed_spin.set_value_no_signal(float(level.get("flies_needed", 0)))
 	_kill_spin.set_value_no_signal(float(level.get("kill_y", -20.0)))
 	_par_spin.set_value_no_signal(float(level.get("par", 60.0)))
