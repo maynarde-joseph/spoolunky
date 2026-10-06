@@ -131,8 +131,12 @@ func fire() -> bool:
 		weaver.notify("Slick — the line won't hold")
 		return false
 	web = target.get("web") as ThrownWeb
-	point = target["position"]
 	normal = (target.get("normal", Vector3.UP) as Vector3).normalized()
+	point = target["position"]
+	if web == null:
+		# The pull ends with the spider against the surface, not its middle in it: a
+		# long pull to a floor otherwise scrapes along the near edge and falls short.
+		point += normal * (Weaver.RADIUS + 0.05)
 	body = null
 	if web != null:
 		local_point = web.to_local(point)

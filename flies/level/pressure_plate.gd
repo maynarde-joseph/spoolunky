@@ -4,7 +4,7 @@ extends StaticBody3D
 ## A plate in the floor. A crate on it presses it and powers its channel — the
 ## doors and platforms listening on that channel go. A spider is too light to.
 
-const RADIUS := 1.1
+const RADIUS := 1.5
 const HEIGHT := 0.14
 
 var channel := "a"

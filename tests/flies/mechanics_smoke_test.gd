@@ -335,20 +335,26 @@ func _pullback() -> void:
 	check(ref.get_ref() == null, "it reaches the spider and is gone")
 	check(not fly.is_free(), "wrapping the fly it passed on the way")
 
-	# Standing on a web and calling it in takes it from under you.
+	# Standing on one web, the others come home and that one stays: two webs climb.
+	weaver.pullback._cooling = 0.0
 	await put(run, Vector3(0.0, 0.3, -6.0))
-	aim(run, Vector3(0.0, 1.0, -11.5))
+	aim(run, Vector3(-3.0, 1.0, -11.5))
 	weaver.caster.throw(1.0)
-	web = first_web(run)
-	await wait_until(func() -> bool: return web.is_stuck(), 60)
-	weaver.attach_to_web(web)
+	var low := first_web(run)
+	weaver.caster._cooling = 0.0
+	aim(run, Vector3(3.0, 1.0, -11.5))
+	weaver.caster.throw(1.0)
+	var other: ThrownWeb = weaver.webs()[1]
+	await wait_until(func() -> bool: return low.is_stuck() and other.is_stuck(), 60)
+	weaver.attach_to_web(low)
 	await run_frames(3)
 	check(weaver.mode == Weaver.Mode.WEB, "on a web")
-	weaver.pullback._cooling = 0.0
+	check(weaver.pullback.callable_webs() == [other], "the Pullback leaves the web underfoot alone")
 	weaver.pullback.cast()
 	await run_frames(2)
-	check(weaver.mode != Weaver.Mode.WEB, "calling it home drops you off it")
-	check(weaver.webs_left() == 3, "and the silk is back")
+	check(weaver.standing_web() == low and low.is_stuck(), "and the spider stays on it")
+	check(other.state == ThrownWeb.State.RETURNING, "while the other comes home")
+	check(weaver.webs_left() == 2, "and its silk is back")
 
 
 func _crates_plates_doors() -> void:

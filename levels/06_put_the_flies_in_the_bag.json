@@ -1,0 +1,472 @@
+{
+	"name": "Put the Flies in the Bag",
+	"webs": 2,
+	"flies_needed": 0,
+	"kill_y": -14.0,
+	"par": 90.0,
+	"objects": [
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				12,
+				1,
+				12
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "start",
+			"pos": [
+				0,
+				0.2,
+				4
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "fly",
+			"pos": [
+				0,
+				2.0,
+				-14
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"path": [],
+			"speed": 2.5,
+			"loop": true
+		},
+		{
+			"type": "fly",
+			"pos": [
+				0.5,
+				2.2,
+				-22
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"path": [],
+			"speed": 2.5,
+			"loop": true
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				-40
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				16,
+				1,
+				12
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				-34.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				16,
+				4,
+				1
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				3,
+				-34.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				16,
+				1,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				-48
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				16,
+				11,
+				4
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				10,
+				-48
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				16,
+				2,
+				4
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				-57
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				16,
+				13,
+				14
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "fly",
+			"pos": [
+				5,
+				8,
+				-44
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"path": [],
+			"speed": 2.5,
+			"loop": true
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-6,
+				12,
+				-56
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.5,
+				4,
+				5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-2,
+				12,
+				-56
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.5,
+				4,
+				5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-4,
+				12,
+				-53.75
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				4,
+				4,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-4,
+				16,
+				-56
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				4.5,
+				0.5,
+				5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "fly",
+			"pos": [
+				-4,
+				13.6,
+				-56
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"path": [],
+			"speed": 2.5,
+			"loop": true
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-3,
+				12,
+				-63
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				12,
+				8,
+				1
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				6,
+				12,
+				-61
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2,
+				4,
+				2
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "crate",
+			"pos": [
+				6,
+				16.6,
+				-61
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "plate",
+			"pos": [
+				4,
+				12,
+				-53
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"channel": "bag"
+		},
+		{
+			"type": "door",
+			"piece": "cube",
+			"pos": [
+				0,
+				12,
+				-60
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				4,
+				8,
+				0.6
+			],
+			"surface": "stone",
+			"open": [
+				0,
+				8.2,
+				0
+			],
+			"channel": "bag"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-2.3,
+				12,
+				-61.3
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.6,
+				8,
+				2.6
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				2.3,
+				12,
+				-61.3
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.6,
+				8,
+				2.6
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				20,
+				-61.3
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				5.2,
+				0.5,
+				3.0
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "exit",
+			"pos": [
+				0,
+				12,
+				-61.3
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			]
+		}
+	]
+}

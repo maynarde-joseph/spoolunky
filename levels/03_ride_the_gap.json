@@ -1,0 +1,234 @@
+{
+	"name": "Ride the Gap",
+	"webs": 2,
+	"flies_needed": 0,
+	"kill_y": -15.0,
+	"par": 25.0,
+	"objects": [
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				12,
+				1,
+				12
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "start",
+			"pos": [
+				0,
+				0.2,
+				4
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				-42
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				14,
+				6,
+				12
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				5,
+				-36.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				14,
+				0.6,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-5,
+				-16,
+				-14
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2,
+				15,
+				2
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				5,
+				-16,
+				-14
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2,
+				15,
+				2
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-5,
+				-16,
+				-26
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2,
+				15,
+				2
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				5,
+				-16,
+				-26
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2,
+				15,
+				2
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "fly",
+			"pos": [
+				0,
+				2.4,
+				-14
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"path": [],
+			"speed": 2.5,
+			"loop": true
+		},
+		{
+			"type": "fly",
+			"pos": [
+				0.5,
+				2.6,
+				-24
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"path": [],
+			"speed": 2.5,
+			"loop": true
+		},
+		{
+			"type": "fly",
+			"pos": [
+				3,
+				7,
+				-42
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"path": [
+				[
+					3,
+					7,
+					-42
+				],
+				[
+					-3,
+					7,
+					-42
+				]
+			],
+			"speed": 2.0,
+			"loop": true
+		},
+		{
+			"type": "exit",
+			"pos": [
+				0,
+				5,
+				-44
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			]
+		}
+	]
+}

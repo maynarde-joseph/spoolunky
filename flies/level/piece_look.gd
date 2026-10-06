@@ -3,11 +3,18 @@ extends RefCounted
 
 ## Dresses a body as one of the kit's pieces in `Pieces/`, stretched to any size:
 ## the piece's mesh stretched to fit, painted as its surface, and a collider of
-## the same shape. What [KitBlock] does, for bodies that are not KitBlocks — the
-## level's still pieces, and the platforms and doors that move.
+## the same shape — for the level's still pieces, and for the platforms and doors
+## that move.
 ##
 ## Nothing is scaled: physics does not like a stretched body, so the faces are
 ## stretched instead.
+
+## Whether [param piece] is a plain box, which collides as one: a box is solid all
+## through, where a mesh collider is only its skin, and "is there room to stand
+## here" needs to know about the inside of a block as well as its faces.
+static func is_box(piece: String) -> bool:
+	return piece == "box" or piece.begins_with("cube")
+
 
 ## The natural size of [param piece], or a 2 m cube for a piece there is not.
 static func size_of(piece: String) -> Vector3:
@@ -18,9 +25,9 @@ static func size_of(piece: String) -> Vector3:
 
 
 ## Adds the look of [param piece] at [param size] to [param body], painted as
-## [param surface]. A moving body collides as a box the size of the piece, since
-## a mesh collider is for things that stay put; a still one collides as the
-## piece's own stretched faces. Returns the view.
+## [param surface]. A moving body, or a plain box, collides as a box the size of
+## the piece — a mesh collider is for things that stay put, and is only a skin;
+## anything else collides as the piece's own stretched faces. Returns the view.
 static func dress(body: CollisionObject3D, piece: String, size: Vector3, surface: String,
 		moving := false) -> MeshInstance3D:
 	var view := MeshInstance3D.new()
@@ -50,7 +57,7 @@ static func dress(body: CollisionObject3D, piece: String, size: Vector3, surface
 	var where := Transform3D(Basis.from_scale(stretch), Vector3.ZERO) * (look["where"] as Transform3D)
 	view.mesh = mesh
 	view.transform = where
-	if moving:
+	if moving or is_box(piece):
 		var shape := BoxShape3D.new()
 		shape.size = Vector3(maxf(size.x, 0.05), maxf(size.y, 0.05), maxf(size.z, 0.05))
 		solid.shape = shape

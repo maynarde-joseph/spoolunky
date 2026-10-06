@@ -1,0 +1,264 @@
+{
+	"name": "Silk Stairs",
+	"webs": 2,
+	"flies_needed": 0,
+	"kill_y": -15.0,
+	"par": 40.0,
+	"objects": [
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				2
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				18,
+				1,
+				18
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "start",
+			"pos": [
+				0,
+				0.2,
+				8
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				-8
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				18,
+				13,
+				2
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				12,
+				-8
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				18,
+				2,
+				2
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				-16
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				18,
+				15,
+				14
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-10,
+				-1,
+				2
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2,
+				15,
+				22
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				10,
+				-1,
+				2
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2,
+				15,
+				22
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "fly",
+			"pos": [
+				-4,
+				6.0,
+				-5.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"path": [],
+			"speed": 2.5,
+			"loop": true
+		},
+		{
+			"type": "fly",
+			"pos": [
+				4,
+				10.5,
+				-5.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"path": [],
+			"speed": 2.5,
+			"loop": true
+		},
+		{
+			"type": "fly",
+			"pos": [
+				0,
+				15.5,
+				-14
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"path": [
+				[
+					0,
+					15.5,
+					-14
+				],
+				[
+					-5,
+					15.5,
+					-18
+				],
+				[
+					5,
+					15.5,
+					-18
+				]
+			],
+			"speed": 2.0,
+			"loop": true
+		},
+		{
+			"type": "exit",
+			"pos": [
+				0,
+				14,
+				-19
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "piece",
+			"piece": "pillar2",
+			"pos": [
+				-6,
+				14,
+				-22
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "piece",
+			"piece": "pillar2",
+			"pos": [
+				0.0,
+				14,
+				-22
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "piece",
+			"piece": "pillar2",
+			"pos": [
+				6.0,
+				14,
+				-22
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"surface": "stone"
+		}
+	]
+}

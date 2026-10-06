@@ -9,7 +9,9 @@ extends Node3D
 ## the air it is something to grapple onto and ride. Whatever fly it passes over
 ## is wrapped and taken. Where its middle meets something solid it stops and
 ## sticks, lying flat against that surface, and from then on it is ground: the
-## spider cannot climb a wall, but it can walk on a web that is on one.
+## spider cannot climb a wall, but it can walk on a web that is on one. Only its
+## middle stops it; its rim passes through things, or a web thrown along a floor
+## would stick to the floor the moment it left.
 ##
 ## A web on something that moves goes with it. A web on a slick surface does not
 ## stick at all — it slides off and comes apart, and the silk is the spider's
@@ -48,11 +50,6 @@ const THICKNESS := 0.06
 
 ## How far off the surface a stuck web sits.
 const CLEARANCE := 0.035
-
-## The middle of the web: what has to meet a surface for the web to stick there.
-## Its rim passes through things — a web thrown along a floor would otherwise stick
-## to the floor the moment it left — and only its middle stops it.
-const CORE := 0.14
 
 ## How long a web takes to open out to its full size after it leaves the spider.
 const UNFURL := 0.16
@@ -175,12 +172,6 @@ func call_back(to: Node3D) -> bool:
 	return true
 
 
-## Taken back where it is: it comes apart on the spot and its silk is free again.
-## For the web the spider is standing on when it calls its webs home.
-func reclaim() -> void:
-	_come_apart()
-
-
 func _physics_process(delta: float) -> void:
 	_age += delta
 	match state:
@@ -230,34 +221,13 @@ func _fly(delta: float) -> void:
 		_come_apart()
 
 
-## What the web's middle meets this frame, if anything: a ray down the middle for
-## the exact surface, and a ball the size of the middle for anything it grazes.
+## What the web's middle meets this frame, if anything: a ray down its middle, so
+## it sticks exactly where the cross was. Anything fatter catches the wall early on
+## a throw along it — which is every throw up a wall from a web on it.
 func _first_hit(from: Vector3, step: Vector3) -> Dictionary:
 	var space := get_world_3d().direct_space_state
-	var ahead := step + step.normalized() * CORE
-	var ray := PhysicsRayQueryParameters3D.create(from, from + ahead, GameLayers.WORLD, _exclude)
-	var hit := space.intersect_ray(ray)
-	if not hit.is_empty():
-		return hit
-	var ball := SphereShape3D.new()
-	ball.radius = CORE
-	var sweep := PhysicsShapeQueryParameters3D.new()
-	sweep.shape = ball
-	sweep.transform = Transform3D(Basis.IDENTITY, from)
-	sweep.motion = step
-	sweep.collision_mask = GameLayers.WORLD
-	sweep.exclude = _exclude
-	var reach := space.cast_motion(sweep)
-	if reach.size() < 2 or reach[1] >= 1.0:
-		return {}
-	sweep.transform = Transform3D(Basis.IDENTITY, from + step * reach[1])
-	sweep.motion = Vector3.ZERO
-	var rest := space.get_rest_info(sweep)
-	if rest.is_empty():
-		return {}
-	var collider := instance_from_id(int(rest.get("collider_id", 0)))
-	return {"position": rest.get("point", from), "normal": rest.get("normal", -step.normalized()),
-		"collider": collider}
+	var ray := PhysicsRayQueryParameters3D.create(from, from + step, GameLayers.WORLD, _exclude)
+	return space.intersect_ray(ray)
 
 
 ## Every fly the web passes over between [param a] and [param b] is wrapped and
@@ -336,7 +306,7 @@ func _arrive() -> void:
 		ahead.y = 0.0
 		if ahead.length_squared() < 0.0001:
 			ahead = Vector3.FORWARD
-		var drop := weaver.global_position + ahead.normalized() * 1.25 + Vector3.UP * 0.35
+		var drop := weaver.global_position + ahead.normalized() * 1.1 + Vector3.UP * 0.35
 		brought.global_transform = Transform3D(Basis(Vector3.UP, brought.rotation.y), drop)
 		var crate := brought as RigidBody3D
 		if crate != null:

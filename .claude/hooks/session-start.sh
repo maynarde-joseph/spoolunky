@@ -93,13 +93,8 @@ most mistakes, the suites are the only thing that catches the rest:
 
     python3 tools/check_tabs.py
     gdparse <file>.gd
-    godot --headless --path . --script res://tests/web_smoke_test.gd    # ~75s
-    godot --headless --path . --script res://tests/climb_smoke_test.gd  # ~40s
-    godot --headless --path . --script res://tests/world_smoke_test.gd  # ~25s
-    godot --headless --path . --script res://tests/creature_smoke_test.gd  # ~85s
-    godot --headless --path . --script res://tests/spell_smoke_test.gd  # ~25s
-    godot --headless --path . --script res://tests/ecosystem_smoke_test.gd  # ~10s
-    godot --headless --path . --script res://tests/combat_smoke_test.gd  # ~2m
+    godot --headless --path . --script res://tests/flies/mechanics_smoke_test.gd  # ~40s
+    godot --headless --path . --script res://tests/flies/levels_smoke_test.gd     # ~3m
 
 Each suite prints a line per check and exits non-zero if any fail.
 INFO

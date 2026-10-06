@@ -415,17 +415,6 @@ func attach_to_web(web: ThrownWeb, at := Vector3.INF) -> void:
 	_place_on_web()
 
 
-## Lets go of the web, keeping whatever speed it was giving.
-func let_go_of_web() -> void:
-	if mode != Mode.WEB:
-		return
-	_grace_web = _web
-	_grace = WEB_GRACE
-	velocity = _moving
-	_web = null
-	_set_mode(Mode.AIR)
-
-
 func _step_web(delta: float) -> void:
 	if _web == null or not is_instance_valid(_web) or not _web.is_standing():
 		_web = null
@@ -670,7 +659,7 @@ func _step_grapple(delta: float) -> void:
 	var target := grapple.target_point()
 	var to := target - global_position
 	var distance := to.length()
-	var arrive := RADIUS + 0.35 if grapple.web != null else RADIUS + 0.15
+	var arrive := RADIUS + 0.35 if grapple.web != null else 0.3
 	if distance <= arrive or _grapple_time > 2.5:
 		_grapple_arrive()
 		return

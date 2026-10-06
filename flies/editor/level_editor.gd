@@ -911,7 +911,9 @@ func _vector_row(text: String, thing: Dictionary, key: String, step: float) -> v
 	var row := HBoxContainer.new()
 	var value := LevelData.vec(thing.get(key))
 	for axis in 3:
-		var spin := _spin(-1000, 1000, step)
+		# A range that is a whole number of steps either side of nought: a SpinBox
+		# snaps to its minimum plus steps, and -1000 in 15s never lands on 0.
+		var spin := _spin(-1080, 1080, step)
 		spin.custom_minimum_size = Vector2(92, 0)
 		spin.set_value_no_signal(value[axis])
 		spin.value_changed.connect(func(changed: float) -> void:

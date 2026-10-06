@@ -33,10 +33,11 @@ static func paint(kind: String) -> StandardMaterial3D:
 	var made := StandardMaterial3D.new()
 	match kind:
 		SLICK:
-			made.albedo_color = Color(0.17, 0.2, 0.25)
-			made.metallic = 0.65
-			made.roughness = 0.28
+			made.albedo_color = Color(0.2, 0.23, 0.29)
+			made.metallic = 0.6
+			made.roughness = 0.3
 			made.metallic_specular = 0.8
+			_panelled(made, Color(1, 1, 1), Color(0.55, 0.6, 0.7), true)
 		"accent":
 			made.albedo_color = Color(0.95, 0.66, 0.22)
 			made.roughness = 0.6
@@ -60,10 +61,37 @@ static func paint(kind: String) -> StandardMaterial3D:
 			made.albedo_color = Color(0.86, 0.82, 0.68)
 			made.roughness = 0.75
 		_:
-			made.albedo_color = Color(0.9, 0.87, 0.8)
+			made.albedo_color = Color(0.93, 0.91, 0.86)
 			made.roughness = 0.9
+			_panelled(made, Color(1, 1, 1), Color(0.72, 0.72, 0.74), false)
 	_paints[kind] = made
 	return made
+
+
+## Lays a grid of panels over [param made], two metres a panel, in the world's own
+## axes, so the panels run on from one block to the next and a distance can be read
+## off a wall by counting them. Slick metal gets stripes across each panel as well.
+static func _panelled(made: StandardMaterial3D, fill: Color, seam: Color, striped: bool) -> void:
+	var size := 128
+	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	image.fill(fill)
+	for i in size:
+		for j in size:
+			var edge := i < 3 or j < 3 or i >= size - 3 or j >= size - 3
+			var inner := (i == 10 or j == 10 or i == size - 11 or j == size - 11) \
+				and i >= 10 and j >= 10 and i <= size - 11 and j <= size - 11
+			if edge:
+				image.set_pixel(i, j, seam)
+			elif inner:
+				image.set_pixel(i, j, fill.lerp(seam, 0.35))
+			elif striped and ((i + j) / 12) % 2 == 0:
+				image.set_pixel(i, j, fill.lerp(seam, 0.5))
+	image.generate_mipmaps()
+	made.albedo_texture = ImageTexture.create_from_image(image)
+	made.uv1_triplanar = true
+	made.uv1_world_triplanar = true
+	made.uv1_scale = Vector3.ONE * 0.5
+	made.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 
 
 ## Marks [param body] as being of [param kind], and paints [param view] to match.

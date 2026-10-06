@@ -96,12 +96,18 @@ func throw(wound := 0.0) -> bool:
 		return false
 	var from := view.aim_origin()
 	var heading := view.aim_forward()
+	var radius := web_radius(wound)
 	var fly := picked_fly()
 	if fly != null:
-		var lead := intercept(from, SPEED, fly.global_position, fly.velocity) - from
-		if lead.length_squared() > 0.0001:
-			heading = lead.normalized()
-	var radius := web_radius(wound)
+		# Only steered when the throw as aimed would miss: a web that will pass over
+		# the fly anyway goes where the cross is, which may be the wall behind it.
+		var meet := intercept(from, SPEED, fly.global_position, fly.velocity)
+		var along := (meet - from).dot(heading)
+		var miss := (meet - (from + heading * along)).length()
+		if along <= 0.0 or miss > radius * 0.7:
+			var lead := meet - from
+			if lead.length_squared() > 0.0001:
+				heading = lead.normalized()
 	var web := ThrownWeb.throw(weaver.web_container(), weaver, from, heading, SPEED, radius, REACH)
 	weaver.adopt_web(web)
 	_cooling = COOLDOWN

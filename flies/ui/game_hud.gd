@@ -51,34 +51,20 @@ func _ready() -> void:
 	add_child(_cross)
 
 	_flies = _label(Vector2(28, 20), FONT_SIZE + 6)
-	_clock = _label(Vector2(0, 18), FONT_SIZE + 10)
-	_clock.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_clock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_clock.position = Vector2(-160, 14)
-	_clock.size = Vector2(320, 40)
-	_best = _label(Vector2(0, 58), FONT_SIZE - 6)
-	_best.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_best.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_best.position = Vector2(-160, 56)
-	_best.size = Vector2(320, 30)
+	_clock = _label(Vector2.ZERO, FONT_SIZE + 10)
+	_place(_clock, 0.5, 0.0, Rect2(-160, 14, 320, 40))
+	_best = _label(Vector2.ZERO, FONT_SIZE - 6)
+	_place(_best, 0.5, 0.0, Rect2(-160, 56, 320, 30))
 	_best.modulate = Color(1, 1, 1, 0.7)
-	_news = _label(Vector2(0, 0), FONT_SIZE)
-	_news.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_news.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_news.position = Vector2(-500, -150)
-	_news.size = Vector2(1000, 36)
-	_help = _label(Vector2(0, 0), FONT_SIZE - 4)
-	_help.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_help.position = Vector2(-600, -44)
-	_help.size = Vector2(1200, 30)
+	_news = _label(Vector2.ZERO, FONT_SIZE)
+	_place(_news, 0.5, 1.0, Rect2(-500, -150, 1000, 36))
+	_help = _label(Vector2.ZERO, FONT_SIZE - 4)
+	_place(_help, 0.5, 1.0, Rect2(-700, -44, 1400, 30))
 	_help.text = "WASD run · Space jump · LEFT MOUSE grapple · RIGHT MOUSE silk (hold to grow) · E / MIDDLE MOUSE pullback · R restart · Esc pause"
 
 	_result = PanelContainer.new()
 	_result.name = "Result"
-	_result.set_anchors_preset(Control.PRESET_CENTER)
-	_result.position = Vector2(-300, -110)
-	_result.size = Vector2(600, 220)
+	_place(_result, 0.5, 0.5, Rect2(-300, -110, 600, 220))
 	var box := StyleBoxFlat.new()
 	box.bg_color = Color(0.08, 0.09, 0.12, 0.88)
 	box.border_color = Color(1.0, 0.78, 0.3)
@@ -93,6 +79,21 @@ func _ready() -> void:
 	_result.add_child(_result_text)
 	_result.visible = false
 	add_child(_result)
+
+
+## Pins [param control] to the point [param x], [param y] of the screen (0 to 1
+## across and down), at [param rect] from it.
+func _place(control: Control, x: float, y: float, rect: Rect2) -> void:
+	control.anchor_left = x
+	control.anchor_right = x
+	control.anchor_top = y
+	control.anchor_bottom = y
+	control.offset_left = rect.position.x
+	control.offset_top = rect.position.y
+	control.offset_right = rect.position.x + rect.size.x
+	control.offset_bottom = rect.position.y + rect.size.y
+	if control is Label:
+		(control as Label).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 
 func _label(at: Vector2, font_size: int) -> Label:
@@ -185,6 +186,7 @@ func _draw_cross() -> void:
 				var c: Vector2 = at + corner * s
 				_cross.draw_line(c, c - Vector2(corner.x * 7.0, 0.0), gold, 2.0)
 				_cross.draw_line(c, c - Vector2(0.0, corner.y * 7.0), gold, 2.0)
+	_draw_fly_marks(weaver)
 	# Silk left: a bead for each web, filled while it is the spider's to throw.
 	var count := weaver.max_webs
 	var left := weaver.webs_left()
@@ -193,9 +195,34 @@ func _draw_cross() -> void:
 	for i in count:
 		var at := base + Vector2(spacing * float(i), 0.0)
 		var flash := _silk_flash > 0.0 and int(_silk_flash * 10.0) % 2 == 0
-		_cross.draw_circle(at, 10.0, shadow)
+		_cross.draw_circle(at, 10.5, Color(0.1, 0.1, 0.14, 0.75))
 		if i < left:
-			_cross.draw_circle(at, 8.0, Color(0.95, 0.96, 1.0, 0.95))
+			_cross.draw_circle(at, 7.5, Color(0.95, 0.96, 1.0, 0.95))
 		else:
 			_cross.draw_arc(at, 8.0, 0.0, TAU, 24,
 				Color(1.0, 0.4, 0.35, 0.9) if flash else Color(1, 1, 1, 0.4), 2.0, true)
+
+
+## A small gold bead over every fly still out, so they can be found across a
+## level — smaller the further off, and dimmer behind a wall.
+func _draw_fly_marks(weaver: Weaver) -> void:
+	var camera := weaver.view.camera
+	if camera == null:
+		return
+	var space := weaver.get_world_3d().direct_space_state
+	for node in get_tree().get_nodes_in_group(Fly.GROUP):
+		var fly := node as Fly
+		if fly == null or not fly.is_free():
+			continue
+		var at := fly.global_position + Vector3.UP * 0.45
+		if camera.is_position_behind(at):
+			continue
+		var point := camera.unproject_position(at)
+		var distance := camera.global_position.distance_to(at)
+		var size := clampf(90.0 / maxf(distance, 1.0), 4.0, 10.0)
+		var query := PhysicsRayQueryParameters3D.create(camera.global_position, fly.global_position,
+			GameLayers.WORLD, [weaver.get_rid()])
+		var hidden := not space.intersect_ray(query).is_empty()
+		var gold := Color(1.0, 0.8, 0.3, 0.45 if hidden else 0.95)
+		_cross.draw_circle(point, size * 0.75, Color(0, 0, 0, 0.35 if hidden else 0.5))
+		_cross.draw_circle(point, size * 0.5, gold)
