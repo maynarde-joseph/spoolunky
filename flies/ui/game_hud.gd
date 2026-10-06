@@ -5,9 +5,12 @@ extends CanvasLayer
 ## silk left, and a line of news.
 ##
 ## The cross reads off the answers the verbs act on, so it cannot promise what
-## they will not do. Its ring is blue over a web the grapple would take, faint
-## over anything else, and broken while the grapple is spent. It turns gold, and brackets the fly, when a thrown web would
-## be aimed at one. An arc fills round it while silk winds up.
+## they will not do. Its ring is blue over a web the grapple would take, gold over
+## a fly — which wears gold brackets too — faint over anything else, and broken
+## while the grapple is spent. Gold beads under the silk count the jumps banked from
+## flies taken with a web. It turns gold, and brackets the fly, when a thrown web would
+## be aimed at one, and rings the fly locked on to while Shift is held. An arc fills
+## round it while silk winds up.
 
 const FONT_SIZE := 22
 
@@ -24,8 +27,6 @@ var _result_text: Label
 var _news_left := 0.0
 var _help_left := 7.0
 var _silk_flash := 0.0
-## A gold edge round the screen, fading, while a fly's burst of speed is fresh.
-var _boost_flash := 0.0
 
 
 func setup(level_run: LevelRun) -> void:
@@ -34,7 +35,6 @@ func setup(level_run: LevelRun) -> void:
 	run.weaver.fly_caught.connect(func(_fly: Fly) -> void:
 		say("Fly caught — %d / %d" % [run.caught(), run.flies_total]))
 	run.weaver.out_of_silk.connect(func() -> void: _silk_flash = 0.6)
-	run.weaver.boosted.connect(func() -> void: _boost_flash = 0.5)
 	run.finished.connect(_on_finished)
 	var best := run.best_time()
 	if best >= 0.0:
@@ -62,7 +62,7 @@ func _ready() -> void:
 	_place(_news, 0.5, 1.0, Rect2(-500, -150, 1000, 36))
 	_help = _label(Vector2.ZERO, FONT_SIZE - 4)
 	_place(_help, 0.5, 1.0, Rect2(-700, -44, 1400, 30))
-	_help.text = "WASD run · Space jump · RIGHT MOUSE silk (hold to grow) · LEFT MOUSE grapple to a web · E / MIDDLE MOUSE pullback · R restart · Esc pause"
+	_help.text = "WASD walk · Space jump (in the air: a banked jump) · RIGHT MOUSE silk (hold to grow) · LEFT MOUSE grapple to a web or a fly · Shift lock on to a fly · E / MIDDLE MOUSE pullback · R restart · Esc pause"
 
 	_result = PanelContainer.new()
 	_result.name = "Result"
@@ -135,7 +135,6 @@ func _process(delta: float) -> void:
 	_help_left -= delta
 	_help.modulate.a = clampf(_help_left, 0.0, 1.0) * 0.85
 	_silk_flash = maxf(0.0, _silk_flash - delta)
-	_boost_flash = maxf(0.0, _boost_flash - delta)
 	_cross.queue_redraw()
 
 
@@ -158,12 +157,17 @@ func _draw_cross() -> void:
 	var middle := _cross.size * 0.5
 	var shadow := Color(0, 0, 0, 0.45)
 	var target := weaver.grapple.aimed()
-	# Blue over a web the grapple would take; faint over anything else, since only
-	# silk holds the line.
+	# Blue over a web the grapple would take, gold over a fly; faint over anything
+	# else, since only silk and flies hold the line.
 	var tint := Color(1, 1, 1, 0.4)
-	if not target.is_empty() and target.get("web") != null:
+	var anchor := target.get("fly") as Fly if not target.is_empty() else null
+	if anchor != null:
+		tint = Color(1.0, 0.8, 0.3, 0.95)
+	elif not target.is_empty() and target.get("web") != null:
 		tint = Color(0.6, 0.85, 1.0, 0.95)
-	var fly := weaver.caster.picked_fly()
+	# Brackets on the fly a grapple would take — or, failing that, the one a throw
+	# would be aimed at.
+	var fly := anchor if anchor != null else weaver.caster.picked_fly()
 	var ring := 11.0
 	_cross.draw_circle(middle, 3.0, shadow)
 	_cross.draw_circle(middle, 2.2, tint)
@@ -182,16 +186,24 @@ func _draw_cross() -> void:
 		var camera := weaver.view.camera
 		if camera != null and not camera.is_position_behind(fly.global_position):
 			var at := camera.unproject_position(fly.global_position)
-			var gold := Color(1.0, 0.78, 0.3, 0.95)
-			var s := 16.0
+			var gold := Color(1.0, 0.78, 0.3, 0.95) if fly == anchor \
+				else Color(1.0, 1.0, 1.0, 0.7)
+			var s := 18.0 if fly == anchor else 14.0
 			for corner in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
 				var c: Vector2 = at + corner * s
 				_cross.draw_line(c, c - Vector2(corner.x * 7.0, 0.0), gold, 2.0)
 				_cross.draw_line(c, c - Vector2(0.0, corner.y * 7.0), gold, 2.0)
+			# Locked on with Shift: a ring round the brackets.
+			if fly == weaver.lock_target:
+				_cross.draw_arc(at, s + 8.0, 0.0, TAU, 32, gold, 2.0, true)
 	_draw_fly_marks(weaver)
-	if _boost_flash > 0.0:
-		var glow := Color(1.0, 0.8, 0.3, _boost_flash * 0.5)
-		_cross.draw_rect(Rect2(Vector2.ZERO, _cross.size), glow, false, 10.0)
+	# Jumps banked from flies taken with silk: gold beads under the silk.
+	var jumps := weaver.air_jumps
+	var row := Vector2(middle.x - 16.0 * float(jumps - 1) * 0.5, _cross.size.y - 64.0)
+	for i in jumps:
+		var bead := row + Vector2(16.0 * float(i), 0.0)
+		_cross.draw_circle(bead, 6.5, Color(0.1, 0.1, 0.14, 0.75))
+		_cross.draw_circle(bead, 4.5, Color(1.0, 0.8, 0.3, 0.95))
 	# Silk left: a bead for each web, filled while it is the spider's to throw.
 	var count := weaver.max_webs
 	var left := weaver.webs_left()

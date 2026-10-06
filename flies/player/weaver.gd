@@ -8,7 +8,8 @@ extends CharacterBody3D
 ## a button of its own and all three usable at once:
 ##
 ## * **Grapple** (left mouse) — a line to a web you point at, and you are pulled
-##   along it onto the web. Only silk holds it. See [Grapple]. One in the air, back
+##   along it onto the web — or to a fly, which it catches. Only silk and flies hold
+##   it. See [Grapple]. One in the air, back
 ##   when you land — on the ground or a web that has stuck. A web still flying
 ##   gives it back once, until you next land.
 ## * **Silk** (right mouse) — hold to wind it up, let go to throw a web. The web
@@ -22,9 +23,11 @@ extends CharacterBody3D
 ## Silk is a few webs, no more: a level says how many. Throw them all and the
 ## Pullback is how you get them back.
 ##
-## Every fly caught is a burst of speed the moment it is taken — more ground covered
-## in the air if it is caught mid-jump, so when to catch one is part of the route —
-## and goes on a line behind the spider, and in the bag at the exit.
+## A fly is two things, by how it is taken. Grappled to, it is an anchor in the air:
+## the spider is pulled to it, catches it, hops off it and has its grapple back.
+## Taken with silk — a thrown web, or one called home through it — it is a jump
+## banked for later: Space in the air spends one. Either way it goes on the line
+## behind the spider, and in the bag at the exit.
 ##
 ## The camera is the old game's rig, unchanged: see [SpiderCamera].
 
@@ -40,8 +43,8 @@ signal out_of_silk()
 ## Landed, on the ground or on a web: the grapple is back.
 signal landed()
 
-## A fly caught gave the spider a burst of speed.
-signal boosted()
+## A jump banked from a fly was spent in the air.
+signal air_jumped()
 
 enum Mode {
 	GROUND,   ## running on a floor
@@ -56,26 +59,31 @@ const HEIGHT := 0.7
 ## Its collider, a ball.
 const RADIUS := 0.3
 
-## How fast it runs, and how quickly it gets there and stops.
-const RUN := 9.0
-const ACCEL := 70.0
-const DECEL := 55.0
+## The old spider's movement, a Huntsman's, number for number.
+##
+## How fast it walks: the one pace it has on its own legs.
+const WALK := 3.8
 
-## How quickly speed above a run bleeds away while the keys go along with it, in
-## metres a second per second: what a grapple or a ride gave you is a skid you can
-## use, not something gone in a frame.
-const SKID_BLEED := 7.0
+## How quickly it gets up to speed, and how quickly it stops, as how much of the
+## way there it goes each second: eased in, never snapped.
+const ACCEL := 14.0
+const DECEL := 18.0
 
-## How fast it walks on a web, and how quickly it turns there.
-const WEB_RUN := 7.5
-const WEB_ACCEL := 60.0
+## How quickly speed above a walk bleeds off while the keys go along with it: what a
+## grapple or a ride gave you is a skid you can use, not something gone in a frame.
+const SKID_DAMP := 1.6
 
-const GRAVITY := 24.0
-const JUMP := 8.6
+## How fast it walks on a web: a web underfoot is quicker than the ground, and a
+## steep one slower, which on a wall comes out a little faster than a walk.
+const WEB_WALK := 4.6
+
+## The old controller's fall — the default gravity three times over — and jump.
+const GRAVITY := 29.4
+const JUMP := 7.8
 const MAX_FALL := 40.0
 
-## How hard the keys steer in the air, in metres a second per second.
-const AIR_ACCEL := 32.0
+## How much of the way to where the keys point the air steers each second.
+const AIR_STEER := 4.2
 
 ## Seconds after running off an edge that a jump still goes, and before landing
 ## that a jump pressed early still counts.
@@ -85,12 +93,9 @@ const BUFFER := 0.14
 ## Seconds after leaving a web before that web can be landed on again.
 const WEB_GRACE := 0.3
 
-## How much speed a fly caught adds, along the way the spider is going, in metres a
-## second; how fast that can make it at most; and how long a burst earned on a web
-## or a line waits for the spider to be off it.
-const BOOST := 5.0
-const BOOST_MOST := 16.0
-const BOOST_KEEP := 1.5
+## How hard the spider hops off a fly it was pulled to, in metres a second: along
+## the way it was going, and up.
+const FLY_HOP := Vector2(6.0, 6.0)
 
 ## How long a web called home holds the spider up when it reaches it in the air,
 ## and how much of the spider's speed is left after the first frame of it.
@@ -135,6 +140,10 @@ var _buffer := 0.0
 var _jump_held := false
 var _input_axis := Vector2.ZERO
 
+## Whether Shift is held, locking on to the fly nearest the cross, and which fly.
+var locking := false
+var lock_target: Fly = null
+
 var _web: ThrownWeb = null
 var _web_at := Vector2.ZERO          # where on it, in its own plane
 var _web_side := 1.0                 # which face
@@ -149,8 +158,9 @@ var _grapple_time := 0.0
 ## Seconds left of being held up by a web that came home: see [method _web_home].
 var _stall := 0.0
 
-## Seconds left to use a burst from a fly caught: see [method _boost].
-var _boost_left := 0.0
+## Jumps banked from flies taken with a web, each spent by Space in the air. No
+## limit: a player who webs every fly on the way has read the level.
+var air_jumps := 0
 
 ## Whether the walk was carried round a web's rim onto its other face, and is going
 ## the other way on it while the keys stay down — and how long before it may go round
@@ -243,11 +253,13 @@ func _read_keys(delta: float) -> void:
 	if not accepts_input():
 		_input_axis = Vector2.ZERO
 		_jump_held = false
+		locking = false
 		# A wind-up whose key-up was lost with the mouse is put away, not thrown.
 		if caster.charging and require_captured_mouse:
 			caster.cancel()
 		return
 	_input_axis = Input.get_vector("move_left", "move_right", "move_backward", "move_forward")
+	locking = Input.is_action_pressed("lock")
 	if Input.is_action_just_pressed("move_jump"):
 		_buffer = BUFFER
 	_jump_held = Input.is_action_pressed("move_jump")
@@ -264,6 +276,50 @@ func drive(axis: Vector2, jump := false) -> void:
 		_buffer = BUFFER
 
 
+# --- locking on -------------------------------------------------------------
+
+## How far off the cross a fly can be and still be locked, in degrees.
+const LOCK_CONE := 75.0
+
+
+## While Shift is held: the fly nearest the cross, in reach of silk and in plain
+## sight, kept until it is caught or lost from view. The grapple and the silk both
+## go to it, wherever the cross is.
+func _update_lock() -> void:
+	if not locking:
+		lock_target = null
+		return
+	if lock_target != null and _lockable(lock_target) >= 0.0:
+		return
+	lock_target = null
+	var best := INF
+	for node in get_tree().get_nodes_in_group(Fly.GROUP):
+		var fly := node as Fly
+		var off := _lockable(fly)
+		if off >= 0.0 and off < best:
+			best = off
+			lock_target = fly
+
+
+## How far off the cross [param fly] is, in degrees, if it can be locked; negative
+## if it cannot.
+func _lockable(fly: Fly) -> float:
+	if fly == null or not is_instance_valid(fly) or not fly.is_free() or view.camera == null:
+		return -1.0
+	var at := fly.global_position
+	if global_position.distance_to(at) > SilkCaster.REACH:
+		return -1.0
+	var eye := view.camera.global_position
+	var off := rad_to_deg((-view.camera.global_basis.z).angle_to(at - eye))
+	if off > LOCK_CONE:
+		return -1.0
+	var sight := PhysicsRayQueryParameters3D.create(global_position, at, GameLayers.WORLD,
+		[get_rid()])
+	if not get_world_3d().direct_space_state.intersect_ray(sight).is_empty():
+		return -1.0
+	return off
+
+
 # --- every frame -----------------------------------------------------------
 
 func _physics_process(delta: float) -> void:
@@ -273,10 +329,7 @@ func _physics_process(delta: float) -> void:
 		_buffer = maxf(0.0, _buffer - delta)
 	_grace = maxf(0.0, _grace - delta)
 	_round_wait = maxf(0.0, _round_wait - delta)
-	if _boost_left > 0.0:
-		_boost_left -= delta
-		if mode == Mode.GROUND or mode == Mode.AIR:
-			_boost()
+	_update_lock()
 	view.update(HEIGHT, global_basis.y)
 	match mode:
 		Mode.GROUND:
@@ -313,7 +366,7 @@ func _rush(delta: float) -> void:
 		return
 	if _base_fov <= 0.0:
 		_base_fov = camera.fov
-	var rush := clampf(_moving.length() / (RUN * 2.2) - 0.25, 0.0, 1.0)
+	var rush := clampf(_moving.length() / (WALK * 3.0) - 0.25, 0.0, 1.0)
 	var aiming := clampf(view.aim_blend, 0.0, 1.0) * view.aim_fov_gain
 	camera.fov = lerpf(camera.fov, _base_fov + rush * 16.0 + aiming,
 		clampf(delta * 6.0, 0.0, 1.0))
@@ -326,7 +379,7 @@ func _step_ground(delta: float) -> void:
 	up_direction = Vector3.UP
 	var wish := _wish_flat()
 	var flat := Vector3(velocity.x, 0.0, velocity.z)
-	flat = _run_toward(flat, wish, RUN, ACCEL, DECEL, delta)
+	flat = _run_toward(flat, wish, WALK, delta)
 	velocity.x = flat.x
 	velocity.z = flat.z
 	velocity.y -= GRAVITY * delta
@@ -344,22 +397,25 @@ func _step_ground(delta: float) -> void:
 		_set_mode(Mode.AIR)
 
 
-## [param flat] brought toward [param wish] at [param top] speed. Above the top
-## speed, going the way the keys go, it skids rather than stopping dead.
-func _run_toward(flat: Vector3, wish: Vector3, top: float, accel: float, decel: float,
-		delta: float) -> Vector3:
-	var speed := flat.length()
-	if speed > top * 1.02 and wish != Vector3.ZERO and wish.dot(flat / speed) > 0.3:
-		speed = move_toward(speed, top, SKID_BLEED * delta)
-		var heading := (flat / flat.length()).slerp(wish, clampf(8.0 * delta, 0.0, 1.0))
-		return heading.normalized() * speed
-	var rate := accel if wish != Vector3.ZERO else decel
-	return flat.move_toward(wish * top, rate * delta)
+## [param flat] eased toward [param wish] at [param top] speed, the old spider's
+## way: above the top speed, going the way the keys go, it skids rather than
+## stopping dead; otherwise it is eased in, and eased harder to a stop.
+func _run_toward(flat: Vector3, wish: Vector3, top: float, delta: float) -> Vector3:
+	var target := wish * top
+	var with_skid := wish != Vector3.ZERO and flat.length() > top \
+		and wish.dot(flat.normalized()) > 0.7
+	if with_skid:
+		return flat.lerp(target, clampf(SKID_DAMP * delta, 0.0, 1.0))
+	var rate := ACCEL if target.dot(flat) > 0.0 else DECEL
+	return flat.lerp(target, clampf(rate * delta, 0.0, 1.0))
 
 
 func _jump() -> void:
 	_buffer = 0.0
 	_coyote = 0.0
+	# Whatever it was carrying goes with it, and half a step more the way the keys go.
+	var wish := _wish_flat()
+	velocity += wish * WALK * 0.5
 	velocity.y = JUMP
 	_set_mode(Mode.AIR)
 	move_and_slide()
@@ -404,6 +460,13 @@ func _step_air(delta: float) -> void:
 	if _buffer > 0.0 and _coyote > 0.0:
 		_jump()
 		return
+	if _buffer > 0.0 and air_jumps > 0:
+		# A jump banked from a fly taken with silk.
+		_buffer = 0.0
+		air_jumps -= 1
+		velocity.y = maxf(velocity.y, JUMP)
+		_stall = 0.0
+		air_jumped.emit()
 	if _stall > 0.0:
 		# Held up by the web that came home: no fall, and the way you were going
 		# dying away, for a moment to aim the next throw in.
@@ -419,12 +482,10 @@ func _step_air(delta: float) -> void:
 		return
 	velocity.y = maxf(velocity.y - GRAVITY * delta, -MAX_FALL)
 	var wish := _wish_flat()
-	if wish != Vector3.ZERO:
-		var flat := Vector3(velocity.x, 0.0, velocity.z)
-		var keep := maxf(flat.length(), RUN)
-		flat = (flat + wish * AIR_ACCEL * delta).limit_length(keep)
-		velocity.x = flat.x
-		velocity.z = flat.z
+	var flat := Vector3(velocity.x, 0.0, velocity.z)
+	flat = flat.lerp(wish * WALK, clampf(AIR_STEER * delta, 0.0, 1.0))
+	velocity.x = flat.x
+	velocity.z = flat.z
 	if _catch_web(velocity * delta):
 		return
 	move_and_slide()
@@ -466,7 +527,7 @@ func attach_to_web(web: ThrownWeb, at := Vector3.INF) -> void:
 		_web_side = -_web_side
 	_web_at = Vector2(local.x, local.y).limit_length(maxf(web.current_radius() - 0.2, 0.05))
 	var carried := web.global_basis.inverse() * velocity
-	_web_walk = Vector2(carried.x, carried.y).limit_length(WEB_RUN)
+	_web_walk = Vector2(carried.x, carried.y).limit_length(WEB_WALK)
 	_web_turned = web.turned
 	_web_airborne = web.is_flying()
 	velocity = Vector3.ZERO
@@ -517,7 +578,8 @@ func _step_web(delta: float) -> void:
 			_round_carry = false
 		else:
 			wish_2d = -wish_2d
-	_web_walk = _web_walk.move_toward(wish_2d * WEB_RUN, WEB_ACCEL * delta)
+	var rate := ACCEL if wish_2d.dot(_web_walk) >= 0.0 else DECEL
+	_web_walk = _web_walk.lerp(wish_2d * WEB_WALK, clampf(rate * delta, 0.0, 1.0))
 	var next := _web_at + _web_walk * delta
 	var limit := maxf(_web.current_radius() - 0.22, 0.05)
 	if next.length() > limit:
@@ -757,7 +819,10 @@ func _step_grapple(delta: float) -> void:
 	up_direction = Vector3.UP
 	_grapple_time += delta
 	if grapple.lost():
+		# What the line was on is gone — a web came apart, a fly was taken by silk
+		# first: the pull ends where it is, with half its speed.
 		grapple.end()
+		velocity *= 0.5
 		_set_mode(Mode.AIR)
 		return
 	if _buffer > 0.0:
@@ -771,15 +836,27 @@ func _step_grapple(delta: float) -> void:
 	var target := grapple.target_point()
 	var to := target - global_position
 	var distance := to.length()
-	if distance <= RADIUS + 0.35 or _grapple_time > 2.5:
+	var arrived := distance <= RADIUS + 0.35 or _grapple_time > 2.5
+	if grapple.fly != null:
+		if arrived:
+			var fly := grapple.fly
+			velocity = to.normalized() * grapple.speed if distance > 0.001 else velocity
+			grapple.end()
+			_grapple_onto_fly(fly)
+			return
+	elif arrived:
 		var web := grapple.web
 		grapple.end()
 		attach_to_web(web)
 		if mode != Mode.WEB:
 			_set_mode(Mode.AIR)
 		return
-	# Straight there, through anything the web's rim is in.
-	var step := minf(grapple.speed * delta, distance)
+	# Straight there, through anything the web's rim is in — and quicker than a web
+	# in flight, or it would never be caught.
+	var pace := grapple.speed
+	if grapple.web != null and grapple.web.is_flying():
+		pace = maxf(pace, grapple.web.velocity.length() * 1.5)
+	var step := minf(pace * delta, distance)
 	global_position += to / distance * step
 	velocity = to / distance * grapple.speed
 
@@ -897,27 +974,23 @@ func catch_fly(fly: Fly) -> void:
 	if fly == null or not fly.catch_it():
 		return
 	fly_line.add(fly)
-	_boost_left = BOOST_KEEP
+	air_jumps += 1
 	fly_caught.emit(fly)
 
 
-## A burst of speed from a fly just caught, along the way the spider is going — or
-## the way it is looking, standing still — on top of whatever speed it had. In the
-## air nothing bleeds it away, so a fly caught mid-jump carries the jump further;
-## on the ground it runs out as a skid does. On a web or a line, it waits until the
-## spider is off it, for a moment.
-func _boost() -> void:
-	_boost_left = 0.0
-	var flat := Vector3(velocity.x, 0.0, velocity.z)
-	var along := flat.normalized() if flat.length() > 1.0 else Vector3.ZERO
-	if along == Vector3.ZERO:
-		along = view.forward()
-		along.y = 0.0
-		along = along.normalized() if along.length_squared() > 0.0001 else Vector3.FORWARD
-	flat = (flat + along * BOOST).limit_length(BOOST_MOST)
-	velocity.x = flat.x
-	velocity.z = flat.z
-	boosted.emit()
+## Pulled all the way to a fly: it is caught, the grapple is back, and the spider
+## hops off it on the way it was going — a fly is an anchor in the air, once.
+func _grapple_onto_fly(fly: Fly) -> void:
+	var travel := Vector3(velocity.x, 0.0, velocity.z)
+	if fly != null and fly.catch_it():
+		fly_line.add(fly)
+		fly_caught.emit(fly)
+	grapple_ready = true
+	_air_refund_spent = false
+	var along := travel.normalized() if travel.length() > 0.5 else Vector3.ZERO
+	velocity = along * FLY_HOP.x + Vector3.UP * FLY_HOP.y
+	_set_mode(Mode.AIR)
+	landed.emit()
 
 
 func notify(text: String) -> void:
@@ -940,6 +1013,6 @@ func put_at(where: Transform3D) -> void:
 	grapple_ready = true
 	_air_refund_spent = false
 	_stall = 0.0
-	_boost_left = 0.0
+	air_jumps = 0
 	_round_carry = false
 	_set_mode(Mode.AIR)

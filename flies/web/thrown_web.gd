@@ -266,8 +266,11 @@ func _land(hit: Dictionary) -> void:
 	var at: Vector3 = hit.get("position", global_position)
 	var surface: Vector3 = (hit.get("normal", -velocity.normalized()) as Vector3).normalized()
 	if collider != null and Surfaces.is_slick(collider):
-		# Nothing sticks to it. The web slides off and comes apart.
+		# Nothing sticks to it. The web slides off and comes apart — under a rider,
+		# stopping dead first, the same as at the end of its reach.
 		global_position = at + surface * CLEARANCE
+		stalled = _ridden()
+		velocity = Vector3.ZERO
 		if weaver != null and weaver.has_method("notify"):
 			weaver.call("notify", "Slick — silk won't stick there")
 		_come_apart()

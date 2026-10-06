@@ -5,11 +5,12 @@ extends Node3D
 ## path round and round, and the first silk that touches it takes it.
 ##
 ## Taken, it is wrapped where it was and goes on a line behind the spider — see
-## [FlyLine] — and the spider gets a burst of speed for it, see
-## [method Weaver.catch_fly]. At the exit the line goes in the bag. Nothing else happens to a fly:
-## it does not dodge, it does not wander, and a web sitting on a wall does not
-## catch one that flies into it. The only ways to take one are a thrown web that
-## touches it and a web called back through it.
+## [FlyLine]. Taken with silk it banks the spider a jump for the air, see
+## [method Weaver.catch_fly]; grappled to, it is an anchor hopped off. At the exit
+## the line goes in the bag. Nothing else happens to a fly: it does not dodge, it
+## does not wander, and a web sitting on a wall does not catch one that flies into
+## it. The only ways to take one are a thrown web that touches it, a web called
+## back through it, and the grapple.
 ##
 ## Drawn with the fly's own body (`fly_body.tres`): the skeleton, the mesh and the
 ## poses it was first given, scaled up so it reads at the distances this game is

@@ -68,6 +68,21 @@ static func paint(kind: String) -> StandardMaterial3D:
 	return made
 
 
+## The ceiling over a level: a faint grid seen from below, lit by nothing and
+## shadowing nothing.
+static func ceiling_paint() -> StandardMaterial3D:
+	if _paints.has("ceiling"):
+		return _paints["ceiling"]
+	var made := StandardMaterial3D.new()
+	made.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	made.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	made.cull_mode = BaseMaterial3D.CULL_DISABLED
+	made.albedo_color = Color(0.25, 0.3, 0.38, 1.0)
+	_panelled(made, Color(1, 1, 1, 0.08), Color(1, 1, 1, 0.45), true)
+	_paints["ceiling"] = made
+	return made
+
+
 ## Lays a grid of panels over [param made], two metres a panel, in the world's own
 ## axes, so the panels run on from one block to the next and a distance can be read
 ## off a wall by counting them. Slick metal gets stripes across each panel as well.

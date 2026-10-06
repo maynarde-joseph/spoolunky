@@ -19,6 +19,72 @@ const EDITOR_PICK := 1 << 15
 static func build(level: Dictionary, parent: Node3D, editing := false) -> void:
 	for thing in level.get("objects", []):
 		build_thing(thing, parent, editing)
+	build_ceiling(level, parent, editing)
+
+
+## How far over the top of everything an automatic ceiling sits, and how far past
+## the level's edges it reaches.
+const CEILING_ABOVE := 6.0
+const CEILING_MARGIN := 30.0
+
+
+## A lid over the level: slick, so silk thrown at the sky slides off it rather than
+## carrying a rider out over everything, and solid, so nothing jumps over the top.
+## At the level's [code]ceiling[/code] height, or [constant CEILING_ABOVE] over the
+## top of the highest thing in it when that is 0. Drawn as a faint grid that throws
+## no shadow, so it reads as a limit without darkening the room. In the editor it is
+## only drawn: clicks go through it. Replaces any ceiling already there.
+static func build_ceiling(level: Dictionary, parent: Node3D, editing := false) -> void:
+	var old := parent.get_node_or_null("Ceiling")
+	if old != null:
+		parent.remove_child(old)
+		old.queue_free()
+	var box := AABB()
+	var first := true
+	for node in _all_under(parent):
+		var view := node as VisualInstance3D
+		if view == null or not view.is_visible_in_tree() or view.name == "PathLine":
+			continue
+		var part: AABB = view.global_transform * view.get_aabb()
+		box = part if first else box.merge(part)
+		first = false
+	if first:
+		return
+	var height := float(level.get("ceiling", 0.0))
+	if height <= 0.0:
+		height = box.end.y + CEILING_ABOVE
+	var across := Vector2(box.size.x, box.size.z) + Vector2.ONE * CEILING_MARGIN * 2.0
+	var middle := box.get_center()
+	var lid := StaticBody3D.new()
+	lid.name = "Ceiling"
+	lid.collision_layer = 0 if editing else GameLayers.WORLD
+	lid.collision_mask = 0
+	lid.add_to_group(Surfaces.SLICK_GROUP)
+	parent.add_child(lid)
+	lid.global_position = Vector3(middle.x, height, middle.z)
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(across.x, 1.0, across.y)
+	var solid := CollisionShape3D.new()
+	solid.shape = shape
+	solid.position.y = 0.5
+	lid.add_child(solid)
+	var sheet := MeshInstance3D.new()
+	sheet.name = "Sheet"
+	var plane := PlaneMesh.new()
+	plane.size = across
+	plane.flip_faces = true
+	sheet.mesh = plane
+	sheet.material_override = Surfaces.ceiling_paint()
+	sheet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	lid.add_child(sheet)
+
+
+static func _all_under(node: Node) -> Array:
+	var found := []
+	for child in node.get_children():
+		found.append(child)
+		found.append_array(_all_under(child))
+	return found
 
 
 ## Builds one thing. Null for a type it does not know.

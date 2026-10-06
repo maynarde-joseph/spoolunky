@@ -3,6 +3,7 @@
 	"webs": 2,
 	"flies_needed": 0,
 	"kill_y": -15.0,
+	"ceiling": 20.0,
 	"par": 40.0,
 	"objects": [
 		{

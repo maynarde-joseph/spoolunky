@@ -23,7 +23,9 @@ extends RefCounted
 ##
 ## A level's settings: [code]webs[/code], how many webs may be out at once (2);
 ## [code]flies_needed[/code], how many flies the bag wants before it opens (0, none);
-## [code]kill_y[/code], how far down is falling out; and [code]par[/code], a time to beat.
+## [code]kill_y[/code], how far down is falling out; [code]ceiling[/code], the height
+## of the slick lid over the level (0 puts it a little over the top of everything);
+## and [code]par[/code], a time to beat.
 ##
 ## The built-in levels live in `res://levels/`; levels made in the game's editor
 ## when the project folder cannot be written to go to `user://levels/`.
@@ -41,6 +43,7 @@ static func blank(title := "New level") -> Dictionary:
 		"webs": 2,
 		"flies_needed": 0,
 		"kill_y": -20.0,
+		"ceiling": 0.0,
 		"par": 60.0,
 		"objects": [
 			{"type": "piece", "piece": "cube", "pos": [0.0, -1.0, 0.0], "rot": [0.0, 0.0, 0.0],

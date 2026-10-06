@@ -63,6 +63,7 @@ var _webs_spin: SpinBox
 var _needed_spin: SpinBox
 var _kill_spin: SpinBox
 var _par_spin: SpinBox
+var _ceiling_spin: SpinBox
 var _open_list: OptionButton
 var _palette_buttons := {}
 var _status_hold := 0.0
@@ -151,6 +152,7 @@ func _rebuild_thing(thing: Dictionary) -> void:
 			node.queue_free()
 	var made := LevelBuilder.build_thing(thing, world, true)
 	_select(made)
+	LevelBuilder.build_ceiling(level, world, true)
 
 
 # --- the camera ----------------------------------------------------------------
@@ -405,6 +407,7 @@ func delete_selected() -> void:
 	world.remove_child(selected)
 	selected.queue_free()
 	_select(null)
+	LevelBuilder.build_ceiling(level, world, true)
 
 
 func duplicate_selected() -> void:
@@ -660,7 +663,10 @@ func _build_ui() -> void:
 	bar.add_child(_small("Par s"))
 	_par_spin = _spin(0, 600, 1)
 	bar.add_child(_par_spin)
-	for spin in [_webs_spin, _needed_spin, _kill_spin, _par_spin]:
+	bar.add_child(_small("Ceiling y (0 = auto)"))
+	_ceiling_spin = _spin(0, 300, 1)
+	bar.add_child(_ceiling_spin)
+	for spin in [_webs_spin, _needed_spin, _kill_spin, _par_spin, _ceiling_spin]:
 		(spin as SpinBox).value_changed.connect(func(_v: float) -> void: _read_settings())
 	var gap := Control.new()
 	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -764,6 +770,7 @@ func _refresh_settings() -> void:
 	_needed_spin.set_value_no_signal(float(level.get("flies_needed", 0)))
 	_kill_spin.set_value_no_signal(float(level.get("kill_y", -20.0)))
 	_par_spin.set_value_no_signal(float(level.get("par", 60.0)))
+	_ceiling_spin.set_value_no_signal(float(level.get("ceiling", 0.0)))
 
 
 func _read_settings() -> void:
@@ -774,6 +781,10 @@ func _read_settings() -> void:
 	level["flies_needed"] = int(_needed_spin.value)
 	level["kill_y"] = _kill_spin.value
 	level["par"] = _par_spin.value
+	var lid := _ceiling_spin.value
+	if not is_equal_approx(lid, float(level.get("ceiling", 0.0))):
+		level["ceiling"] = lid
+		LevelBuilder.build_ceiling(level, world, true)
 
 
 func _flash(text: String) -> void:

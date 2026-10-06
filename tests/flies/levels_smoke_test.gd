@@ -286,13 +286,14 @@ func where(run: LevelRun) -> String:
 func _first_thread() -> void:
 	print("Route: First Thread")
 	var run := await load_level("01_first_thread.json")
-	check(await catch(run, fly_near(Vector3(0, 2.6, -6.5))), "the fly over the first gap")
-	await go(run, Vector3(0, 0, -3.8), 0.4, true)
-	check(await leap(run, Vector3(0, 0, -12)) and run.weaver.global_position.z < -8.0,
+	check(await catch(run, fly_near(Vector3(0, 1.8, -5.8))), "the fly over the first gap")
+	check(run.weaver.air_jumps == 1, "banks a jump")
+	await go(run, Vector3(0, 0, -4.5), 0.2, true)
+	check(await leap(run, Vector3(0, 0, -10.5)) and run.weaver.global_position.z < -6.5,
 		"a jump takes the first gap (%s)" % where(run))
 	await stop(run)
 	check(await catch(run, fly_near(Vector3(2.5, 1.8, -23)), 0.5), "the fly on its path")
-	await go(run, Vector3(0, 0, -15))
+	await go(run, Vector3(0, 0, -14))
 	aim(run, Vector3(0, 0, -33))
 	check(run.weaver.grapple.aimed().get("web") == null, "bare stone gives the grapple nothing")
 	check(await web_onto(run, Vector3(0, 0, -33)),
@@ -310,25 +311,22 @@ func _first_thread() -> void:
 	var weaver := run.weaver
 	await go(run, Vector3(0, 4, -43.0), 0.3)
 	await stop(run)
-	aim(run, Vector3(0, 4, -63))
+	aim(run, Vector3(0, 4, -59))
 	check(weaver.grapple.aimed().get("web") == null,
 		"the last pad is slick: nothing for silk, nothing for the grapple")
-	# Run at the edge, jump, and catch the fly just past it in the air.
-	var gap_fly := fly_near(Vector3(0, 5.2, -51.8))
-	await go(run, Vector3(0, 4, -49.6), 0.3, true)
-	weaver.drive(Vector2(0.0, 1.0), true)
-	await run_frames(3)
-	await throw_at(run, gap_fly.global_position, 0.0)
+	# Walk at the edge, grapple to the fly over the gap, and hop off it across.
+	var gap_fly := fly_near(Vector3(0, 5.4, -52))
+	await go(run, Vector3(0, 4, -49.0), 0.3, true)
+	check(await grapple_to(run, gap_fly.global_position) and not gap_fly.is_free(),
+		"a grapple to the fly over the gap takes it")
 	weaver.view.pitch = -0.1
 	weaver.view.yaw = 0.0
 	weaver.drive(Vector2(0.0, 1.0))
-	await wait_until(func() -> bool: return not gap_fly.is_free(), 30)
-	check(not gap_fly.is_free(), "the fly over the gap, caught mid-jump")
 	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
 	weaver.drive(Vector2.ZERO)
-	check(weaver.global_position.z < -58.0 and weaver.global_position.y > 3.9,
-		"its burst carries the jump over a gap one jump could not make (%s)" % where(run))
-	check(await finish(run, Vector3(0, 4, -65)), "and the bag")
+	check(weaver.global_position.z < -54.0 and weaver.global_position.y > 3.9,
+		"and the hop off it clears a gap one jump could not (%s)" % where(run))
+	check(await finish(run, Vector3(0, 4, -61)), "and the bag")
 	check(run.bagged == 4, "with every fly in it (%d)" % run.bagged)
 
 
@@ -371,8 +369,8 @@ func _ride_the_gap() -> void:
 	var run := await load_level("03_ride_the_gap.json")
 	var weaver := run.weaver
 	await go(run, Vector3(0, 0, -5.0))
-	aim(run, Vector3(0, 2.5, -36))
-	check(weaver.grapple.aimed().is_empty(), "the far side is out of the grapple's reach")
+	check(weaver.global_position.distance_to(Vector3(0, 2.5, -36)) > Grapple.REACH,
+		"the far side is out of the grapple's reach")
 	var web := await throw_at(run, Vector3(0, 2.5, -36), 0.6)
 	await run_frames(5)
 	aim(run, web.global_position)
@@ -461,8 +459,10 @@ func _moving_parts() -> void:
 	var patrol := fly_near(Vector3(-4, 2, -12))
 	await wait_until(func() -> bool: return patrol.global_position.z > -13.0, 400)
 	check(await catch(run, patrol, 0.6), "the fly circling the ferry's way")
-	await wait_until(func() -> bool: return ferry.position.z > -9.5, 600)
-	await go(run, Vector3(0, 0, -4.2), 0.3, true)
+	await go(run, Vector3(0, 0, -2.0), 0.3)
+	await wait_until(func() -> bool: return ferry.position.z < -10.0, 900)
+	await wait_until(func() -> bool: return ferry.position.z > -9.5, 900)
+	await go(run, Vector3(0, 0, -4.3), 0.3, true)
 	await leap(run, Vector3(0, 0, -9))
 	await stop(run)
 	check(weaver.global_position.distance_to(ferry.global_position) < 3.0,
@@ -498,12 +498,12 @@ func _moving_parts() -> void:
 		"onto the lift (%s)" % where(run))
 	await wait_until(func() -> bool: return lift.position.y > 9.4, 900)
 	await go(run, Vector3(0, 10, -45.6), 0.3, true)
-	await leap(run, Vector3(0, 10, -52))
+	await leap(run, Vector3(0, 10, -51))
 	await stop(run)
 	check(weaver.global_position.y > 9.9, "and from the top of it a jump to the high pad (%s)"
 		% where(run))
 	check(await catch(run, fly_near(Vector3(-2, 11.6, -54)), 0.6), "the last fly")
-	check(await finish(run, Vector3(0, 10, -56)), "and the bag")
+	check(await finish(run, Vector3(0, 10, -55)), "and the bag")
 
 
 func _the_bag() -> void:

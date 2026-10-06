@@ -4,11 +4,12 @@ extends TestSuite
 ##
 ##     godot --headless --path . --script res://tests/flies/mechanics_smoke_test.gd
 ##
-## Running and jumping; walls that cannot be climbed; silk wound up and thrown,
+## Walking and jumping; walls that cannot be climbed; silk wound up and thrown,
 ## sticking flat, sliding off slick metal and coming apart at the end of its
 ## reach; walking onto a web and up a wall on it; the grapple, spent in the air
 ## and back on landing, and holding to a wall; riding a thrown web; flies taken
-## by a throw and by a web called home; a crate brought home and onto a plate
+## by a throw and by a web called home, banking jumps; flies as grapple anchors and
+## Shift locking on to them; the ceiling; a crate brought home and onto a plate
 ## that opens a door; a platform carrying a web; and the exit and the bag.
 
 const FLOOR_TOP := 0.0
@@ -24,6 +25,7 @@ func run_checks() -> void:
 	await _rides_go_nowhere_for_free()
 	await _catching_flies()
 	await _fly_jumps()
+	await _the_ceiling()
 	await _round_the_rim()
 	await _pullback()
 	await _caught_by_your_web()
@@ -91,8 +93,8 @@ func _running_and_walls() -> void:
 	weaver.drive(Vector2(0.0, 1.0))
 	await run_frames(20)
 	var speed := Vector2(weaver.velocity.x, weaver.velocity.z).length()
-	check(absf(speed - Weaver.RUN) < 0.5, "runs at a run (%.1f m/s)" % speed)
-	await run_frames(60)
+	check(absf(speed - Weaver.WALK) < 0.3, "walks at a walk (%.1f m/s)" % speed)
+	await run_frames(140)
 	check(weaver.global_position.z > -11.6 and weaver.global_position.y < 0.6,
 		"walking into a stone wall does not take it up the wall (y %.2f)" % weaver.global_position.y)
 	weaver.drive(Vector2.ZERO, true)
@@ -192,12 +194,12 @@ func _walking_on_webs() -> void:
 	check(weaver.global_position.z > -11.0, "and pushes off away from the wall")
 
 	# A web on a ceiling: jump up into it and you hang there.
-	var objects: Array = [{"type": "piece", "piece": "cube", "pos": [0.0, 2.2, 0.0],
+	var objects: Array = [{"type": "piece", "piece": "cube", "pos": [0.0, 1.5, 0.0],
 		"size": [8.0, 1.0, 8.0]}]
 	run = await arena(objects)
 	weaver = run.weaver
 	await put(run, Vector3(6.0, 0.3, 6.0))
-	aim(run, Vector3(2.0, 2.2, 2.0))
+	aim(run, Vector3(2.0, 1.5, 2.0))
 	weaver.caster.throw(1.0)
 	web = first_web(run)
 	await wait_until(func() -> bool: return web.is_stuck(), 60)
@@ -604,59 +606,116 @@ func _platforms() -> void:
 	check(absf(web.global_position.x - x) > 1.0, "and goes where it goes")
 
 
-## A fly caught is a burst of speed, kept in the air and run off on the ground.
+## A fly taken with silk is a jump banked for the air; a fly grappled to is an
+## anchor, hopped off; Shift locks both on to the fly nearest the cross.
 func _fly_jumps() -> void:
-	print("Flies are speed")
-	var objects: Array = [{"type": "fly", "pos": [0.0, 1.0, -3.0]}]
+	print("Flies are jumps and anchors")
+	var objects: Array = [{"type": "fly", "pos": [0.0, 1.0, -3.0]},
+		{"type": "fly", "pos": [3.0, 1.0, -3.0]}]
 	var run := await arena(objects)
 	var weaver := run.weaver
-	var fly := get_root().get_tree().get_nodes_in_group(Fly.GROUP)[0] as Fly
+	var flies := get_root().get_tree().get_nodes_in_group(Fly.GROUP)
 	await put(run, Vector3(0.0, 0.3, 6.0))
-	aim(run, Vector3(0.0, 0.3, -20.0))
-	weaver.drive(Vector2(0.0, 1.0))
-	await run_frames(20)
-	var running := Vector2(weaver.velocity.x, weaver.velocity.z).length()
-	aim(run, fly.global_position)
-	weaver.caster.throw(0.0)
-	await wait_until(func() -> bool: return not fly.is_free(), 40)
-	await run_frames(1)
-	var burst := Vector2(weaver.velocity.x, weaver.velocity.z).length()
-	check(burst > running + Weaver.BOOST * 0.8,
-		"catching a fly is a burst of speed (%.1f to %.1f m/s)" % [running, burst])
-	await run_frames(60)
-	var later := Vector2(weaver.velocity.x, weaver.velocity.z).length()
-	check(later < burst - 2.0, "on the ground it runs off (%.1f m/s)" % later)
-	check(run.caught() == 1 and weaver.fly_line.count() == 1, "and the fly is on the line")
-	weaver.drive(Vector2.ZERO)
+	for node in flies:
+		var fly := node as Fly
+		aim(run, fly.global_position)
+		weaver.caster._cooling = 0.0
+		weaver.caster.throw(0.0)
+		await wait_until(func() -> bool: return not fly.is_free(), 40)
+	check(run.caught() == 2 and weaver.air_jumps == 2,
+		"each fly taken with silk banks a jump, and they keep (%d)" % weaver.air_jumps)
+	weaver.drive(Vector2.ZERO, true)
+	await run_frames(2)
+	check(weaver.mode == Weaver.Mode.AIR and weaver.air_jumps == 2,
+		"a jump from the ground spends none")
+	await wait_until(func() -> bool: return weaver.velocity.y < -1.0, 60)
+	weaver.drive(Vector2.ZERO, true)
+	await run_frames(2)
+	check(weaver.velocity.y > Weaver.JUMP * 0.8 and weaver.air_jumps == 1,
+		"falling, jump spends a banked one (%.1f m/s up, %d left)"
+		% [weaver.velocity.y, weaver.air_jumps])
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
+	check(weaver.air_jumps == 1, "and the one left is still banked on landing")
 
-	# In the air it is kept, so a jump with a fly caught in it goes further.
-	objects = [{"type": "fly", "pos": [0.0, 1.8, 7.5]}]
+	# Grappled to, a fly is an anchor: caught at the end of the pull, hopped off,
+	# the grapple back.
+	objects = [{"type": "fly", "pos": [0.0, 4.0, -4.0]}]
 	run = await arena(objects)
 	weaver = run.weaver
-	fly = get_root().get_tree().get_nodes_in_group(Fly.GROUP)[0] as Fly
-	await put(run, Vector3(-4.0, 0.3, 20.0))
-	aim(run, Vector3(-4.0, 0.3, -20.0))
-	weaver.drive(Vector2(0.0, 1.0))
-	await run_frames(20)
-	weaver.drive(Vector2(0.0, 1.0), true)
-	var from := weaver.global_position.z
+	var anchor := get_root().get_tree().get_nodes_in_group(Fly.GROUP)[0] as Fly
+	await put(run, Vector3(0.0, 0.3, 6.0))
+	aim(run, anchor.global_position + Vector3(0.3, 0.2, 0.0))
+	check(weaver.grapple.aimed().get("fly") == anchor,
+		"the grapple takes a fly with the cross a little off it")
+	check(weaver.fire_grapple(), "and the line goes onto it")
+	await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.GRAPPLE, 90)
+	if not check(not anchor.is_free() and run.caught() == 1 and weaver.air_jumps == 0,
+			"pulled to it, the fly is caught — an anchor, not a banked jump"):
+		note("fly %s, caught %d, jumps %d, %s" % [Fly.State.keys()[anchor.state], run.caught(),
+			weaver.air_jumps, where_is(weaver)])
+	if not check(weaver.mode == Weaver.Mode.AIR and weaver.velocity.y > 3.0 and weaver.grapple_ready,
+			"and the spider hops off it with the grapple back (%.1f m/s up)" % weaver.velocity.y):
+		note("ready %s, %s" % [weaver.grapple_ready, where_is(weaver)])
+
+	# Shift: the fly nearest the cross, wherever the cross is.
+	objects = [{"type": "fly", "pos": [-6.0, 2.0, -4.0]}, {"type": "fly", "pos": [6.0, 2.0, -4.0]}]
+	run = await arena(objects)
+	weaver = run.weaver
+	var left: Fly = null
+	var right: Fly = null
+	for node in get_root().get_tree().get_nodes_in_group(Fly.GROUP):
+		if (node as Fly).global_position.x < 0.0:
+			left = node
+		else:
+			right = node
+	await put(run, Vector3(0.0, 0.3, 6.0))
+	aim(run, Vector3(2.0, 2.0, -4.0))
+	check(weaver.grapple.aimed().get("fly") == null, "with the cross between flies, none is taken")
+	weaver.locking = true
+	await run_frames(2)
+	weaver.locking = true
+	check(weaver.lock_target == right, "Shift locks on to the fly nearest the cross")
+	check(weaver.grapple.aimed().get("fly") == right and weaver.caster.picked_fly() == right,
+		"and the grapple and the silk both go to it")
+	aim(run, Vector3(-2.0, 2.0, -4.0))
+	await run_frames(2)
+	check(weaver.lock_target == right, "kept while it stays in sight")
+	weaver.locking = false
+	await run_frames(1)
+	check(weaver.lock_target == null, "and let go with Shift")
+	weaver.locking = true
+	await run_frames(1)
+	check(weaver.lock_target == left, "held again, it takes the one nearest the cross now")
+	weaver.locking = false
+
+
+## Every level has a lid: silk thrown at the sky meets slick, and slides off it.
+func _the_ceiling() -> void:
+	print("The ceiling")
+	var run := await arena()
+	var weaver := run.weaver
+	var lid: StaticBody3D = null
+	for node in LevelBuilder._all_under(run):
+		if node is StaticBody3D and (node as Node).name == "Ceiling":
+			lid = node
+	if not check(lid != null, "the arena has a ceiling"):
+		return
+	check(lid.is_in_group(Surfaces.SLICK_GROUP) and lid.global_position.y > 8.0,
+		"slick, over the top of everything (y %.1f)" % lid.global_position.y)
+	await put(run, Vector3(0.0, 0.3, 20.0))
+	aim(run, Vector3(0.0, 30.0, 22.0))
+	weaver.caster.throw(0.5)
+	var web := first_web(run)
 	await run_frames(4)
-	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
-	var plain := from - weaver.global_position.z
-	await put(run, Vector3(0.0, 0.3, 14.0))
-	aim(run, Vector3(0.0, 0.3, -20.0))
-	weaver.drive(Vector2(0.0, 1.0))
-	await run_frames(20)
-	weaver.drive(Vector2(0.0, 1.0), true)
-	from = weaver.global_position.z
-	await run_frames(4)
-	weaver.caster.throw(0.0)
-	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
-	var boosted := from - weaver.global_position.z
-	check(not fly.is_free(), "a fly caught mid-jump")
-	check(boosted > plain + 2.0, "carries the jump further (%.1f m against %.1f m)"
-		% [boosted, plain])
-	weaver.drive(Vector2.ZERO)
+	aim(run, web.global_position)
+	weaver.fire_grapple()
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.WEB, 60)
+	check(weaver.standing_web() == web, "riding a web thrown straight up")
+	await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.WEB, 200)
+	check(weaver.global_position.y < lid.global_position.y,
+		"it comes apart under the ceiling and the spider drops (y %.1f)" % weaver.global_position.y)
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 200)
+	check(weaver.mode == Weaver.Mode.GROUND, "back down on the floor")
 
 
 ## Round the rim of a web onto its other face, where there is room for it.

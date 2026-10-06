@@ -120,10 +120,13 @@ func web_radius(wound: float) -> float:
 
 
 ## The fly a throw now would be aimed at, if any: the one nearest the cross whose
-## outline is within [constant PICK_ANGLE] of it, in reach and in plain sight.
+## outline is within [constant PICK_ANGLE] of it, in reach and in plain sight — or,
+## while Shift is held, the fly the spider has locked on to.
 func picked_fly() -> Fly:
 	if view == null or view.camera == null:
 		return null
+	if weaver.locking and weaver.lock_target != null:
+		return weaver.lock_target
 	var eye := view.camera.global_position
 	var look := -view.camera.global_basis.z.normalized()
 	var from := view.aim_origin()
