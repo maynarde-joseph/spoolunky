@@ -94,7 +94,7 @@ flies home at 44 m/s, through walls. Press again for the next.
   stand on the higher one, call the lower one home, and throw it higher.
 * Its silk counts as yours the moment it's called.
 * **It catches you if you're in the air.** Ride a web, jump off, call it, and
-  when it reaches you it wraps you for a moment: an air-stall of about 0.3 s, no
+  when it reaches you it wraps you for a moment: an air-stall of about 0.6 s, no
   falling, your speed mostly gone. It gives you a beat to aim the next throw,
   and no extra height, so it can't be chained into flight. It has still done
   its work on the way: the flies it passed are on your line, and a crate it
@@ -174,7 +174,7 @@ without CI noticing. They are not the only solutions, nor the fastest.
 | silk | 1 to 2.4 m webs, 22 m/s, 36 m reach, 0.2 s between throws |
 | pullback | oldest web first, 60 m reach, 44 m/s home, 0.15 s between calls |
 | fly | 0.32 m hit radius, +5 m/s burst on catch (16 m/s at most), drawn about five times life size |
-| catch-stall | 0.3 s held up, 15% of your speed kept |
+| catch-stall | 0.6 s held up, 15% of your speed kept |
 
 All of these are constants at the top of their scripts in `flies/player/` and
 `flies/web/`.

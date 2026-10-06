@@ -94,7 +94,7 @@ const BOOST_KEEP := 1.5
 
 ## How long a web called home holds the spider up when it reaches it in the air,
 ## and how much of the spider's speed is left after the first frame of it.
-const STALL := 0.3
+const STALL := 0.6
 const STALL_KEEP := 0.15
 
 ## Falling below this puts the spider back at the start.
