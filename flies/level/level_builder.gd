@@ -9,6 +9,10 @@ extends RefCounted
 const THING := "level_thing"
 const GROUP := "level_things"
 
+## The physics layer the editor finds things by that nothing in play collides
+## with: the start, the exit and hazards, which are not solid.
+const EDITOR_PICK := 1 << 15
+
 
 ## Builds every thing in [param level] under [param parent]. [param editing] adds
 ## what only the editor shows — the start, and the paths things move along.
@@ -45,6 +49,8 @@ static func build_thing(thing: Dictionary, parent: Node3D, editing := false) -> 
 			made = bag
 			parent.add_child(made, true)
 			made.transform = LevelData.transform_of(thing)
+			if editing:
+				_pick(made, Vector3(2.6, 2.8, 2.6), Vector3(0.0, 1.4, 0.0))
 		"fly":
 			var fly := Fly.new()
 			fly.path = LevelData.path_of(thing)
@@ -101,6 +107,8 @@ static func build_thing(thing: Dictionary, parent: Node3D, editing := false) -> 
 			made = hazard
 			made.transform = LevelData.transform_of(thing)
 			parent.add_child(made, true)
+			if editing:
+				_pick(made, size, Vector3(0.0, size.y * 0.5, 0.0))
 	if made == null:
 		push_warning("A level thing of no type anything builds: %s" % type)
 		return null
@@ -143,14 +151,20 @@ static func _marker(on: Node3D, tint: Color) -> void:
 	ball.position.y = 0.4
 	ball.material_override = paint
 	on.add_child(ball)
-	# Something to click.
+	_pick(on, Vector3(1.0, 1.0, 1.0), Vector3(0.0, 0.4, 0.0))
+
+
+## Something for the editor to click on a thing that is not solid.
+static func _pick(on: Node3D, size: Vector3, at: Vector3) -> void:
 	var pick := StaticBody3D.new()
-	pick.collision_layer = 1 << 15
+	pick.name = "EditorPick"
+	pick.collision_layer = EDITOR_PICK
+	pick.collision_mask = 0
 	var shape := CollisionShape3D.new()
-	var round := SphereShape3D.new()
-	round.radius = 0.5
-	shape.shape = round
-	shape.position.y = 0.4
+	var box := BoxShape3D.new()
+	box.size = size
+	shape.shape = box
+	shape.position = at
 	pick.add_child(shape)
 	on.add_child(pick)
 

@@ -10,9 +10,9 @@ extends Node3D
 ## catch one that flies into it. The only ways to take one are a thrown web that
 ## touches it and a web called back through it.
 ##
-## Drawn with the fly's own body (`game/data/bodies/fly.tres`): the skeleton, the
-## mesh and the poses the old game built for it, scaled up so it reads at the
-## distances this game is played at.
+## Drawn with the fly's own body (`fly_body.tres`): the skeleton, the mesh and the
+## poses it was first given, scaled up so it reads at the distances this game is
+## played at.
 
 signal caught(fly: Fly)
 
@@ -24,8 +24,8 @@ enum State {
 
 const GROUP := "flies"
 
-## The fly's body, from the old game, untouched.
-const BODY := preload("res://game/data/bodies/fly.tres")
+## The fly's body, as it was first built.
+const BODY := preload("res://flies/fly/fly_body.tres")
 
 ## How big a fly is drawn: its body radius, in metres. The body is drawn in that
 ## unit. Five times life size against a spider at a Huntsman's 0.7 m, so one can

@@ -98,7 +98,7 @@ func throw(wound := 0.0) -> bool:
 	var heading := view.aim_forward()
 	var fly := picked_fly()
 	if fly != null:
-		var lead := SilkShot.intercept(from, SPEED, fly.global_position, fly.velocity) - from
+		var lead := intercept(from, SPEED, fly.global_position, fly.velocity) - from
 		if lead.length_squared() > 0.0001:
 			heading = lead.normalized()
 	var radius := web_radius(wound)
@@ -193,3 +193,30 @@ func _build_held() -> void:
 	_held.top_level = true
 	_held.visible = false
 	add_child(_held)
+
+
+## Where to throw from [param from], at [param pace], to meet something at
+## [param at] moving at [param velocity] — if it keeps going the way it is going:
+## the point where web and fly arrive at the same moment. Something too fast to
+## catch, or not moving, gets thrown at where it is.
+static func intercept(from: Vector3, pace: float, at: Vector3, velocity: Vector3) -> Vector3:
+	var gap := at - from
+	var a := velocity.dot(velocity) - pace * pace
+	var b := 2.0 * gap.dot(velocity)
+	var c := gap.dot(gap)
+	var soonest := -1.0
+	if absf(a) < 0.000001:
+		if absf(b) > 0.000001:
+			soonest = -c / b
+	else:
+		var room := b * b - 4.0 * a * c
+		if room >= 0.0:
+			var first := (-b - sqrt(room)) / (2.0 * a)
+			var second := (-b + sqrt(room)) / (2.0 * a)
+			for t in [minf(first, second), maxf(first, second)]:
+				if t > 0.0:
+					soonest = t
+					break
+	if soonest <= 0.0:
+		return at
+	return at + velocity * soonest

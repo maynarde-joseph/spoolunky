@@ -64,7 +64,7 @@ const RETURN_SPEED := 44.0
 const FADE := 0.35
 
 ## What a web looks like: an orb web's spokes and spiral.
-const PATTERN := preload("res://game/data/patterns/orb_web.tres")
+const PATTERN := preload("res://flies/web/orb_web.tres")
 
 var state := State.FLYING
 

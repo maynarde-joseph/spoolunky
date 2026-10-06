@@ -1,6 +1,0 @@
-[gd_resource type="StandardMaterial3D" format=3]
-
-[resource]
-resource_name = "petal_red"
-albedo_color = Color(0.86, 0.22, 0.24, 1)
-roughness = 0.88
