@@ -5,9 +5,8 @@ extends CanvasLayer
 ## silk left, and a line of news.
 ##
 ## The cross reads off the answers the verbs act on, so it cannot promise what
-## they will not do. Its ring is bright when the grapple has something to hold,
-## red over something slick, faint over nothing in reach, and broken while the
-## grapple is spent. It turns gold, and brackets the fly, when a thrown web would
+## they will not do. Its ring is blue over a web the grapple would take, faint
+## over anything else, and broken while the grapple is spent. It turns gold, and brackets the fly, when a thrown web would
 ## be aimed at one. An arc fills round it while silk winds up.
 
 const FONT_SIZE := 22
@@ -25,6 +24,8 @@ var _result_text: Label
 var _news_left := 0.0
 var _help_left := 7.0
 var _silk_flash := 0.0
+## A gold edge round the screen, fading, while a fly's burst of speed is fresh.
+var _boost_flash := 0.0
 
 
 func setup(level_run: LevelRun) -> void:
@@ -33,6 +34,7 @@ func setup(level_run: LevelRun) -> void:
 	run.weaver.fly_caught.connect(func(_fly: Fly) -> void:
 		say("Fly caught — %d / %d" % [run.caught(), run.flies_total]))
 	run.weaver.out_of_silk.connect(func() -> void: _silk_flash = 0.6)
+	run.weaver.boosted.connect(func() -> void: _boost_flash = 0.5)
 	run.finished.connect(_on_finished)
 	var best := run.best_time()
 	if best >= 0.0:
@@ -60,7 +62,7 @@ func _ready() -> void:
 	_place(_news, 0.5, 1.0, Rect2(-500, -150, 1000, 36))
 	_help = _label(Vector2.ZERO, FONT_SIZE - 4)
 	_place(_help, 0.5, 1.0, Rect2(-700, -44, 1400, 30))
-	_help.text = "WASD run · Space jump (in the air: eat a fly) · LEFT MOUSE grapple · RIGHT MOUSE silk (hold to grow) · E / MIDDLE MOUSE pullback · R restart · Esc pause"
+	_help.text = "WASD run · Space jump · RIGHT MOUSE silk (hold to grow) · LEFT MOUSE grapple to a web · E / MIDDLE MOUSE pullback · R restart · Esc pause"
 
 	_result = PanelContainer.new()
 	_result.name = "Result"
@@ -133,6 +135,7 @@ func _process(delta: float) -> void:
 	_help_left -= delta
 	_help.modulate.a = clampf(_help_left, 0.0, 1.0) * 0.85
 	_silk_flash = maxf(0.0, _silk_flash - delta)
+	_boost_flash = maxf(0.0, _boost_flash - delta)
 	_cross.queue_redraw()
 
 
@@ -155,12 +158,11 @@ func _draw_cross() -> void:
 	var middle := _cross.size * 0.5
 	var shadow := Color(0, 0, 0, 0.45)
 	var target := weaver.grapple.aimed()
-	var tint := Color(1, 1, 1, 0.35)
-	if not target.is_empty():
-		tint = Color(1.0, 0.4, 0.35, 0.95) if target.get("slick", false) \
-			else Color(1, 1, 1, 0.92)
-		if target.get("web") != null:
-			tint = Color(0.6, 0.85, 1.0, 0.95)
+	# Blue over a web the grapple would take; faint over anything else, since only
+	# silk holds the line.
+	var tint := Color(1, 1, 1, 0.4)
+	if not target.is_empty() and target.get("web") != null:
+		tint = Color(0.6, 0.85, 1.0, 0.95)
 	var fly := weaver.caster.picked_fly()
 	var ring := 11.0
 	_cross.draw_circle(middle, 3.0, shadow)
@@ -187,6 +189,9 @@ func _draw_cross() -> void:
 				_cross.draw_line(c, c - Vector2(corner.x * 7.0, 0.0), gold, 2.0)
 				_cross.draw_line(c, c - Vector2(0.0, corner.y * 7.0), gold, 2.0)
 	_draw_fly_marks(weaver)
+	if _boost_flash > 0.0:
+		var glow := Color(1.0, 0.8, 0.3, _boost_flash * 0.5)
+		_cross.draw_rect(Rect2(Vector2.ZERO, _cross.size), glow, false, 10.0)
 	# Silk left: a bead for each web, filled while it is the spider's to throw.
 	var count := weaver.max_webs
 	var left := weaver.webs_left()
@@ -201,13 +206,6 @@ func _draw_cross() -> void:
 		else:
 			_cross.draw_arc(at, 8.0, 0.0, TAU, 24,
 				Color(1.0, 0.4, 0.35, 0.9) if flash else Color(1, 1, 1, 0.4), 2.0, true)
-	# Flies on the line, each a jump in the air: gold beads under the silk.
-	var jumps := weaver.fly_line.count()
-	var row := Vector2(middle.x - 16.0 * float(jumps - 1) * 0.5, _cross.size.y - 64.0)
-	for i in jumps:
-		var at := row + Vector2(16.0 * float(i), 0.0)
-		_cross.draw_circle(at, 6.5, Color(0.1, 0.1, 0.14, 0.75))
-		_cross.draw_circle(at, 4.5, Color(1.0, 0.8, 0.3, 0.95))
 
 
 ## A small gold bead over every fly still out, so they can be found across a

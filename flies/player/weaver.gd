@@ -7,23 +7,24 @@ extends CharacterBody3D
 ## ceilings are not floors any more. What it has instead are three things, each on
 ## a button of its own and all three usable at once:
 ##
-## * **Grapple** (left mouse) — a line to where you point, and you are pulled along
-##   it. See [Grapple]. One in the air, back when you land — on the ground or a web
-##   that has stuck. A web still flying gives it back once, until you next land.
+## * **Grapple** (left mouse) — a line to a web you point at, and you are pulled
+##   along it onto the web. Only silk holds it. See [Grapple]. One in the air, back
+##   when you land — on the ground or a web that has stuck. A web still flying
+##   gives it back once, until you next land.
 ## * **Silk** (right mouse) — hold to wind it up, let go to throw a web. The web
 ##   flies; grapple onto it and ride it; where it lands it sticks, flat, and the
 ##   spider can walk on it — up a wall, across a ceiling. See [SilkCaster] and
 ##   [ThrownWeb]. A web thrown through a fly takes the fly.
-## * **Pullback** (E, or the middle mouse button) — every web in reach flies home,
-##   wrapping what it passes and putting down what it held at your feet. See
-##   [Pullback].
+## * **Pullback** (E, or the middle mouse button) — your oldest web flies home,
+##   wrapping what it passes and putting down what it held at your feet; reaching
+##   you in the air, it catches you for a moment. See [Pullback].
 ##
 ## Silk is a few webs, no more: a level says how many. Throw them all and the
 ## Pullback is how you get them back.
 ##
-## Flies caught go on a line behind the spider, and each is a jump in the air:
-## Space off the ground eats the newest one. Whatever is still on the line at the
-## exit goes in the bag.
+## Every fly caught is a burst of speed the moment it is taken — more ground covered
+## in the air if it is caught mid-jump, so when to catch one is part of the route —
+## and goes on a line behind the spider, and in the bag at the exit.
 ##
 ## The camera is the old game's rig, unchanged: see [SpiderCamera].
 
@@ -39,15 +40,14 @@ signal out_of_silk()
 ## Landed, on the ground or on a web: the grapple is back.
 signal landed()
 
-## Ate a fly off the line for a jump in the air.
-signal fly_eaten()
+## A fly caught gave the spider a burst of speed.
+signal boosted()
 
 enum Mode {
 	GROUND,   ## running on a floor
 	AIR,      ## jumping or falling
 	WEB,      ## on a web: stuck to a surface, or riding one through the air
 	GRAPPLE,  ## being pulled along a line
-	CLING,    ## a grapple ended on a wall: a moment to jump off it
 }
 
 ## How tall the spider is, in metres: a Huntsman.
@@ -85,10 +85,17 @@ const BUFFER := 0.14
 ## Seconds after leaving a web before that web can be landed on again.
 const WEB_GRACE := 0.3
 
-## How long a grapple that ends on a wall holds you there, and how hard a jump off
-## it goes.
-const CLING_TIME := 0.65
-const WALL_JUMP := Vector2(7.0, 8.5)
+## How much speed a fly caught adds, along the way the spider is going, in metres a
+## second; how fast that can make it at most; and how long a burst earned on a web
+## or a line waits for the spider to be off it.
+const BOOST := 5.0
+const BOOST_MOST := 16.0
+const BOOST_KEEP := 1.5
+
+## How long a web called home holds the spider up when it reaches it in the air,
+## and how much of the spider's speed is left after the first frame of it.
+const STALL := 0.3
+const STALL_KEEP := 0.15
 
 ## Falling below this puts the spider back at the start.
 var kill_y := -30.0
@@ -139,8 +146,17 @@ var _last_position := Vector3.ZERO
 var _moving := Vector3.ZERO
 
 var _grapple_time := 0.0
-var _cling_left := 0.0
-var _cling_normal := Vector3.FORWARD
+## Seconds left of being held up by a web that came home: see [method _web_home].
+var _stall := 0.0
+
+## Seconds left to use a burst from a fly caught: see [method _boost].
+var _boost_left := 0.0
+
+## Whether the walk was carried round a web's rim onto its other face, and is going
+## the other way on it while the keys stay down — and how long before it may go round
+## again. See [method _round_the_rim].
+var _round_carry := false
+var _round_wait := 0.0
 var _facing := Vector3.FORWARD
 var _up := Vector3.UP
 var _base_fov := 0.0
@@ -256,6 +272,11 @@ func _physics_process(delta: float) -> void:
 	else:
 		_buffer = maxf(0.0, _buffer - delta)
 	_grace = maxf(0.0, _grace - delta)
+	_round_wait = maxf(0.0, _round_wait - delta)
+	if _boost_left > 0.0:
+		_boost_left -= delta
+		if mode == Mode.GROUND or mode == Mode.AIR:
+			_boost()
 	view.update(HEIGHT, global_basis.y)
 	match mode:
 		Mode.GROUND:
@@ -266,8 +287,6 @@ func _physics_process(delta: float) -> void:
 			_step_web(delta)
 		Mode.GRAPPLE:
 			_step_grapple(delta)
-		Mode.CLING:
-			_step_cling(delta)
 	_moving = (global_position - _last_position) / maxf(delta, 0.0001)
 	_last_position = global_position
 	_orient(delta)
@@ -385,12 +404,19 @@ func _step_air(delta: float) -> void:
 	if _buffer > 0.0 and _coyote > 0.0:
 		_jump()
 		return
-	if _buffer > 0.0 and fly_line.count() > 0:
-		# A jump in the air costs a fly off the line: the spider eats it on the way.
-		_buffer = 0.0
-		fly_line.eat()
-		velocity.y = maxf(velocity.y, JUMP)
-		fly_eaten.emit()
+	if _stall > 0.0:
+		# Held up by the web that came home: no fall, and the way you were going
+		# dying away, for a moment to aim the next throw in.
+		_stall -= delta
+		velocity = velocity.lerp(Vector3.ZERO, clampf(delta * 18.0, 0.0, 1.0))
+		if _catch_web(velocity * delta):
+			_stall = 0.0
+			return
+		move_and_slide()
+		if is_on_floor():
+			_stall = 0.0
+			_land()
+		return
 	velocity.y = maxf(velocity.y - GRAVITY * delta, -MAX_FALL)
 	var wish := _wish_flat()
 	if wish != Vector3.ZERO:
@@ -432,7 +458,12 @@ func attach_to_web(web: ThrownWeb, at := Vector3.INF) -> void:
 	var where := global_position if at == Vector3.INF else at
 	var local := web.to_local(where)
 	_web = web
+	_round_carry = false
 	_web_side = 1.0 if web.to_local(global_position).z >= 0.0 else -1.0
+	# The face with room on it: a web flat on a wall has no room behind it, whatever
+	# side of its plane the spider happened to reach it from.
+	if _face_blocked(web, local, _web_side) and not _face_blocked(web, local, -_web_side):
+		_web_side = -_web_side
 	_web_at = Vector2(local.x, local.y).limit_length(maxf(web.current_radius() - 0.2, 0.05))
 	var carried := web.global_basis.inverse() * velocity
 	_web_walk = Vector2(carried.x, carried.y).limit_length(WEB_RUN)
@@ -479,18 +510,69 @@ func _step_web(delta: float) -> void:
 	var wish_2d := Vector2(wish_local.x, wish_local.y)
 	if wish_2d.length_squared() > 0.0001:
 		wish_2d = wish_2d.normalized()
+	if _round_carry:
+		# Gone round the rim: the keys still mean the way they did on the other face,
+		# which on this one is back the other way, until they are let go.
+		if _input_axis == Vector2.ZERO:
+			_round_carry = false
+		else:
+			wish_2d = -wish_2d
 	_web_walk = _web_walk.move_toward(wish_2d * WEB_RUN, WEB_ACCEL * delta)
 	var next := _web_at + _web_walk * delta
 	var limit := maxf(_web.current_radius() - 0.22, 0.05)
 	if next.length() > limit:
 		var outward_2d := next.normalized()
 		var outward := (basis * Vector3(outward_2d.x, outward_2d.y, 0.0)).normalized()
-		if wish != Vector3.ZERO and wish.dot(outward) > 0.25 and _step_off_web(outward):
-			return
+		if wish_2d.dot(outward_2d) > 0.25:
+			if _step_off_web(outward):
+				return
+			if _round_the_rim(next.limit_length(limit)):
+				return
 		next = next.limit_length(limit)
 		_web_walk -= outward_2d * maxf(_web_walk.dot(outward_2d), 0.0)
+	# Nothing walks the spider into something solid: the web may run on past what it
+	# is on, or under the lip of it, but the spider stops at it — or steps off onto it,
+	# where it is a floor.
+	var lift := ThrownWeb.THICKNESS * 0.5 + RADIUS * 0.95
+	var there := _web.to_global(Vector3(next.x, next.y, _web_side * lift))
+	if next != _web_at and _blocked(there):
+		var going := (there - global_position).normalized()
+		var space := get_world_3d().direct_space_state
+		var ahead := space.intersect_ray(PhysicsRayQueryParameters3D.create(global_position,
+			global_position + going * 0.9, GameLayers.WORLD, [get_rid()]))
+		if not ahead.is_empty() and (ahead["normal"] as Vector3).y > 0.6:
+			# Walked down a web on a wall into the floor it stands on: onto the floor.
+			_onto_floor(ahead)
+			return
+		next = _web_at
+		_web_walk = Vector2.ZERO
 	_web_at = next
 	_place_on_web()
+
+
+## Over the rim at [param rim] and onto the web's other face, if there is room
+## there — there is none behind a web flat on a wall, and all round one spanning a
+## gap or riding the air. True if it went.
+func _round_the_rim(rim: Vector2) -> bool:
+	if _round_wait > 0.0:
+		return false
+	var local := Vector3(rim.x, rim.y, 0.0)
+	if _face_blocked(_web, local, -_web_side):
+		return false
+	_web_side = -_web_side
+	_web_at = rim
+	_web_walk = -_web_walk
+	_round_carry = not _round_carry
+	_round_wait = 0.35
+	_place_on_web()
+	return true
+
+
+## Whether the spider standing at [param local] on face [param side] of
+## [param web] would be inside something.
+func _face_blocked(web: ThrownWeb, local: Vector3, side: float) -> bool:
+	var lift := ThrownWeb.THICKNESS * 0.5 + RADIUS * 0.95
+	return _blocked(web.to_global(Vector3(local.x, local.y, side * lift)))
 
 
 func _place_on_web() -> void:
@@ -559,37 +641,19 @@ func _step_off_web(outward: Vector3) -> bool:
 	for start in [here + outward * 0.6 + _up * 0.3, here + outward * 0.7 - _up * 0.7,
 			here + outward * 1.1 - _up * 0.7]:
 		var down := PhysicsRayQueryParameters3D.create(start + Vector3.UP * 0.9,
-			start + Vector3.DOWN * 1.0, GameLayers.WORLD, exclude)
+			start + Vector3.DOWN * 2.0, GameLayers.WORLD, exclude)
 		var hit := space.intersect_ray(down)
 		if hit.is_empty() or (hit["normal"] as Vector3).y <= 0.6:
+			continue
+		# A step, not a drop: a floor well below the spider is somewhere to fall to,
+		# and walking off the rim there goes round it instead.
+		if (hit["position"] as Vector3).y < here.y - RADIUS - 0.6:
 			continue
 		# Not into the middle of something: there has to be room to stand there.
 		if _blocked(hit["position"] + Vector3.UP * (RADIUS + 0.05)):
 			continue
 		return _onto_floor(hit)
 	return false
-
-
-## The top of a wall facing [param wall_normal] in front of [param from], if it is
-## low enough over the spider to get up onto: a hit on the floor up there, or empty.
-func _ledge_above(from: Vector3, wall_normal: Vector3) -> Dictionary:
-	var space := get_world_3d().direct_space_state
-	for inward in [0.45, 0.8]:
-		var over: Vector3 = from - wall_normal * (RADIUS + float(inward))
-		var query := PhysicsRayQueryParameters3D.create(over + Vector3.UP * MANTLE,
-			over + Vector3.DOWN * 0.3, GameLayers.WORLD, [get_rid()])
-		var hit := space.intersect_ray(query)
-		if hit.is_empty() or (hit["normal"] as Vector3).y <= 0.6:
-			continue
-		if _blocked(hit["position"] + Vector3.UP * (RADIUS + 0.05)):
-			continue
-		return hit
-	return {}
-
-
-## How far above the spider a ledge can be and still be got up onto from a line
-## that ended on its face.
-const MANTLE := 1.4
 
 
 func _blocked(at: Vector3) -> bool:
@@ -624,7 +688,9 @@ func _step_onto_web(wish: Vector3) -> bool:
 	if hit.is_empty():
 		return false
 	var web := ThrownWeb.of(hit.get("collider"))
-	if web == null or not web.is_standing() or (web == _grace_web and _grace > 0.0):
+	# Only a web that has stuck: one still flying is taken with the grapple, not by
+	# running into the one you have just thrown.
+	if web == null or not web.is_stuck() or (web == _grace_web and _grace > 0.0):
 		return false
 	var facing: Vector3 = hit["normal"]
 	if facing.dot(wish) > -0.4 or absf(facing.y) > 0.6:
@@ -652,7 +718,7 @@ func _catch_web(step: Vector3) -> bool:
 	query.motion = Vector3.ZERO
 	for found in space.intersect_shape(query, 4):
 		var web := ThrownWeb.of(found.get("collider"))
-		if web == null or not web.is_standing():
+		if web == null or not web.is_stuck():
 			continue
 		if web == _grace_web and _grace > 0.0:
 			continue
@@ -705,85 +771,17 @@ func _step_grapple(delta: float) -> void:
 	var target := grapple.target_point()
 	var to := target - global_position
 	var distance := to.length()
-	var arrive := RADIUS + 0.35 if grapple.web != null else 0.3
-	if distance <= arrive or _grapple_time > 2.5:
-		_grapple_arrive()
-		return
-	var step := minf(grapple.speed * delta, distance)
-	velocity = to / distance * (step / delta)
-	var before := global_position
-	if grapple.web == null:
-		move_and_slide()
-		if global_position.distance_to(before) < step * 0.3:
-			_grapple_arrive()
-			return
-	else:
-		# Onto a web: straight there, through anything its rim is in.
-		global_position += to / distance * step
-	velocity = to / distance * grapple.speed
-
-
-func _grapple_arrive() -> void:
-	var web := grapple.web
-	var normal := grapple.target_normal()
-	var travel := velocity
-	grapple.end()
-	if web != null and is_instance_valid(web) and web.is_standing():
+	if distance <= RADIUS + 0.35 or _grapple_time > 2.5:
+		var web := grapple.web
+		grapple.end()
 		attach_to_web(web)
+		if mode != Mode.WEB:
+			_set_mode(Mode.AIR)
 		return
-	if normal.y > 0.6:
-		# A floor: land running, with the pull's speed along it.
-		var along := travel - normal * travel.dot(normal)
-		velocity = along.limit_length(RUN * 1.6)
-		_set_mode(Mode.GROUND)
-		_land()
-		return
-	if absf(normal.y) <= 0.6:
-		var flat_normal := Vector3(normal.x, 0.0, normal.z).normalized()
-		var top := _ledge_above(global_position, flat_normal)
-		if not top.is_empty():
-			# Just under the lip: over it and onto the top, running.
-			global_position = top["position"] + Vector3.UP * (RADIUS + 0.03)
-			velocity = -flat_normal * RUN * 0.6
-			_set_mode(Mode.GROUND)
-			_land()
-			return
-		_cling_normal = flat_normal
-		_cling_left = CLING_TIME
-		velocity = Vector3.ZERO
-		_set_mode(Mode.CLING)
-		return
-	velocity = Vector3.ZERO
-	_set_mode(Mode.AIR)
-
-
-# --- clinging ------------------------------------------------------------------
-
-func _step_cling(delta: float) -> void:
-	_cling_left -= delta
-	if _buffer > 0.0:
-		_buffer = 0.0
-		velocity = _cling_normal * WALL_JUMP.x + Vector3.UP * WALL_JUMP.y
-		_set_mode(Mode.AIR)
-		return
-	if _cling_left <= 0.0:
-		_set_mode(Mode.AIR)
-		return
-	var wish := _wish_flat()
-	if wish.dot(-_cling_normal) > 0.5:
-		var top := _ledge_above(global_position, _cling_normal)
-		if not top.is_empty():
-			global_position = top["position"] + Vector3.UP * (RADIUS + 0.03)
-			velocity = -_cling_normal * RUN * 0.6
-			_set_mode(Mode.GROUND)
-			_land()
-			return
-	velocity = Vector3.DOWN * 1.2 - _cling_normal * 0.5
-	if _catch_web(velocity * delta):
-		return
-	move_and_slide()
-	if is_on_floor():
-		_land()
+	# Straight there, through anything the web's rim is in.
+	var step := minf(grapple.speed * delta, distance)
+	global_position += to / distance * step
+	velocity = to / distance * grapple.speed
 
 
 # --- facing --------------------------------------------------------------------
@@ -839,6 +837,51 @@ func web_container() -> Node:
 func adopt_web(web: ThrownWeb) -> void:
 	_webs.append(web)
 	web.gone.connect(func(_w: ThrownWeb) -> void: _forget_gone())
+	web.came_back.connect(_web_home)
+
+
+## Whether a web that came home is holding the spider up in the air.
+func is_stalled() -> bool:
+	return _stall > 0.0
+
+
+## A web called home has reached the spider. On the ground that is the end of it.
+## In the air it catches you: wrapped for a moment, held up, the speed you had
+## mostly gone — a beat to aim the next throw in, and no height for it. It has
+## still done its work on the way: the flies it passed are on the line, and what it
+## carried is put down beside you.
+func _web_home(_web_back: ThrownWeb, _carried: Node3D) -> void:
+	if mode != Mode.AIR:
+		return
+	_stall = STALL
+	velocity *= STALL_KEEP
+	_wrap_flash()
+
+
+## Silk closing round the spider for an instant, where a web came home to it.
+func _wrap_flash() -> void:
+	var wrap := MeshInstance3D.new()
+	wrap.name = "Wrap"
+	var ball := SphereMesh.new()
+	ball.radius = HEIGHT * 0.9
+	ball.height = HEIGHT * 1.8
+	ball.radial_segments = 16
+	ball.rings = 8
+	wrap.mesh = ball
+	var paint := StandardMaterial3D.new()
+	paint.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	paint.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	paint.albedo_color = Color(0.94, 0.96, 1.0, 0.45)
+	paint.cull_mode = BaseMaterial3D.CULL_DISABLED
+	wrap.material_override = paint
+	wrap.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(wrap)
+	wrap.scale = Vector3.ONE * 1.6
+	var close := wrap.create_tween()
+	close.set_parallel(true)
+	close.tween_property(wrap, "scale", Vector3.ONE * 0.8, STALL)
+	close.tween_property(paint, "albedo_color:a", 0.0, STALL)
+	close.chain().tween_callback(wrap.queue_free)
 
 
 func _forget_gone() -> void:
@@ -854,7 +897,27 @@ func catch_fly(fly: Fly) -> void:
 	if fly == null or not fly.catch_it():
 		return
 	fly_line.add(fly)
+	_boost_left = BOOST_KEEP
 	fly_caught.emit(fly)
+
+
+## A burst of speed from a fly just caught, along the way the spider is going — or
+## the way it is looking, standing still — on top of whatever speed it had. In the
+## air nothing bleeds it away, so a fly caught mid-jump carries the jump further;
+## on the ground it runs out as a skid does. On a web or a line, it waits until the
+## spider is off it, for a moment.
+func _boost() -> void:
+	_boost_left = 0.0
+	var flat := Vector3(velocity.x, 0.0, velocity.z)
+	var along := flat.normalized() if flat.length() > 1.0 else Vector3.ZERO
+	if along == Vector3.ZERO:
+		along = view.forward()
+		along.y = 0.0
+		along = along.normalized() if along.length_squared() > 0.0001 else Vector3.FORWARD
+	flat = (flat + along * BOOST).limit_length(BOOST_MOST)
+	velocity.x = flat.x
+	velocity.z = flat.z
+	boosted.emit()
 
 
 func notify(text: String) -> void:
@@ -876,4 +939,7 @@ func put_at(where: Transform3D) -> void:
 	view.settle()
 	grapple_ready = true
 	_air_refund_spent = false
+	_stall = 0.0
+	_boost_left = 0.0
+	_round_carry = false
 	_set_mode(Mode.AIR)

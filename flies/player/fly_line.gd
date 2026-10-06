@@ -9,8 +9,7 @@ extends Node3D
 ## sags; only stretched past its length does it pull. Each fly is a weight on the
 ## end of its line, falling and swinging and kept off the floor, and nothing else.
 ##
-## Each one is a jump in the air: see [method eat]. At the exit, whatever is left
-## goes in the bag: see [method pour_into].
+## At the exit they go in the bag: see [method pour_into].
 
 ## How long each line is, in metres.
 const LINK := 0.85
@@ -65,19 +64,6 @@ func add(fly: Fly) -> void:
 	flies.append(fly)
 	_points.append(fly.global_position)
 	_was.append(fly.global_position)
-
-
-## Eats the fly on the end of the line — the last one caught — for a jump in the
-## air. False if the line is empty.
-func eat() -> bool:
-	if flies.is_empty() or _pouring:
-		return false
-	var fly: Fly = flies.pop_back()
-	_points.pop_back()
-	_was.pop_back()
-	if is_instance_valid(fly):
-		fly.eat()
-	return true
 
 
 ## Where the line leaves the spider: its spinnerets, at the back of the abdomen.

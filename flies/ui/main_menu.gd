@@ -34,7 +34,7 @@ func _ready() -> void:
 	root.add_child(column)
 	column.add_child(UiStyle.title("Put the Flies in the Bag", 54))
 	var sub := Label.new()
-	sub.text = "Grapple. Throw silk. Call it back. Catch every fly, then get out."
+	sub.text = "Throw silk. Grapple to it. Call it back. Catch flies for speed, then get out."
 	sub.add_theme_font_size_override("font_size", 20)
 	column.add_child(sub)
 	var panel := PanelContainer.new()
@@ -77,7 +77,7 @@ func _ready() -> void:
 	row.add_child(UiStyle.button("New level", func() -> void: create.emit()))
 	row.add_child(UiStyle.button("Quit", func() -> void: quit.emit()))
 	var keys := Label.new()
-	keys.text = "LEFT MOUSE grapple   ·   RIGHT MOUSE silk — hold to throw a bigger web   ·   E / MIDDLE MOUSE pullback\n" \
+	keys.text = "RIGHT MOUSE silk — hold for a bigger web   ·   LEFT MOUSE grapple to a web   ·   E / MIDDLE MOUSE pullback\n" \
 		+ "WASD run   ·   SPACE jump   ·   R restart   ·   ESC pause"
 	keys.add_theme_font_size_override("font_size", 17)
 	keys.modulate = Color(1, 1, 1, 0.85)

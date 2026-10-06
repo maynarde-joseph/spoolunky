@@ -1,9 +1,10 @@
 class_name WeaverBody
 extends Node3D
 
-## The spider you see: the old game's skeleton, mesh and eight-legged gait, told
-## every frame what the [Weaver] is doing. The legs find their own footholds, so
-## on a web on a wall they stand on the web.
+## The spider you see: the old game's skeleton, its minimal mesh (two smooth blobs
+## on eight thin legs, two eyes, one colour) and its eight-legged gait, told every
+## frame what the [Weaver] is doing. The legs find their own footholds, so on a web
+## on a wall they stand on the web.
 
 @export var body_colour := Color(0.09, 0.075, 0.08)
 @export var leg_colour := Color(0.12, 0.1, 0.1)
@@ -31,7 +32,7 @@ func _ready() -> void:
 	mesh.mesh = SpiderRig.build_mesh(skeleton, {
 		"body": body_colour, "legs": leg_colour, "band": band_colour,
 		"marking": marking_colour, "eyeshine": eye_colour,
-	}, SpiderRig.Look.DETAILED)
+	}, SpiderRig.Look.MINIMAL)
 	gait = SpiderGait.new()
 	gait.name = "Gait"
 	skeleton.add_child(gait)

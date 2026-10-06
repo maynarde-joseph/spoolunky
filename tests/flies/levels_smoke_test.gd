@@ -204,10 +204,34 @@ func catch(run: LevelRun, fly: Fly, wound := 0.0) -> bool:
 	return not fly.is_free()
 
 
+## Throws a web at [param point], grapples onto it when it sticks, and walks on
+## up or across it until it puts the spider somewhere else. Whether it all went.
+func web_onto(run: LevelRun, point: Vector3, wound := 1.0) -> bool:
+	var web := await throw_at(run, point, wound)
+	if not await stuck(web):
+		return false
+	if OS.has_environment("ROUTE_DEBUG"):
+		note("before grapple: look %s" % run.weaver.view.forward())
+	if not await grapple_to(run, web.global_position):
+		return false
+	if OS.has_environment("ROUTE_DEBUG"):
+		note("after grapple: look %s, %s" % [run.weaver.view.forward(), where(run)])
+	if run.weaver.standing_web() != web:
+		return false
+	return await climb(run)
+
+
 ## Walks up the web underfoot until it takes the spider somewhere else.
 func climb(run: LevelRun, limit := 150) -> bool:
 	var weaver := run.weaver
 	weaver.view.pitch = 0.0
+	# Facing into the wall the web is on, W walks up it, the way a player would look.
+	var under := weaver.standing_web()
+	if under != null:
+		var into := -under.normal()
+		into.y = 0.0
+		if into.length() > 0.5:
+			weaver.view.yaw = atan2(-into.x, -into.z)
 	weaver.drive(Vector2(0.0, 1.0))
 	var left := await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.WEB, limit)
 	if OS.has_environment("ROUTE_DEBUG"):
@@ -269,34 +293,43 @@ func _first_thread() -> void:
 	await stop(run)
 	check(await catch(run, fly_near(Vector3(2.5, 1.8, -23)), 0.5), "the fly on its path")
 	await go(run, Vector3(0, 0, -15))
-	await grapple_to(run, Vector3(0, 0, -33))
+	aim(run, Vector3(0, 0, -33))
+	check(run.weaver.grapple.aimed().get("web") == null, "bare stone gives the grapple nothing")
+	check(await web_onto(run, Vector3(0, 0, -33)),
+		"a web on the far pad, and a grapple onto it, take the long gap")
 	check(run.weaver.global_position.z < -29.5 and run.weaver.mode == Weaver.Mode.GROUND,
-		"the grapple takes the long gap (%s)" % where(run))
+		"walking off it onto the pad (%s)" % where(run))
+	await pull(run)
 	await go(run, Vector3(0, 0, -39))
-	await grapple_to(run, Vector3(0, 3.6, -42))
-	check(run.weaver.global_position.y > 3.9, "a grapple to the lip gets up the ledge (%s)"
+	check(await web_onto(run, Vector3(0, 2.6, -42)) and run.weaver.global_position.y > 3.9,
+		"a web on the ledge's face, a grapple onto it, and up it onto the top (%s)"
 		% where(run))
 	await stop(run)
+	await pull(run)
 	check(await catch(run, fly_near(Vector3(-2.5, 5.6, -46))), "the fly on the ledge")
 	var weaver := run.weaver
-	var flies := weaver.fly_line.count()
-	await go(run, Vector3(0, 4, -42.6), 0.3)
+	await go(run, Vector3(0, 4, -43.0), 0.3)
 	await stop(run)
-	aim(run, Vector3(0, 4, -64))
-	check(weaver.grapple.aimed().get("slick", true) or weaver.grapple.aimed().is_empty(),
-		"the last pad is slick: nothing for the grapple")
+	aim(run, Vector3(0, 4, -63))
+	check(weaver.grapple.aimed().get("web") == null,
+		"the last pad is slick: nothing for silk, nothing for the grapple")
+	# Run at the edge, jump, and catch the fly just past it in the air.
+	var gap_fly := fly_near(Vector3(0, 5.2, -51.8))
 	await go(run, Vector3(0, 4, -49.6), 0.3, true)
 	weaver.drive(Vector2(0.0, 1.0), true)
-	await run_frames(22)
-	weaver.drive(Vector2(0.0, 1.0), true)
 	await run_frames(3)
-	check(weaver.fly_line.count() == flies - 1, "a jump in the air eats a fly off the line")
+	await throw_at(run, gap_fly.global_position, 0.0)
+	weaver.view.pitch = -0.1
+	weaver.view.yaw = 0.0
+	weaver.drive(Vector2(0.0, 1.0))
+	await wait_until(func() -> bool: return not gap_fly.is_free(), 30)
+	check(not gap_fly.is_free(), "the fly over the gap, caught mid-jump")
 	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
 	weaver.drive(Vector2.ZERO)
-	check(weaver.global_position.z < -59.0 and weaver.global_position.y > 3.9,
-		"and makes a gap one jump could not (%s)" % where(run))
-	check(await finish(run, Vector3(0, 4, -66)), "and the bag")
-	check(run.bagged == 3, "with every fly counted, the eaten one too (%d)" % run.bagged)
+	check(weaver.global_position.z < -58.0 and weaver.global_position.y > 3.9,
+		"its burst carries the jump over a gap one jump could not make (%s)" % where(run))
+	check(await finish(run, Vector3(0, 4, -65)), "and the bag")
+	check(run.bagged == 4, "with every fly in it (%d)" % run.bagged)
 
 
 func _silk_stairs() -> void:
@@ -360,9 +393,11 @@ func _call_it_back() -> void:
 	print("Route: Call It Back")
 	var run := await load_level("04_call_it_back.json")
 	var weaver := run.weaver
-	await go(run, Vector3(-3.5, 0, 7.5))
-	await grapple_to(run, Vector3(-2, 5.6, 7.5))
-	check(weaver.global_position.y > 5.9, "a grapple up onto the pulpit (%s)" % where(run))
+	await go(run, Vector3(-6, 0, 7.5))
+	await web_onto(run, Vector3(-2, 4.5, 7.5))
+	check(weaver.global_position.y > 5.9, "a web up the pulpit's side, and onto it (%s)"
+		% where(run))
+	await pull(run)
 	await go(run, Vector3(0, 6, 7.5), 0.3)
 	var stand := Vector3(-3, 0.3, 4)
 	var a := fly_near(Vector3(-3, 3, -5.5))
@@ -383,8 +418,9 @@ func _call_it_back() -> void:
 	await pull(run)
 	check(not a.is_free() and not b.is_free(),
 		"called home from where the way back runs through them, they take both flies")
-	await go(run, Vector3(-3.5, 0, 7.5))
-	await grapple_to(run, Vector3(-2, 5.6, 7.5))
+	await go(run, Vector3(-6, 0, 7.5))
+	await web_onto(run, Vector3(-2, 4.5, 7.5))
+	await pull(run)
 	await go(run, Vector3(0, 6, 7.5), 0.3)
 	var crate := get_root().get_tree().get_nodes_in_group(Crate.GROUP)[0] as Crate
 	var on_crate := await throw_at(run, crate.global_position, 0.0)
@@ -461,8 +497,10 @@ func _moving_parts() -> void:
 	check(weaver.global_position.distance_to(lift.global_position) < 3.0,
 		"onto the lift (%s)" % where(run))
 	await wait_until(func() -> bool: return lift.position.y > 9.4, 900)
-	await grapple_to(run, Vector3(0, 10, -52))
-	check(weaver.global_position.y > 9.9, "and from the top of it to the high pad (%s)"
+	await go(run, Vector3(0, 10, -45.6), 0.3, true)
+	await leap(run, Vector3(0, 10, -52))
+	await stop(run)
+	check(weaver.global_position.y > 9.9, "and from the top of it a jump to the high pad (%s)"
 		% where(run))
 	check(await catch(run, fly_near(Vector3(-2, 11.6, -54)), 0.6), "the last fly")
 	check(await finish(run, Vector3(0, 10, -56)), "and the bag")

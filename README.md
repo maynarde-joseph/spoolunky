@@ -2,18 +2,18 @@
 
 A fast third-person spider game in Godot 4.6, built on three verbs.
 Each level is a test chamber: get to the exit as fast as you can, and catch the
-flies on the way. Every fly you catch is an extra jump in the air, and counts
-toward your score whether you eat it or not.
+flies on the way. Every fly you catch gives you a burst of speed the moment you
+catch it, and counts toward your score.
 
 The spider runs and jumps, but it can't climb walls any more. What it has instead
 is silk, on three buttons, and all three work at the same time:
 
 | Input | Verb |
 |-------|------|
-| **Left mouse** | **Grapple**: a line to where you point, and you're pulled along it. Anything that isn't slick holds it, and so does a web, including one still in the air. You get one grapple in the air, and it comes back when you land on the ground or on a web that has stuck. Landing on a web that is still flying gives it back once per landing. A pull that ends just under a ledge's lip carries you over it. A pull that ends on a wall holds you there for a moment, and jumping from there kicks you off the wall. |
+| **Left mouse** | **Grapple**: a line to a web you point at, and you're pulled along it onto the web. **Only silk holds it**: stuck webs, and webs still in the air (the line follows them). Your webs are your anchors. You get one grapple in the air, and it comes back when you land on the ground or on a web that has stuck. Landing on a web that is still flying gives it back once per landing. |
 | **Right mouse** | **Silk**: hold to wind a ball of silk up over the spider's back, then let go to throw. This is cast exactly as before. What leaves the spider now is a whole web, flying face first; the longer the wind-up, the bigger the web. Grapple onto it and ride it, but a ride is a commitment: jumping off a flying web is only a hop, and a web that reaches the end of its range without hitting anything stops dead and drops you. Where its middle meets something it sticks flat against that surface and becomes ground: you can walk on a web on a wall or a ceiling. Every fly it passes over is wrapped and goes on your line. |
-| **E / middle mouse** | **Pullback**: your oldest web flies back to you (first thrown, first home), one web per press. It comes straight through walls, wraps every fly it passes, and drops whatever it was stuck to (a crate) at your feet. The web you're standing on is skipped, so two webs can leapfrog up a wall. |
-| WASD / Space | run / jump. **Space in the air eats the newest fly on your line for another jump** |
+| **E / middle mouse** | **Pullback**: your oldest web flies back to you (first thrown, first home), one web per press. It comes straight through walls, wraps every fly it passes, and drops whatever it was stuck to (a crate) at your feet. The web you're standing on is skipped, so two webs can leapfrog up a wall. If it reaches you in the air, it catches you: a short air-stall (about 0.3 s) with your speed mostly gone, which gives you a moment to aim the next throw. |
+| WASD / Space | run / jump |
 | R | restart the level (instant) |
 | Esc | pause: resume, restart, edit this level, menu |
 | L | first / third person |
@@ -21,17 +21,22 @@ is silk, on three buttons, and all three work at the same time:
 Holding silk doesn't block anything: you can grapple and pull back while the
 ball is still winding.
 
+On a web, walk off its rim and you crawl round onto its other face, wherever
+there's room. A web spanning a gap or overhanging an edge has two faces you can
+walk on. A web flat against a wall or floor only has one.
+
 ## What levels are made of
 
-* **Stone** (pale, panelled): webs stick to it and grapples hold on it.
+* **Stone** (pale, panelled): webs stick to it.
 * **Slick** (dark striped metal): nothing sticks. A web thrown at it slides off and
-  its silk comes back to you, and a grapple line won't bite. You can still
+  its silk comes back to you, so you can't put an anchor there. You can still
   walk on a slick floor.
 * **Flies** hover in place or fly a set path. Only silk takes them: a thrown web
   that touches one, or a web called home through one. A web sitting on a wall
-  doesn't catch flies that wander into it. Caught flies trail behind you on a
-  line, and each one is an extra jump in the air (the gold beads under the
-  silk beads on the HUD).
+  doesn't catch flies that wander into it. Catching one gives you a burst of
+  speed (+5 m/s in the direction you're moving). In the air the burst lasts
+  until you land, so a fly caught mid-jump carries the jump further; on the
+  ground it wears off like a skid. Caught flies trail behind you on a line.
 * **Crates**: silk sticks to them, and the Pullback is the only way to move one.
 * **Pressure plates** are pressed by a crate (a spider is too light) and power a
   channel.
@@ -40,8 +45,8 @@ ball is still winding.
   set, they only run while it's powered. Webs stuck to them ride along.
 * **Hazards** (red) and falling out of the level both restart you.
 * **The exit**: a silk bag in a ring. Walk in to finish. Your score is the time
-  plus the number of flies you caught, and eating flies for jumps doesn't lower
-  it. The menu keeps your best time and your most flies separately.
+  plus the number of flies you caught. The menu keeps your best time and your
+  most flies separately.
 
 A level also sets how many webs you can have out at once (two by default). It
 can also make the bag wait for a number of flies before it opens (none by
@@ -49,8 +54,9 @@ default); while it's waiting, the ring is red.
 
 ## The levels
 
-1. **First Thread**: jump, grapple across a gap, catch flies, get up a ledge, and
-   then clear a slick gap that's too far to jump by eating a fly in mid-air.
+1. **First Thread**: jump a gap, throw a web across a long one and grapple to it,
+   web up a ledge, then clear a slick gap that's too far to jump by catching
+   the fly hanging over it in mid-jump.
 2. **Silk Stairs**: a wall you can't climb and two webs. Leapfrog them up the wall with the Pullback.
 3. **Ride the Gap**: the gap is farther than a grapple reaches but not as far as silk flies. Ride a web across, through the flies.
 4. **Call It Back**: two flies behind a wall over a red floor. Throw webs past them, stand where the way home runs through them, and call. Then fetch a crate for the plate.
@@ -86,10 +92,10 @@ they're saved in `user://levels/` instead. The format is documented at the top o
 flies/
   main.tscn, game_root.gd   the menu, play and the editor, one at a time
   player/    the spider (weaver.gd: running, jumping, the web it's on, the pull,
-             the cling), and one node per verb: grapple, silk_caster, pullback,
+             the catch-stall, the fly burst), and one node per verb: grapple, silk_caster, pullback,
              fly_line (the caught flies trailing behind). The camera rig, the
-             skeleton, the mesh and the eight-legged gait come from the earlier
-             game unchanged
+             skeleton, the minimal mesh and the eight-legged gait come from the
+             earlier game unchanged
   web/       the thrown web, and the silk geometry it's drawn with
   fly/       the fly, drawn with the body it was first given
   rig/       bones and meshes for the fly

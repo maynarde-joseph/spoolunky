@@ -1,15 +1,18 @@
 class_name Grapple
 extends Node3D
 
-## Left mouse: a line to where you point, and you are pulled along it.
+## Left mouse: a line to a web you point at, and you are pulled along it to land on
+## it.
 ##
-## Anything solid that is not slick holds the line, and so does a web — one stuck
-## to a wall, or one still in the air, which the line follows wherever it goes
-## until the spider lands on it and rides it. One pull in the air: the line is
-## spent the moment it goes and comes back when the spider lands, on the ground or
-## on a web. On the ground it is always there.
+## Only silk holds the line: a web stuck to something, or one still in the air,
+## which the line follows wherever it goes until the spider lands on it and rides
+## it. Stone, slick metal and everything else give it nothing to bite — so silk
+## makes the anchors, the grapple spends them, and the Pullback brings them back to
+## make again. One pull in the air: the line is spent the moment it goes and comes
+## back when the spider lands, on the ground or on a web that has stuck. A web still
+## flying gives it back once, until the spider next lands.
 ##
-## This node finds what the line would hold, keeps hold of it while the spider is
+## This node finds the web the line would hold, keeps hold of it while the spider is
 ## pulled, and draws the line. The pulling itself is the spider's — see
 ## [method Weaver.start_grapple].
 
@@ -29,13 +32,9 @@ const WEB_SLACK := 0.9
 var weaver: Weaver
 var view: SpiderCamera
 
-## What the line is on while it pulls: a web, or a point on something.
+## The web the line is on while it pulls, and where on it.
 var web: ThrownWeb = null
-var body: Node3D = null
 var local_point := Vector3.ZERO
-var local_normal := Vector3.UP
-var point := Vector3.ZERO
-var normal := Vector3.UP
 var active := false
 
 ## The pull's own speed, set when it goes.
@@ -44,9 +43,10 @@ var speed := SPEED
 var _line: MeshInstance3D
 var _mesh: ImmediateMesh
 var _paint: StandardMaterial3D
-## A flicker of red line where a grapple was refused, for a moment.
+## A flicker of red line where a grapple found no silk, for a moment.
 var _refused := 0.0
 var _refused_at := Vector3.ZERO
+var _warned := 0.0
 
 
 func setup(owner_weaver: Weaver, camera: SpiderCamera) -> void:
@@ -64,9 +64,9 @@ func setup(owner_weaver: Weaver, camera: SpiderCamera) -> void:
 	add_child(_line)
 
 
-## What the line would hold if it went now: a dictionary with the point, the
-## surface's normal, the collider and the web, if it is one — or empty for
-## nothing in reach. [code]slick[/code] is set on something it would slip off.
+## What the cross is on, as far as the grapple is concerned: a dictionary with the
+## point, and [code]web[/code] — the web the line would hold, or null where the
+## cross is on something that is not silk. Empty for nothing in reach.
 func aimed() -> Dictionary:
 	if view == null or weaver == null:
 		return {}
@@ -82,7 +82,9 @@ func aimed() -> Dictionary:
 	var best_along := INF
 	if not hit.is_empty():
 		best_along = (hit["position"] - eye).dot(look)
-		best = hit
+		var under := ThrownWeb.of(hit.get("collider"))
+		best = {"position": hit["position"], "web": under if under != null
+			and under.is_standing() else null}
 	# A web in the air, picked generously: it is small and fast, and catching one is
 	# the move.
 	for node in get_tree().get_nodes_in_group(ThrownWeb.GROUP):
@@ -97,92 +99,63 @@ func aimed() -> Dictionary:
 		if off > thrown.current_radius() + WEB_SLACK:
 			continue
 		best_along = along
-		best = {"position": centre, "normal": thrown.normal(), "collider": thrown.walk_body()}
+		best = {"position": centre, "web": thrown}
 	if best.is_empty():
 		return {}
-	# The line runs from the spider, not the camera: whatever is in the way of that
-	# is what it holds.
-	var from := weaver.global_position
 	var at: Vector3 = best["position"]
-	var target_web := ThrownWeb.of(best.get("collider"))
-	if target_web == null:
-		var check := PhysicsRayQueryParameters3D.create(from, at + (at - from).normalized() * 0.05,
-			GameLayers.WORLD | GameLayers.WEB_WALK, exclude)
-		var blocked := space.intersect_ray(check)
-		if not blocked.is_empty() and blocked["position"].distance_to(at) > 0.3:
-			best = blocked
-			at = best["position"]
-			target_web = ThrownWeb.of(best.get("collider"))
+	var from := weaver.global_position
 	if from.distance_to(at) > REACH:
 		return {}
-	best["web"] = target_web
-	best["slick"] = target_web == null and Surfaces.is_slick(best.get("collider"))
+	# The line runs from the spider, not the camera: something solid in the way of
+	# that is what it meets, and that is not silk.
+	if best["web"] != null:
+		var check := PhysicsRayQueryParameters3D.create(from, at, GameLayers.WORLD, exclude)
+		var blocked := space.intersect_ray(check)
+		if not blocked.is_empty() and blocked["position"].distance_to(at) > 0.3:
+			best = {"position": blocked["position"], "web": null}
 	return best
 
 
-## Puts the line on whatever is aimed at. False if nothing holds it.
+## Puts the line on the web aimed at. False if there is none.
 func fire() -> bool:
 	var target := aimed()
 	if target.is_empty():
 		return false
-	if target.get("slick", false):
+	web = target.get("web") as ThrownWeb
+	if web == null:
 		_refused = 0.25
 		_refused_at = target["position"]
-		weaver.notify("Slick — the line won't hold")
+		if _warned <= 0.0:
+			weaver.notify("The grapple only holds silk — throw a web there first")
+			_warned = 2.0
 		return false
-	web = target.get("web") as ThrownWeb
-	normal = (target.get("normal", Vector3.UP) as Vector3).normalized()
-	point = target["position"]
-	if web == null:
-		# The pull ends with the spider against the surface, not its middle in it: a
-		# long pull to a floor otherwise scrapes along the near edge and falls short.
-		point += normal * (Weaver.RADIUS + 0.05)
-	body = null
-	if web != null:
-		local_point = web.to_local(point)
-		local_point.z = 0.0
-	else:
-		var hit_body := target.get("collider") as Node3D
-		if hit_body is AnimatableBody3D or hit_body is RigidBody3D:
-			body = hit_body
-			local_point = body.to_local(point)
-			local_normal = body.global_basis.inverse() * normal
-	var span := weaver.global_position.distance_to(point)
+	local_point = web.to_local(target["position"])
+	local_point.z = 0.0
+	var span := weaver.global_position.distance_to(target["position"])
 	speed = maxf(SPEED, span / LONGEST)
 	active = true
 	return true
 
 
-## Where the line is pulling to now: it follows a web, or whatever moving thing it
-## is on.
+## Where the line is pulling to now: a point on the web, wherever the web has gone.
 func target_point() -> Vector3:
 	if web != null and is_instance_valid(web):
 		return web.to_global(local_point)
-	if body != null and is_instance_valid(body):
-		return body.to_global(local_point)
-	return point
+	return weaver.global_position
 
 
-func target_normal() -> Vector3:
-	if web != null and is_instance_valid(web):
-		return web.normal()
-	if body != null and is_instance_valid(body):
-		return (body.global_basis * local_normal).normalized()
-	return normal
-
-
-## Whether what the line was on has gone out from under it: a web that came apart.
+## Whether the web the line was on has gone out from under it.
 func lost() -> bool:
-	return web != null and (not is_instance_valid(web) or not web.is_standing())
+	return web == null or not is_instance_valid(web) or not web.is_standing()
 
 
 func end() -> void:
 	active = false
 	web = null
-	body = null
 
 
 func _process(delta: float) -> void:
+	_warned = maxf(0.0, _warned - delta)
 	if _mesh == null:
 		return
 	_mesh.clear_surfaces()
