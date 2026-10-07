@@ -81,19 +81,33 @@ func filled(col: int, row: int) -> bool:
 
 # --- the grid ----------------------------------------------------------------------
 
-func _find_axes() -> void:
-	_w = 0
+## The axes of a field of [param extent]: across, up (or along, for one lying
+## flat) and its depth, the thinnest of the three.
+static func axes_of(extent: Vector3) -> Vector3i:
+	var w := 0
 	for axis in 3:
-		if size[axis] < size[_w]:
-			_w = axis
-	if _w == 1:
-		_u = 0
-		_v = 2
-	else:
-		_u = 2 if _w == 0 else 0
-		_v = 1
-	_cols = maxi(int(ceil(size[_u] / CELL - 0.01)), 1)
-	_rows = maxi(int(ceil(size[_v] / CELL - 0.01)), 1)
+		if extent[axis] < extent[w]:
+			w = axis
+	if w == 1:
+		return Vector3i(0, 2, 1)
+	return Vector3i(2 if w == 0 else 0, 1, w)
+
+
+## How many cells across and up a field of [param extent] has.
+static func cells_of(extent: Vector3) -> Vector2i:
+	var axes := axes_of(extent)
+	return Vector2i(maxi(int(ceil(extent[axes.x] / CELL - 0.01)), 1),
+		maxi(int(ceil(extent[axes.y] / CELL - 0.01)), 1))
+
+
+func _find_axes() -> void:
+	var axes := axes_of(size)
+	_u = axes.x
+	_v = axes.y
+	_w = axes.z
+	var cells := cells_of(size)
+	_cols = cells.x
+	_rows = cells.y
 
 
 ## The local position of a point on the face, [param a] metres across from the left

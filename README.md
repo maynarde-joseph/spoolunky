@@ -67,21 +67,52 @@ can be finished with web, grapple, drop, repeat (see `tests/flies/silk_reach.gd`
 ## The level editor
 
 **New level** on the menu, or **Edit** on any level, or *Edit this level* from the
-pause menu.
+pause menu. The first time it opens it shows every key; **F1** (or **Help**) brings
+that back.
 
-* Hold **right mouse** to look around. Fly with **WASD**, and **Q/E** for down and up (Shift goes faster).
-* Pick a gameplay piece or any kit piece from `Pieces/` in the palette on the left,
-  and **click** to put it down, snapped to the grid. **R** turns it 90° (Shift+R
-  15°) and **T** tips it.
-* **Click** a thing to select it. The panel on the right shows everything about
-  it: position, turn, size, piece, surface (stone/slick), channel, speed, wait,
-  loop, its path, a rail block's slide and a silk cutter's mask (rows of `#` for
-  lasers and `.` for open cells, top row first). **Add points** then clicking lays out a platform's
-  path; PgUp/PgDn change the height you're placing points at.
-* **G** moves the selection, **Ctrl+D** copies it, **Delete** removes it,
-  **arrows/PgUp/PgDn** nudge it, **[ ]** change the grid, **Ctrl+Z** undoes,
-  **Ctrl+S** saves, and **F5** plays the level. Esc in play brings you back.
-* The bar along the top holds the level's name, its web count, the fall height, the ceiling height (0 = 6 m over the top) and par time, plus Open, New, Save and Save as new.
+**Getting round.** The **mouse wheel** zooms toward whatever is under the mouse.
+**Middle drag** (or **Alt + left drag** on a laptop) orbits round the selection,
+and with **Shift** it pans. **WASD** flies, **Q/E** go down and up (Shift is
+faster), and holding the **right mouse** button looks round. **F** frames the
+selection and **Home** shows the whole level. The level's ceiling hides while
+you're above it, so you can see into its rooms.
+
+**Building.** The palette on the left has ready-made **stone and slick blocks and
+walls**, every **gameplay** piece by a name you'd use (Spider start, Exit bag,
+Pressure plate, Rail block, Silk cutter…) with a tooltip saying what it does, and
+the whole kit under **Kit pieces**, with a search box. Pick one and a see-through
+copy follows the mouse, sitting on the floor or up against a wall under it, with
+the grid drawn round it and its coordinates at the bottom. Click to put it down;
+**R** turns it, **T** tips it, and **Esc** or a right click stops placing.
+
+**Changing things.** Click a thing to select it.
+
+* **Drag** it to slide it across the floor, or **Shift + drag** for up and down.
+* Drag one of its **red, green or blue arrows** to move it along **x, y or z only**.
+* Drag the **coloured squares** on its faces to stretch it from that face. The
+  opposite face stays put.
+* Drag the **yellow balls** to move a platform's stops, the **aqua ball** to set
+  where a door opens to, and the **orange ball** to set where a rail block's rail
+  ends.
+* Everything snaps to the grid. Change the grid size in the top bar or with **[ ]**.
+  The arrow keys and PgUp/PgDn nudge by one grid step.
+* **Ctrl+D** copies, **Delete** deletes, **Ctrl+Z** undoes and **Ctrl+Y** redoes
+  (there are buttons for these too).
+
+The panel on the right shows everything about the selected thing in plain words:
+its position, turn and size (x, y and z in the arrows' colours), its surface
+(*stone: silk sticks* or *slick: silk slides off*), and its **link**. A link is a
+named wire between plates and the doors and platforms they work. Pick one from the
+list or make a new one; everything on the same link is joined by a coloured line
+in the level. A silk cutter's lasers are **painted** on a grid of its cells: click
+or drag across cells to switch them between lasers and open space.
+
+With nothing selected, the right panel holds the level's own settings (name, webs
+out at once, par time, fall height, ceiling) and a **Checks** list of anything that
+looks wrong, such as a door with no plate, a plate that works nothing, more plates
+than crates, or no exit. Click one to jump to it. **Ctrl+S** saves, **▶ Play** (F5)
+plays the level, and Esc in play comes back. The title shows *unsaved* while there
+are changes, and New, Open and Menu ask before throwing them away.
 
 Levels are plain JSON in `levels/`. When the project folder can't be written to,
 they're saved in `user://levels/` instead. The format is documented at the top of
@@ -102,7 +133,7 @@ flies/
   level/     the level format, the builder, the run (clock, channels, exit), the
              surfaces, the kit loader, and crates, plates, doors, platforms,
              loose boards, blocks on rails, hazards and the exit bag
-  editor/    the level editor
+  editor/    the level editor, its drag handles and its laser painter
   ui/        HUD, menu, pause menu
 levels/      the built-in levels
 Pieces/      the kit, as .fbx
@@ -120,7 +151,7 @@ godot --headless --path . --script res://tests/flies/levels_smoke_test.gd
 
 The mechanics suite checks each verb and each level object in a test arena. The
 levels suite checks that every level is complete, that none can be finished with
-silk alone, and that the editor works. It
+silk alone, and that the editor works (`-- editor` runs just those). It
 then plays every built-in level from start to finish with a scripted route
 through the real controls (no teleporting), so a level that can't be finished
 fails CI.

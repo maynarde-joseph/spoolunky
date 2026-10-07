@@ -7,7 +7,8 @@ extends TestSuite
 ##
 ##     godot --headless --path . --script res://tests/flies/levels_smoke_test.gd
 ##
-## Name part of a level's file name after `--` to play only those routes.
+## Name part of a level's file name after `--` to play only those routes, or
+## `editor` for the level editor's checks alone.
 
 var only: Array = []
 
@@ -16,6 +17,7 @@ func run_checks() -> void:
 	only = Array(OS.get_cmdline_user_args())
 	if only.is_empty():
 		await _every_level_is_whole()
+	if only.is_empty() or only.has("editor"):
 		await _the_editor()
 	if _wanted("01"):
 		await _first_thread()
@@ -105,7 +107,91 @@ func _the_editor() -> void:
 	var back := LevelData.load_file(file)
 	check(back.get("objects", []).size() == editor.level["objects"].size(),
 		"and what is saved is what was made")
+	check(not editor._dirty, "and once saved, nothing is unsaved")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(file))
+	await _editor_handles(editor)
+	_editor_checks(editor)
+
+
+## Presets, the handles that stretch and move a thing, and undo and redo.
+func _editor_handles(editor: LevelEditor) -> void:
+	editor.choose("slick block")
+	var block := editor.place("piece", Vector3(0.0, 0.0, -8.0))
+	check(block["surface"] == "slick" and LevelData.vec(block["size"]) == Vector3(2, 2, 2),
+		"a slick block from the palette is a 2 m slick cube")
+	check(editor._dirty, "and the level is marked unsaved")
+	editor.choose("")
+	var stretched := block.duplicate(true)
+	EditorGizmo.resized(stretched, 0, 1, 2.0)
+	check(LevelData.vec(stretched["size"]).x == 4.0 and LevelData.vec(stretched["pos"]).x == 1.0,
+		"stretching from the +x face keeps the -x face where it was")
+	EditorGizmo.resized(stretched, 1, -1, 1.0)
+	check(LevelData.vec(stretched["size"]).y == 3.0 and LevelData.vec(stretched["pos"]).y == -1.0,
+		"and from the bottom, the top stays")
+	var kinds := editor._gizmo.handles.map(func(h: Dictionary) -> int: return h["kind"])
+	check(kinds.count(EditorGizmo.Kind.SIZE) == 6 and kinds.count(EditorGizmo.Kind.MOVE) == 3,
+		"a selected block has a handle on each face and an arrow for each axis")
+	# Drag each arrow as the mouse would, seen from up and to one side.
+	editor.camera.global_position = Vector3(9.0, 11.0, 6.0)
+	editor.camera.look_at(Vector3(0.0, 1.0, -8.0))
+	editor._gizmo.update_view(editor.camera)
+	for axis in 3:
+		var handle: Dictionary = editor._gizmo.handles.filter(func(h: Dictionary) -> bool:
+			return h["kind"] == EditorGizmo.Kind.MOVE and h["axis"] == axis)[0]
+		var was := LevelData.vec(block["pos"])
+		var at: Vector3 = handle["at"]
+		var away := Vector3.ZERO
+		away[axis] = 3.0
+		editor._begin_drag(handle, editor.camera.unproject_position(at))
+		editor._drag_to(editor.camera.unproject_position(at + away), false)
+		editor._release()
+		var moved := LevelData.vec(block["pos"]) - was
+		check(moved.is_equal_approx(away), "dragging the %s arrow moves it along %s only (%s)"
+			% [["red", "green", "blue"][axis], ["x", "y", "z"][axis], moved])
+		editor._gizmo.update_view(editor.camera)
+	var size_handle: Dictionary = editor._gizmo.handles.filter(func(h: Dictionary) -> bool:
+		return h["kind"] == EditorGizmo.Kind.SIZE and h["axis"] == 2 and h["sign"] == -1)[0]
+	var size_at: Vector3 = size_handle["at"]
+	editor._begin_drag(size_handle, editor.camera.unproject_position(size_at))
+	editor._drag_to(editor.camera.unproject_position(size_at + Vector3(0.0, 0.0, -2.0)), false)
+	editor._release()
+	check(LevelData.vec(block["size"]).z == 4.0, "dragging a face's square stretches it (%s)"
+		% LevelData.vec(block["size"]))
+	var count: int = editor.level["objects"].size()
+	editor.delete_selected()
+	editor.undo()
+	editor.redo()
+	check(editor.level["objects"].size() == count - 1, "undo, then redo, deletes it again")
+	editor._select_thing(editor.level["objects"][0])
+	editor.duplicate_selected()
+	editor._escape()
+	check(editor.level["objects"].size() == count, "a copy set down with Esc stays")
+	editor.undo()
+	check(editor.level["objects"].size() == count - 1, "and one undo takes it away")
+
+
+## What the editor says is wrong with a level, and painting a cutter's lasers.
+func _editor_checks(editor: LevelEditor) -> void:
+	editor.open(LevelData.blank("Checks"), "")
+	check(editor.problems().is_empty(), "a new level has nothing wrong with it")
+	var door := editor.place("door", Vector3(0.0, 0.0, -4.0))
+	door["channel"] = "gate"
+	check(editor.problems().any(func(p: Dictionary) -> bool: return is_same(p["thing"], door)),
+		"a door with no plate on its link is flagged")
+	var plate := editor.place("plate", Vector3(0.0, 0.0, 2.0))
+	plate["channel"] = "gate"
+	var wrong := editor.problems()
+	check(not wrong.any(func(p: Dictionary) -> bool: return is_same(p["thing"], door)),
+		"a plate on the link answers it")
+	check(wrong.any(func(p: Dictionary) -> bool: return String(p["text"]).contains("crate")),
+		"and a plate with no crate to hold it down is flagged")
+	check(editor.links() == ["gate"], "the links in use are listed")
+	var cells := MaskGrid.new()
+	cells.setup(Vector3(4.5, 4.5, 0.2), [])
+	cells.set_cell(1, 1, false)
+	check(cells.mask() == ["###", "#.#"], "painting a cell open makes a hole in the mask (%s)"
+		% [cells.mask()])
+	cells.free()
 
 
 # --- driving ----------------------------------------------------------------------
