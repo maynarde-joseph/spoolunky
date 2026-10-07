@@ -23,7 +23,7 @@ const BIGGEST := 2.4
 
 ## How fast a thrown web flies, and how far before it comes apart.
 const SPEED := 22.0
-const REACH := 36.0
+const REACH := 22.0
 
 ## The least time between throws.
 const COOLDOWN := 0.2

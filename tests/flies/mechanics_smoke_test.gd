@@ -20,6 +20,7 @@ func run_checks() -> void:
 	await _slick_and_reach()
 	await _walking_on_webs()
 	await _grappling()
+	await _launching()
 	await _riding_a_web()
 	await _rides_go_nowhere_for_free()
 	await _the_ceiling()
@@ -52,6 +53,8 @@ func arena(extra: Array = [], webs := 3) -> LevelRun:
 	run.setup(level)
 	await stage(run)
 	await run_frames(10)
+	# Held, as a player landing on webs holds it; let go, a pull is a launch.
+	run.weaver.grapple_held = true
 	return run
 
 
@@ -241,24 +244,85 @@ func _grappling() -> void:
 	check(weaver.global_position.y > 3.9, "up the web and over onto the ledge (y %.2f)"
 		% weaver.global_position.y)
 
-	await put(run, Vector3(0.0, 0.3, 10.0))
+	await put(run, Vector3(0.0, 0.3, 2.0))
 	await pull(run)
 	aim(run, Vector3(0.0, 2.0, -11.5))
 	weaver.caster.throw(0.0)
 	web = first_web(run)
 	await wait_until(func() -> bool: return web.is_stuck(), 60)
 	aim(run, web.global_position)
-	check(not weaver.grapple.aimed().is_empty(), "a web twenty metres off is in reach")
-	await put(run, Vector3(0.0, 0.3, 22.0))
+	check(not weaver.grapple.aimed().is_empty(), "a web fourteen metres off is in reach")
+	await put(run, Vector3(0.0, 0.3, 8.0))
 	aim(run, web.global_position)
-	check(weaver.grapple.aimed().is_empty(), "one thirty off is not")
+	check(weaver.grapple.aimed().is_empty(), "one twenty off is not")
+
+
+## Let go of the grapple before the pull arrives and the spider comes off the web
+## with the pull's speed; jump at the very end and it kicks off it, higher.
+func _launching() -> void:
+	print("Launching off the grapple")
+	var run := await arena()
+	var weaver := run.weaver
+	# A web on the floor ahead: let go, and the pull runs on across the floor.
+	await put(run, Vector3(0.0, 0.3, 8.0))
+	aim(run, Vector3(0.0, 0.0, -4.0))
+	weaver.caster.throw(1.0)
+	var floor_web := first_web(run)
+	await wait_until(func() -> bool: return floor_web.is_stuck(), 60)
+	weaver.grapple_held = false
+	aim(run, floor_web.global_position)
+	check(weaver.fire_grapple(), "a grapple, with the button let go")
+	await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.GRAPPLE, 90)
+	var flat := Vector2(weaver.velocity.x, weaver.velocity.z).length()
+	if not check(weaver.standing_web() == null and flat > Grapple.SPEED * 0.8,
+			"comes off the web with the pull's speed (%.1f m/s)" % flat):
+		note(where_is(weaver))
+	check(not weaver.grapple_ready, "and without the grapple back: only landing on silk gives that")
+	check(weaver.velocity.y < 1.0, "carried on along the floor, not into it or up off it")
+	weaver.drive(Vector2.ZERO)
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 60)
+	await put(run, Vector3(0.0, 0.3, 8.0))
+	await pull(run)
+
+	# A web on the wall, a jump timed at the end of the pull: off its face and up.
+	aim(run, Vector3(0.0, 4.0, -11.5))
+	weaver.caster._cooling = 0.0
+	weaver.caster.throw(0.0)
+	var wall_web: ThrownWeb = weaver.webs()[weaver.webs().size() - 1]
+	await wait_until(func() -> bool: return wall_web.is_stuck(), 60)
+	await put(run, Vector3(0.0, 0.3, 2.0))
+	aim(run, wall_web.global_position)
+	weaver.fire_grapple()
+	await wait_until(func() -> bool:
+		return weaver.mode != Weaver.Mode.GRAPPLE or weaver.global_position.distance_to(
+			wall_web.global_position) < weaver.grapple.speed * Weaver.LAUNCH_WINDOW * 0.6, 90)
+	weaver.drive(Vector2.ZERO, true)
+	await run_frames(1)
+	if not check(weaver.mode == Weaver.Mode.AIR and weaver.velocity.y > Weaver.JUMP
+			and weaver.velocity.z > 1.0, "a jump at the end of the pull launches up and off the wall (%s)"
+			% weaver.velocity.snappedf(0.1)):
+		note(where_is(weaver))
+	weaver.grapple_held = true
+
+	# Speed off a grapple keeps in the air; a plain jump's does not.
+	await put(run, Vector3(0.0, 6.0, 20.0))
+	weaver.velocity = Vector3(0.0, 0.0, -15.0)
+	weaver._launched = true
+	await run_frames(15)
+	var kept := Vector2(weaver.velocity.x, weaver.velocity.z).length()
+	check(kept > 13.0, "speed off a grapple keeps in the air (%.1f m/s after 0.25 s)" % kept)
+	await put(run, Vector3(0.0, 6.0, 20.0))
+	weaver.velocity = Vector3(0.0, 0.0, -15.0)
+	await run_frames(15)
+	var plain := Vector2(weaver.velocity.x, weaver.velocity.z).length()
+	check(plain < 8.0, "any other speed in the air the keys take back (%.1f m/s)" % plain)
 
 
 func _riding_a_web() -> void:
 	print("Riding a web")
 	var run := await arena()
 	var weaver := run.weaver
-	await put(run, Vector3(0.0, 0.3, 20.0))
+	await put(run, Vector3(0.0, 0.3, 8.0))
 	aim(run, Vector3(0.0, 2.5, -11.5))
 	weaver.caster.throw(0.5)
 	var web := first_web(run)
@@ -305,7 +369,7 @@ func _rides_go_nowhere_for_free() -> void:
 
 	# Jumping off a web in flight is a hop, not a sling.
 	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
-	await put(run, Vector3(0.0, 0.3, 20.0))
+	await put(run, Vector3(0.0, 0.3, 8.0))
 	aim(run, Vector3(0.0, 2.5, -11.5))
 	weaver.caster._cooling = 0.0
 	weaver.caster.throw(0.5)
@@ -321,7 +385,7 @@ func _rides_go_nowhere_for_free() -> void:
 
 	# A web in flight gives the grapple back once, until the spider next lands.
 	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
-	await put(run, Vector3(0.0, 0.3, 20.0))
+	await put(run, Vector3(0.0, 0.3, 8.0))
 	await pull(run)
 	# Both thrown from the ground, a beat apart. Grapple onto the later one, which
 	# is nearer; then, the grapple spent, land on the earlier one still in flight.

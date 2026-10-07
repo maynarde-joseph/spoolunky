@@ -101,6 +101,9 @@ func load_level(file: String) -> LevelRun:
 	run.setup(data)
 	await stage(run)
 	await run_frames(10)
+	# Held throughout, as a player landing on webs holds it: let go, a pull is a
+	# launch off the web instead.
+	run.weaver.grapple_held = true
 	return run
 
 
@@ -267,28 +270,28 @@ func _first_thread() -> void:
 		"a jump takes the first gap (%s)" % where(run))
 	await stop(run)
 	await go(run, Vector3(0, 0, -15))
-	aim(run, Vector3(0, 0, -33))
+	aim(run, Vector3(0, 0, -29))
 	check(run.weaver.grapple.aimed().get("web") == null, "bare stone gives the grapple nothing")
-	check(await web_onto(run, Vector3(0, 0, -33)),
+	check(await web_onto(run, Vector3(0, 0, -29)),
 		"a web on the far pad, and a grapple onto it, take the long gap")
-	check(run.weaver.global_position.z < -29.5 and run.weaver.mode == Weaver.Mode.GROUND,
+	check(run.weaver.global_position.z < -25.5 and run.weaver.mode == Weaver.Mode.GROUND,
 		"walking off it onto the pad (%s)" % where(run))
 	await pull(run)
-	await go(run, Vector3(0, 0, -39))
-	check(await web_onto(run, Vector3(0, 2.6, -42)) and run.weaver.global_position.y > 3.9,
+	await go(run, Vector3(0, 0, -35))
+	check(await web_onto(run, Vector3(0, 2.6, -38)) and run.weaver.global_position.y > 3.9,
 		"a web on the ledge's face, a grapple onto it, and up it onto the top (%s)"
 		% where(run))
 	await stop(run)
 	await pull(run)
 	var weaver := run.weaver
-	aim(run, Vector3(0, 4, -58))
+	aim(run, Vector3(0, 4, -54))
 	check(weaver.grapple.aimed().get("web") == null,
 		"the last pad is slick: nothing for silk, nothing for the grapple")
-	await go(run, Vector3(0, 4, -49.6), 0.2, true)
-	check(await leap(run, Vector3(0, 4, -58)) and weaver.global_position.z < -53.0
+	await go(run, Vector3(0, 4, -45.6), 0.2, true)
+	check(await leap(run, Vector3(0, 4, -54)) and weaver.global_position.z < -49.0
 		and weaver.global_position.y > 3.9, "a running jump onto it (%s)" % where(run))
 	await stop(run)
-	check(await finish(run, Vector3(0, 4, -60)), "and out")
+	check(await finish(run, Vector3(0, 4, -56)), "and out")
 
 
 func _silk_stairs() -> void:
@@ -323,9 +326,9 @@ func _ride_the_gap() -> void:
 	var run := await load_level("03_ride_the_gap.json")
 	var weaver := run.weaver
 	await go(run, Vector3(0, 0, -5.0))
-	check(weaver.global_position.distance_to(Vector3(0, 2.5, -36)) > Grapple.REACH,
+	check(weaver.global_position.distance_to(Vector3(0, 2.5, -24)) > Grapple.REACH,
 		"the far side is out of the grapple's reach")
-	var web := await throw_at(run, Vector3(0, 2.5, -36), 0.6)
+	var web := await throw_at(run, Vector3(0, 2.5, -24), 0.6)
 	await run_frames(5)
 	aim(run, web.global_position)
 	check(weaver.fire_grapple(), "a grapple onto the web as it goes")
@@ -335,7 +338,7 @@ func _ride_the_gap() -> void:
 	await climb(run)
 	check(weaver.global_position.y > 5.0 and weaver.mode == Weaver.Mode.GROUND,
 		"up the web onto the top (%s)" % where(run))
-	check(await finish(run, Vector3(0, 5, -44)), "and out")
+	check(await finish(run, Vector3(0, 5, -32)), "and out")
 
 
 func _call_it_back() -> void:
@@ -426,7 +429,7 @@ func _all_together() -> void:
 	var run := await load_level("06_all_together.json")
 	var weaver := run.weaver
 	await go(run, Vector3(0, 0, -5.0))
-	var ride := await throw_at(run, Vector3(0, 1.8, -34), 0.6)
+	var ride := await throw_at(run, Vector3(0, 1.8, -24), 0.6)
 	await run_frames(5)
 	aim(run, ride.global_position)
 	weaver.fire_grapple()
@@ -439,26 +442,26 @@ func _all_together() -> void:
 	check(rode and weaver.standing_web() == ride, "a ride over the drop to the stone face")
 	await climb(run)
 	check(weaver.global_position.y > 3.9, "up and over the cap (%s)" % where(run))
-	await go(run, Vector3(0, 0, -40))
+	await go(run, Vector3(0, 0, -30))
 	await stop(run)
 	await pull(run)
-	await go(run, Vector3(0, 0, -44.5))
-	var low := await throw_at(run, Vector3(0, 2.4, -46))
+	await go(run, Vector3(0, 0, -34.5))
+	var low := await throw_at(run, Vector3(0, 2.4, -36))
 	await stuck(low)
-	await go(run, Vector3(0, 0, -46.5), 0.2)
+	await go(run, Vector3(0, 0, -36.5), 0.2)
 	await climb(run, 50)
-	var mid := await throw_at(run, Vector3(0, 6.5, -46))
+	var mid := await throw_at(run, Vector3(0, 6.5, -36))
 	await stuck(mid)
 	await grapple_to(run, mid.global_position)
 	await pull(run)
-	var high := await throw_at(run, Vector3(0, 9.4, -46))
+	var high := await throw_at(run, Vector3(0, 9.4, -36))
 	await stuck(high)
 	await grapple_to(run, high.global_position)
 	await climb(run)
 	check(weaver.global_position.y > 11.9 and weaver.mode == Weaver.Mode.GROUND,
 		"up the tower on two webs, leapfrogged (%s)" % where(run))
 	await pull(run)
-	await go(run, Vector3(4, 12, -53), 0.2)
+	await go(run, Vector3(4, 12, -43), 0.2)
 	await stop(run)
 	var crate := get_root().get_tree().get_nodes_in_group(Crate.GROUP)[0] as Crate
 	var on_crate := await throw_at(run, crate.global_position, 0.0)
@@ -466,5 +469,5 @@ func _all_together() -> void:
 	await pull(run)
 	await run_frames(100)
 	check(run.is_powered("bag"), "brought onto the plate, it opens the exit's door")
-	await go(run, Vector3(0, 12, -58))
-	check(await finish(run, Vector3(0, 12, -61.3)), "and out")
+	await go(run, Vector3(0, 12, -48))
+	check(await finish(run, Vector3(0, 12, -51.3)), "and out")

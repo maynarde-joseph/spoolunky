@@ -74,6 +74,17 @@ const MAX_FALL := 40.0
 ## How much of the way to where the keys point the air steers each second.
 const AIR_STEER := 4.2
 
+## Off a grapple, how the speed it gave goes: it bleeds off this many metres a
+## second each second; the keys bend it at most this many radians a second, and
+## pulling back on them brakes it this hard.
+const LAUNCH_DRAG := 2.0
+const LAUNCH_TURN := 2.5
+const LAUNCH_BRAKE := 9.0
+
+## How late in a pull, in seconds before it arrives, a jump is a launch: the pull's
+## speed kept whole, and a full jump on top, off the web's face.
+const LAUNCH_WINDOW := 0.2
+
 ## Seconds after running off an edge that a jump still goes, and before landing
 ## that a jump pressed early still counts.
 const COYOTE := 0.12
@@ -100,6 +111,14 @@ var mode := Mode.AIR
 
 ## Whether a grapple is ready.
 var grapple_ready := true
+
+## Whether the grapple button is held. Held when the pull arrives, the spider lands
+## on the web; let go by then, it flies off the web with the pull's speed.
+var grapple_held := false
+
+## Whether the spider is flying on speed a grapple gave it: kept in the air, bent
+## by the keys, and bleeding off slowly, until it lands.
+var _launched := false
 
 ## Whether a web in flight has already given the grapple back since the spider last
 ## stood on something. One does, once: a second would let throw, grapple on, throw,
@@ -230,6 +249,7 @@ func _read_keys(delta: float) -> void:
 	if Input.is_action_just_pressed("move_jump"):
 		_buffer = BUFFER
 	_jump_held = Input.is_action_pressed("move_jump")
+	grapple_held = Input.is_action_pressed("grapple")
 	# A wind-up with its key no longer down is let go, in case the key-up was lost.
 	if caster.charging and not Input.is_action_pressed("silk") and require_captured_mouse:
 		caster.release()
@@ -358,6 +378,7 @@ func _wish_flat() -> Vector3:
 
 
 func _land() -> void:
+	_launched = false
 	if mode != Mode.GROUND:
 		_set_mode(Mode.GROUND)
 	_refill()
@@ -397,7 +418,11 @@ func _step_air(delta: float) -> void:
 	velocity.y = maxf(velocity.y - GRAVITY * delta, -MAX_FALL)
 	var wish := _wish_flat()
 	var flat := Vector3(velocity.x, 0.0, velocity.z)
-	flat = flat.lerp(wish * WALK, clampf(AIR_STEER * delta, 0.0, 1.0))
+	if _launched and flat.length() > WALK:
+		flat = _carry_launch(flat, wish, delta)
+	else:
+		_launched = false
+		flat = flat.lerp(wish * WALK, clampf(AIR_STEER * delta, 0.0, 1.0))
 	velocity.x = flat.x
 	velocity.z = flat.z
 	if _catch_web(velocity * delta):
@@ -406,6 +431,22 @@ func _step_air(delta: float) -> void:
 	if is_on_floor():
 		_land()
 	_check_fall()
+
+
+## Speed a grapple gave, in the air: kept, bleeding off slowly; the keys bend it
+## toward where they point, and pulling back against it brakes.
+func _carry_launch(flat: Vector3, wish: Vector3, delta: float) -> Vector3:
+	var speed := flat.length()
+	var heading := flat / speed
+	speed -= LAUNCH_DRAG * delta
+	if wish != Vector3.ZERO:
+		if wish.dot(heading) < -0.5:
+			speed -= LAUNCH_BRAKE * delta
+		else:
+			var turn := heading.signed_angle_to(wish, Vector3.UP)
+			heading = heading.rotated(Vector3.UP,
+				clampf(turn, -LAUNCH_TURN * delta, LAUNCH_TURN * delta))
+	return heading * maxf(speed, 0.0)
 
 
 func _check_fall() -> void:
@@ -720,32 +761,66 @@ func _step_grapple(delta: float) -> void:
 		velocity *= 0.5
 		_set_mode(Mode.AIR)
 		return
-	if _buffer > 0.0:
-		# Let go mid-pull: fly on with the pull's speed, and a little lift.
-		_buffer = 0.0
-		velocity = velocity * 0.9
-		velocity.y = maxf(velocity.y, 0.0) + 5.0
-		grapple.end()
-		_set_mode(Mode.AIR)
-		return
 	var target := grapple.target_point()
 	var to := target - global_position
 	var distance := to.length()
-	if distance <= RADIUS + 0.35 or _grapple_time > 2.5:
-		var web := grapple.web
-		grapple.end()
-		attach_to_web(web)
-		if mode != Mode.WEB:
-			_set_mode(Mode.AIR)
-		return
-	# Straight there, through anything the web's rim is in — and quicker than a web
-	# in flight, or it would never be caught.
 	var pace := grapple.speed
 	if grapple.web != null and grapple.web.is_flying():
 		pace = maxf(pace, grapple.web.velocity.length() * 1.5)
+	if _buffer > 0.0:
+		_buffer = 0.0
+		var web := grapple.web
+		grapple.end()
+		if distance <= pace * LAUNCH_WINDOW + RADIUS + 0.35:
+			# Jumped right at the end: a launch off the web, the pull's speed whole.
+			_launch(web, true)
+		else:
+			# Let go mid-pull: fly on with the pull's speed, and a little lift.
+			velocity = velocity * 0.9
+			velocity.y = maxf(velocity.y, 0.0) + 5.0
+			_launched = true
+			_set_mode(Mode.AIR)
+		return
+	if distance <= RADIUS + 0.35 or _grapple_time > 2.5:
+		var web := grapple.web
+		grapple.end()
+		if grapple_held or _grapple_time > 2.5:
+			attach_to_web(web)
+			if mode != Mode.WEB:
+				_set_mode(Mode.AIR)
+		else:
+			_launch(web, false)
+		return
+	# Straight there, through anything the web's rim is in — and quicker than a web
+	# in flight, or it would never be caught.
 	var step := minf(pace * delta, distance)
 	global_position += to / distance * step
 	velocity = to / distance * grapple.speed
+
+
+## Off the end of a pull without holding on: the spider leaves the web with the
+## pull's speed, less whatever was going into the surface the web is on, so it
+## carries on along that surface — up a wall, across a floor. With [param jumped],
+## a jump timed at the very end, it also kicks off the web's face and up.
+func _launch(web: ThrownWeb, jumped: bool) -> void:
+	var carry := velocity
+	if web != null and is_instance_valid(web) and web.is_stuck():
+		var face := web.normal()
+		if face.dot(global_position - web.global_position) < 0.0:
+			face = -face
+		var into := carry.dot(face)
+		if into < 0.0:
+			carry -= face * into
+		if jumped:
+			carry += face * JUMP * 0.5
+	if jumped:
+		carry.y = maxf(carry.y, 0.0) + JUMP
+	# Not straight back onto the web it left.
+	_grace_web = web
+	_grace = WEB_GRACE
+	velocity = carry
+	_launched = true
+	_set_mode(Mode.AIR)
 
 
 # --- facing --------------------------------------------------------------------
@@ -875,4 +950,5 @@ func put_at(where: Transform3D) -> void:
 	grapple_ready = true
 	_air_refund_spent = false
 	_stall = 0.0
+	_launched = false
 	_set_mode(Mode.AIR)

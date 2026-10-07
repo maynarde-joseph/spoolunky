@@ -18,8 +18,22 @@ All three are on their own buttons, and none of them waits on another.
 
 ### Grapple (left mouse)
 
-A line to a web you point at, and you're pulled along it onto the web. Pulls go at
-18.2 m/s, capped at 1.1 seconds however far they go, and the grapple reaches 24 m.
+A line to a web you point at, and you're pulled along it in a straight line. It's
+a grapple, not a swing. Pulls go at 18.2 m/s, capped at 1.1 seconds however far
+they go, and the grapple reaches 16 m.
+
+* **Hold to land, let go to launch.** Hold the button through the pull and you
+  land on the web, as before. Let go before the pull arrives and you come off the
+  web with the pull's speed. Whatever was going into the surface the web is on
+  is dropped, so you carry on along it: across a floor at a run, up a wall.
+  **Jump in the pull's last 0.2 s** and you also kick off the web's face and up
+  with a full jump. Speed from a launch is kept in the air, bleeding off at
+  2 m/s², and the keys bend it rather than replace it (pull back to brake).
+  Landing ends it.
+* **Why.** Throw-and-grapple was point and click: anything you could see was a
+  target, and every pull delivered you safely onto the web. Now the grapple is a
+  choice between a safe landing (with the grapple back) and speed (without it),
+  and the timing of the release and the jump is the skill.
 
 * **Only silk holds it.** A stuck web, or a web still in the air, which the line
   follows until the spider lands on it. Stone, slick metal, crates and platforms
@@ -35,8 +49,8 @@ A line to a web you point at, and you're pulled along it onto the web. Pulls go 
   effectively always there.
 * **It ends on the web.** From there, walk on: up a web on a wall and
   over its top onto the ledge, off a web on a floor onto the floor.
-* **Jump mid-pull** lets go, and you fly on with the pull's speed plus a little
-  lift.
+* **Jump mid-pull** (earlier than the last 0.2 s) lets go, and you fly on with
+  the pull's speed plus a little lift.
 
 ### Silk (right mouse)
 
@@ -45,7 +59,9 @@ the spider's back while the view lifts and widens, then let go to throw. A tap
 throws a 1 m web and a full second's wind-up throws a 2.4 m web.
 
 What leaves the spider is a whole web, flying face first at 22 m/s for up to
-36 m:
+22 m. That's further than the grapple's 16 m, which is what riding is for, but
+short enough that a level has to put anchors within reach rather than anywhere
+in sight:
 
 * **Ride it, and commit to it.** Grapple onto it in flight and you're standing
   on it, carried along. Jumping off a web in flight is only a small hop, with
@@ -136,8 +152,8 @@ Each level has a single lesson and then a twist on it.
 2. **Silk Stairs**: you can't climb, but you can climb webs. The wall's top band is
    slick, so the last web has to reach over it. With two webs, the Pullback has
    to leapfrog them.
-3. **Ride the Gap**: the gap is too far to grapple and short enough for silk to
-   cross, so you ride.
+3. **Ride the Gap**: the 18 m gap is too far to grapple and short enough for
+   silk to cross, so you ride.
 4. **Call It Back**: a crate sits on a post in the red, behind a wall. Web it
    from the pulpit, then stand on the plate and call it home through the wall
    to open the door.
@@ -154,8 +170,9 @@ without CI noticing. They are not the only solutions, nor the fastest.
 | | |
 |---|---|
 | spider | 0.7 m tall, moves 6.08 m/s (7.36 on a web: the old spider's sprint), jumps 7.8 m/s (about 1 m up, about 3.5 m across at a run), falls at 29.4 m/s² |
-| grapple | webs only, 24 m reach, 18.2 m/s or 1.1 s, one in the air |
-| silk | 1 to 2.4 m webs, 22 m/s, 36 m reach, 0.2 s between throws |
+| grapple | webs only, 16 m reach, 18.2 m/s or 1.1 s, one in the air; hold to land, let go to launch |
+| launch | the pull's speed, minus what goes into the web's surface; a jump in the last 0.2 s adds a full jump up and half a jump off the face; kept in the air at 2 m/s² drag, keys turn it 2.5 rad/s, braking 9 m/s² |
+| silk | 1 to 2.4 m webs, 22 m/s, 22 m reach, 0.2 s between throws |
 | pullback | oldest web first, 60 m reach, 44 m/s home, 0.15 s between calls |
 | catch-stall | 0.6 s held up, 15% of your speed kept |
 

@@ -1,8 +1,13 @@
 class_name Grapple
 extends Node3D
 
-## Left mouse: a line to a web you point at, and you are pulled along it to land on
-## it.
+## Left mouse: a line to a web you point at, and you are pulled along it.
+##
+## Hold the button through the pull and you land on the web. Let go of it before
+## the pull arrives and you come off the web with the pull's speed, carried on along
+## whatever the web is stuck to — and a jump in the pull's last moment kicks off
+## the web's face and up as well. Landing gives the grapple back; flying off does
+## not. See [method Weaver._launch].
 ##
 ## Only silk holds the line: a web stuck to something, or one still in the air,
 ## which the line follows wherever it goes until the spider lands on it and rides
@@ -20,7 +25,7 @@ extends Node3D
 
 ## How far a line reaches, in metres. A thrown web goes further, which is what a
 ## web you can ride is for.
-const REACH := 24.0
+const REACH := 16.0
 
 ## How fast the spider is pulled, in metres a second — and quicker on a long line,
 ## so that no pull takes longer than [constant LONGEST].
