@@ -26,6 +26,7 @@ func run_checks() -> void:
 	await _pullback()
 	await _caught_by_your_web()
 	await _crates_plates_doors()
+	await _boards_and_blocks()
 	await _platforms()
 	await _the_exit()
 
@@ -492,6 +493,75 @@ func _crates_plates_doors() -> void:
 	check(run.is_powered("gate"), "dropped on the plate, the crate presses it")
 	await run_frames(60)
 	check(door.position.y > shut.y + 3.5, "and the door on its channel slides open")
+
+
+## The Pullback moves the level: a loose board holds silk but not the spider, and a
+## web on it called home rips it away; a web on a block on a rail called home drags
+## the block along the rail toward you.
+func _boards_and_blocks() -> void:
+	print("Loose boards and blocks on rails")
+	var objects: Array = [
+		{"type": "panel", "piece": "cube", "pos": [0.0, 0.0, -11.2], "size": [4.0, 4.0, 0.3]},
+		{"type": "slider", "piece": "cube", "pos": [6.0, 0.0, -4.0], "size": [2.0, 1.0, 2.0],
+			"surface": "stone", "travel": [0.0, 0.0, 8.0], "speed": 6.0},
+	]
+	var run := await arena(objects)
+	var weaver := run.weaver
+	var board := get_root().get_tree().get_nodes_in_group(LoosePanel.GROUP)[0] as LoosePanel
+	await put(run, Vector3(0.0, 0.3, -4.0))
+	aim(run, Vector3(0.0, 2.0, -11.0))
+	weaver.caster.throw(0.0)
+	var web := first_web(run)
+	await wait_until(func() -> bool: return not web.is_flying(), 60)
+	check(web.is_stuck() and web.loose, "silk sticks to a loose board")
+	aim(run, web.global_position)
+	check(weaver.grapple.aimed().get("web") == null and not weaver.fire_grapple(),
+		"but the grapple won't take a web on it: it won't hold the spider")
+	weaver.pullback.cast()
+	await run_frames(3)
+	check(board.is_gone() and board.collision_layer == 0,
+		"called home, the web rips the board away")
+	await run_frames(80)
+	check(not is_instance_valid(board), "and it's gone")
+	await pull(run)
+	weaver.caster._cooling = 0.0
+	aim(run, Vector3(0.0, 2.0, -11.5))
+	weaver.caster.throw(0.0)
+	var behind: ThrownWeb = weaver.webs()[weaver.webs().size() - 1]
+	await wait_until(func() -> bool: return not behind.is_flying(), 60)
+	aim(run, behind.global_position)
+	check(behind.holds_weight() and weaver.grapple.aimed().get("web") == behind,
+		"leaving the stone behind it, where a web holds")
+	await pull(run)
+
+	var block: SlideBlock = null
+	for node in get_root().get_tree().get_nodes_in_group(LevelBuilder.GROUP):
+		if node is SlideBlock:
+			block = node
+	await put(run, Vector3(10.0, 0.3, 2.0))
+	aim(run, block.global_position + Vector3(1.0, 0.5, 0.0))
+	weaver.caster._cooling = 0.0
+	weaver.caster.throw(0.0)
+	var on_block: ThrownWeb = weaver.webs()[weaver.webs().size() - 1]
+	await wait_until(func() -> bool: return not on_block.is_flying(), 60)
+	check(on_block.is_stuck() and on_block.get_parent() == block, "a web on a block on a rail")
+	weaver.pullback._cooling = 0.0
+	weaver.pullback.cast()
+	await wait_until(func() -> bool: return absf(block.along() - 0.75) < 0.01, 120)
+	check(absf(block.global_position.z - 2.0) < 0.2,
+		"called home, it drags the block along its rail to where it's nearest the spider (z %.1f)"
+		% block.global_position.z)
+	await put(run, Vector3(10.0, 0.3, 16.0))
+	aim(run, block.global_position + Vector3(1.0, 0.5, 0.0))
+	weaver.caster._cooling = 0.0
+	weaver.caster.throw(0.0)
+	on_block = weaver.webs()[weaver.webs().size() - 1]
+	await wait_until(func() -> bool: return not on_block.is_flying(), 60)
+	weaver.pullback._cooling = 0.0
+	weaver.pullback.cast()
+	await run_frames(90)
+	check(absf(block.global_position.z - 4.0) < 0.05 and block.along() > 0.999,
+		"and never past the end of its rail (z %.1f)" % block.global_position.z)
 
 
 func _platforms() -> void:

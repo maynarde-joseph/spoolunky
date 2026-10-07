@@ -87,6 +87,9 @@ you there, and the ceiling over every level keeps the room's top in the room.
 First thrown, first home: each press calls your oldest web (within 60 m), and it
 flies home at 44 m/s, through walls. Press again for the next.
 
+The grapple moves you; the Pullback moves the level. Whatever a web is on feels
+the pull when it's called:
+
 * **It comes to you,** not to where it was thrown from. Where you stand when you
   call aims the recall, and it's how a crate gets onto a plate (stand on the
   plate). Calling
@@ -94,6 +97,16 @@ flies home at 44 m/s, through walls. Press again for the next.
   spot", which is a weaker puzzle and harder to read.
 * **It brings what it held.** A web on a crate brings the crate and drops it at
   your feet. This is the only way to move a crate.
+* **It rips off loose boards.** Silk sticks to a loose board, but a board won't
+  take your weight: no grapple to a web on one, no walking onto it. Call that web
+  home and the board tears away and tumbles off, leaving what it covered: stone
+  to web, a way through, a line of sight. Any other silk on the board goes with
+  it.
+* **It drags blocks along rails.** A stone block on a rail (an orange bar under
+  it) is dragged along the rail when a web on it is called home, to the point on
+  the rail nearest where you stand, and stops there. Where you stand when you
+  call is where the block ends up: a stepping stone in a gap, a step under a
+  ledge.
 * **The web underfoot is skipped.** Standing on a web, a call takes
   the oldest of the others. This is how two webs climb a wall that one can't:
   stand on the higher one, call the lower one home, and throw it higher.
@@ -115,6 +128,8 @@ flies home at 44 m/s, through walls. Press again for the next.
 | Door | slides open by a set offset while its channel is powered |
 | Platform | follows its path back and forth or round. Runs only while its channel (if any) is powered |
 | Hazard (red) | touch it and the level restarts |
+| Loose board (weathered wood) | silk sticks, but it won't hold the spider. The Pullback rips it away |
+| Block on a rail (orange bar) | stone. The Pullback drags it along its rail to the point nearest you |
 | Exit bag | open from the start. Walk in to finish |
 | Ceiling | a slick lid over every level, set by its `ceiling` height or 6 m over the top of everything. Thrown silk slides off it |
 
@@ -152,7 +167,11 @@ Each level has a single lesson and then a twist on it.
    from the pulpit, then stand on the plate and call it home through the wall
    to open the door.
 5. **Moving Parts**: a ferry, then a crate that starts a lift.
-6. **All Together**: web the far face across the drop, leapfrog a tower, and use
+6. **Pull the Room**: the ledge's one stone face is boarded over, so rip the
+   boards off with the Pullback before you can web it. Then a gap too wide to
+   jump with slick on both sides, and a block on a rail out to the side: web it,
+   stand at the edge, and call it into the gap.
+7. **All Together**: web the far face across the drop, leapfrog a tower, and use
    a crate to open the exit.
 
 Every built-in level is played to the end by a scripted route in

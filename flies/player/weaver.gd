@@ -425,7 +425,7 @@ func standing_web() -> ThrownWeb:
 ## or the other, where that one has no room. The spider stays on that face: a web is
 ## walked on one side only, and its rim holds you.
 func attach_to_web(web: ThrownWeb, at := Vector3.INF) -> void:
-	if web == null or not web.is_stuck():
+	if web == null or not web.holds_weight():
 		return
 	if mode == Mode.GRAPPLE:
 		grapple.end()
@@ -557,7 +557,7 @@ func _step_off_web(outward: Vector3) -> bool:
 	var ahead := space.intersect_ray(reach)
 	if not ahead.is_empty():
 		var other := ThrownWeb.of(ahead.get("collider"))
-		if other != null and other.is_stuck():
+		if other != null and other.holds_weight():
 			var leaving := _web
 			attach_to_web(other, ahead["position"])
 			_grace_web = leaving
@@ -619,7 +619,7 @@ func _step_onto_web(wish: Vector3) -> bool:
 	var web := ThrownWeb.of(hit.get("collider"))
 	# Only a web that has stuck: one still flying is taken with the grapple, not by
 	# running into the one you have just thrown.
-	if web == null or not web.is_stuck() or (web == _grace_web and _grace > 0.0):
+	if web == null or not web.holds_weight() or (web == _grace_web and _grace > 0.0):
 		return false
 	var facing: Vector3 = hit["normal"]
 	if facing.dot(wish) > -0.4 or absf(facing.y) > 0.6:
@@ -647,7 +647,7 @@ func _catch_web(step: Vector3) -> bool:
 	query.motion = Vector3.ZERO
 	for found in space.intersect_shape(query, 4):
 		var web := ThrownWeb.of(found.get("collider"))
-		if web == null or not web.is_stuck():
+		if web == null or not web.holds_weight():
 			continue
 		if web == _grace_web and _grace > 0.0:
 			continue

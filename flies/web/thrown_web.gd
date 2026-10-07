@@ -79,6 +79,9 @@ var weaver: Node3D
 ## Whatever it is stuck to that it will bring home with it: a crate.
 var carried: Node3D = null
 
+## Whether it is stuck to a loose board, which holds silk but not the spider.
+var loose := false
+
 
 var _age := 0.0
 var _fade := 0.0
@@ -136,6 +139,11 @@ func is_stuck() -> bool:
 	return state == State.STUCK
 
 
+## Whether the spider can be on it: stuck, and not to a loose board.
+func holds_weight() -> bool:
+	return state == State.STUCK and not loose
+
+
 ## How big it is right now: it opens out over its first moment in the air.
 func current_radius() -> float:
 	return radius * clampf(_age / UNFURL, 0.15, 1.0)
@@ -146,11 +154,16 @@ func walk_body() -> StaticBody3D:
 	return _walk
 
 
-## Comes off whatever it is on and flies home to [param to]. False if it is not something that can come back.
+## Comes off whatever it is on and flies home to [param to]. False if it is not
+## something that can come back.
 func call_back(to: Node3D) -> bool:
 	if not is_standing() or to == null:
 		return false
 	weaver = to
+	# What it is on feels the pull: a loose board is ripped away, a block on a rail
+	# is dragged along it toward the spider.
+	var panel := get_parent() as LoosePanel
+	var block := get_parent() as SlideBlock
 	state = State.RETURNING
 	gone.emit(self)
 	_walk.collision_layer = 0
@@ -158,6 +171,10 @@ func call_back(to: Node3D) -> bool:
 	if get_parent() != _home_root and _home_root != null and is_instance_valid(_home_root):
 		reparent(_home_root, true)
 	global_transform = where
+	if panel != null:
+		panel.rip(to.global_position)
+	if block != null:
+		block.drag_toward(to.global_position)
 	if carried != null and is_instance_valid(carried):
 		_carry_offset = global_transform.affine_inverse() * carried.global_transform
 		var crate := carried as RigidBody3D
@@ -243,11 +260,14 @@ func _land(hit: Dictionary) -> void:
 	velocity = Vector3.ZERO
 	state = State.STUCK
 	var body := collider as Node3D
-	if body != null and (body is AnimatableBody3D or body is RigidBody3D):
-		# Goes with what it is on: a platform carries it, a crate is carried with it.
+	if body != null and (body is AnimatableBody3D or body is RigidBody3D
+			or body is LoosePanel):
+		# Goes with what it is on: a platform carries it, a crate is carried with it,
+		# a loose board takes it when it goes.
 		reparent(body, true)
 		if body.is_in_group("crate"):
 			carried = body
+		loose = body is LoosePanel
 	stuck.emit(self)
 
 
@@ -297,14 +317,14 @@ func _arrive() -> void:
 	queue_free()
 
 
-## Comes apart where it is: nothing to stand on any more, and the silk is the
-## spider's again at once.
-## Used up: met in flight by the spider's grapple, it comes apart where it is, and
-## its silk is the spider's again.
+## Used up: met in flight by the spider's grapple, or on a board ripped away, it
+## comes apart where it is, and its silk is the spider's again.
 func spend() -> void:
 	_come_apart()
 
 
+## Comes apart where it is: nothing to stand on any more, and the silk is the
+## spider's again at once.
 func _come_apart() -> void:
 	if state == State.GONE:
 		return

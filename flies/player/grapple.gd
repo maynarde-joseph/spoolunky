@@ -91,8 +91,10 @@ func aimed() -> Dictionary:
 	if not hit.is_empty():
 		best_along = (hit["position"] - eye).dot(look)
 		var under := ThrownWeb.of(hit.get("collider"))
-		best = {"position": hit["position"], "web": under if under != null
-			and under.is_standing() else null}
+		# A web on a loose board holds silk, not the spider: nothing for the line.
+		var holds := under != null and (under.is_flying() or under.holds_weight())
+		best = {"position": hit["position"], "web": under if holds else null,
+			"loose": under != null and under.loose}
 	# A web in the air, picked generously: it is small and fast, and catching one is
 	# the move.
 	for node in get_tree().get_nodes_in_group(ThrownWeb.GROUP):
@@ -134,7 +136,10 @@ func fire() -> bool:
 		_refused = 0.25
 		_refused_at = target["position"]
 		if _warned <= 0.0:
-			weaver.notify("The grapple only holds silk — throw a web there first")
+			if target.get("loose", false):
+				weaver.notify("That board won't hold you — call the web home to rip it off")
+			else:
+				weaver.notify("The grapple only holds silk — throw a web there first")
 			_warned = 2.0
 		return false
 	local_point = web.to_local(target["position"])

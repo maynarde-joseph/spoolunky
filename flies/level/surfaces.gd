@@ -44,6 +44,11 @@ static func paint(kind: String) -> StandardMaterial3D:
 		"crate":
 			made.albedo_color = Color(0.72, 0.5, 0.3)
 			made.roughness = 0.85
+		"loose":
+			# Weathered boards: silk sticks, but they won't hold the spider.
+			made.albedo_color = Color(0.55, 0.4, 0.28)
+			made.roughness = 0.95
+			_panelled(made, Color(1, 1, 1), Color(0.62, 0.52, 0.42), true)
 		"plate":
 			made.albedo_color = Color(0.86, 0.3, 0.24)
 			made.roughness = 0.5

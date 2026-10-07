@@ -28,6 +28,8 @@ func run_checks() -> void:
 	if _wanted("05"):
 		await _moving_parts()
 	if _wanted("06"):
+		await _pull_the_room()
+	if _wanted("07"):
 		await _all_together()
 
 
@@ -433,9 +435,50 @@ func _moving_parts() -> void:
 	check(await finish(run, Vector3(0, 10, -55)), "and out")
 
 
+func _pull_the_room() -> void:
+	print("Route: Pull the Room")
+	var run := await load_level("06_pull_the_room.json")
+	var weaver := run.weaver
+	await go(run, Vector3(0, 0, -5.0))
+	var board := get_root().get_tree().get_nodes_in_group(LoosePanel.GROUP)[0] as LoosePanel
+	var on_board := await throw_at(run, Vector3(0, 3.5, -8.4), 0.0)
+	check(await stuck(on_board) and on_board.loose, "a web on the boards over the ledge's face")
+	aim(run, on_board.global_position)
+	check(weaver.grapple.aimed().get("web") == null and not weaver.fire_grapple(),
+		"won't take the spider's weight")
+	await pull(run)
+	await run_frames(10)
+	check(not is_instance_valid(board) or board.is_gone(),
+		"called home, the web rips the boards away")
+	check(await web_onto(run, Vector3(0, 4.5, -8.8)) and weaver.global_position.y > 5.9,
+		"a web on the stone they covered, and up it onto the ledge (%s)" % where(run))
+	await stop(run)
+	await pull(run)
+	var block := get_root().get_tree().get_nodes_in_group(LevelBuilder.GROUP).filter(
+		func(n: Node) -> bool: return n is SlideBlock)[0] as SlideBlock
+	await go(run, Vector3(0, 6, -14.2), 0.2)
+	await stop(run)
+	var on_block := await throw_at(run, Vector3(8.5, 5.0, -18), 0.0)
+	check(await stuck(on_block), "a web on the block out to the side")
+	await pull(run)
+	await wait_until(func() -> bool: return block.along() > 0.98, 180)
+	check(absf(block.global_position.x) < 0.5,
+		"called home, the block is dragged along its rail into the gap (x %.1f)"
+		% block.global_position.x)
+	await go(run, Vector3(0, 6, -14.6), 0.2, true)
+	check(await leap(run, Vector3(0, 6, -18)) and weaver.global_position.y > 5.9,
+		"a jump onto it (%s)" % where(run))
+	await stop(run)
+	await go(run, Vector3(0, 6, -19.2), 0.2, true)
+	check(await leap(run, Vector3(0, 6, -24)) and weaver.global_position.y > 5.9
+		and weaver.global_position.z < -21.0, "and on to the far pad (%s)" % where(run))
+	await stop(run)
+	check(await finish(run, Vector3(0, 6, -24)), "and out")
+
+
 func _all_together() -> void:
 	print("Route: All Together")
-	var run := await load_level("06_all_together.json")
+	var run := await load_level("07_all_together.json")
 	var weaver := run.weaver
 	await go(run, Vector3(0, 0, -5.0))
 	check(await web_onto(run, Vector3(0, 1.8, -24), 0.6),

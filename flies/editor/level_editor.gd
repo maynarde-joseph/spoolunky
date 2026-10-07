@@ -24,7 +24,8 @@ signal leave()
 
 const PICK_MASK := GameLayers.WORLD | GameLayers.PREY | LevelBuilder.EDITOR_PICK
 const SNAPS := [0.25, 0.5, 1.0, 2.0]
-const GAMEPLAY := ["start", "exit", "crate", "plate", "door", "platform", "hazard"]
+const GAMEPLAY := ["start", "exit", "crate", "plate", "door", "platform", "hazard", "panel",
+	"slider"]
 
 var level: Dictionary = {}
 var path := ""
@@ -860,6 +861,8 @@ func _show_inspector() -> void:
 		_inspector.add_child(_labelled("Channel", channel))
 	if thing.has("open"):
 		_vector_row("Opens by", thing, "open", 0.25)
+	if thing.has("travel"):
+		_vector_row("Slides by", thing, "travel", 0.25)
 	for number in ["speed", "wait"]:
 		if thing.has(number):
 			var spin := _spin(0, 60, 0.1)

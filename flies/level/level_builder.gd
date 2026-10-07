@@ -156,6 +156,24 @@ static func build_thing(thing: Dictionary, parent: Node3D, editing := false) -> 
 			if editing:
 				platform.set_physics_process(false)
 				_path_line(parent, made, platform.path, platform.loops, Color(0.9, 0.9, 0.5))
+		"panel":
+			var panel := LoosePanel.new()
+			made = panel
+			parent.add_child(made, true)
+			made.transform = LevelData.transform_of(thing)
+			PieceLook.dress(panel, String(thing.get("piece", "cube")), size, "loose")
+		"slider":
+			var block := SlideBlock.new()
+			block.travel = LevelData.vec(thing.get("travel"), Vector3(0.0, 0.0, -6.0))
+			block.speed = float(thing.get("speed", 6.0))
+			made = block
+			made.transform = LevelData.transform_of(thing)
+			parent.add_child(made, true)
+			PieceLook.dress(block, String(thing.get("piece", "cube")), size, surface, true)
+			if editing:
+				block.set_physics_process(false)
+				_path_line(parent, made, PackedVector3Array([made.position,
+					made.position + block.travel]), false, Color(0.95, 0.66, 0.22))
 		"hazard":
 			var hazard := Hazard.new()
 			hazard.size = size

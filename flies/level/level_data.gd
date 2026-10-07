@@ -18,6 +18,8 @@ extends RefCounted
 ## door      piece, size, surface, open, channel — slides by `open` while powered
 ## platform  piece, size, surface, path, speed, wait, loop, channel — moves along its path
 ## hazard    size                        — touch it and start again
+## panel     piece, size                 — a loose board: holds silk, not you; the Pullback rips it off
+## slider    piece, size, surface, travel, speed — a block on a rail; the Pullback drags it toward you
 ## [/codeblock]
 ##
 ## A level's settings: [code]webs[/code], how many webs may be out at once (2);
@@ -31,7 +33,8 @@ extends RefCounted
 const BUILT_IN := "res://levels/"
 const MADE := "user://levels/"
 
-const TYPES := ["piece", "start", "exit", "crate", "plate", "door", "platform", "hazard"]
+const TYPES := ["piece", "start", "exit", "crate", "plate", "door", "platform", "hazard", "panel",
+	"slider"]
 
 
 ## A new, empty level: a floor, a start and an exit.
@@ -78,6 +81,15 @@ static func make(type: String, at: Vector3) -> Dictionary:
 			thing["channel"] = ""
 		"hazard":
 			thing["size"] = [4.0, 0.4, 4.0]
+		"panel":
+			thing["piece"] = "cube"
+			thing["size"] = [4.0, 4.0, 0.3]
+		"slider":
+			thing["piece"] = "cube"
+			thing["size"] = [3.0, 1.0, 3.0]
+			thing["surface"] = Surfaces.STONE
+			thing["travel"] = [0.0, 0.0, -6.0]
+			thing["speed"] = 6.0
 	return thing
 
 
