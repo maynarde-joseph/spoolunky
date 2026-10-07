@@ -233,6 +233,11 @@ func _fly(delta: float) -> void:
 		return
 	var from := global_position
 	var hit := _first_hit(from, step)
+	var cut := SilkCutter.crossing(get_world_3d().direct_space_state, from, from + step)
+	if not cut.is_empty() and (hit.is_empty()
+			or from.distance_to(cut["position"]) < from.distance_to(hit["position"])):
+		_cut(cut["position"])
+		return
 	if not hit.is_empty():
 		_land(hit)
 		return
@@ -245,6 +250,17 @@ func _fly(delta: float) -> void:
 		stalled = _ridden()
 		velocity = Vector3.ZERO
 		_come_apart()
+
+
+## Flown into a silk cutter: it comes apart there. Ridden, it stops dead first, and
+## the rider drops where it was cut.
+func _cut(at: Vector3) -> void:
+	global_position = at
+	stalled = _ridden()
+	velocity = Vector3.ZERO
+	if weaver != null and weaver.has_method("notify"):
+		weaver.call("notify", "Cut — silk can't cross that")
+	_come_apart()
 
 
 func _ridden() -> bool:

@@ -25,7 +25,7 @@ signal leave()
 const PICK_MASK := GameLayers.WORLD | GameLayers.PREY | LevelBuilder.EDITOR_PICK
 const SNAPS := [0.25, 0.5, 1.0, 2.0]
 const GAMEPLAY := ["start", "exit", "crate", "plate", "door", "platform", "hazard", "panel",
-	"slider"]
+	"slider", "cutter"]
 
 var level: Dictionary = {}
 var path := ""

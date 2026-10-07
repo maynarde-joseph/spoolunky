@@ -3,8 +3,9 @@ extends RefCounted
 
 ## How far silk alone gets you in a level: a rough map of everywhere the spider can
 ## reach by walking, jumping, throwing webs and grappling to them — webs as many
-## as it likes, since the Pullback leapfrogs them forever — and by riding a web in
-## flight and getting off anywhere along a throw. What it leaves out is everything
+## as it likes, since the Pullback leapfrogs them forever — and by riding webs in
+## flight to wherever they stick or stop dead. Silk cutters cut its webs as they
+## cut the spider's. What it leaves out is everything
 ## else: boards stay on, blocks stay where they start, crates stay put, doors stay
 ## shut and platforms stand still.
 ##
@@ -260,30 +261,32 @@ func _throws_from(cell: int) -> bool:
 	return false
 
 
-## Every web thrown from [param eye]: where each sticks, and every point along the
-## way where the spider, riding it, could hop off and drop.
+## Every web thrown from [param eye]: where each sticks, or — ridden, since a ride
+## can't be got off — where each stops dead and drops its rider: at the end of its
+## reach, on slick metal, or cut by a silk cutter.
 func _throw_from(eye: Vector3, cell: int, words: String) -> void:
 	for dir in _dirs:
 		var hit := _ray(eye, eye + dir * THROW)
 		var length := THROW
 		if not hit.is_empty():
 			length = eye.distance_to(hit["position"])
-		var d := 1.5
-		while d < length - 0.4:
-			var at := eye + dir * d
-			var landing := _landing(at)
-			if landing >= 0 and not _came.has(landing):
-				_reach(landing, cell, "%s, a web ridden to %s and a drop"
-					% [words, at.snappedf(0.1)])
-			d += 1.0
-		if hit.is_empty() or not _holds(hit.get("collider")):
+		var cut := SilkCutter.crossing(_space, eye, eye + dir * length)
+		if not cut.is_empty():
+			length = eye.distance_to(cut["position"])
+			hit = {}
+		if not hit.is_empty() and _holds(hit.get("collider")):
+			var spot: Vector3 = hit["position"]
+			var key := Vector3i((spot / 0.8).floor())
+			if _spots.has(key):
+				continue
+			_spots[key] = true
+			_on_web(spot, hit["normal"], cell, "%s, a web at %s" % [words, spot.snappedf(0.1)])
 			continue
-		var spot: Vector3 = hit["position"]
-		var key := Vector3i((spot / 0.8).floor())
-		if _spots.has(key):
-			continue
-		_spots[key] = true
-		_on_web(spot, hit["normal"], cell, "%s, a web at %s" % [words, spot.snappedf(0.1)])
+		var end := eye + dir * maxf(length - 0.5, 0.0)
+		var landing := _landing(end)
+		if landing >= 0 and not _came.has(landing):
+			_reach(landing, cell, "%s, a web ridden to %s, stopped dead, and a drop"
+				% [words, end.snappedf(0.1)])
 
 
 func _holds(collider: Variant) -> bool:

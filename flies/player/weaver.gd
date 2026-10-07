@@ -9,8 +9,8 @@ extends CharacterBody3D
 ##
 ## * **Grapple** (left mouse) — a line to a web you point at, and you are pulled
 ##   along it onto the web. Only silk holds it. See [Grapple]. One in the air, back
-##   when you land — on the ground or a web that has stuck. A web still flying
-##   gives it back once, until you next land.
+##   when you land — on the ground or a web that has stuck. A web still flying you
+##   ride, all the way: no getting off, and nothing back until it lands.
 ## * **Silk** (right mouse) — hold to wind it up, let go to throw a web. The web
 ##   flies; grapple onto it in flight and you ride it to wherever it lands, where
 ##   it sticks, flat, and the spider can walk on it — up a wall, across a
@@ -105,10 +105,6 @@ var mode := Mode.AIR
 ## Whether a grapple is ready.
 var grapple_ready := true
 
-## Whether a web in flight has already given the grapple back since the spider last
-## stood on something. One does, once: a second would let throw, grapple on, throw,
-## grapple on go on for ever without touching the ground.
-var _air_refund_spent := false
 
 
 var view: SpiderCamera
@@ -372,10 +368,8 @@ func _land() -> void:
 	_refill()
 
 
-## Stood on something that stays put: the grapple is back, and a web in flight may
-## give it back once more.
+## Stood on something that stays put: the grapple is back, and so are the hangs.
 func _refill() -> void:
-	_air_refund_spent = false
 	_caught_hang_spent = false
 	_throw_hang_spent = false
 	if not grapple_ready:
@@ -455,15 +449,10 @@ func attach_to_web(web: ThrownWeb, at := Vector3.INF) -> void:
 	_web_airborne = web.is_flying()
 	velocity = Vector3.ZERO
 	_set_mode(Mode.WEB)
+	# A web in flight is a ride, and a ride is a commitment: it gives nothing back.
+	# The grapple comes back when the web lands and the spider with it.
 	if not _web_airborne:
 		_refill()
-	elif not _air_refund_spent:
-		# A web in flight is a ride: it gives the grapple back, once, until the
-		# spider next stands on something that stays put.
-		_air_refund_spent = true
-		if not grapple_ready:
-			grapple_ready = true
-			landed.emit()
 	_place_on_web()
 
 
@@ -495,8 +484,12 @@ func _step_web(delta: float) -> void:
 		_pick_face(local.z)
 	_up = _web.normal() * _web_side
 	if _buffer > 0.0:
-		_jump_off_web()
-		return
+		if _web.is_flying():
+			# No getting off a ride: the spider goes where the web goes.
+			_buffer = 0.0
+		else:
+			_jump_off_web()
+			return
 	var basis := _web.global_basis.orthonormalized()
 	var wish := _wish_on(_up)
 	var wish_local := basis.inverse() * wish
@@ -510,7 +503,8 @@ func _step_web(delta: float) -> void:
 	if next.length() > limit:
 		var outward_2d := next.normalized()
 		var outward := (basis * Vector3(outward_2d.x, outward_2d.y, 0.0)).normalized()
-		if wish_2d.dot(outward_2d) > 0.25 and _step_off_web(outward):
+		# Off a web onto what is past its rim — but not off one in flight.
+		if wish_2d.dot(outward_2d) > 0.25 and not _web.is_flying() and _step_off_web(outward):
 			return
 		next = next.limit_length(limit)
 		_web_walk -= outward_2d * maxf(_web_walk.dot(outward_2d), 0.0)
@@ -581,11 +575,6 @@ func _jump_off_web() -> void:
 	if _up.y > 0.7:
 		push = _up * JUMP
 	var walk := _web.global_basis * Vector3(_web_walk.x, _web_walk.y, 0.0)
-	if _web.is_flying():
-		# A web in flight is a ride to where it lands, not a sling: off it, you get a
-		# hop and none of its speed.
-		push = _up * 2.5 + Vector3.UP * 3.5
-		walk = Vector3.ZERO
 	_grace_web = _web
 	_grace = WEB_GRACE
 	_web = null
@@ -909,7 +898,6 @@ func put_at(where: Transform3D) -> void:
 	view.face(-where.basis.z)
 	view.settle()
 	grapple_ready = true
-	_air_refund_spent = false
 	_caught_hang_spent = false
 	_throw_hang_spent = false
 	_stall = 0.0

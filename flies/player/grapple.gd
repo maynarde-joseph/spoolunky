@@ -4,9 +4,10 @@ extends Node3D
 ## Left mouse: a line to a web you point at, and you are pulled along it.
 ##
 ## The pull always ends on the web. A web that has stuck is somewhere to stand; one
-## still in flight you ride, wherever it is going, until it sticks — and getting
-## onto it gives the grapple back once, until you next land. Jump mid-pull and you
-## drop where you are.
+## still in flight you ride, wherever it is going, until it sticks or stops dead. A
+## ride is a commitment: no jumping off, no stepping off, and the grapple stays
+## spent until it lands you. Jump mid-pull, before you are on, and you drop where
+## you are.
 ##
 ## Only silk holds the line: a web stuck to something, or one still in the air,
 ## which the line follows wherever it goes until the spider lands on it. Stone,
@@ -15,8 +16,7 @@ extends Node3D
 ## make again.
 ##
 ## One pull in the air: the line is spent the moment it goes and comes back when
-## the spider lands, on the ground or on a web that has stuck. A web still flying
-## gives it back once, until the spider next lands.
+## the spider lands, on the ground or on a web that has stuck.
 ##
 ## This node finds the web the line would hold, keeps hold of it while the spider is
 ## pulled, and draws the line. The pulling itself is the spider's — see
@@ -122,6 +122,9 @@ func aimed() -> Dictionary:
 		var blocked := space.intersect_ray(check)
 		if not blocked.is_empty() and blocked["position"].distance_to(at) > 0.3:
 			best = {"position": blocked["position"], "web": null}
+		# Nor will the line cross a silk cutter.
+		elif not SilkCutter.crossing(space, from, at).is_empty():
+			best = {"position": at, "web": null, "cut": true}
 	return best
 
 
@@ -137,6 +140,8 @@ func fire() -> bool:
 		if _warned <= 0.0:
 			if target.get("loose", false):
 				weaver.notify("That board won't hold you — call the web home to rip it off")
+			elif target.get("cut", false):
+				weaver.notify("A silk cutter is in the way — the line won't cross it")
 			else:
 				weaver.notify("The grapple only holds silk — throw a web there first")
 			_warned = 2.0

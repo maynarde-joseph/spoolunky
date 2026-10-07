@@ -14,3 +14,7 @@ const WEB := 1 << 4
 ## from WORLD: the spider collides with it, prey does not, so a web you can walk
 ## about on is still a web things fly into.
 const WEB_WALK := 1 << 5
+
+## Silk cutters: areas that cut any web that crosses them, and any grapple line.
+## Nothing collides with them; webs and the grapple look for them.
+const CUTTER := 1 << 6

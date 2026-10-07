@@ -22,6 +22,7 @@ func run_checks() -> void:
 	await _grappling()
 	await _riding_a_web()
 	await _rides_go_nowhere_for_free()
+	await _silk_cutters()
 	await _dropping_mid_pull()
 	await _the_ceiling()
 	await _one_face()
@@ -277,13 +278,14 @@ func _riding_a_web() -> void:
 			"the spider lands on the flying web"):
 		return
 	check(web.is_flying(), "while it is still flying")
-	check(weaver.grapple_ready, "and landing on it gives the grapple back")
+	check(not weaver.grapple_ready, "a ride gives nothing back: the grapple stays spent")
 	var before := weaver.global_position
 	await run_frames(5)
 	check(weaver.global_position.z < before.z - 1.0, "the web carries the spider along")
 	await wait_until(func() -> bool: return web.is_stuck(), 120)
 	check(web.is_stuck() and weaver.standing_web() == web,
 		"and when the web sticks, the spider is standing on it on the wall")
+	check(weaver.grapple_ready, "landed with it: the grapple is back")
 	check(weaver.global_position.z > -11.5, "on the room's side of it")
 
 
@@ -309,7 +311,7 @@ func _rides_go_nowhere_for_free() -> void:
 		"and you drop where it stopped, with none of its speed (%.1f m/s)"
 		% Vector2(weaver.velocity.x, weaver.velocity.z).length())
 
-	# Jumping off a web in flight is a hop, not a sling.
+	# A ride is a commitment: jump does nothing, and the keys can't walk it off.
 	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
 	await put(run, Vector3(0.0, 0.3, 8.0))
 	aim(run, Vector3(0.0, 2.5, -11.5))
@@ -321,45 +323,68 @@ func _rides_go_nowhere_for_free() -> void:
 	weaver.fire_grapple()
 	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.WEB, 60)
 	weaver.drive(Vector2.ZERO, true)
-	await run_frames(2)
-	check(weaver.mode == Weaver.Mode.AIR and weaver.velocity.length() < 7.0,
-		"jumping off a flying web keeps none of its speed (%.1f m/s)" % weaver.velocity.length())
+	await run_frames(3)
+	check(weaver.standing_web() == web and web.is_flying(), "jumping off a web in flight does nothing")
+	weaver.drive(Vector2(1.0, 0.0))
+	await run_frames(12)
+	check(weaver.standing_web() == web or web.is_stuck(), "nor does walking off its rim")
+	weaver.drive(Vector2.ZERO)
+	await wait_until(func() -> bool: return web.is_stuck(), 120)
+	check(weaver.standing_web() == web, "you go where the web goes")
 
-	# A web in flight gives the grapple back once, until the spider next lands.
-	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
-	await put(run, Vector3(0.0, 0.3, 8.0))
+
+## Silk cutters cut any web that flies through them, stop a ride dead there, and
+## won't let a grapple line across; the spider walks through them.
+func _silk_cutters() -> void:
+	print("Silk cutters")
+	var objects: Array = [{"type": "cutter", "pos": [0.0, 0.0, -4.0], "size": [6.0, 6.0, 0.2]}]
+	var run := await arena(objects)
+	var weaver := run.weaver
+	await put(run, Vector3(0.0, 0.3, 2.0))
+	aim(run, Vector3(0.0, 2.0, -11.5))
+	weaver.caster.throw(0.0)
+	var web := first_web(run)
+	await wait_until(func() -> bool: return not is_instance_valid(web) or not web.is_flying(), 60)
+	check(not is_instance_valid(web) or (not web.is_standing() and web.global_position.z > -4.6),
+		"a web thrown through a silk cutter is cut there")
+	check(weaver.webs_left() == 3, "and its silk is back")
+	# A web stuck past the cutter, put there from the side: the line won't cross.
+	await put(run, Vector3(6.0, 0.3, -6.0))
+	aim(run, Vector3(0.0, 2.0, -11.5))
+	weaver.caster._cooling = 0.0
+	weaver.caster.throw(0.0)
+	var past := weaver.webs()[weaver.webs().size() - 1]
+	await wait_until(func() -> bool: return past.is_stuck(), 60)
+	await put(run, Vector3(0.0, 0.3, 2.0))
+	aim(run, past.global_position)
+	check(weaver.grapple.aimed().get("web") == null and weaver.grapple.aimed().get("cut", false),
+		"a grapple line won't cross a silk cutter")
+	check(not weaver.fire_grapple(), "so it doesn't go")
 	await pull(run)
-	# Both thrown from the ground, a beat apart. Grapple onto the later one, which
-	# is nearer; then, the grapple spent, land on the earlier one still in flight.
-	aim(run, Vector3(6.0, 2.5, -11.5))
+	# Ridden into a cutter: the ride stops dead there.
+	await put(run, Vector3(0.0, 0.3, 8.0))
+	aim(run, Vector3(0.0, 2.5, -11.5))
 	weaver.caster._cooling = 0.0
-	weaver.caster.throw(0.0)
-	var second := weaver.webs()[0]
-	await run_frames(10)
-	aim(run, Vector3(-6.0, 2.5, -11.5))
-	weaver.caster._cooling = 0.0
-	weaver.caster.throw(0.0)
-	var first := weaver.webs()[1]
+	weaver.caster.throw(0.5)
+	var ride := weaver.webs()[weaver.webs().size() - 1]
 	await run_frames(4)
-	aim(run, first.global_position)
+	aim(run, ride.global_position)
 	weaver.fire_grapple()
-	await wait_until(func() -> bool: return weaver.standing_web() == first, 60)
-	if not check(weaver.standing_web() == first and weaver.grapple_ready,
-			"the first web in flight gives the grapple back"):
-		note("on %s (first %s, second %s), ready %s, mode %s, refund spent %s" % [
-			weaver.standing_web(), first, second, weaver.grapple_ready,
-			Weaver.Mode.keys()[weaver.mode], weaver._air_refund_spent])
-	# Spend it, then land on the second while it is still flying.
-	weaver.grapple_ready = false
-	check(second.is_flying(), "the second web still in the air")
-	weaver.attach_to_web(second)
-	check(weaver.standing_web() == second and not weaver.grapple_ready,
-		"a second one, before landing, does not")
-	await wait_until(func() -> bool: return second.is_stuck(), 120)
-	await run_frames(2)
-	if not check(weaver.grapple_ready, "and it comes back when the ridden web lands"):
-		note("web %s stuck %s, on %s, mode %s" % [second.global_position, second.is_stuck(),
-			weaver.standing_web(), Weaver.Mode.keys()[weaver.mode]])
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.WEB, 60)
+	check(weaver.standing_web() == ride, "riding a web at the cutter")
+	await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.WEB, 120)
+	check(weaver.mode == Weaver.Mode.AIR and weaver.global_position.z > -4.5
+		and Vector2(weaver.velocity.x, weaver.velocity.z).length() < 1.0,
+		"cut under it, the ride stops dead and the spider drops (%s)" % where_is(weaver))
+	# Walking through one.
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
+	await put(run, Vector3(0.0, 0.3, -1.0))
+	aim(run, Vector3(0.0, 0.3, -10.0))
+	weaver.drive(Vector2(0.0, 1.0))
+	await run_frames(70)
+	weaver.drive(Vector2.ZERO)
+	check(weaver.global_position.z < -6.0, "and the spider walks through it (z %.1f)"
+		% weaver.global_position.z)
 
 
 ## Space mid-pull: the line lets go, and the spider drops where it is.

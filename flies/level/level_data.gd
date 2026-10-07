@@ -20,6 +20,7 @@ extends RefCounted
 ## hazard    size                        — touch it and start again
 ## panel     piece, size                 — a loose board: holds silk, not you; the Pullback rips it off
 ## slider    piece, size, surface, travel, speed — a block on a rail; the Pullback slides it to the other end
+## cutter    size                        — a silk cutter: cuts webs that fly through it, and grapple lines
 ## [/codeblock]
 ##
 ## A level's settings: [code]webs[/code], how many webs may be out at once (2);
@@ -34,7 +35,7 @@ const BUILT_IN := "res://levels/"
 const MADE := "user://levels/"
 
 const TYPES := ["piece", "start", "exit", "crate", "plate", "door", "platform", "hazard", "panel",
-	"slider"]
+	"slider", "cutter"]
 
 
 ## A new, empty level: a floor, a start and an exit.
@@ -84,6 +85,8 @@ static func make(type: String, at: Vector3) -> Dictionary:
 		"panel":
 			thing["piece"] = "cube"
 			thing["size"] = [4.0, 4.0, 0.3]
+		"cutter":
+			thing["size"] = [4.0, 4.0, 0.2]
 		"slider":
 			thing["piece"] = "cube"
 			thing["size"] = [3.0, 1.0, 3.0]

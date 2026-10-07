@@ -24,12 +24,14 @@ func run_checks() -> void:
 	if _wanted("03"):
 		await _drop_in()
 	if _wanted("04"):
-		await _call_it_back()
+		await _cut_lines()
 	if _wanted("05"):
-		await _moving_parts()
+		await _call_it_back()
 	if _wanted("06"):
-		await _pull_the_room()
+		await _moving_parts()
 	if _wanted("07"):
+		await _pull_the_room()
+	if _wanted("08"):
 		await _all_together()
 
 
@@ -386,9 +388,43 @@ func _drop_in() -> void:
 	check(await finish(run, Vector3(0, 0, -23.2)), "called home, it rips them off: and out")
 
 
+func _cut_lines() -> void:
+	print("Route: Cut Lines")
+	var run := await load_level("04_cut_lines.json")
+	var weaver := run.weaver
+	await go(run, Vector3(3.5, 0, -5.0), 0.2)
+	await stop(run)
+	var straight := await throw_at(run, Vector3(-3, 3, -14), 0.0)
+	await wait_until(func() -> bool:
+		return not is_instance_valid(straight) or not straight.is_flying(), 60)
+	check(not is_instance_valid(straight) or not straight.is_standing(),
+		"a web thrown into the curtain is cut")
+	check(await ride(run, Vector3(3.5, 3.5, -14)) and weaver.global_position.z < -22.0
+		and weaver.global_position.y > -0.5,
+		"one ridden through the window, out of reach over the far side, and a drop (%s)"
+		% where(run))
+	await go(run, Vector3(0, 0, -28))
+	await stop(run)
+	aim(run, Vector3(0, 1.5, -34.7))
+	weaver.caster._cooling = 0.0
+	var blocked := await throw_at(run, Vector3(0, 1.5, -34.7), 0.0)
+	await wait_until(func() -> bool:
+		return not is_instance_valid(blocked) or not blocked.is_flying(), 60)
+	check(not is_instance_valid(blocked) or not blocked.is_standing(),
+		"the boards are boxed in by cutters: a web at them from outside is cut")
+	await go(run, Vector3(0, 0, -32.5), 0.2)
+	await stop(run)
+	check(weaver.global_position.z < -31.5, "but the spider walks through")
+	var board := await throw_at(run, Vector3(0, 1.5, -34.7), 0.0)
+	check(await stuck(board) and board.loose, "and from inside, a web on the boards")
+	await pull(run)
+	await run_frames(10)
+	check(await finish(run, Vector3(0, 0, -37.5)), "called home, it rips them off: and out")
+
+
 func _call_it_back() -> void:
 	print("Route: Call It Back")
-	var run := await load_level("04_call_it_back.json")
+	var run := await load_level("05_call_it_back.json")
 	var weaver := run.weaver
 	await go(run, Vector3(-6, 0, 7.5))
 	await web_onto(run, Vector3(-2, 4.5, 7.5))
@@ -414,7 +450,7 @@ func _call_it_back() -> void:
 
 func _moving_parts() -> void:
 	print("Route: Moving Parts")
-	var run := await load_level("05_moving_parts.json")
+	var run := await load_level("06_moving_parts.json")
 	var weaver := run.weaver
 	var ferry: MovingPlatform = null
 	var lift: MovingPlatform = null
@@ -471,7 +507,7 @@ func _moving_parts() -> void:
 
 func _pull_the_room() -> void:
 	print("Route: Pull the Room")
-	var run := await load_level("06_pull_the_room.json")
+	var run := await load_level("07_pull_the_room.json")
 	var weaver := run.weaver
 	var plug: SlideBlock = null
 	var step: SlideBlock = null
@@ -509,7 +545,7 @@ func _pull_the_room() -> void:
 
 func _all_together() -> void:
 	print("Route: All Together")
-	var run := await load_level("07_all_together.json")
+	var run := await load_level("08_all_together.json")
 	var weaver := run.weaver
 	await go(run, Vector3(0, 0, -5.0))
 	check(await web_onto(run, Vector3(0, 1.8, -24), 0.6),

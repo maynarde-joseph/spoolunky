@@ -174,6 +174,14 @@ static func build_thing(thing: Dictionary, parent: Node3D, editing := false) -> 
 				block.set_physics_process(false)
 				_path_line(parent, made, PackedVector3Array([made.position,
 					made.position + block.travel]), false, Color(0.95, 0.66, 0.22))
+		"cutter":
+			var cutter := SilkCutter.new()
+			cutter.size = size
+			made = cutter
+			made.transform = LevelData.transform_of(thing)
+			parent.add_child(made, true)
+			if editing:
+				_pick(made, size, Vector3(0.0, size.y * 0.5, 0.0))
 		"hazard":
 			var hazard := Hazard.new()
 			hazard.size = size
