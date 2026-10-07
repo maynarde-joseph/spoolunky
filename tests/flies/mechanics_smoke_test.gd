@@ -271,8 +271,8 @@ func _launching() -> void:
 	await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.GRAPPLE, 90)
 	var flat := Vector2(weaver.velocity.x, weaver.velocity.z).length()
 	if not check(weaver.mode == Weaver.Mode.AIR and weaver.standing_web() == null
-			and flat > Grapple.SPEED * 0.8,
-			"reaching it, the spider launches off it with the pull's speed (%.1f m/s)" % flat):
+			and flat > Weaver.WALK + 2.0 and flat <= Weaver.LAUNCH_MAX + 0.1,
+			"reaching it, the spider launches off it, faster than a run (%.1f m/s)" % flat):
 		note(where_is(weaver))
 	check(web.is_flying(), "and the web flies on")
 	check(weaver.grapple_ready, "a web in flight gives the grapple back as you launch")
@@ -346,7 +346,8 @@ func _launching() -> void:
 	weaver._launched = true
 	await run_frames(15)
 	var kept := Vector2(weaver.velocity.x, weaver.velocity.z).length()
-	check(kept > 13.0, "speed off a launch keeps in the air (%.1f m/s after 0.25 s)" % kept)
+	check(kept > 15.0 - Weaver.LAUNCH_DRAG * 0.25 - 0.5,
+		"speed off a launch keeps in the air, bleeding off (%.1f m/s after 0.25 s)" % kept)
 	await put(run, Vector3(0.0, 6.0, 20.0))
 	weaver.velocity = Vector3(0.0, 0.0, -15.0)
 	await run_frames(15)

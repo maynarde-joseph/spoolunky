@@ -26,8 +26,9 @@ they go, and the grapple reaches 16 m.
   wall and over its top onto the ledge, off a web on a floor onto the floor.
   Landing gives the grapple back.
 * **A web still in flight: you launch off it.** The pull reaches the web and you
-  carry on past it with the pull's speed. Speed from a launch is kept in the air,
-  bleeding off at 2 m/s², and the keys bend it rather than replace it (pull back
+  carry on past it with 65% of the pull's speed, 13 m/s at most (about 12 m/s on
+  a usual pull, against 6 m/s on foot). Speed from a launch is kept in the air,
+  bleeding off at 5 m/s² until you're down to a run, and the keys bend it rather than replace it (pull back
   to brake). Landing ends it. Launching off a web in flight gives the grapple
   back once, and not again until you next land, which is exactly enough to
   catch that same web where it sticks: throw, grapple, launch, grapple.
@@ -168,7 +169,7 @@ without CI noticing. They are not the only solutions, nor the fastest.
 |---|---|
 | spider | 0.7 m tall, moves 6.08 m/s (7.36 on a web: the old spider's sprint), jumps 7.8 m/s (about 1 m up, about 3.5 m across at a run), falls at 29.4 m/s² |
 | grapple | webs only, 16 m reach, 18.2 m/s or 1.1 s, one in the air; lands on a stuck web, launches off a flying one |
-| launch | the pull's speed, kept in the air at 2 m/s² drag; keys turn it 2.5 rad/s, pulling back brakes at 9 m/s²; Space drops you dead |
+| launch | 65% of the pull's speed, 13 m/s at most, kept in the air at 5 m/s² drag; keys turn it 2.5 rad/s, pulling back brakes at 9 m/s²; Space drops you dead. Tuned by the `LAUNCH_*` constants in `weaver.gd` |
 | silk | 1 to 2.4 m webs, 22 m/s, 22 m reach, 0.2 s between throws |
 | pullback | oldest web first, 60 m reach, 44 m/s home, 0.15 s between calls |
 | catch-stall | 0.6 s held up, 15% of your speed kept |

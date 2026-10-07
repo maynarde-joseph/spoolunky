@@ -74,10 +74,15 @@ const MAX_FALL := 40.0
 ## How much of the way to where the keys point the air steers each second.
 const AIR_STEER := 4.2
 
-## Off a grapple, how the speed it gave goes: it bleeds off this many metres a
-## second each second; the keys bend it at most this many radians a second, and
-## pulling back on them brakes it this hard.
-const LAUNCH_DRAG := 2.0
+## A launch off a web in flight, and how strong it is. The spider leaves with this
+## share of the pull's speed, and never more than [constant LAUNCH_MAX] metres a
+## second; in the air that speed bleeds off [constant LAUNCH_DRAG] metres a second
+## each second, until it is down to a walk. The keys bend it at most
+## [constant LAUNCH_TURN] radians a second, and pulling back brakes it at
+## [constant LAUNCH_BRAKE]. These are the numbers to tune a launch by.
+const LAUNCH_KEEP := 0.65
+const LAUNCH_MAX := 13.0
+const LAUNCH_DRAG := 5.0
 const LAUNCH_TURN := 2.5
 const LAUNCH_BRAKE := 9.0
 
@@ -758,9 +763,10 @@ func _step_grapple(delta: float) -> void:
 
 
 ## Off the end of a pull to a web still in flight: the spider carries on past it
-## with the pull's speed. The web gives the grapple back as it goes — once, until
+## with some of the pull's speed — see [constant LAUNCH_KEEP]. The web gives the grapple back as it goes — once, until
 ## the spider next lands — so it can be caught again where it sticks.
 func _launch(web: ThrownWeb) -> void:
+	velocity = (velocity * LAUNCH_KEEP).limit_length(LAUNCH_MAX)
 	# Not straight back onto the web it left.
 	_grace_web = web
 	_grace = WEB_GRACE
