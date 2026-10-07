@@ -25,14 +25,16 @@ they go, and the grapple reaches 16 m.
 * **A web that has stuck: you land on it.** From there, walk on: up a web on a
   wall and over its top onto the ledge, off a web on a floor onto the floor.
   Landing gives the grapple back.
-* **A web still in flight: you launch off it.** The pull reaches the web and you
-  carry on past it with 65% of the pull's speed, 13 m/s at most (about 12 m/s on
-  a usual pull, against 6 m/s on foot). Speed from a launch is kept in the air,
-  bleeding off at 5 m/s² until you're down to a run, and the keys bend it rather than replace it (pull back
-  to brake). Landing ends it. Launching off a web in flight gives the grapple
-  back once, and not again until you next land, which is exactly enough to
-  catch that same web where it sticks: throw, grapple, launch, grapple.
-* **Jump is a brake.** Press Space mid-pull or mid-launch and all the speed
+* **A web still in flight: a ride, then a launch.** You land on it and it
+  carries you, as riding always did, for 0.3 s. Then it throws you off with 65%
+  of its speed (about 13 m/s, against 6 m/s on foot). If it sticks to something
+  before then, you stay on it, standing on a stuck web. Speed from a launch is
+  kept in the air, bleeding off at 5 m/s² until you're down to a run, and the
+  keys bend it rather than replace it (pull back to brake). Landing ends it.
+  Getting onto a web in flight gives the grapple back once, and not again until
+  you next land, which is exactly enough to catch that same web where it
+  sticks: throw, grapple, ride, launch, grapple.
+* **Jump is a brake.** Press Space mid-pull, mid-ride or mid-launch and all the speed
   goes: you let go and drop straight down from where you are. A launch is
   committed until you choose exactly where to stop it, so landing a launch on a
   ledge is about when you press, not about steering. (A timed jump at the end of
@@ -81,9 +83,10 @@ is what makes the Pullback part of the loop.
 **History.** Grappling onto a web in flight used to put you on it, riding it to
 wherever it stuck. A shot at the sky bought huge airtime, which flattened rooms
 built around getting somewhere; a dragline back to the throw point, then a dead
-stop at the end of reach, were tried to rein it in. Launching off a flying web
-replaced riding, and the ceiling over every level keeps a launch upward in the
-room.
+stop at the end of reach, were tried to rein it in. Then a straight launch past
+a flying web replaced riding, but lost the feel of being carried. Now the ride
+is kept and cut short (0.3 s) into a launch, and the ceiling over every level
+keeps a launch upward in the room.
 
 ### Pullback (E / middle mouse)
 
@@ -169,7 +172,7 @@ without CI noticing. They are not the only solutions, nor the fastest.
 |---|---|
 | spider | 0.7 m tall, moves 6.08 m/s (7.36 on a web: the old spider's sprint), jumps 7.8 m/s (about 1 m up, about 3.5 m across at a run), falls at 29.4 m/s² |
 | grapple | webs only, 16 m reach, 18.2 m/s or 1.1 s, one in the air; lands on a stuck web, launches off a flying one |
-| launch | 65% of the pull's speed, 13 m/s at most, kept in the air at 5 m/s² drag; keys turn it 2.5 rad/s, pulling back brakes at 9 m/s²; Space drops you dead. Tuned by the `LAUNCH_*` constants in `weaver.gd` |
+| launch | after a 0.3 s ride, 65% of the web's speed, 13 m/s at most, kept in the air at 5 m/s² drag; keys turn it 2.5 rad/s, pulling back brakes at 9 m/s²; Space drops you dead. Tuned by the `LAUNCH_*` constants in `weaver.gd` |
 | silk | 1 to 2.4 m webs, 22 m/s, 22 m reach, 0.2 s between throws |
 | pullback | oldest web first, 60 m reach, 44 m/s home, 0.15 s between calls |
 | catch-stall | 0.6 s held up, 15% of your speed kept |

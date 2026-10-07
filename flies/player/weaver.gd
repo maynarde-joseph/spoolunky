@@ -81,6 +81,10 @@ const AIR_STEER := 4.2
 ## [constant LAUNCH_TURN] radians a second, and pulling back brakes it at
 ## [constant LAUNCH_BRAKE]. These are the numbers to tune a launch by.
 const LAUNCH_KEEP := 0.65
+
+## How long a web in flight carries the spider, in seconds, before it throws it
+## off — a launch with the web's own speed. A web that sticks first keeps it.
+const LAUNCH_RIDE := 0.3
 const LAUNCH_MAX := 13.0
 const LAUNCH_DRAG := 5.0
 const LAUNCH_TURN := 2.5
@@ -112,6 +116,11 @@ var mode := Mode.AIR
 
 ## Whether a grapple is ready.
 var grapple_ready := true
+
+## Whether the web underfoot is still flying, carrying the spider, and how much
+## longer before it throws it off.
+var _riding := false
+var _ride_left := 0.0
 
 ## Whether the spider is flying on speed a grapple gave it: kept in the air, bent
 ## by the keys, and bleeding off slowly, until it lands.
@@ -466,7 +475,7 @@ func standing_web() -> ThrownWeb:
 ## or the other, where that one has no room. The spider stays on that face: a web is
 ## walked on one side only, and its rim holds you.
 func attach_to_web(web: ThrownWeb, at := Vector3.INF) -> void:
-	if web == null or not web.is_stuck():
+	if web == null or not web.is_standing():
 		return
 	if mode == Mode.GRAPPLE:
 		grapple.end()
@@ -480,17 +489,58 @@ func attach_to_web(web: ThrownWeb, at := Vector3.INF) -> void:
 	_web_walk = Vector2(carried.x, carried.y).limit_length(WEB_WALK)
 	velocity = Vector3.ZERO
 	_set_mode(Mode.WEB)
-	_refill()
+	_riding = web.is_flying()
+	if _riding:
+		# A web in flight: a ride, for a moment, and then a launch. It gives the
+		# grapple back once, until the spider next lands.
+		_ride_left = LAUNCH_RIDE
+		if not _air_refund_spent:
+			_air_refund_spent = true
+			if not grapple_ready:
+				grapple_ready = true
+				landed.emit()
+	else:
+		_refill()
 	_place_on_web()
 
 
 func _step_web(delta: float) -> void:
 	if _web == null or not is_instance_valid(_web) or not _web.is_standing():
-		# Called home or come apart underfoot: off it, with the speed it had.
+		# Called home or come apart underfoot: off it, with the speed it had — a
+		# launch, if it was carrying the spider.
+		var was_riding := _riding
 		_web = null
+		_riding = false
 		velocity = _moving
-		_set_mode(Mode.AIR)
+		if was_riding:
+			_launch(null, _moving)
+		else:
+			_set_mode(Mode.AIR)
 		return
+	if _riding:
+		if not _web.is_flying():
+			# The web stuck with the spider on it: so has the spider.
+			_riding = false
+			_refill()
+			var local := _web.to_local(global_position)
+			_web_at = Vector2(local.x, local.y)
+			_pick_face(local.z)
+		elif _buffer > 0.0:
+			# Jump mid-ride: off the web, and drop where you are.
+			_grace_web = _web
+			_grace = WEB_GRACE
+			_web = null
+			_riding = false
+			_drop()
+			return
+		else:
+			_ride_left -= delta
+			if _ride_left <= 0.0:
+				var web := _web
+				_web = null
+				_riding = false
+				_launch(web, web.velocity)
+				return
 	_up = _web.normal() * _web_side
 	if _buffer > 0.0:
 		_jump_off_web()
@@ -747,13 +797,9 @@ func _step_grapple(delta: float) -> void:
 	if distance <= RADIUS + 0.35 or _grapple_time > 2.5:
 		var web := grapple.web
 		grapple.end()
-		if web != null and is_instance_valid(web) and web.is_flying():
-			# A web still in flight is not somewhere to stand: it is a launch.
-			_launch(web)
-		else:
-			attach_to_web(web)
-			if mode != Mode.WEB:
-				_set_mode(Mode.AIR)
+		attach_to_web(web)
+		if mode != Mode.WEB:
+			_set_mode(Mode.AIR)
 		return
 	# Straight there, through anything the web's rim is in — and quicker than a web
 	# in flight, or it would never be caught.
@@ -762,24 +808,18 @@ func _step_grapple(delta: float) -> void:
 	velocity = to / distance * grapple.speed
 
 
-## Off the end of a pull to a web still in flight: the spider carries on past it
-## with some of the pull's speed — see [constant LAUNCH_KEEP]. The web gives the grapple back as it goes — once, until
-## the spider next lands — so it can be caught again where it sticks.
-func _launch(web: ThrownWeb) -> void:
-	velocity = (velocity * LAUNCH_KEEP).limit_length(LAUNCH_MAX)
+## Thrown off a web in flight at the end of a ride: the spider carries on with
+## some of [param speed], the web's — see [constant LAUNCH_KEEP].
+func _launch(web: ThrownWeb, speed: Vector3) -> void:
+	velocity = (speed * LAUNCH_KEEP).limit_length(LAUNCH_MAX)
 	# Not straight back onto the web it left.
 	_grace_web = web
 	_grace = WEB_GRACE
 	_launched = true
 	_set_mode(Mode.AIR)
-	if not _air_refund_spent:
-		_air_refund_spent = true
-		if not grapple_ready:
-			grapple_ready = true
-			landed.emit()
 
 
-## Space mid-pull or mid-launch: all the speed goes, and the spider drops straight
+## Space mid-pull, mid-ride or mid-launch: all the speed goes, and the spider drops straight
 ## down from where it is — a brake, for coming down exactly where you mean to.
 func _drop() -> void:
 	_buffer = 0.0
@@ -814,6 +854,8 @@ func _orient(delta: float) -> void:
 
 
 func _set_mode(next: Mode) -> void:
+	if next != Mode.WEB:
+		_riding = false
 	mode = next
 
 

@@ -208,8 +208,8 @@ func web_onto(run: LevelRun, point: Vector3, wound := 1.0) -> bool:
 	return await climb(run)
 
 
-## Throws a web at [param point], grapples to it while it flies — a launch — and,
-## the grapple given back, grapples to it again once it has stuck there: across a
+## Throws a web at [param point], grapples to it while it flies — a ride, then a
+## launch — and, the grapple given back, grapples to it again once it has stuck: across a
 ## gap the grapple could not reach. Whether the spider ends up on that web.
 func launch_across(run: LevelRun, point: Vector3, wound := 0.6) -> bool:
 	var weaver := run.weaver
@@ -229,6 +229,8 @@ func launch_across(run: LevelRun, point: Vector3, wound := 0.6) -> bool:
 	if OS.has_environment("ROUTE_DEBUG"):
 		note("web stuck at %s, spider %s, ready %s" % [web.global_position, where(run),
 			weaver.grapple_ready])
+	if weaver.standing_web() == web:
+		return true
 	if not await grapple_to(run, web.global_position):
 		return false
 	return weaver.standing_web() == web

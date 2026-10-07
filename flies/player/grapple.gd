@@ -3,10 +3,11 @@ extends Node3D
 
 ## Left mouse: a line to a web you point at, and you are pulled along it.
 ##
-## To a web that has stuck, the pull lands you on it. To a web still in flight, it
-## is a launch: you come off it with the pull's speed, and the grapple is back once
-## so you can catch that web again where it sticks. Jump mid-pull or mid-launch
-## and all the speed goes: you drop straight down. See [method Weaver._launch].
+## To a web that has stuck, the pull lands you on it. To a web still in flight, you
+## land on it and ride it for a moment, and then it throws you off — a launch —
+## with the grapple back once, so you can catch that web again where it sticks.
+## Jump mid-pull, mid-ride or mid-launch and all the speed goes: you drop straight
+## down. See [method Weaver._launch].
 ##
 ## Only silk holds the line: a web stuck to something, or one still in the air,
 ## which the line follows wherever it goes until the spider reaches it. Stone,
