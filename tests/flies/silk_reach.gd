@@ -3,8 +3,8 @@ extends RefCounted
 
 ## How far silk alone gets you in a level: a rough map of everywhere the spider can
 ## reach by walking, jumping, throwing webs and grappling to them — webs as many
-## as it likes, since the Pullback leapfrogs them forever — and by catching a web in
-## flight and dropping from anywhere along a throw. What it leaves out is everything
+## as it likes, since the Pullback leapfrogs them forever — and by riding a web in
+## flight and getting off anywhere along a throw. What it leaves out is everything
 ## else: boards stay on, blocks stay where they start, crates stay put, doors stay
 ## shut and platforms stand still.
 ##
@@ -261,7 +261,7 @@ func _throws_from(cell: int) -> bool:
 
 
 ## Every web thrown from [param eye]: where each sticks, and every point along the
-## way where a grapple could meet it in flight and drop the spider.
+## way where the spider, riding it, could hop off and drop.
 func _throw_from(eye: Vector3, cell: int, words: String) -> void:
 	for dir in _dirs:
 		var hit := _ray(eye, eye + dir * THROW)
@@ -273,7 +273,7 @@ func _throw_from(eye: Vector3, cell: int, words: String) -> void:
 			var at := eye + dir * d
 			var landing := _landing(at)
 			if landing >= 0 and not _came.has(landing):
-				_reach(landing, cell, "%s, a web caught in flight at %s and a drop"
+				_reach(landing, cell, "%s, a web ridden to %s and a drop"
 					% [words, at.snappedf(0.1)])
 			d += 1.0
 		if hit.is_empty() or not _holds(hit.get("collider")):

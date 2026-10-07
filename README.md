@@ -10,8 +10,8 @@ all three work at the same time:
 
 | Input | Verb |
 |-------|------|
-| **Left mouse** | **Grapple**: a line to a web you point at (any web in plain sight, however far), and you're pulled along it in a straight line. **A web that has stuck: you land on it. A web still in flight: you're pulled to where you meet it and drop from there**, with none of the pull's speed, and that web is used up: it comes apart and its silk is yours again. Press Space mid-pull to let go and drop where you are. **Only silk holds the grapple**: stuck webs, and webs still in the air (the line follows them). Your webs are your anchors. You get one grapple in the air, and it comes back when you land on the ground or on a web that has stuck. Meeting a web in flight gives it back once per landing. |
-| **Right mouse** | **Silk**: hold to wind a ball of silk up over the spider's back, then let go to throw. This is cast exactly as before. What leaves the spider now is a whole web, flying face first for up to 22 m; the longer the wind-up, the bigger the web. Grapple to it in flight and you drop where you meet it. Where its middle meets something it sticks flat against that surface and becomes ground: you can walk on a web on a wall or a ceiling. |
+| **Left mouse** | **Grapple**: a line to a web you point at (any web in plain sight, however far), and you're pulled along it in a straight line. **A web that has stuck: you land on it. A web still in flight: you ride it** to wherever it sticks. Jumping off a flying web is only a hop, and one that runs out of reach or hits slick metal stops dead and drops you. Press Space mid-pull to let go and drop where you are. **Only silk holds the grapple**: stuck webs, and webs still in the air (the line follows them). Your webs are your anchors. You get one grapple in the air, and it comes back when you land on the ground or on a web that has stuck. Getting onto a web in flight gives it back once per landing. |
+| **Right mouse** | **Silk**: hold to wind a ball of silk up over the spider's back, then let go to throw. This is cast exactly as before. What leaves the spider now is a whole web, flying face first for up to 22 m; the longer the wind-up, the bigger the web. Grapple onto it in flight and ride it. Where its middle meets something it sticks flat against that surface and becomes ground: you can walk on a web on a wall or a ceiling. |
 | **E / middle mouse** | **Pullback**: your oldest web flies back to you (first thrown, first home), one web per press. It comes straight through walls, and what it was on feels the pull: a crate comes with it to your feet, a loose board is ripped away, a block on a rail slides to the other end of it. The web you're standing on is skipped, so two webs can leapfrog up a wall. If it reaches you in the air, it catches you: a short air-stall (about 0.6 s) with your speed mostly gone, which gives you a moment to aim the next throw. |
 | WASD / Space | move / jump |
 | R | restart the level (instant) |
@@ -56,7 +56,7 @@ can be finished with web, grapple, drop, repeat (see `tests/flies/silk_reach.gd`
 
 1. **First Thread**: jump a gap, web a stone face and climb it, and rip the boards off the way out.
 2. **Silk Stairs**: leapfrog two webs up a wall, then call a block on an upright rail up out of the doorway.
-3. **Drop In**: drop onto a slick island from a web caught in flight, then rip the boards off the hut with the exit in it.
+3. **Drop In**: ride a web out over a slick island until it stops dead and drops you, then rip the boards off the hut with the exit in it.
 4. **Call It Back**: web a crate behind a wall from the pulpit, stand on the plate, and call it home to open the door.
 5. **Moving Parts**: a ferry, then a crate whose plate starts a lift and opens the door at the top.
 6. **Pull the Room**: slide one block out of a doorway, then bring another down out of a high doorway to be the step up into it.

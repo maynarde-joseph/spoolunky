@@ -3,14 +3,13 @@ extends Node3D
 
 ## Left mouse: a line to a web you point at, and you are pulled along it.
 ##
-## To a web that has stuck, the pull lands you on it. To a web still in flight, the
-## pull takes you to where you meet it and you drop from there, with none of its
-## speed, and the web is used up: it comes apart and its silk is yours again. The
-## grapple comes back once for that. Jump mid-pull and you drop where you are. See
-## [method Weaver._drop_off].
+## The pull always ends on the web. A web that has stuck is somewhere to stand; one
+## still in flight you ride, wherever it is going, until it sticks — and getting
+## onto it gives the grapple back once, until you next land. Jump mid-pull and you
+## drop where you are.
 ##
 ## Only silk holds the line: a web stuck to something, or one still in the air,
-## which the line follows wherever it goes until the spider reaches it. Stone,
+## which the line follows wherever it goes until the spider lands on it. Stone,
 ## slick metal and everything else give it nothing to bite — so silk makes the
 ## anchors, the grapple spends them, and the Pullback brings them back to
 ## make again.

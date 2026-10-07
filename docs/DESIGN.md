@@ -28,29 +28,27 @@ web up from one place, use it from another.
 * **A web that has stuck: you land on it.** From there, walk on: up a web on a
   wall and over its top onto the ledge, off a web on a floor onto the floor.
   Landing gives the grapple back.
-* **A web still in flight: you drop where you meet it, and it's used up.** The
-  pull takes you to the web and lets go there; you fall straight down with
-  none of the pull's speed, and the web comes apart, its silk yours again. A
-  web in flight is a point in the air, good once: the only way to get over
-  somewhere silk can't stick, like a slick island. Meeting one gives the
-  grapple back once, and not again until you next land. The pull is faster
-  than the web, so it meets it about three times as far out as it was when the
-  line went: when you fire decides where you drop.
+* **A web still in flight: you ride it.** You land on it and it carries you,
+  until it sticks, and then you're standing on it wherever it landed. A ride
+  is a commitment: jumping off a web in flight is only a hop with none of its
+  speed, and a web that reaches the end of its reach, or slides off slick
+  metal, stops dead under you and you drop where it stopped. Getting onto one
+  gives the grapple back once, and not again until you next land.
 * **Space mid-pull** lets go of the line, and you drop where you are.
-* **Why.** Throw-and-grapple was point and click: anything you could see was a
-  target, and every pull delivered you safely onto the web. A hold-to-land
-  button, momentum launches, a timed jump boost and a short ride into a launch
-  were all tried. Splitting it by the web is what stuck: a stuck web is
-  somewhere to stand, a flying web is a place in the air to drop from.
+* **Why riding.** A hold-to-land button, momentum launches off flying webs, a
+  timed jump boost, a short ride into a launch and a drop where you meet the
+  web were all tried. They were finicky: where you ended up depended on a chase
+  you couldn't see. Riding is consistent: you go where the web goes.
 * **Only silk holds it.** A stuck web, or a web still in the air, which the line
-  follows until the spider reaches it. Stone, slick metal, crates and platforms
+  follows until the spider lands on it. Stone, slick metal, crates and platforms
   give it nothing. Silk makes the anchors, the grapple spends them, and the
   Pullback brings them back to make again, so none of the three verbs works
   without the others. Where a web can stick (stone, not slick) is where an
   anchor can exist, which is the level designer's main lever.
 * **One in the air.** It's spent the moment it goes, and it comes back the
   moment you land on the ground or on a web that has stuck, or once when you
-  meet a web in flight. You can't chain throw → catch → throw → catch forever. On the ground it is effectively always there.
+  get onto a web in flight. You can't chain throw → ride → throw → ride
+  forever. On the ground it is effectively always there.
 
 ### Silk (right mouse)
 
@@ -78,9 +76,10 @@ is what makes the Pullback part of the loop.
 **History.** Grappling onto a web in flight used to put you on it, riding it to
 wherever it stuck. A shot at the sky bought huge airtime, which flattened rooms
 built around getting somewhere; a dragline back to the throw point, then a dead
-stop at the end of reach, were tried to rein it in. Then launches off flying
-webs, with and without a short ride first. Now meeting a flying web just drops
-you there, and the ceiling over every level keeps the room's top in the room.
+stop at the end of reach, were tried to rein it in. Then launches and drops
+replaced riding for a while; riding came back, with one refund per landing, a
+hop with none of its speed when you jump off, and a dead stop at the end of
+reach. The ceiling over every level keeps the room's top in the room.
 
 ### Pullback (E / middle mouse)
 
@@ -157,8 +156,8 @@ the room, whichever side of the web you reached it from.
 
 ## Gates: what silk alone can't do
 
-The grapple reaches anything in sight, and a web caught in flight drops you
-anywhere along a throw, so silk alone goes almost anywhere within 22 m. A gap
+The grapple reaches anything in sight, and a web you ride can drop you anywhere
+along a throw (hop off, or let it stop dead), so silk alone goes almost anywhere within 22 m. A gap
 doesn't hold you back, and neither does a wall that stops short of the ceiling:
 you drop onto its top. A level built of those is solved by web, grapple, drop,
 repeat.
@@ -192,8 +191,8 @@ so the check is doing the work.
    top band. Up top the way out is plugged by a block on an upright rail: web
    it and call it home, and it slides up out of the way.
 3. **Drop In**: the exit is in a hut on a slick island out in the open. Throw a
-   web out over it, catch it in flight and drop, then rip the boards off the
-   hut's door.
+   web out over it, ride it until it stops dead on the hut's slick wall and
+   drops you, then rip the boards off the hut's door.
 4. **Call It Back**: a crate sits on a post in the red, behind a wall. Web it
    from the pulpit, then stand on the plate and call it home through the wall
    to open the exit's door.
@@ -217,7 +216,7 @@ without CI noticing. They are not the only solutions, nor the fastest.
 | | |
 |---|---|
 | spider | 0.7 m tall, moves 6.08 m/s (7.36 on a web: the old spider's sprint), jumps 7.8 m/s (about 1 m up, about 3.5 m across at a run), falls at 29.4 m/s² |
-| grapple | webs only, as far as you can see, 18.2 m/s or 1.1 s, one in the air; lands on a stuck web; meets a flying one, drops you, and uses it up |
+| grapple | webs only, as far as you can see, 18.2 m/s or 1.1 s, one in the air; lands on a stuck web, rides a flying one |
 | silk | 1 to 2.4 m webs, 22 m/s, 22 m reach, 0.2 s between throws |
 | pullback | oldest web first, 60 m reach, 44 m/s home, 0.15 s between calls |
 | catch-stall | 0.6 s held up, 15% of your speed kept |

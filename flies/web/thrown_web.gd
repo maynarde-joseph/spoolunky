@@ -6,12 +6,15 @@ extends Node3D
 ## Silk is cast the way it always was — hold to wind a ball of it up over the
 ## spider's back, let go to throw — but what leaves the spider now is the web
 ## itself, already spun, flying face first down the line it was thrown along. In
-## the air it is somewhere to grapple to and drop from. Where its middle meets
+## the air it is something to grapple onto and ride. Where its middle meets
 ## something solid it stops and sticks, lying flat against that surface, and from
 ## then on it is ground: the spider cannot climb a wall, but it can walk on a web
-## that is on one. Only its
-## middle stops it; its rim passes through things, or a web thrown along a floor
-## would stick to the floor the moment it left.
+## that is on one. Only its middle stops it; its rim passes through things, or a
+## web thrown along a floor would stick to the floor the moment it left.
+##
+## Ridden to the end of its reach without finding anything, or onto slick metal, it
+## stops dead and comes apart, and the rider drops where it is with none of its
+## speed: a ride only goes somewhere if the web lands on something.
 ##
 ## A web on something that moves goes with it. A web on a slick surface does not
 ## stick at all — it slides off and comes apart, and the silk is the spider's
@@ -81,6 +84,14 @@ var carried: Node3D = null
 
 ## Whether it is stuck to a loose board, which holds silk but not the spider.
 var loose := false
+
+## Whether it ran out of reach, or slid off slick, with the spider riding it, and
+## stopped dead first: its rider is left where it was, with none of its speed.
+var stalled := false
+
+## Changes whenever the web's face turns under the spider — it stuck at an angle to
+## the way it was flying — so the spider riding it knows to find its footing again.
+var turned := 0
 
 
 var _age := 0.0
@@ -228,9 +239,17 @@ func _fly(delta: float) -> void:
 	global_position = from + step
 	range_left -= distance
 	if range_left <= 0.0:
-		# Out of silk with nothing found.
+		# Out of silk with nothing found. Ridden, it stops dead before it comes apart,
+		# so the rider drops where it is with none of the web's speed: a ride only
+		# goes somewhere if the web lands on something.
+		stalled = _ridden()
 		velocity = Vector3.ZERO
 		_come_apart()
+
+
+func _ridden() -> bool:
+	return weaver != null and weaver.has_method("standing_web") \
+		and weaver.call("standing_web") == self
 
 
 ## What the web's middle meets this frame, if anything: a ray down its middle, so
@@ -249,14 +268,19 @@ func _land(hit: Dictionary) -> void:
 	var at: Vector3 = hit.get("position", global_position)
 	var surface: Vector3 = (hit.get("normal", -velocity.normalized()) as Vector3).normalized()
 	if collider != null and Surfaces.is_slick(collider):
-		# Nothing sticks to it. The web slides off and comes apart.
+		# Nothing sticks to it. The web slides off and comes apart — under a rider,
+		# stopping dead first, the same as at the end of its reach.
 		global_position = at + surface * CLEARANCE
+		stalled = _ridden()
 		velocity = Vector3.ZERO
 		if weaver != null and weaver.has_method("notify"):
 			weaver.call("notify", "Slick — silk won't stick there")
 		_come_apart()
 		return
+	var before := normal()
 	global_transform = Transform3D(_facing(surface, global_basis.x), at + surface * CLEARANCE)
+	if before.dot(surface) < 0.999:
+		turned += 1
 	velocity = Vector3.ZERO
 	state = State.STUCK
 	var body := collider as Node3D
@@ -317,8 +341,8 @@ func _arrive() -> void:
 	queue_free()
 
 
-## Used up: met in flight by the spider's grapple, or on a board ripped away, it
-## comes apart where it is, and its silk is the spider's again.
+## Used up — on a board ripped away — it comes apart where it is, and its silk is
+## the spider's again.
 func spend() -> void:
 	_come_apart()
 

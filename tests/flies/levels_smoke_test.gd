@@ -222,23 +222,26 @@ func web_onto(run: LevelRun, point: Vector3, wound := 1.0) -> bool:
 	return await climb(run)
 
 
-## Throws a web at [param point], lets it get [param lead] frames ahead, and
-## grapples to it in flight: the pull, faster than the web, meets it about three
-## times as far out as it was when the line went, and the spider drops from there.
-func drop_from_flight(run: LevelRun, point: Vector3, lead: int) -> bool:
+## Throws a web at [param point], grapples onto it in flight and rides it, until it
+## sticks or stops dead (out of reach, or on slick) and the spider drops. Whether the
+## spider is back on its feet.
+func ride(run: LevelRun, point: Vector3) -> bool:
 	var weaver := run.weaver
-	var web := await throw_at(run, point, 0.0)
+	var web := await throw_at(run, point, 0.6)
 	if web == null:
 		return false
-	await run_frames(lead)
+	await run_frames(4)
 	aim(run, web.global_position)
 	if not weaver.fire_grapple():
 		return false
-	await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.GRAPPLE, 90)
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.WEB, 60)
+	if weaver.standing_web() != web:
+		return false
+	await wait_until(func() -> bool: return weaver.standing_web() != web or web.is_stuck(), 120)
 	if OS.has_environment("ROUTE_DEBUG"):
-		note("met it %s, web gone %s" % [where(run), not is_instance_valid(web)
-			or not web.is_standing()])
-	return await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
+		note("ride over %s" % where(run))
+	return await wait_until(func() -> bool:
+		return weaver.mode == Weaver.Mode.GROUND or weaver.mode == Weaver.Mode.WEB, 120)
 
 
 ## Walks up the web underfoot until it takes the spider somewhere else.
@@ -370,9 +373,10 @@ func _drop_in() -> void:
 	await go(run, Vector3(0, 0, -5.0))
 	aim(run, Vector3(0, 0, -19))
 	check(weaver.grapple.aimed().get("web") == null, "the island is slick: nothing to grapple")
-	check(await drop_from_flight(run, Vector3(0, 5, -21), 14)
+	check(await ride(run, Vector3(0, 4, -21))
 		and weaver.global_position.z < -16.5 and weaver.global_position.y > -0.5,
-		"a web caught in flight over the island, and a drop onto it (%s)" % where(run))
+		"a web ridden out over the island, stopped dead on the hut's slick wall: a drop onto it (%s)"
+		% where(run))
 	await go(run, Vector3(0, 0, -18.5))
 	await stop(run)
 	var board := await throw_at(run, Vector3(0, 1.5, -20.7), 0.0)

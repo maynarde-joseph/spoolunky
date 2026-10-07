@@ -55,7 +55,7 @@ func _ready() -> void:
 	_place(_news, 0.5, 1.0, Rect2(-500, -150, 1000, 36))
 	_help = _label(Vector2.ZERO, FONT_SIZE - 4)
 	_place(_help, 0.5, 1.0, Rect2(-700, -44, 1400, 30))
-	_help.text = "WASD walk · Space jump · RIGHT MOUSE silk (hold to grow) · LEFT MOUSE grapple (onto a stuck web; to one in flight, and drop) · E / MIDDLE MOUSE pullback · R restart · Esc pause"
+	_help.text = "WASD walk · Space jump · RIGHT MOUSE silk (hold to grow) · LEFT MOUSE grapple onto a web (one in flight you ride) · E / MIDDLE MOUSE pullback · R restart · Esc pause"
 
 	_result = PanelContainer.new()
 	_result.name = "Result"
