@@ -208,21 +208,24 @@ func web_onto(run: LevelRun, point: Vector3, wound := 1.0) -> bool:
 	return await climb(run)
 
 
-## Throws a web at [param point], grapples to it while it flies — a ride, then a
-## launch — and, the grapple given back, grapples to it again once it has stuck: across a
+## Throws a web at [param point], grapples to it while it flies — and drops from
+## where it is met — and, the grapple given back, grapples to it again once it has
+## stuck: across a
 ## gap the grapple could not reach. Whether the spider ends up on that web.
-func launch_across(run: LevelRun, point: Vector3, wound := 0.6) -> bool:
+func catch_across(run: LevelRun, point: Vector3, wound := 0.6) -> bool:
 	var weaver := run.weaver
 	var web := await throw_at(run, point, wound)
 	if web == null:
 		return false
-	await run_frames(5)
+	# Let it get a lead: the pull is faster than the web, and catches it about three
+	# times as far out as it was when the line went — out over the gap.
+	await run_frames(9)
 	aim(run, web.global_position)
 	if not weaver.fire_grapple():
 		return false
 	await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.GRAPPLE, 90)
 	if OS.has_environment("ROUTE_DEBUG"):
-		note("launched %s, v %s, web flying %s" % [where(run), weaver.velocity.snappedf(0.1),
+		note("met it %s, v %s, web flying %s" % [where(run), weaver.velocity.snappedf(0.1),
 			web.is_flying()])
 	if not await stuck(web):
 		return false
@@ -353,8 +356,8 @@ func _ride_the_gap() -> void:
 	await go(run, Vector3(0, 0, -5.0))
 	check(weaver.global_position.distance_to(Vector3(0, 2.5, -24)) > Grapple.REACH,
 		"the far side is out of the grapple's reach")
-	check(await launch_across(run, Vector3(0, 2.5, -24)),
-		"a launch off a web in flight, and a grapple to it where it sticks (%s)" % where(run))
+	check(await catch_across(run, Vector3(0, 2.5, -24)),
+		"a grapple to a web in flight, and to it again where it sticks (%s)" % where(run))
 	await climb(run)
 	check(weaver.global_position.y > 5.0 and weaver.mode == Weaver.Mode.GROUND,
 		"up the web onto the top (%s)" % where(run))
@@ -449,8 +452,8 @@ func _all_together() -> void:
 	var run := await load_level("06_all_together.json")
 	var weaver := run.weaver
 	await go(run, Vector3(0, 0, -5.0))
-	check(await launch_across(run, Vector3(0, 1.8, -24)),
-		"a launch over the drop, and a grapple to the stone face (%s)" % where(run))
+	check(await catch_across(run, Vector3(0, 1.8, -24)),
+		"over the drop: a web met in flight, and again on the stone face (%s)" % where(run))
 	await climb(run)
 	check(weaver.global_position.y > 3.9, "up and over the cap (%s)" % where(run))
 	await go(run, Vector3(0, 0, -30))

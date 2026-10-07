@@ -6,7 +6,7 @@ extends Node3D
 ## Silk is cast the way it always was — hold to wind a ball of it up over the
 ## spider's back, let go to throw — but what leaves the spider now is the web
 ## itself, already spun, flying face first down the line it was thrown along. In
-## the air it is something to grapple to and launch off. Where its middle meets
+## the air it is somewhere to grapple to and drop from. Where its middle meets
 ## something solid it stops and sticks, lying flat against that surface, and from
 ## then on it is ground: the spider cannot climb a wall, but it can walk on a web
 ## that is on one. Only its
