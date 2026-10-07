@@ -9,7 +9,7 @@ extends Node3D
 ## at your feet. The silk is yours to throw again
 ## the moment it lets go. Press again for the next.
 ##
-## The web you are standing on, or riding, is passed over for the next oldest:
+## The web you are standing on is passed over for the next oldest:
 ## that is what lets two webs climb a wall — stand on the higher, call the lower
 ## one home, and throw it higher still.
 ##

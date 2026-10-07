@@ -3,16 +3,15 @@ extends Node3D
 
 ## Left mouse: a line to a web you point at, and you are pulled along it.
 ##
-## Hold the button through the pull and you land on the web. Let go of it before
-## the pull arrives and you come off the web with the pull's speed, carried on along
-## whatever the web is stuck to — and a jump in the pull's last moment kicks off
-## the web's face and up as well. Landing gives the grapple back; flying off does
-## not. See [method Weaver._launch].
+## To a web that has stuck, the pull lands you on it. To a web still in flight, it
+## is a launch: you come off it with the pull's speed, and the grapple is back once
+## so you can catch that web again where it sticks. A jump in any pull's last
+## moment kicks off the web's face and up as well. See [method Weaver._launch].
 ##
 ## Only silk holds the line: a web stuck to something, or one still in the air,
-## which the line follows wherever it goes until the spider lands on it and rides
-## it. Stone, slick metal and everything else give it nothing to bite — so silk
-## makes the anchors, the grapple spends them, and the Pullback brings them back to
+## which the line follows wherever it goes until the spider reaches it. Stone,
+## slick metal and everything else give it nothing to bite — so silk makes the
+## anchors, the grapple spends them, and the Pullback brings them back to
 ## make again.
 ##
 ## One pull in the air: the line is spent the moment it goes and comes back when
@@ -24,7 +23,7 @@ extends Node3D
 ## [method Weaver.start_grapple].
 
 ## How far a line reaches, in metres. A thrown web goes further, which is what a
-## web you can ride is for.
+## launch off a web in flight is for.
 const REACH := 16.0
 
 ## How fast the spider is pulled, in metres a second — and quicker on a long line,

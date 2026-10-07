@@ -6,27 +6,24 @@ extends Node3D
 ## Silk is cast the way it always was — hold to wind a ball of it up over the
 ## spider's back, let go to throw — but what leaves the spider now is the web
 ## itself, already spun, flying face first down the line it was thrown along. In
-## the air it is something to grapple onto and ride. Where its middle meets something solid it stops and
-## sticks, lying flat against that surface, and from then on it is ground: the
-## spider cannot climb a wall, but it can walk on a web that is on one. Only its
+## the air it is something to grapple to and launch off. Where its middle meets
+## something solid it stops and sticks, lying flat against that surface, and from
+## then on it is ground: the spider cannot climb a wall, but it can walk on a web
+## that is on one. Only its
 ## middle stops it; its rim passes through things, or a web thrown along a floor
 ## would stick to the floor the moment it left.
-##
-## Ridden to the end of its reach without finding anything, it stops dead and comes
-## apart, and the rider drops where it is with none of its speed: a ride only goes
-## somewhere if the web lands on something.
 ##
 ## A web on something that moves goes with it. A web on a slick surface does not
 ## stick at all — it slides off and comes apart, and the silk is the spider's
 ## again. Thrown at nothing, it goes as far as silk goes and comes apart there.
 ##
 ## The Pullback calls it home: it comes off whatever it was on and flies straight
-## back to the spider through anything in the way, and anything it was stuck to — a crate — comes with it and is put down at the
-## spider's feet.
+## back to the spider through anything in the way, and anything it was stuck to
+## — a crate — comes with it and is put down at the spider's feet.
 ##
 ## The web's face is its local XY plane, and its local +Z is the side facing
-## back the way it came: the side the spider rides on, and, once it is stuck, the
-## side facing out from the surface.
+## back the way it came, and, once it is stuck, the side facing out from the
+## surface.
 
 ## It stopped somewhere and is ground now.
 signal stuck(web: ThrownWeb)
@@ -75,9 +72,6 @@ var velocity := Vector3.ZERO
 ## How much further it will fly before it comes apart.
 var range_left := 36.0
 
-## Whether it ran out of reach with the spider on it and stopped dead: its rider is
-## left where it was, at a stand.
-var stalled := false
 
 ## The spider that threw it.
 var weaver: Node3D
@@ -85,9 +79,6 @@ var weaver: Node3D
 ## Whatever it is stuck to that it will bring home with it: a crate.
 var carried: Node3D = null
 
-## Changes whenever the web's face turns under the spider — it stuck at an angle
-## to the way it was flying — so the spider on it knows to find its footing again.
-var turned := 0
 
 var _age := 0.0
 var _fade := 0.0
@@ -220,17 +211,9 @@ func _fly(delta: float) -> void:
 	global_position = from + step
 	range_left -= distance
 	if range_left <= 0.0:
-		# Out of silk with nothing found. Ridden, it stops dead before it comes apart,
-		# so the rider drops where it is with none of the web's speed: a ride only
-		# goes somewhere if the web lands on something.
-		stalled = _ridden()
+		# Out of silk with nothing found.
 		velocity = Vector3.ZERO
 		_come_apart()
-
-
-func _ridden() -> bool:
-	return weaver != null and weaver.has_method("standing_web") \
-		and weaver.call("standing_web") == self
 
 
 ## What the web's middle meets this frame, if anything: a ray down its middle, so
@@ -249,19 +232,14 @@ func _land(hit: Dictionary) -> void:
 	var at: Vector3 = hit.get("position", global_position)
 	var surface: Vector3 = (hit.get("normal", -velocity.normalized()) as Vector3).normalized()
 	if collider != null and Surfaces.is_slick(collider):
-		# Nothing sticks to it. The web slides off and comes apart — under a rider,
-		# stopping dead first, the same as at the end of its reach.
+		# Nothing sticks to it. The web slides off and comes apart.
 		global_position = at + surface * CLEARANCE
-		stalled = _ridden()
 		velocity = Vector3.ZERO
 		if weaver != null and weaver.has_method("notify"):
 			weaver.call("notify", "Slick — silk won't stick there")
 		_come_apart()
 		return
-	var before := normal()
 	global_transform = Transform3D(_facing(surface, global_basis.x), at + surface * CLEARANCE)
-	if before.dot(surface) < 0.999:
-		turned += 1
 	velocity = Vector3.ZERO
 	state = State.STUCK
 	var body := collider as Node3D

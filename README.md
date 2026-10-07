@@ -10,8 +10,8 @@ all three work at the same time:
 
 | Input | Verb |
 |-------|------|
-| **Left mouse** | **Grapple**: a line to a web you point at (16 m reach), and you're pulled along it in a straight line. **Hold the button and you land on the web; let go before you get there and you launch off it** with the pull's speed, carrying on along whatever the web is on (across a floor, up a wall). Jump in the last moment of the pull for a bigger launch, kicked off the web's face and up. Speed from a launch keeps in the air until you land. **Only silk holds the grapple**: stuck webs, and webs still in the air (the line follows them). Your webs are your anchors. You get one grapple in the air, and it comes back when you land on the ground or on a web that has stuck (a launch doesn't land you, so it doesn't give it back). Landing on a web that is still flying gives it back once per landing. |
-| **Right mouse** | **Silk**: hold to wind a ball of silk up over the spider's back, then let go to throw. This is cast exactly as before. What leaves the spider now is a whole web, flying face first for up to 22 m; the longer the wind-up, the bigger the web. Grapple onto it and ride it, but a ride is a commitment: jumping off a flying web is only a hop, and a web that reaches the end of its range without hitting anything stops dead and drops you. Where its middle meets something it sticks flat against that surface and becomes ground: you can walk on a web on a wall or a ceiling. |
+| **Left mouse** | **Grapple**: a line to a web you point at (16 m reach), and you're pulled along it in a straight line. **A web that has stuck: you land on it. A web still in flight: you launch off it** with the pull's speed, which keeps in the air until you land. Jump in the last moment of any pull for a bigger launch, kicked off the web's face and up. **Only silk holds the grapple**: stuck webs, and webs still in the air (the line follows them). Your webs are your anchors. You get one grapple in the air, and it comes back when you land on the ground or on a web that has stuck. Launching off a web in flight gives it back once per landing, enough to catch that web again where it sticks. |
+| **Right mouse** | **Silk**: hold to wind a ball of silk up over the spider's back, then let go to throw. This is cast exactly as before. What leaves the spider now is a whole web, flying face first for up to 22 m; the longer the wind-up, the bigger the web. Grapple to it in flight to launch off it. Where its middle meets something it sticks flat against that surface and becomes ground: you can walk on a web on a wall or a ceiling. |
 | **E / middle mouse** | **Pullback**: your oldest web flies back to you (first thrown, first home), one web per press. It comes straight through walls and drops whatever it was stuck to (a crate) at your feet. The web you're standing on is skipped, so two webs can leapfrog up a wall. If it reaches you in the air, it catches you: a short air-stall (about 0.6 s) with your speed mostly gone, which gives you a moment to aim the next throw. |
 | WASD / Space | move / jump |
 | R | restart the level (instant) |
@@ -32,7 +32,7 @@ floor or another web just past it to step onto.
   its silk comes back to you, so you can't put an anchor there. You can still
   walk on a slick floor.
 * **The ceiling**: a slick lid over every level, drawn as a faint grid. A web
-  thrown at the sky slides off it, so a ride can't carry you over everything.
+  thrown at the sky slides off it, and a launch can't carry you over everything.
 * **Crates**: silk sticks to them, and the Pullback is the only way to move one.
 * **Pressure plates** are pressed by a crate (a spider is too light) and power a
   channel.
@@ -50,10 +50,10 @@ A level also sets how many webs you can have out at once (two by default).
 1. **First Thread**: jump a gap, throw a web across a long one and grapple to it,
    web up a ledge, then jump to the slick pad with the exit on it.
 2. **Silk Stairs**: a wall you can't climb and two webs. Leapfrog them up the wall with the Pullback.
-3. **Ride the Gap**: the gap is farther than a grapple reaches but not as far as silk flies. Ride a web across.
+3. **Ride the Gap**: the gap is farther than a grapple reaches but not as far as silk flies. Launch off a web in flight, then grapple to it where it sticks.
 4. **Call It Back**: a crate on a post in the red, behind a wall. Web it from the pulpit, stand on the plate, and call it home to open the door.
 5. **Moving Parts**: a ferry, a crate on a post, and a lift the crate starts.
-6. **All Together**: a ride, a tower to leapfrog, and a crate for the door.
+6. **All Together**: a launch over the drop, a tower to leapfrog, and a crate for the door.
 
 ## The level editor
 
