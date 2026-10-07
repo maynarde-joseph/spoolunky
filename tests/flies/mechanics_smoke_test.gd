@@ -550,6 +550,10 @@ func _boards_and_blocks() -> void:
 	await run_frames(120)
 	check(absf(block.global_position.z - 4.0) < 0.05,
 		"called home, it slides to the other end of its rail (z %.1f)" % block.global_position.z)
+	var arrow := block.get_children().filter(func(n: Node) -> bool:
+		return n.has_meta("face"))[0] as Node3D
+	check(block.heading() == -1.0 and arrow.global_basis.x.z < -0.5,
+		"and its arrows turn round, to point back the way it came")
 	aim(run, block.global_position + Vector3(1.0, 0.5, 0.0))
 	weaver.caster._cooling = 0.0
 	weaver.caster.throw(0.0)
@@ -560,8 +564,9 @@ func _boards_and_blocks() -> void:
 	await run_frames(120)
 	check(absf(block.global_position.z + 4.0) < 0.05,
 		"and called again, back to the first (z %.1f)" % block.global_position.z)
-	check(block.get_node_or_null("Rail") != null and block.get_node("Rail").get_child_count() >= 24,
-		"both ends of its rail drawn, so you can see where it goes")
+	var arrows := block.get_children().filter(func(n: Node) -> bool: return n.has_meta("face"))
+	check(arrows.size() >= 2 and block.heading() == 1.0,
+		"arrows on its sides point the way it will go next: along its rail (%d)" % arrows.size())
 
 	# Up and down: a rail can stand on end, and the block doesn't fall.
 	objects = [{"type": "slider", "piece": "cube", "pos": [-3.0, 0.0, 0.0], "size": [2.0, 1.0, 2.0],

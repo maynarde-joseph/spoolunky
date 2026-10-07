@@ -104,9 +104,10 @@ the pull when it's called:
   it.
 * **It slides blocks along rails.** A stone block with orange trim sits on a
   rail. Call a web on it home and it slides to the other end of its rail; call
-  one home again and it slides back. Where you stand doesn't matter. Both ends
-  of the rail are drawn as orange outlines of the block, joined by a bar, so
-  you can always see where it will go. Rails run any way, up and down too, and
+  one home again and it slides back. Where you stand doesn't matter. Orange
+  arrows on its sides point the way it will go next, and turn round when it
+  gets there. (Outlining both ends of the rail was tried first; arrows on the
+  block read better.) Rails run any way, up and down too, and
   blocks don't fall: only the Pullback moves them. (Dragging a block to the
   point nearest where you stood was tried first; a block that just goes to the
   other end reads better.)
@@ -132,7 +133,7 @@ the pull when it's called:
 | Platform | follows its path back and forth or round. Runs only while its channel (if any) is powered |
 | Hazard (red) | touch it and the level restarts |
 | Loose board (weathered wood) | silk sticks, but it won't hold the spider. The Pullback rips it away |
-| Block on a rail (orange trim, both ends outlined) | stone. The Pullback slides it to the other end of its rail, and back |
+| Block on a rail (orange trim and arrows) | stone. The Pullback slides it the way its arrows point, to the other end of its rail; then the arrows turn round |
 | Exit bag | open from the start. Walk in to finish |
 | Ceiling | a slick lid over every level, set by its `ceiling` height or 6 m over the top of everything. Thrown silk slides off it |
 

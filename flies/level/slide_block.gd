@@ -9,9 +9,8 @@ extends AnimatableBody3D
 ## — along the floor, straight up, slantwise — and the block never leaves it. Nothing
 ## but the Pullback moves it: it does not fall.
 ##
-## It wears orange trim, so it reads as something that moves, and both ends of its
-## rail are drawn as orange outlines of the block — where it is, and where it will
-## go — joined by a bar, so you can see the whole way it can slide from anywhere.
+## It wears orange trim, so it reads as something that moves, and orange arrows on
+## its sides point the way it will slide when a web on it is next called home.
 
 const TRIM := Color(0.95, 0.62, 0.2)
 
@@ -24,6 +23,10 @@ var speed := 6.0
 var _start := Vector3.ZERO
 ## Where it is going along the rail: 0 its start, 1 the far end.
 var _goal := 0.0
+## The arrows on its sides, and which way along the rail they point: 1 toward the
+## far end, -1 back toward the start.
+var _arrows: Array[MeshInstance3D] = []
+var _pointing := 0.0
 
 
 func _ready() -> void:
@@ -48,14 +51,23 @@ func pull() -> void:
 	_goal = 0.0 if _goal >= 0.5 else 1.0
 
 
+## Which way along its rail it will go next: 1 toward the far end, -1 back. While
+## it moves, the way it is going; at rest, the way a call would send it.
+func heading() -> float:
+	var now := along()
+	if absf(now - _goal) >= 0.0001:
+		return signf(_goal - now)
+	return 1.0 if _goal < 0.5 else -1.0
+
+
 func _physics_process(delta: float) -> void:
 	if travel.length_squared() < 0.0001:
 		return
 	var now := along()
-	if absf(now - _goal) < 0.0001:
-		return
-	var next := move_toward(now, _goal, speed * delta / travel.length())
-	position = _start + travel * next
+	if absf(now - _goal) >= 0.0001:
+		var next := move_toward(now, _goal, speed * delta / travel.length())
+		position = _start + travel * next
+	_point(heading())
 
 
 # --- how it looks -----------------------------------------------------------------
@@ -67,24 +79,69 @@ func _show_rail() -> void:
 	if travel.length_squared() < 0.0001:
 		return
 	var box := _box()
-	var parent := get_parent() as Node3D
-	var to_world := parent.global_transform if parent != null else Transform3D.IDENTITY
+	var way := (transform.basis.inverse() * travel).normalized()
 	var paint := StandardMaterial3D.new()
 	paint.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	paint.cull_mode = BaseMaterial3D.CULL_DISABLED
 	paint.albedo_color = TRIM
-	var rail := Node3D.new()
-	rail.name = "Rail"
-	rail.top_level = true
-	add_child(rail)
-	rail.global_transform = Transform3D.IDENTITY
-	var turn := Basis(transform.basis.get_rotation_quaternion())
-	for end in [Vector3.ZERO, travel]:
-		var at := Transform3D(turn, _start + end)
-		_outline(rail, to_world * at, box, paint)
-	var middle := box.get_center()
-	var from: Vector3 = to_world * (Transform3D(turn, _start) * middle)
-	var to: Vector3 = to_world * (Transform3D(turn, _start + travel) * middle)
-	_bar(rail, from, to, 0.18, paint)
+	var shape := _arrow_mesh()
+	for face in [Vector3.RIGHT, Vector3.LEFT, Vector3.UP, Vector3.DOWN, Vector3.BACK,
+			Vector3.FORWARD]:
+		if absf(face.dot(way)) > 0.1:
+			continue
+		# How big the face is along the rail, and across it.
+		var across: Vector3 = face.cross(way).abs()
+		var long := absf(box.size.dot(way.abs()))
+		var wide := absf(box.size.dot(across))
+		var size := minf(long * 0.7, wide * 1.2)
+		if size < 0.3:
+			continue
+		var arrow := MeshInstance3D.new()
+		arrow.name = "Arrow"
+		arrow.mesh = shape
+		arrow.material_override = paint
+		arrow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		arrow.set_meta("face", face)
+		arrow.set_meta("way", way)
+		arrow.set_meta("size", size)
+		var centre: Vector3 = box.get_center() + face * (absf(box.size.dot(face.abs())) * 0.5 + 0.02)
+		arrow.set_meta("centre", centre)
+		add_child(arrow)
+		_arrows.append(arrow)
+	_pointing = 0.0
+	_point(heading())
+
+
+## Turns the arrows to point [param sign] along the rail.
+func _point(sign: float) -> void:
+	if sign == _pointing or _arrows.is_empty():
+		return
+	_pointing = sign
+	for arrow in _arrows:
+		var face: Vector3 = arrow.get_meta("face")
+		var x: Vector3 = (arrow.get_meta("way") as Vector3) * sign
+		var size: float = arrow.get_meta("size")
+		var y := face.cross(x)
+		arrow.transform = Transform3D(Basis(x, y, face) * Basis.from_scale(Vector3.ONE * size),
+			arrow.get_meta("centre"))
+
+
+## A flat arrow a metre long, pointing along +x, lying in the xy plane.
+static func _arrow_mesh() -> ArrayMesh:
+	var outline := PackedVector2Array([
+		Vector2(-0.5, -0.12), Vector2(0.08, -0.12), Vector2(0.08, -0.3), Vector2(0.5, 0.0),
+		Vector2(0.08, 0.3), Vector2(0.08, 0.12), Vector2(-0.5, 0.12)])
+	var corners := PackedVector3Array()
+	for point in outline:
+		corners.append(Vector3(point.x, point.y, 0.0))
+	var triangles := Geometry2D.triangulate_polygon(outline)
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = corners
+	arrays[Mesh.ARRAY_INDEX] = triangles
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
 
 
 ## The block's own box, in its own space: from its collision shape.
@@ -94,30 +151,3 @@ func _box() -> AABB:
 		var size: Vector3 = (solid.shape as BoxShape3D).size
 		return AABB(solid.position - size * 0.5, size)
 	return AABB(Vector3(-0.5, 0.0, -0.5), Vector3.ONE)
-
-
-## The twelve edges of [param box], placed by [param where], as thin orange bars.
-func _outline(under: Node3D, where: Transform3D, box: AABB, paint: Material) -> void:
-	var corners: Array[Vector3] = []
-	for i in 8:
-		corners.append(where * (box.position + Vector3(
-			box.size.x if i & 1 else 0.0, box.size.y if i & 2 else 0.0, box.size.z if i & 4 else 0.0)))
-	for edge in [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7],
-			[0, 4], [1, 5], [2, 6], [3, 7]]:
-		_bar(under, corners[edge[0]], corners[edge[1]], 0.07, paint)
-
-
-func _bar(under: Node3D, from: Vector3, to: Vector3, thick: float, paint: Material) -> void:
-	var length := from.distance_to(to)
-	if length < 0.01:
-		return
-	var bar := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(thick, thick, length + thick)
-	bar.mesh = mesh
-	bar.material_override = paint
-	bar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	under.add_child(bar)
-	var way := (to - from).normalized()
-	var up := Vector3.UP if absf(way.y) < 0.99 else Vector3.RIGHT
-	bar.global_transform = Transform3D(Basis.looking_at(way, up), (from + to) * 0.5)
