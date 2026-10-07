@@ -161,7 +161,7 @@ func call_back(to: Node3D) -> bool:
 		return false
 	weaver = to
 	# What it is on feels the pull: a loose board is ripped away, a block on a rail
-	# is dragged along it toward the spider.
+	# slides to the other end of it.
 	var panel := get_parent() as LoosePanel
 	var block := get_parent() as SlideBlock
 	state = State.RETURNING
@@ -174,7 +174,7 @@ func call_back(to: Node3D) -> bool:
 	if panel != null:
 		panel.rip(to.global_position)
 	if block != null:
-		block.drag_toward(to.global_position)
+		block.pull()
 	if carried != null and is_instance_valid(carried):
 		_carry_offset = global_transform.affine_inverse() * carried.global_transform
 		var crate := carried as RigidBody3D

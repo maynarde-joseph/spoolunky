@@ -347,24 +347,17 @@ func _silk_stairs() -> void:
 	check(weaver.global_position.y > 13.9 and weaver.mode == Weaver.Mode.GROUND,
 		"and walking off the top of it, over the slick band onto the top (%s)" % where(run))
 	await pull(run)
-	# The way out is shut by a block on an upright rail: up the stone post, and call
-	# it up level with you.
+	# The way out is shut by a block on an upright rail: web it, call it home, and it
+	# slides up out of the doorway.
 	var gate: SlideBlock = _first_of(SlideBlock) as SlideBlock
-	await go(run, Vector3(5, 14, -12.6), 0.2)
-	await stop(run)
-	check(await web_onto(run, Vector3(5, 16.5, -14)) and weaver.global_position.y > 18.9,
-		"a web on the stone post, and up it (%s)" % where(run))
-	await stop(run)
-	await pull(run)
-	# To the post's edge, where a throw down at the doorway clears its top.
-	await go(run, Vector3(4.4, 19, -15.6), 0.15)
+	await go(run, Vector3(0, 14, -15), 0.2)
 	await stop(run)
 	var on_gate := await throw_at(run, Vector3(0, 15.4, -19.6), 0.0)
 	check(await stuck(on_gate) and on_gate.get_parent() == gate, "a web on the block in the doorway")
 	await pull(run)
-	await wait_until(func() -> bool: return gate.along() > 0.98, 180)
-	check(gate.global_position.y > 16.0,
-		"called from up there, it rises level with the post (base %.1f)" % gate.global_position.y)
+	await wait_until(func() -> bool: return gate.along() > 0.999, 180)
+	check(gate.global_position.y > 16.1,
+		"called home, it slides up to the top of its rail (base %.1f)" % gate.global_position.y)
 	await go(run, Vector3(0, 14, -17.5))
 	await stop(run)
 	check(await finish(run, Vector3(0, 14, -25)), "and under it, out")
@@ -477,45 +470,37 @@ func _pull_the_room() -> void:
 	var run := await load_level("06_pull_the_room.json")
 	var weaver := run.weaver
 	var plug: SlideBlock = null
-	var gate: SlideBlock = null
+	var step: SlideBlock = null
 	for node in get_root().get_tree().get_nodes_in_group(LevelBuilder.GROUP):
 		var block := node as SlideBlock
 		if block != null:
-			if block.travel.y > 0.5:
-				gate = block
+			if absf(block.travel.y) > 0.5:
+				step = block
 			else:
 				plug = block
 	await go(run, Vector3(0, 0, -8))
 	await stop(run)
 	var on_plug := await throw_at(run, Vector3(0, 1.5, -14.1), 0.0)
 	check(await stuck(on_plug) and on_plug.get_parent() == plug, "a web on the block in the doorway")
-	await go(run, Vector3(6, 0, -11), 0.2)
-	await stop(run)
 	await pull(run)
-	await wait_until(func() -> bool: return plug.along() > 0.98, 180)
-	check(plug.global_position.x > 4.5,
-		"called from off to the side, it slides out of the way (x %.1f)" % plug.global_position.x)
+	await wait_until(func() -> bool: return plug.along() > 0.999, 180)
+	check(plug.global_position.x > 4.9,
+		"called home, it slides to the other end of its rail, out of the way (x %.1f)"
+		% plug.global_position.x)
 	await go(run, Vector3(0, 0, -13))
-	await go(run, Vector3(0, 0, -18))
-	await go(run, Vector3(-5, 0, -19.5), 0.2)
+	await go(run, Vector3(0, 0, -25))
 	await stop(run)
-	check(await web_onto(run, Vector3(-5, 2.5, -21)) and weaver.global_position.y > 4.9,
-		"through, and up the stone post (%s)" % where(run))
-	await stop(run)
+	var on_step := await throw_at(run, Vector3(0, 4.5, -29.6), 0.0)
+	check(await stuck(on_step) and on_step.get_parent() == step,
+		"a web on the block plugging the high doorway")
 	await pull(run)
-	# To the post's edge, where a throw down at the doorway clears its top.
-	await go(run, Vector3(-4.4, 5, -22.6), 0.15)
+	await wait_until(func() -> bool: return step.along() > 0.999, 180)
+	check(step.global_position.y < 0.05,
+		"called home, it comes down out of the doorway (base %.1f)" % step.global_position.y)
+	check(await web_onto(run, Vector3(0, 1.5, -29.6)) and weaver.global_position.y > 2.9,
+		"and a web on it, now under the doorway, is the way up onto it (%s)" % where(run))
 	await stop(run)
-	var on_gate := await throw_at(run, Vector3(0, 1.5, -29.6), 0.0)
-	check(await stuck(on_gate) and on_gate.get_parent() == gate,
-		"a web on the block plugging the next doorway")
-	await pull(run)
-	await wait_until(func() -> bool: return gate.along() > 0.6, 180)
-	check(gate.global_position.y > 1.5,
-		"called from the post, it rises level with it (base %.1f)" % gate.global_position.y)
-	await go(run, Vector3(0, 0, -27))
-	await stop(run)
-	check(await finish(run, Vector3(0, 0, -36)), "and under it, out")
+	check(await finish(run, Vector3(0, 3, -36)), "and through, out")
 
 
 func _all_together() -> void:

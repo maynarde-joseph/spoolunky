@@ -102,12 +102,14 @@ the pull when it's called:
   home and the board tears away and tumbles off, leaving what it covered: stone
   to web, a way through, a line of sight. Any other silk on the board goes with
   it.
-* **It drags blocks along rails.** A stone block on a rail (an orange bar) is
-  dragged along the rail when a web on it is called home, to where its top is
-  nearest your feet, and stops there. Where you stand when you call is where
-  the block ends up: a stepping stone in a gap, or, on a rail standing on end, a
-  step raised level with the ledge you're on. Call again from somewhere else and
-  it goes back. Blocks don't fall; only the Pullback moves them.
+* **It slides blocks along rails.** A stone block with orange trim sits on a
+  rail. Call a web on it home and it slides to the other end of its rail; call
+  one home again and it slides back. Where you stand doesn't matter. Both ends
+  of the rail are drawn as orange outlines of the block, joined by a bar, so
+  you can always see where it will go. Rails run any way, up and down too, and
+  blocks don't fall: only the Pullback moves them. (Dragging a block to the
+  point nearest where you stood was tried first; a block that just goes to the
+  other end reads better.)
 * **The web underfoot is skipped.** Standing on a web, a call takes
   the oldest of the others. This is how two webs climb a wall that one can't:
   stand on the higher one, call the lower one home, and throw it higher.
@@ -130,7 +132,7 @@ the pull when it's called:
 | Platform | follows its path back and forth or round. Runs only while its channel (if any) is powered |
 | Hazard (red) | touch it and the level restarts |
 | Loose board (weathered wood) | silk sticks, but it won't hold the spider. The Pullback rips it away |
-| Block on a rail (orange bar) | stone. The Pullback drags it along its rail to the point nearest you |
+| Block on a rail (orange trim, both ends outlined) | stone. The Pullback slides it to the other end of its rail, and back |
 | Exit bag | open from the start. Walk in to finish |
 | Ceiling | a slick lid over every level, set by its `ceiling` height or 6 m over the top of everything. Thrown silk slides off it |
 
@@ -165,9 +167,10 @@ way from one room to the next is a **gate**: something solid, that blocks sight
 as well as the way, and that only the other tools open.
 
 * A **loose board** over a doorway: web it and call the web home.
-* A **block on a rail** plugging a doorway: stand off to the side and call it
-  clear. On an upright rail it's a portcullis: get up level with where it should
-  go, and call it up.
+* A **block on a rail** plugging a doorway: call it home and it slides to the
+  other end of its rail, out of the way. On an upright rail it's a portcullis
+  that slides up, or a plug that slides down out of a high doorway to become
+  the step up into it.
 * A **door** on a plate: bring a crate home onto the plate.
 
 Inside a room, silk is free movement: webs, grapples and drops however you
@@ -185,8 +188,8 @@ so the check is doing the work.
 1. **First Thread**: jump a gap, web a stone face and climb it, and rip the
    boards off the way out with the Pullback.
 2. **Silk Stairs**: climb a stone wall on two leapfrogged webs, past its slick
-   top band. Up top the way out is plugged by a block on an upright rail: climb
-   a stone post, and call the block up level with you.
+   top band. Up top the way out is plugged by a block on an upright rail: web
+   it and call it home, and it slides up out of the way.
 3. **Drop In**: the exit is in a hut on a slick island out in the open. Throw a
    web out over it, catch it in flight and drop, then rip the boards off the
    hut's door.
@@ -195,9 +198,10 @@ so the check is doing the work.
    to open the exit's door.
 5. **Moving Parts**: a ferry, then a crate whose plate starts a lift and opens
    the door at the top.
-6. **Pull the Room**: a doorway plugged by a block on a rail (stand to the side
-   and call it out of the way), then one plugged by a block on an upright rail
-   (climb the stone post and call it up).
+6. **Pull the Room**: a doorway plugged by a block that slides off to the side
+   when called, then a doorway high in the wall plugged by a block on an upright
+   rail: called home, it slides down out of the doorway and becomes the step up
+   into it.
 7. **All Together**: a web across the drop, a tower on two leapfrogged webs,
    boards off a window to reach a crate, and the crate onto the plate that
    opens the way out.

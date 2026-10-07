@@ -166,7 +166,6 @@ static func build_thing(thing: Dictionary, parent: Node3D, editing := false) -> 
 			var block := SlideBlock.new()
 			block.travel = LevelData.vec(thing.get("travel"), Vector3(0.0, 0.0, -6.0))
 			block.speed = float(thing.get("speed", 6.0))
-			block.height = size.y
 			made = block
 			made.transform = LevelData.transform_of(thing)
 			parent.add_child(made, true)

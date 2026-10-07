@@ -19,7 +19,7 @@ extends RefCounted
 ## platform  piece, size, surface, path, speed, wait, loop, channel — moves along its path
 ## hazard    size                        — touch it and start again
 ## panel     piece, size                 — a loose board: holds silk, not you; the Pullback rips it off
-## slider    piece, size, surface, travel, speed — a block on a rail; the Pullback drags it toward you
+## slider    piece, size, surface, travel, speed — a block on a rail; the Pullback slides it to the other end
 ## [/codeblock]
 ##
 ## A level's settings: [code]webs[/code], how many webs may be out at once (2);

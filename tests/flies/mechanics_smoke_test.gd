@@ -496,8 +496,8 @@ func _crates_plates_doors() -> void:
 
 
 ## The Pullback moves the level: a loose board holds silk but not the spider, and a
-## web on it called home rips it away; a web on a block on a rail called home drags
-## the block along the rail toward you.
+## web on it called home rips it away; a web on a block on a rail called home sends
+## the block to the other end of its rail.
 func _boards_and_blocks() -> void:
 	print("Loose boards and blocks on rails")
 	var objects: Array = [
@@ -547,11 +547,9 @@ func _boards_and_blocks() -> void:
 	check(on_block.is_stuck() and on_block.get_parent() == block, "a web on a block on a rail")
 	weaver.pullback._cooling = 0.0
 	weaver.pullback.cast()
-	await wait_until(func() -> bool: return absf(block.along() - 0.75) < 0.01, 120)
-	check(absf(block.global_position.z - 2.0) < 0.2,
-		"called home, it drags the block along its rail to where it's nearest the spider (z %.1f)"
-		% block.global_position.z)
-	await put(run, Vector3(10.0, 0.3, 16.0))
+	await run_frames(120)
+	check(absf(block.global_position.z - 4.0) < 0.05,
+		"called home, it slides to the other end of its rail (z %.1f)" % block.global_position.z)
 	aim(run, block.global_position + Vector3(1.0, 0.5, 0.0))
 	weaver.caster._cooling = 0.0
 	weaver.caster.throw(0.0)
@@ -559,34 +557,33 @@ func _boards_and_blocks() -> void:
 	await wait_until(func() -> bool: return not on_block.is_flying(), 60)
 	weaver.pullback._cooling = 0.0
 	weaver.pullback.cast()
-	await run_frames(90)
-	check(absf(block.global_position.z - 4.0) < 0.05 and block.along() > 0.999,
-		"and never past the end of its rail (z %.1f)" % block.global_position.z)
+	await run_frames(120)
+	check(absf(block.global_position.z + 4.0) < 0.05,
+		"and called again, back to the first (z %.1f)" % block.global_position.z)
+	check(block.get_node_or_null("Rail") != null and block.get_node("Rail").get_child_count() >= 24,
+		"both ends of its rail drawn, so you can see where it goes")
 
 	# Up and down: a rail can stand on end, and the block doesn't fall.
 	objects = [{"type": "slider", "piece": "cube", "pos": [-3.0, 0.0, 0.0], "size": [2.0, 1.0, 2.0],
-		"surface": "stone", "travel": [0.0, 6.0, 0.0], "speed": 6.0}]
+		"surface": "stone", "travel": [0.0, 3.0, 0.0], "speed": 6.0}]
 	run = await arena(objects)
 	weaver = run.weaver
 	var lift: SlideBlock = null
 	for node in get_root().get_tree().get_nodes_in_group(LevelBuilder.GROUP):
 		if node is SlideBlock:
 			lift = node
-	await put(run, Vector3(-9.4, 4.3, 0.0))
-	await run_frames(20)
-	aim(run, lift.global_position + Vector3(0.0, 1.0, 0.0))
+	await put(run, Vector3(2.0, 0.3, 0.0))
+	aim(run, lift.global_position + Vector3(1.0, 0.5, 0.0))
 	weaver.caster.throw(0.0)
 	var on_lift := first_web(run)
 	await wait_until(func() -> bool: return not on_lift.is_flying(), 60)
-	if not check(on_lift.is_stuck() and on_lift.get_parent() == lift, "a web on a block on an upright rail"):
-		note("web %s on %s" % [on_lift.global_position, on_lift.get_parent()])
+	check(on_lift.is_stuck() and on_lift.get_parent() == lift, "a web on a block on an upright rail")
 	weaver.pullback.cast()
 	await run_frames(90)
-	var top := lift.global_position.y + 1.0
-	check(absf(top - 4.0) < 0.1, "called from the ledge, it rises until its top is level with it (top %.2f)"
-		% top)
-	await put(run, Vector3(2.0, 0.3, 0.0))
-	await run_frames(20)
+	check(absf(lift.global_position.y - 3.0) < 0.05,
+		"called home, it rises to the top of its rail (base %.2f)" % lift.global_position.y)
+	await run_frames(30)
+	check(absf(lift.global_position.y - 3.0) < 0.05, "and stays up: it doesn't fall")
 	aim(run, lift.global_position + Vector3(1.0, 0.5, 0.0))
 	weaver.caster._cooling = 0.0
 	weaver.caster.throw(0.0)
@@ -595,7 +592,7 @@ func _boards_and_blocks() -> void:
 	weaver.pullback._cooling = 0.0
 	weaver.pullback.cast()
 	await run_frames(90)
-	check(lift.global_position.y < 0.05, "and called from the floor, it comes back down (base %.2f)"
+	check(lift.global_position.y < 0.05, "and called again, it comes back down (base %.2f)"
 		% lift.global_position.y)
 
 

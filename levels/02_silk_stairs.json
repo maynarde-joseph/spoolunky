@@ -182,26 +182,6 @@
 			"type": "piece",
 			"piece": "cube",
 			"pos": [
-				5,
-				13,
-				-15
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"size": [
-				2,
-				6,
-				2
-			],
-			"surface": "stone"
-		},
-		{
-			"type": "piece",
-			"piece": "cube",
-			"pos": [
 				-5.125,
 				13,
 				-21

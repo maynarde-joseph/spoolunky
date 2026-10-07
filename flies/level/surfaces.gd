@@ -44,6 +44,11 @@ static func paint(kind: String) -> StandardMaterial3D:
 		"crate":
 			made.albedo_color = Color(0.72, 0.5, 0.3)
 			made.roughness = 0.85
+		"rail_block":
+			# Stone that moves: silk sticks, and the orange seams say it slides.
+			made.albedo_color = Color(0.93, 0.91, 0.86)
+			made.roughness = 0.9
+			_panelled(made, Color(1, 1, 1), Color(0.95, 0.62, 0.2), false)
 		"loose":
 			# Weathered boards: silk sticks, but they won't hold the spider.
 			made.albedo_color = Color(0.55, 0.4, 0.28)

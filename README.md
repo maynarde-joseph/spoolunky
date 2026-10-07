@@ -12,7 +12,7 @@ all three work at the same time:
 |-------|------|
 | **Left mouse** | **Grapple**: a line to a web you point at (any web in plain sight, however far), and you're pulled along it in a straight line. **A web that has stuck: you land on it. A web still in flight: you're pulled to where you meet it and drop from there**, with none of the pull's speed, and that web is used up: it comes apart and its silk is yours again. Press Space mid-pull to let go and drop where you are. **Only silk holds the grapple**: stuck webs, and webs still in the air (the line follows them). Your webs are your anchors. You get one grapple in the air, and it comes back when you land on the ground or on a web that has stuck. Meeting a web in flight gives it back once per landing. |
 | **Right mouse** | **Silk**: hold to wind a ball of silk up over the spider's back, then let go to throw. This is cast exactly as before. What leaves the spider now is a whole web, flying face first for up to 22 m; the longer the wind-up, the bigger the web. Grapple to it in flight and you drop where you meet it. Where its middle meets something it sticks flat against that surface and becomes ground: you can walk on a web on a wall or a ceiling. |
-| **E / middle mouse** | **Pullback**: your oldest web flies back to you (first thrown, first home), one web per press. It comes straight through walls, and what it was on feels the pull: a crate comes with it to your feet, a loose board is ripped away, a block on a rail is dragged along it toward you. The web you're standing on is skipped, so two webs can leapfrog up a wall. If it reaches you in the air, it catches you: a short air-stall (about 0.6 s) with your speed mostly gone, which gives you a moment to aim the next throw. |
+| **E / middle mouse** | **Pullback**: your oldest web flies back to you (first thrown, first home), one web per press. It comes straight through walls, and what it was on feels the pull: a crate comes with it to your feet, a loose board is ripped away, a block on a rail slides to the other end of it. The web you're standing on is skipped, so two webs can leapfrog up a wall. If it reaches you in the air, it catches you: a short air-stall (about 0.6 s) with your speed mostly gone, which gives you a moment to aim the next throw. |
 | WASD / Space | move / jump |
 | R | restart the level (instant) |
 | Esc | pause: resume, restart, edit this level, menu |
@@ -40,7 +40,7 @@ floor or another web just past it to step onto.
 * **Moving platforms** follow a path back and forth or in a loop. With a channel
   set, they only run while it's powered. Webs stuck to them ride along.
 * **Loose boards** (weathered wood): silk sticks to them, but they won't hold you, so you can't grapple to or walk onto a web on one. Call that web home and the board rips away, leaving whatever it covered.
-* **Blocks on rails** (stone, with an orange bar under them): call a web on one home and the block is dragged along its rail to where its top is nearest your feet. Rails can run any way, up and down too, and blocks don't fall: stand on a ledge and call a block on an upright rail, and it rises level with you.
+* **Blocks on rails** (stone with orange trim; both ends of the rail are outlined in orange): call a web on one home and the block slides to the other end of its rail; call one again and it slides back. Rails run any way, up and down too, and blocks don't fall.
 * **Hazards** (red) and falling out of the level both restart you.
 * **The exit**: a silk bag in a ring. Walk in to finish. Your score is the time,
   and the menu keeps your best.
@@ -55,11 +55,11 @@ door on a plate. Inside a room, move however you like. CI checks that no level
 can be finished with web, grapple, drop, repeat (see `tests/flies/silk_reach.gd`).
 
 1. **First Thread**: jump a gap, web a stone face and climb it, and rip the boards off the way out.
-2. **Silk Stairs**: leapfrog two webs up a wall, then climb a post and call a block on an upright rail up out of the doorway.
+2. **Silk Stairs**: leapfrog two webs up a wall, then call a block on an upright rail up out of the doorway.
 3. **Drop In**: drop onto a slick island from a web caught in flight, then rip the boards off the hut with the exit in it.
 4. **Call It Back**: web a crate behind a wall from the pulpit, stand on the plate, and call it home to open the door.
 5. **Moving Parts**: a ferry, then a crate whose plate starts a lift and opens the door at the top.
-6. **Pull the Room**: drag a block on a rail out of a doorway, then call a portcullis up from a post.
+6. **Pull the Room**: slide one block out of a doorway, then bring another down out of a high doorway to be the step up into it.
 7. **All Together**: a web across the drop, a leapfrogged tower, boards off a window, and a crate for the door.
 
 ## The level editor
