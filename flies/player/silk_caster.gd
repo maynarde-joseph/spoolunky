@@ -94,6 +94,7 @@ func throw(wound := 0.0) -> bool:
 	var radius := web_radius(wound)
 	var web := ThrownWeb.throw(weaver.web_container(), weaver, from, heading, SPEED, radius, REACH)
 	weaver.adopt_web(web)
+	weaver.hang_after_throw()
 	_cooling = COOLDOWN
 	return true
 

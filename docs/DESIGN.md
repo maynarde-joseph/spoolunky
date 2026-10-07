@@ -56,6 +56,10 @@ Casting is unchanged from the earlier game: hold to wind a ball of silk up over
 the spider's back while the view lifts and widens, then let go to throw. A tap
 throws a 1 m web and a full second's wind-up throws a 2.4 m web.
 
+**Throwing in the air holds you up** for 0.4 s, your speed mostly gone: a beat to
+see where the web goes and grapple onto it. Once per time in the air, like the
+Pullback's catch, so throw, call home, throw, call home can't be used to hover.
+
 What leaves the spider is a whole web, flying face first at 22 m/s for up to
 22 m, short enough that where you can throw from decides where an anchor can
 go:
@@ -114,11 +118,12 @@ the pull when it's called:
   the oldest of the others. This is how two webs climb a wall that one can't:
   stand on the higher one, call the lower one home, and throw it higher.
 * Its silk counts as yours the moment it's called.
-* **It catches you if you're in the air.** Drop off a web in flight, call it, and
-  when it reaches you it wraps you for a moment: an air-stall of about 0.6 s, no
+* **It catches you if you're in the air.** Hop off a web you're riding, call it,
+  and when it reaches you it wraps you for a moment: an air-stall of 1 s, no
   falling, your speed mostly gone. It gives you a beat to aim the next throw,
-  and no extra height, so it can't be chained into flight. A crate it carried
-  is still put down beside you. On the ground a web coming home just arrives.
+  and no extra height. Once per time in the air: the next web home before you
+  land just arrives. A crate it carried is still put down beside you. On the
+  ground a web coming home just arrives.
 
 ## Surfaces and things
 
@@ -219,7 +224,8 @@ without CI noticing. They are not the only solutions, nor the fastest.
 | grapple | webs only, as far as you can see, 18.2 m/s or 1.1 s, one in the air; lands on a stuck web, rides a flying one |
 | silk | 1 to 2.4 m webs, 22 m/s, 22 m reach, 0.2 s between throws |
 | pullback | oldest web first, 60 m reach, 44 m/s home, 0.15 s between calls |
-| catch-stall | 0.6 s held up, 15% of your speed kept |
+| catch-stall | 1 s held up, 15% of your speed kept; once per time in the air |
+| throw-stall | 0.4 s held up when you throw in the air, 15% of your speed kept; once per time in the air |
 
 All of these are constants at the top of their scripts in `flies/player/` and
 `flies/web/`.

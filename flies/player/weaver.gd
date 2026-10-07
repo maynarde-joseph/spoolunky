@@ -84,8 +84,12 @@ const WEB_GRACE := 0.3
 
 ## How long a web called home holds the spider up when it reaches it in the air,
 ## and how much of the spider's speed is left after the first frame of it.
-const STALL := 0.6
+const STALL := 1.0
 const STALL_KEEP := 0.15
+
+## How long throwing a web in the air holds the spider up, the same way: a beat to
+## see where the web goes, and to grapple onto it.
+const THROW_STALL := 0.4
 
 ## Falling below this puts the spider back at the start.
 var kill_y := -30.0
@@ -135,8 +139,14 @@ var _last_position := Vector3.ZERO
 var _moving := Vector3.ZERO
 
 var _grapple_time := 0.0
-## Seconds left of being held up by a web that came home: see [method _web_home].
+## Seconds left of being held up by a web that came home, or by a throw: see
+## [method _web_home] and [method hang_after_throw].
 var _stall := 0.0
+## Whether this time in the air has had its hang from a web coming home, and from a
+## throw: one of each, until the spider lands — or throw, call home, throw, call
+## home would hold it up for ever.
+var _caught_hang_spent := false
+var _throw_hang_spent := false
 
 
 var _facing := Vector3.FORWARD
@@ -366,6 +376,8 @@ func _land() -> void:
 ## give it back once more.
 func _refill() -> void:
 	_air_refund_spent = false
+	_caught_hang_spent = false
+	_throw_hang_spent = false
 	if not grapple_ready:
 		grapple_ready = true
 		landed.emit()
@@ -827,11 +839,22 @@ func is_stalled() -> bool:
 ## mostly gone — a beat to aim the next throw in, and no height for it. What it
 ## carried is put down beside you all the same.
 func _web_home(_web_back: ThrownWeb, _carried: Node3D) -> void:
-	if mode != Mode.AIR:
+	if mode != Mode.AIR or _caught_hang_spent:
 		return
+	_caught_hang_spent = true
 	_stall = STALL
 	velocity *= STALL_KEEP
 	_wrap_flash()
+
+
+## A web thrown in the air holds the spider up for a moment, its speed mostly gone,
+## once until it lands.
+func hang_after_throw() -> void:
+	if mode != Mode.AIR or _throw_hang_spent:
+		return
+	_throw_hang_spent = true
+	_stall = maxf(_stall, THROW_STALL)
+	velocity *= STALL_KEEP
 
 
 ## Silk closing round the spider for an instant, where a web came home to it.
@@ -887,5 +910,7 @@ func put_at(where: Transform3D) -> void:
 	view.settle()
 	grapple_ready = true
 	_air_refund_spent = false
+	_caught_hang_spent = false
+	_throw_hang_spent = false
 	_stall = 0.0
 	_set_mode(Mode.AIR)

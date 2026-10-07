@@ -27,6 +27,7 @@ func run_checks() -> void:
 	await _one_face()
 	await _pullback()
 	await _caught_by_your_web()
+	await _throwing_in_the_air()
 	await _crates_plates_doors()
 	await _boards_and_blocks()
 	await _platforms()
@@ -455,6 +456,51 @@ func _pullback() -> void:
 	weaver.pullback.cast()
 	await run_frames(2)
 	check(newer.state == ThrownWeb.State.RETURNING, "and the next press calls the newer")
+
+
+## Throwing a web in the air holds the spider up for a moment, once until it lands;
+## and a web coming home catches it only once until it lands, too — or throw, call
+## home, throw, call home would be a way to hover.
+func _throwing_in_the_air() -> void:
+	print("Throwing in the air")
+	var run := await arena()
+	var weaver := run.weaver
+	await put(run, Vector3(0.0, 8.0, 10.0))
+	weaver.velocity = Vector3(0.0, 0.0, -6.0)
+	aim(run, Vector3(0.0, 10.0, 40.0))
+	weaver.caster.throw(0.0)
+	await run_frames(1)
+	check(weaver.is_stalled() and weaver.velocity.length() < 2.0,
+		"a throw in the air holds the spider up, its speed mostly gone")
+	var height := weaver.global_position.y
+	await run_frames(15)
+	check(weaver.global_position.y > height - 0.2, "for a moment (%.2f to %.2f)"
+		% [height, weaver.global_position.y])
+	await wait_until(func() -> bool: return not weaver.is_stalled(), 60)
+	weaver.caster._cooling = 0.0
+	aim(run, Vector3(6.0, 10.0, 40.0))
+	weaver.caster.throw(0.0)
+	await run_frames(1)
+	check(not weaver.is_stalled(), "but only once until it lands")
+	weaver.pullback._cooling = 0.0
+	weaver.pullback.cast()
+	await wait_until(func() -> bool: return weaver.is_stalled(), 40)
+	check(weaver.is_stalled(), "a web called home still catches it, once")
+	await wait_until(func() -> bool: return not weaver.is_stalled(), 90)
+	weaver.pullback._cooling = 0.0
+	weaver.pullback.cast()
+	await run_frames(20)
+	check(not weaver.is_stalled() and weaver.mode == Weaver.Mode.AIR,
+		"and the next one home doesn't: no hovering on throws and calls")
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 200)
+	await pull(run)
+	weaver.velocity = Vector3.ZERO
+	await put(run, Vector3(0.0, 8.0, 10.0))
+	aim(run, Vector3(0.0, 10.0, 40.0))
+	weaver.caster._cooling = 0.0
+	weaver.caster.throw(0.0)
+	await run_frames(1)
+	check(weaver.is_stalled(), "landing gives it back")
 
 
 ## A web called home that reaches the spider in the air catches it: a moment held
