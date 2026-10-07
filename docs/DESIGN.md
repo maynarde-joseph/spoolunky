@@ -102,11 +102,12 @@ the pull when it's called:
   home and the board tears away and tumbles off, leaving what it covered: stone
   to web, a way through, a line of sight. Any other silk on the board goes with
   it.
-* **It drags blocks along rails.** A stone block on a rail (an orange bar under
-  it) is dragged along the rail when a web on it is called home, to the point on
-  the rail nearest where you stand, and stops there. Where you stand when you
-  call is where the block ends up: a stepping stone in a gap, a step under a
-  ledge.
+* **It drags blocks along rails.** A stone block on a rail (an orange bar) is
+  dragged along the rail when a web on it is called home, to where its top is
+  nearest your feet, and stops there. Where you stand when you call is where
+  the block ends up: a stepping stone in a gap, or, on a rail standing on end, a
+  step raised level with the ledge you're on. Call again from somewhere else and
+  it goes back. Blocks don't fall; only the Pullback moves them.
 * **The web underfoot is skipped.** Standing on a web, a call takes
   the oldest of the others. This is how two webs climb a wall that one can't:
   stand on the higher one, call the lower one home, and throw it higher.

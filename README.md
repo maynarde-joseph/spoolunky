@@ -40,7 +40,7 @@ floor or another web just past it to step onto.
 * **Moving platforms** follow a path back and forth or in a loop. With a channel
   set, they only run while it's powered. Webs stuck to them ride along.
 * **Loose boards** (weathered wood): silk sticks to them, but they won't hold you, so you can't grapple to or walk onto a web on one. Call that web home and the board rips away, leaving whatever it covered.
-* **Blocks on rails** (stone, with an orange bar under them): call a web on one home and the block is dragged along its rail to the point nearest where you stand.
+* **Blocks on rails** (stone, with an orange bar under them): call a web on one home and the block is dragged along its rail to where its top is nearest your feet. Rails can run any way, up and down too, and blocks don't fall: stand on a ledge and call a block on an upright rail, and it rises level with you.
 * **Hazards** (red) and falling out of the level both restart you.
 * **The exit**: a silk bag in a ring. Walk in to finish. Your score is the time,
   and the menu keeps your best.

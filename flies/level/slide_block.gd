@@ -2,18 +2,23 @@ class_name SlideBlock
 extends AnimatableBody3D
 
 ## A block on a rail. Silk sticks to it, and goes with it; and call a web on it home
-## and the block is dragged along its rail toward you — to the point on the rail
-## nearest where you stood when you called — and stops there. Pulled into a gap it
-## is a stepping stone; pulled under a ledge, a step up.
+## and the block is dragged along its rail toward you — to where, on its rail, its
+## top is nearest your feet when you called — and stops there. Pulled into a gap it
+## is a stepping stone; pulled up beside the ledge you stand on, a step level with
+## it. Stand somewhere else and call again, and it goes back.
 ##
-## The rail runs from where the block starts, by [member travel], and the block
-## never leaves it.
+## The rail runs from where the block starts, by [member travel], in any direction
+## — along the floor, straight up, slantwise — and the block never leaves it. Nothing
+## but the Pullback moves it: it does not fall.
 
 ## Where the rail goes, from where the block starts, in the level's own axes.
 var travel := Vector3(0.0, 0.0, -6.0)
 
 ## How fast it slides, in metres a second.
 var speed := 6.0
+
+## How tall it is, from its base (where it is placed) to its top.
+var height := 1.0
 
 var _start := Vector3.ZERO
 ## How far along the rail it is, and where it is going: 0 at its start, 1 at the end.
@@ -35,14 +40,17 @@ func along() -> float:
 	return clampf((position - _start).dot(travel) / travel.length_squared(), 0.0, 1.0)
 
 
-## Dragged toward [param point]: it slides to the place on its rail nearest there.
-func drag_toward(point: Vector3) -> void:
+## Dragged toward the spider at [param spider]: it slides to the place on its rail
+## where its top is nearest the spider's feet. Along a floor that is simply the
+## nearest place; up or down a rail, it is where its top is level with them.
+func drag_toward(spider: Vector3) -> void:
 	if travel.length_squared() < 0.0001:
 		return
 	var parent := get_parent() as Node3D
 	var from := parent.to_global(_start) if parent != null else _start
 	var rail := (parent.global_basis * travel) if parent != null else travel
-	_goal = clampf((point - from).dot(rail) / rail.length_squared(), 0.0, 1.0)
+	var base_wanted := spider - Vector3.UP * (Weaver.RADIUS + height)
+	_goal = clampf((base_wanted - from).dot(rail) / rail.length_squared(), 0.0, 1.0)
 
 
 func _physics_process(delta: float) -> void:
