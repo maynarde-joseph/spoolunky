@@ -31,16 +31,17 @@ they go, and the grapple reaches 16 m.
   to brake). Landing ends it. Launching off a web in flight gives the grapple
   back once, and not again until you next land, which is exactly enough to
   catch that same web where it sticks: throw, grapple, launch, grapple.
-* **Jump in the pull's last 0.2 s,** to either kind of web, and you kick off the
-  web's face and up with a full jump on top of the pull's speed. Speed going
-  into the surface a stuck web is on is dropped, so you carry on along it: up a
-  wall, across a floor. Jump earlier in the pull and you let go with the pull's
-  speed plus a little lift.
+* **Jump is a brake.** Press Space mid-pull or mid-launch and all the speed
+  goes: you let go and drop straight down from where you are. A launch is
+  committed until you choose exactly where to stop it, so landing a launch on a
+  ledge is about when you press, not about steering. (A timed jump at the end of
+  the pull that added height was tried first; dropping is the more interesting
+  decision.)
 * **Why.** Throw-and-grapple was point and click: anything you could see was a
   target, and every pull delivered you safely onto the web. Holding the button
   to land was tried and wasn't needed. Splitting it by the web instead (stuck
   means somewhere to stand, flying means momentum) keeps one button and makes
-  catching a web in flight, and timing the jump off it, the skill.
+  catching a web in flight, and when to drop out of the launch, the skill.
 * **Only silk holds it.** A stuck web, or a web still in the air, which the line
   follows until the spider reaches it. Stone, slick metal, crates and platforms
   give it nothing. Silk makes the anchors, the grapple spends them, and the
@@ -167,7 +168,7 @@ without CI noticing. They are not the only solutions, nor the fastest.
 |---|---|
 | spider | 0.7 m tall, moves 6.08 m/s (7.36 on a web: the old spider's sprint), jumps 7.8 m/s (about 1 m up, about 3.5 m across at a run), falls at 29.4 m/s² |
 | grapple | webs only, 16 m reach, 18.2 m/s or 1.1 s, one in the air; lands on a stuck web, launches off a flying one |
-| launch | the pull's speed, minus what goes into the web's surface; a jump in the last 0.2 s adds a full jump up and half a jump off the face; kept in the air at 2 m/s² drag, keys turn it 2.5 rad/s, braking 9 m/s² |
+| launch | the pull's speed, kept in the air at 2 m/s² drag; keys turn it 2.5 rad/s, pulling back brakes at 9 m/s²; Space drops you dead |
 | silk | 1 to 2.4 m webs, 22 m/s, 22 m reach, 0.2 s between throws |
 | pullback | oldest web first, 60 m reach, 44 m/s home, 0.15 s between calls |
 | catch-stall | 0.6 s held up, 15% of your speed kept |

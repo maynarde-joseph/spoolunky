@@ -81,10 +81,6 @@ const LAUNCH_DRAG := 2.0
 const LAUNCH_TURN := 2.5
 const LAUNCH_BRAKE := 9.0
 
-## How late in a pull, in seconds before it arrives, a jump is a launch: the pull's
-## speed kept whole, and a full jump on top, off the web's face.
-const LAUNCH_WINDOW := 0.2
-
 ## Seconds after running off an edge that a jump still goes, and before landing
 ## that a jump pressed early still counts.
 const COYOTE := 0.12
@@ -393,6 +389,10 @@ func _step_air(delta: float) -> void:
 	_coyote = maxf(0.0, _coyote - delta)
 	if _buffer > 0.0 and _coyote > 0.0:
 		_jump()
+		return
+	if _buffer > 0.0 and _launched:
+		# Jump while flying on a launch: let go of it, and drop where you are.
+		_drop()
 		return
 	if _stall > 0.0:
 		# Held up by the web that came home: no fall, and the way you were going
@@ -735,25 +735,16 @@ func _step_grapple(delta: float) -> void:
 	if grapple.web != null and grapple.web.is_flying():
 		pace = maxf(pace, grapple.web.velocity.length() * 1.5)
 	if _buffer > 0.0:
-		_buffer = 0.0
-		var web := grapple.web
+		# Jump mid-pull: let go of the line, and drop where you are.
 		grapple.end()
-		if distance <= pace * LAUNCH_WINDOW + RADIUS + 0.35:
-			# Jumped right at the end: a launch off the web, the pull's speed whole.
-			_launch(web, true)
-		else:
-			# Let go mid-pull: fly on with the pull's speed, and a little lift.
-			velocity = velocity * 0.9
-			velocity.y = maxf(velocity.y, 0.0) + 5.0
-			_launched = true
-			_set_mode(Mode.AIR)
+		_drop()
 		return
 	if distance <= RADIUS + 0.35 or _grapple_time > 2.5:
 		var web := grapple.web
 		grapple.end()
 		if web != null and is_instance_valid(web) and web.is_flying():
 			# A web still in flight is not somewhere to stand: it is a launch.
-			_launch(web, false)
+			_launch(web)
 		else:
 			attach_to_web(web)
 			if mode != Mode.WEB:
@@ -766,36 +757,29 @@ func _step_grapple(delta: float) -> void:
 	velocity = to / distance * grapple.speed
 
 
-## Off the end of a pull to a web still in flight, or a jump timed at the very end
-## of any pull: the spider leaves the web with the pull's speed, less whatever was
-## going into the surface the web is on, so it carries on along that surface — up a
-## wall, across a floor. With [param jumped] it also kicks off the web's face and
-## up. A web in flight gives the grapple back as it goes — once, until the spider
-## next lands — so it can be caught again where that web sticks.
-func _launch(web: ThrownWeb, jumped: bool) -> void:
-	var carry := velocity
-	if web != null and is_instance_valid(web) and web.is_stuck():
-		var face := web.normal()
-		if face.dot(global_position - web.global_position) < 0.0:
-			face = -face
-		var into := carry.dot(face)
-		if into < 0.0:
-			carry -= face * into
-		if jumped:
-			carry += face * JUMP * 0.5
-	if jumped:
-		carry.y = maxf(carry.y, 0.0) + JUMP
+## Off the end of a pull to a web still in flight: the spider carries on past it
+## with the pull's speed. The web gives the grapple back as it goes — once, until
+## the spider next lands — so it can be caught again where it sticks.
+func _launch(web: ThrownWeb) -> void:
 	# Not straight back onto the web it left.
 	_grace_web = web
 	_grace = WEB_GRACE
-	velocity = carry
 	_launched = true
 	_set_mode(Mode.AIR)
-	if web != null and is_instance_valid(web) and web.is_flying() and not _air_refund_spent:
+	if not _air_refund_spent:
 		_air_refund_spent = true
 		if not grapple_ready:
 			grapple_ready = true
 			landed.emit()
+
+
+## Space mid-pull or mid-launch: all the speed goes, and the spider drops straight
+## down from where it is — a brake, for coming down exactly where you mean to.
+func _drop() -> void:
+	_buffer = 0.0
+	_launched = false
+	velocity = Vector3.ZERO
+	_set_mode(Mode.AIR)
 
 
 # --- facing --------------------------------------------------------------------

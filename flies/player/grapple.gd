@@ -5,8 +5,8 @@ extends Node3D
 ##
 ## To a web that has stuck, the pull lands you on it. To a web still in flight, it
 ## is a launch: you come off it with the pull's speed, and the grapple is back once
-## so you can catch that web again where it sticks. A jump in any pull's last
-## moment kicks off the web's face and up as well. See [method Weaver._launch].
+## so you can catch that web again where it sticks. Jump mid-pull or mid-launch
+## and all the speed goes: you drop straight down. See [method Weaver._launch].
 ##
 ## Only silk holds the line: a web stuck to something, or one still in the air,
 ## which the line follows wherever it goes until the spider reaches it. Stone,

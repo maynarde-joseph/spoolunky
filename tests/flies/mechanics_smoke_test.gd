@@ -311,7 +311,17 @@ func _launching() -> void:
 	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 200)
 	check(weaver.grapple_ready, "and it comes back on landing")
 
-	# A web on the wall, a jump timed at the end of the pull: off its face and up.
+	# Space mid-launch, or mid-pull: all the speed goes, and the spider drops.
+	await put(run, Vector3(0.0, 6.0, 20.0))
+	weaver.velocity = Vector3(0.0, 0.0, -15.0)
+	weaver._launched = true
+	await run_frames(3)
+	weaver.drive(Vector2.ZERO, true)
+	await run_frames(1)
+	var left := Vector2(weaver.velocity.x, weaver.velocity.z).length()
+	check(left < 0.5 and weaver.velocity.y <= 0.0,
+		"jump mid-launch: the speed is gone, and the spider drops (%s)" % weaver.velocity.snappedf(0.1))
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
 	await put(run, Vector3(0.0, 0.3, 8.0))
 	await pull(run)
 	aim(run, Vector3(0.0, 4.0, -11.5))
@@ -322,16 +332,13 @@ func _launching() -> void:
 	await put(run, Vector3(0.0, 0.3, 2.0))
 	aim(run, wall_web.global_position)
 	weaver.fire_grapple()
-	await wait_until(func() -> bool:
-		return weaver.mode != Weaver.Mode.GRAPPLE or weaver.global_position.distance_to(
-			wall_web.global_position) < weaver.grapple.speed * Weaver.LAUNCH_WINDOW * 0.6, 90)
+	await run_frames(15)
+	var at := weaver.global_position
 	weaver.drive(Vector2.ZERO, true)
-	await run_frames(1)
-	if not check(weaver.mode == Weaver.Mode.AIR and weaver.velocity.y > Weaver.JUMP
-			and weaver.velocity.z > 1.0,
-			"a jump at the end of the pull launches up and off the wall (%s)"
-			% weaver.velocity.snappedf(0.1)):
-		note(where_is(weaver))
+	await run_frames(2)
+	check(weaver.mode == Weaver.Mode.AIR and Vector2(weaver.velocity.x, weaver.velocity.z).length() < 0.5
+		and weaver.global_position.distance_to(at) < 0.3,
+		"and mid-pull, it lets go and drops where it is (%s)" % where_is(weaver))
 
 	# Speed off a launch keeps in the air; a plain jump's does not.
 	await put(run, Vector3(0.0, 6.0, 20.0))
