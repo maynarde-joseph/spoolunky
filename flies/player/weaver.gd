@@ -162,11 +162,6 @@ var _stall := 0.0
 ## limit: a player who webs every fly on the way has read the level.
 var air_jumps := 0
 
-## Whether the walk was carried round a web's rim onto its other face, and is going
-## the other way on it while the keys stay down — and how long before it may go round
-## again. See [method _round_the_rim].
-var _round_carry := false
-var _round_wait := 0.0
 var _facing := Vector3.FORWARD
 var _up := Vector3.UP
 var _base_fov := 0.0
@@ -328,7 +323,6 @@ func _physics_process(delta: float) -> void:
 	else:
 		_buffer = maxf(0.0, _buffer - delta)
 	_grace = maxf(0.0, _grace - delta)
-	_round_wait = maxf(0.0, _round_wait - delta)
 	_update_lock()
 	view.update(HEIGHT, global_basis.y)
 	match mode:
@@ -510,7 +504,9 @@ func standing_web() -> ThrownWeb:
 	return _web if mode == Mode.WEB and is_instance_valid(_web) else null
 
 
-## Takes hold of [param web] where the spider is, on whichever face it is nearer.
+## Takes hold of [param web] where the spider is, on whichever face it is nearer —
+## or the other, where that one has no room. The spider stays on that face: a web is
+## walked on one side only, and its rim holds you.
 func attach_to_web(web: ThrownWeb, at := Vector3.INF) -> void:
 	if web == null or not web.is_standing():
 		return
@@ -519,12 +515,8 @@ func attach_to_web(web: ThrownWeb, at := Vector3.INF) -> void:
 	var where := global_position if at == Vector3.INF else at
 	var local := web.to_local(where)
 	_web = web
-	_round_carry = false
-	_web_side = 1.0 if web.to_local(global_position).z >= 0.0 else -1.0
-	# The face with room on it: a web flat on a wall has no room behind it, whatever
-	# side of its plane the spider happened to reach it from.
-	if _face_blocked(web, local, _web_side) and not _face_blocked(web, local, -_web_side):
-		_web_side = -_web_side
+	_web_at = Vector2(local.x, local.y)
+	_pick_face(web.to_local(global_position).z)
 	_web_at = Vector2(local.x, local.y).limit_length(maxf(web.current_radius() - 0.2, 0.05))
 	var carried := web.global_basis.inverse() * velocity
 	_web_walk = Vector2(carried.x, carried.y).limit_length(WEB_WALK)
@@ -559,8 +551,8 @@ func _step_web(delta: float) -> void:
 		# The web turned under us as it stuck: find our footing on its new face.
 		_web_turned = _web.turned
 		var local := _web.to_local(global_position)
-		_web_side = 1.0 if local.z >= 0.0 else -1.0
 		_web_at = Vector2(local.x, local.y)
+		_pick_face(local.z)
 	_up = _web.normal() * _web_side
 	if _buffer > 0.0:
 		_jump_off_web()
@@ -571,13 +563,6 @@ func _step_web(delta: float) -> void:
 	var wish_2d := Vector2(wish_local.x, wish_local.y)
 	if wish_2d.length_squared() > 0.0001:
 		wish_2d = wish_2d.normalized()
-	if _round_carry:
-		# Gone round the rim: the keys still mean the way they did on the other face,
-		# which on this one is back the other way, until they are let go.
-		if _input_axis == Vector2.ZERO:
-			_round_carry = false
-		else:
-			wish_2d = -wish_2d
 	var rate := ACCEL if wish_2d.dot(_web_walk) >= 0.0 else DECEL
 	_web_walk = _web_walk.lerp(wish_2d * WEB_WALK, clampf(rate * delta, 0.0, 1.0))
 	var next := _web_at + _web_walk * delta
@@ -585,11 +570,8 @@ func _step_web(delta: float) -> void:
 	if next.length() > limit:
 		var outward_2d := next.normalized()
 		var outward := (basis * Vector3(outward_2d.x, outward_2d.y, 0.0)).normalized()
-		if wish_2d.dot(outward_2d) > 0.25:
-			if _step_off_web(outward):
-				return
-			if _round_the_rim(next.limit_length(limit)):
-				return
+		if wish_2d.dot(outward_2d) > 0.25 and _step_off_web(outward):
+			return
 		next = next.limit_length(limit)
 		_web_walk -= outward_2d * maxf(_web_walk.dot(outward_2d), 0.0)
 	# Nothing walks the spider into something solid: the web may run on past what it
@@ -612,22 +594,15 @@ func _step_web(delta: float) -> void:
 	_place_on_web()
 
 
-## Over the rim at [param rim] and onto the web's other face, if there is room
-## there — there is none behind a web flat on a wall, and all round one spanning a
-## gap or riding the air. True if it went.
-func _round_the_rim(rim: Vector2) -> bool:
-	if _round_wait > 0.0:
-		return false
-	var local := Vector3(rim.x, rim.y, 0.0)
-	if _face_blocked(_web, local, -_web_side):
-		return false
-	_web_side = -_web_side
-	_web_at = rim
-	_web_walk = -_web_walk
-	_round_carry = not _round_carry
-	_round_wait = 0.35
-	_place_on_web()
-	return true
+## Settles which face of [member _web] the spider is on: the side of its plane
+## [param depth] says, unless that face has no room at [member _web_at] and the other
+## has — a web flat on a wall has no room behind it, whatever side of its plane the
+## spider happened to reach it from.
+func _pick_face(depth: float) -> void:
+	_web_side = 1.0 if depth >= 0.0 else -1.0
+	var local := Vector3(_web_at.x, _web_at.y, 0.0)
+	if _face_blocked(_web, local, _web_side) and not _face_blocked(_web, local, -_web_side):
+		_web_side = -_web_side
 
 
 ## Whether the spider standing at [param local] on face [param side] of
@@ -708,7 +683,7 @@ func _step_off_web(outward: Vector3) -> bool:
 		if hit.is_empty() or (hit["normal"] as Vector3).y <= 0.6:
 			continue
 		# A step, not a drop: a floor well below the spider is somewhere to fall to,
-		# and walking off the rim there goes round it instead.
+		# not to walk onto, and the rim holds the spider there.
 		if (hit["position"] as Vector3).y < here.y - RADIUS - 0.6:
 			continue
 		# Not into the middle of something: there has to be room to stand there.
@@ -1014,5 +989,4 @@ func put_at(where: Transform3D) -> void:
 	_air_refund_spent = false
 	_stall = 0.0
 	air_jumps = 0
-	_round_carry = false
 	_set_mode(Mode.AIR)

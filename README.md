@@ -22,9 +22,9 @@ any more. What it has instead is silk, on three buttons, and all three work at t
 Holding silk doesn't block anything: you can grapple and pull back while the
 ball is still winding.
 
-On a web, walk off its rim and you crawl round onto its other face, wherever
-there's room. A web spanning a gap or overhanging an edge has two faces you can
-walk on. A web flat against a wall or floor only has one.
+A web is walked on one face: the one you landed on (on a web flat against a
+wall or floor, the side facing the room). Its rim holds you, unless there's a
+floor or another web just past it to step onto.
 
 ## What levels are made of
 

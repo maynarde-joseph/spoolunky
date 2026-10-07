@@ -145,12 +145,13 @@ In First Thread, the last pad is slick and 4 m out: too far for a jump (about
 2.5 m), with nothing for a web to stick to. A fly patrols over the gap: grapple
 to it and hop off it across, or spend the jumps the earlier flies banked.
 
-## Webs have two faces
+## Webs have one face
 
-Walk off a web's rim and you crawl round onto its other face, wherever there's
-room: a web overhanging an edge or spanning a gap has two sides to walk on. A
-web flat against a wall or floor only has one, and its rim holds you. Keep the
-key held and you carry on round; let go to take the keys back to the new face.
+You walk on the face of a web you landed on, and its rim holds you unless a floor
+or another web is just past it. Crawling round the rim onto the other face was
+tried and dropped: it caused more bugs than routes. Where a web is flat against a
+wall or floor, the face you're put on is always the one with room, the side facing
+the room, whichever side of the web you reached it from.
 
 ## How the levels use them
 

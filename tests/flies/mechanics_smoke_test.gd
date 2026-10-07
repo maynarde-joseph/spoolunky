@@ -26,7 +26,7 @@ func run_checks() -> void:
 	await _catching_flies()
 	await _fly_jumps()
 	await _the_ceiling()
-	await _round_the_rim()
+	await _one_face()
 	await _pullback()
 	await _caught_by_your_web()
 	await _crates_plates_doors()
@@ -718,9 +718,9 @@ func _the_ceiling() -> void:
 	check(weaver.mode == Weaver.Mode.GROUND, "back down on the floor")
 
 
-## Round the rim of a web onto its other face, where there is room for it.
-func _round_the_rim() -> void:
-	print("Round the rim")
+## A web is walked on one face: its rim holds the spider, and never takes it round.
+func _one_face() -> void:
+	print("One face")
 	var objects: Array = [{"type": "piece", "piece": "cube", "pos": [6.0, 0.0, 6.0],
 		"size": [1.0, 2.0, 1.0]}]
 	var run := await arena(objects)
@@ -738,19 +738,15 @@ func _round_the_rim() -> void:
 	weaver.view.yaw = 0.0
 	weaver.view.pitch = -0.3
 	weaver.drive(Vector2(0.0, 1.0))
-	await wait_until(func() -> bool: return weaver.global_basis.y.y < -0.5, 120)
-	if not check(weaver.standing_web() == web and weaver.global_basis.y.y < -0.5,
-			"walking off its rim takes the spider round onto the underside"):
-		note("%s on %s, local %s, radius %.2f" % [where_is(weaver), weaver.standing_web(),
-			web.to_local(weaver.global_position), web.current_radius()])
-	await run_frames(20)
-	var under := web.to_local(weaver.global_position)
-	if not check(under.z < 0.0 and weaver.standing_web() == web,
-			"and holding on, it carries on along the underside"):
-		note("%s on %s, local %s" % [where_is(weaver), weaver.standing_web(), under])
+	await run_frames(90)
+	var top := web.to_local(weaver.global_position)
+	if not check(weaver.standing_web() == web and top.z > 0.0 and weaver.global_basis.y.y > 0.5,
+			"walking at its rim, the spider stays on top: a web has one face"):
+		note("%s on %s, local %s" % [where_is(weaver), weaver.standing_web(), top])
+	check(Vector2(top.x, top.y).length() < web.current_radius(), "and the rim holds it")
 	weaver.drive(Vector2.ZERO)
 
-	# A web flat on a wall has no other side to go round to.
+	# A web flat on a wall: walked on the room's side.
 	await put(run, Vector3(0.0, 0.3, -6.0))
 	aim(run, Vector3(0.0, 3.0, -11.5))
 	weaver.caster._cooling = 0.0
