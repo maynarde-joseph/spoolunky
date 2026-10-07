@@ -247,14 +247,17 @@ func _grappling() -> void:
 	web = first_web(run)
 	await wait_until(func() -> bool: return web.is_stuck(), 60)
 	aim(run, web.global_position)
-	check(not weaver.grapple.aimed().is_empty(), "a web fourteen metres off is in reach")
-	await put(run, Vector3(0.0, 0.3, 8.0))
+	await put(run, Vector3(0.0, 0.3, 30.0))
 	aim(run, web.global_position)
-	check(weaver.grapple.aimed().is_empty(), "one twenty off is not")
+	check(weaver.grapple.aimed().get("web") == web,
+		"a web forty metres off is in reach: the grapple goes as far as you can see")
+	await put(run, Vector3(-12.0, 0.3, 6.0))
+	aim(run, web.global_position)
+	check(weaver.grapple.aimed().get("web") == null, "but not one out of sight, behind the ledge")
 
 
 ## A grapple to a web still in flight takes you to where you meet it, and you drop
-## from there with none of the pull's speed while the web flies on. It gives the
+## from there with none of the pull's speed; the web is used up. It gives the
 ## grapple back once, until you land. Space mid-pull drops you where you are.
 func _flying_webs() -> void:
 	print("Grappling to a web in flight")
@@ -276,7 +279,9 @@ func _flying_webs() -> void:
 			"meeting it, the spider drops from there with none of the pull's speed (%s)"
 			% weaver.velocity.snappedf(0.1)):
 		note(where_is(weaver))
-	check(web.is_flying(), "while the web flies on")
+	check(not is_instance_valid(web) or not web.is_standing(),
+		"and the web is used up: it comes apart")
+	check(weaver.webs_left() == weaver.max_webs, "its silk the spider's again")
 	check(weaver.grapple_ready, "and a web in flight gives the grapple back")
 	# In the air, a second web in flight: met, but nothing back before landing.
 	weaver.caster._cooling = 0.0

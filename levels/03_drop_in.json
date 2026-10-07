@@ -1,9 +1,9 @@
 {
-	"name": "Ride the Gap",
+	"name": "Drop In",
 	"webs": 2,
 	"kill_y": -15.0,
 	"ceiling": 12.0,
-	"par": 25.0,
+	"par": 20.0,
 	"objects": [
 		{
 			"type": "piece",
@@ -44,7 +44,7 @@
 			"pos": [
 				0,
 				-1,
-				-30
+				-20
 			],
 			"rot": [
 				0.0,
@@ -52,37 +52,37 @@
 				0.0
 			],
 			"size": [
-				14,
+				7,
+				1,
+				7
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-6,
+				-16,
+				-11
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2,
+				15,
+				2
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
 				6,
-				12
-			],
-			"surface": "stone"
-		},
-		{
-			"type": "piece",
-			"piece": "cube",
-			"pos": [
-				0,
-				5,
-				-24.5
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"size": [
-				14,
-				0.6,
-				1
-			],
-			"surface": "slick"
-		},
-		{
-			"type": "piece",
-			"piece": "cube",
-			"pos": [
-				-5,
 				-16,
 				-11
 			],
@@ -102,9 +102,9 @@
 			"type": "piece",
 			"piece": "cube",
 			"pos": [
-				5,
+				-6,
 				-16,
-				-11
+				-28
 			],
 			"rot": [
 				0.0,
@@ -122,29 +122,9 @@
 			"type": "piece",
 			"piece": "cube",
 			"pos": [
-				-5,
+				6,
 				-16,
-				-18
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"size": [
-				2,
-				15,
-				2
-			],
-			"surface": "slick"
-		},
-		{
-			"type": "piece",
-			"piece": "cube",
-			"pos": [
-				5,
-				-16,
-				-18
+				-28
 			],
 			"rot": [
 				0.0,
@@ -162,8 +142,8 @@
 			"type": "exit",
 			"pos": [
 				0,
-				5,
-				-32
+				0,
+				-21
 			],
 			"rot": [
 				0.0,

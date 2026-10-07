@@ -5,8 +5,8 @@ extends Node3D
 ##
 ## To a web that has stuck, the pull lands you on it. To a web still in flight, the
 ## pull takes you to where you meet it and you drop from there, with none of its
-## speed, while the web flies on — and the grapple is back once, so you can catch
-## that web again where it sticks. Jump mid-pull and you drop where you are. See
+## speed, and the web is used up: it comes apart and its silk is yours again. The
+## grapple comes back once for that. Jump mid-pull and you drop where you are. See
 ## [method Weaver._drop_off].
 ##
 ## Only silk holds the line: a web stuck to something, or one still in the air,
@@ -23,9 +23,10 @@ extends Node3D
 ## pulled, and draws the line. The pulling itself is the spider's — see
 ## [method Weaver.start_grapple].
 
-## How far a line reaches, in metres. A thrown web goes further: catch it in flight
-## and you can catch it again where it sticks.
-const REACH := 16.0
+## How far a line reaches, in metres: as far as you can see. Where a web can be put
+## is the puzzle — silk only goes so far from where it is thrown — and any web in
+## plain sight is somewhere to go.
+const REACH := 1000.0
 
 ## How fast the spider is pulled, in metres a second — and quicker on a long line,
 ## so that no pull takes longer than [constant LONGEST].
@@ -81,7 +82,7 @@ func aimed() -> Dictionary:
 	var exclude: Array[RID] = [weaver.get_rid()]
 	var eye := view.aim_pivot()
 	var look := view.forward()
-	var far := eye + look * (REACH + 30.0)
+	var far := eye + look * REACH
 	var query := PhysicsRayQueryParameters3D.create(eye, far,
 		GameLayers.WORLD | GameLayers.WEB_WALK, exclude)
 	var hit := space.intersect_ray(query)

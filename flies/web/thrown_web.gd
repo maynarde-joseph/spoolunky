@@ -299,6 +299,12 @@ func _arrive() -> void:
 
 ## Comes apart where it is: nothing to stand on any more, and the silk is the
 ## spider's again at once.
+## Used up: met in flight by the spider's grapple, it comes apart where it is, and
+## its silk is the spider's again.
+func spend() -> void:
+	_come_apart()
+
+
 func _come_apart() -> void:
 	if state == State.GONE:
 		return

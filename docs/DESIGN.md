@@ -20,19 +20,22 @@ All three are on their own buttons, and none of them waits on another.
 
 A line to a web you point at, and you're pulled along it in a straight line. It's
 a grapple, not a swing. Pulls go at 18.2 m/s, capped at 1.1 seconds however far
-they go, and the grapple reaches 16 m.
+they go, and the grapple reaches as far as you can see: any web in plain sight
+is somewhere to go. Line of sight is the only limit, so where a web can be put
+(silk only goes 22 m from where it's thrown) is the puzzle, Portal-style: set a
+web up from one place, use it from another.
 
 * **A web that has stuck: you land on it.** From there, walk on: up a web on a
   wall and over its top onto the ledge, off a web on a floor onto the floor.
   Landing gives the grapple back.
-* **A web still in flight: you drop where you meet it.** The pull takes you to
-  the web and lets go there; you fall straight down with none of the pull's
-  speed, and the web flies on. A web in flight is a point in the air to get to,
-  not a ride. Meeting one gives the grapple back once, and not again until you
-  next land, which is exactly enough to catch that same web where it sticks:
-  throw, grapple, drop, grapple. The pull is faster than the web, so it meets
-  it about three times as far out as it was when the line went. When you fire
-  decides where you drop.
+* **A web still in flight: you drop where you meet it, and it's used up.** The
+  pull takes you to the web and lets go there; you fall straight down with
+  none of the pull's speed, and the web comes apart, its silk yours again. A
+  web in flight is a point in the air, good once: the only way to get over
+  somewhere silk can't stick, like a slick island. Meeting one gives the
+  grapple back once, and not again until you next land. The pull is faster
+  than the web, so it meets it about three times as far out as it was when the
+  line went: when you fire decides where you drop.
 * **Space mid-pull** lets go of the line, and you drop where you are.
 * **Why.** Throw-and-grapple was point and click: anything you could see was a
   target, and every pull delivered you safely onto the web. A hold-to-land
@@ -47,8 +50,7 @@ they go, and the grapple reaches 16 m.
   anchor can exist, which is the level designer's main lever.
 * **One in the air.** It's spent the moment it goes, and it comes back the
   moment you land on the ground or on a web that has stuck, or once when you
-  meet a web in flight. You can't chain throw → grapple → throw → grapple
-  forever. On the ground it is effectively always there.
+  meet a web in flight. You can't chain throw → catch → throw → catch forever. On the ground it is effectively always there.
 
 ### Silk (right mouse)
 
@@ -57,9 +59,8 @@ the spider's back while the view lifts and widens, then let go to throw. A tap
 throws a 1 m web and a full second's wind-up throws a 2.4 m web.
 
 What leaves the spider is a whole web, flying face first at 22 m/s for up to
-22 m. That's further than the grapple's 16 m, which is what catching a
-web in flight is for, but short enough that a level has to put anchors within
-reach rather than anywhere in sight:
+22 m, short enough that where you can throw from decides where an anchor can
+go:
 
 * **It sticks where its middle lands,** lying flat against the surface, and it
   becomes ground. The spider walks on it at any angle: up a wall, across a
@@ -144,15 +145,15 @@ Each level has a single lesson and then a twist on it.
 2. **Silk Stairs**: you can't climb, but you can climb webs. The wall's top band is
    slick, so the last web has to reach over it. With two webs, the Pullback has
    to leapfrog them.
-3. **Ride the Gap**: the 18 m gap is too far to grapple and short enough for
-   silk to cross, so you grapple to a web in flight, drop out over the gap, and
-   catch the same web again where it sticks to the far side.
+3. **Drop In**: the exit is on a slick island 10 m out in the open. Nothing to
+   web there, nothing to grapple from round it, and too far to jump. Throw a web
+   out over it, catch it in flight, and drop.
 4. **Call It Back**: a crate sits on a post in the red, behind a wall. Web it
    from the pulpit, then stand on the plate and call it home through the wall
    to open the door.
 5. **Moving Parts**: a ferry, then a crate that starts a lift.
-6. **All Together**: cross the drop on a web caught twice, leapfrog a tower, and use a crate to
-   open the exit.
+6. **All Together**: web the far face across the drop, leapfrog a tower, and use
+   a crate to open the exit.
 
 Every built-in level is played to the end by a scripted route in
 `tests/flies/levels_smoke_test.gd`, through the same calls the keys make. Those
@@ -164,7 +165,7 @@ without CI noticing. They are not the only solutions, nor the fastest.
 | | |
 |---|---|
 | spider | 0.7 m tall, moves 6.08 m/s (7.36 on a web: the old spider's sprint), jumps 7.8 m/s (about 1 m up, about 3.5 m across at a run), falls at 29.4 m/s² |
-| grapple | webs only, 16 m reach, 18.2 m/s or 1.1 s, one in the air; lands on a stuck web, drops you where it meets a flying one |
+| grapple | webs only, as far as you can see, 18.2 m/s or 1.1 s, one in the air; lands on a stuck web; meets a flying one, drops you, and uses it up |
 | silk | 1 to 2.4 m webs, 22 m/s, 22 m reach, 0.2 s between throws |
 | pullback | oldest web first, 60 m reach, 44 m/s home, 0.15 s between calls |
 | catch-stall | 0.6 s held up, 15% of your speed kept |

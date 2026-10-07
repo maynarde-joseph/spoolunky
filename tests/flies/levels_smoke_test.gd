@@ -22,7 +22,7 @@ func run_checks() -> void:
 	if _wanted("02"):
 		await _silk_stairs()
 	if _wanted("03"):
-		await _ride_the_gap()
+		await _drop_in()
 	if _wanted("04"):
 		await _call_it_back()
 	if _wanted("05"):
@@ -208,35 +208,23 @@ func web_onto(run: LevelRun, point: Vector3, wound := 1.0) -> bool:
 	return await climb(run)
 
 
-## Throws a web at [param point], grapples to it while it flies — and drops from
-## where it is met — and, the grapple given back, grapples to it again once it has
-## stuck: across a
-## gap the grapple could not reach. Whether the spider ends up on that web.
-func catch_across(run: LevelRun, point: Vector3, wound := 0.6) -> bool:
+## Throws a web at [param point], lets it get [param lead] frames ahead, and
+## grapples to it in flight: the pull, faster than the web, meets it about three
+## times as far out as it was when the line went, and the spider drops from there.
+func drop_from_flight(run: LevelRun, point: Vector3, lead: int) -> bool:
 	var weaver := run.weaver
-	var web := await throw_at(run, point, wound)
+	var web := await throw_at(run, point, 0.0)
 	if web == null:
 		return false
-	# Let it get a lead: the pull is faster than the web, and catches it about three
-	# times as far out as it was when the line went — out over the gap.
-	await run_frames(9)
+	await run_frames(lead)
 	aim(run, web.global_position)
 	if not weaver.fire_grapple():
 		return false
 	await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.GRAPPLE, 90)
 	if OS.has_environment("ROUTE_DEBUG"):
-		note("met it %s, v %s, web flying %s" % [where(run), weaver.velocity.snappedf(0.1),
-			web.is_flying()])
-	if not await stuck(web):
-		return false
-	if OS.has_environment("ROUTE_DEBUG"):
-		note("web stuck at %s, spider %s, ready %s" % [web.global_position, where(run),
-			weaver.grapple_ready])
-	if weaver.standing_web() == web:
-		return true
-	if not await grapple_to(run, web.global_position):
-		return false
-	return weaver.standing_web() == web
+		note("met it %s, web gone %s" % [where(run), not is_instance_valid(web)
+			or not web.is_standing()])
+	return await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
 
 
 ## Walks up the web underfoot until it takes the spider somewhere else.
@@ -349,19 +337,17 @@ func _silk_stairs() -> void:
 	check(await finish(run, Vector3(0, 14, -19)), "and out")
 
 
-func _ride_the_gap() -> void:
-	print("Route: Ride the Gap")
-	var run := await load_level("03_ride_the_gap.json")
+func _drop_in() -> void:
+	print("Route: Drop In")
+	var run := await load_level("03_drop_in.json")
 	var weaver := run.weaver
 	await go(run, Vector3(0, 0, -5.0))
-	check(weaver.global_position.distance_to(Vector3(0, 2.5, -24)) > Grapple.REACH,
-		"the far side is out of the grapple's reach")
-	check(await catch_across(run, Vector3(0, 2.5, -24)),
-		"a grapple to a web in flight, and to it again where it sticks (%s)" % where(run))
-	await climb(run)
-	check(weaver.global_position.y > 5.0 and weaver.mode == Weaver.Mode.GROUND,
-		"up the web onto the top (%s)" % where(run))
-	check(await finish(run, Vector3(0, 5, -32)), "and out")
+	aim(run, Vector3(0, 0, -20))
+	check(weaver.grapple.aimed().get("web") == null, "the island is slick: nothing to grapple")
+	check(await drop_from_flight(run, Vector3(0, 4, -30), 15)
+		and weaver.global_position.z < -16.5 and weaver.global_position.y > -0.5,
+		"a web caught in flight over the island, and a drop onto it (%s)" % where(run))
+	check(await finish(run, Vector3(0, 0, -21)), "and out")
 
 
 func _call_it_back() -> void:
@@ -452,9 +438,8 @@ func _all_together() -> void:
 	var run := await load_level("06_all_together.json")
 	var weaver := run.weaver
 	await go(run, Vector3(0, 0, -5.0))
-	check(await catch_across(run, Vector3(0, 1.8, -24)),
-		"over the drop: a web met in flight, and again on the stone face (%s)" % where(run))
-	await climb(run)
+	check(await web_onto(run, Vector3(0, 1.8, -24), 0.6),
+		"over the drop: a web on the stone face, and a grapple to it, and up (%s)" % where(run))
 	check(weaver.global_position.y > 3.9, "up and over the cap (%s)" % where(run))
 	await go(run, Vector3(0, 0, -30))
 	await stop(run)

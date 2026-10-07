@@ -12,8 +12,8 @@ extends CharacterBody3D
 ##   when you land — on the ground or a web that has stuck. A web still flying
 ##   gives it back once, until you next land.
 ## * **Silk** (right mouse) — hold to wind it up, let go to throw a web. The web
-##   flies; grapple to it in flight and you drop where you meet it; where it
-##   lands it sticks, flat, and the spider can walk on it — up a wall, across a
+##   flies; grapple to it in flight and you drop where you meet it, and it is
+##   used up; where it lands it sticks, flat, and the spider can walk on it — up a wall, across a
 ##   ceiling. See [SilkCaster] and [ThrownWeb].
 ## * **Pullback** (E, or the middle mouse button) — your oldest web flies home,
 ##   putting down what it held at your feet; reaching you in the air, it catches
@@ -723,13 +723,11 @@ func _step_grapple(delta: float) -> void:
 
 
 ## Pulled all the way to a web still in flight: the spider lets go there and drops,
-## with none of the pull's speed, while the web flies on. The web gives the grapple
-## back — once, until the spider next lands — so it can be caught again where it
-## sticks.
+## with none of the pull's speed, and the web is used up — it comes apart, and its
+## silk is the spider's to throw again. A point in the air, good once. It gives the
+## grapple back — once, until the spider next lands.
 func _drop_off(web: ThrownWeb) -> void:
-	# Not straight back onto the web it left.
-	_grace_web = web
-	_grace = WEB_GRACE
+	web.spend()
 	_drop()
 	if not _air_refund_spent:
 		_air_refund_spent = true
