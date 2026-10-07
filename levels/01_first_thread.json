@@ -2,9 +2,89 @@
 	"name": "First Thread",
 	"webs": 2,
 	"kill_y": -15.0,
-	"ceiling": 10.0,
+	"ceiling": 8.0,
 	"par": 25.0,
 	"objects": [
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				-3,
+				6.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				12,
+				11.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				-3,
+				-44.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				12,
+				11.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-5.5,
+				-3,
+				-19.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1,
+				11.0,
+				50
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				5.5,
+				-3,
+				-19.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1,
+				11.0,
+				50
+			],
+			"surface": "slick"
+		},
 		{
 			"type": "piece",
 			"piece": "cube",
@@ -21,9 +101,9 @@
 			"size": [
 				10,
 				1,
-				10
+				12
 			],
-			"surface": "stone"
+			"surface": "slick"
 		},
 		{
 			"type": "start",
@@ -44,27 +124,7 @@
 			"pos": [
 				0,
 				-1,
-				-12
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"size": [
-				8,
-				1,
-				8
-			],
-			"surface": "stone"
-		},
-		{
-			"type": "piece",
-			"piece": "cube",
-			"pos": [
-				0,
-				-1,
-				-30
+				-15.5
 			],
 			"rot": [
 				0.0,
@@ -74,37 +134,47 @@
 			"size": [
 				10,
 				1,
-				8
+				13
 			],
-			"surface": "stone"
+			"surface": "slick"
 		},
 		{
 			"type": "piece",
-			"piece": "pillar2",
+			"piece": "cube",
 			"pos": [
-				-4,
 				0,
-				-27
+				-1,
+				-29.5
 			],
 			"rot": [
 				0.0,
 				0.0,
 				0.0
 			],
-			"surface": "stone"
+			"size": [
+				10,
+				5,
+				15
+			],
+			"surface": "slick"
 		},
 		{
 			"type": "piece",
-			"piece": "pillar2",
+			"piece": "cube",
 			"pos": [
+				0,
+				-1,
+				-21.9
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
 				4,
-				0,
-				-27
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
+				5,
+				0.2
 			],
 			"surface": "stone"
 		},
@@ -112,9 +182,108 @@
 			"type": "piece",
 			"piece": "cube",
 			"pos": [
+				-3.125,
+				-3,
+				-37.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				3.75,
+				11.0,
+				1.0
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				3.125,
+				-3,
+				-37.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				3.75,
+				11.0,
+				1.0
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				-3,
+				-37.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.5,
+				7,
+				1.0
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				6.5,
+				-37.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.5,
+				1.5,
+				1.0
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "panel",
+			"piece": "cube",
+			"pos": [
+				0,
+				4,
+				-36.8
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				3.2,
+				4.0,
+				0.3
+			]
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
 				0,
 				-1,
-				-42
+				-41
 			],
 			"rot": [
 				0.0,
@@ -124,27 +293,7 @@
 			"size": [
 				10,
 				5,
-				8
-			],
-			"surface": "stone"
-		},
-		{
-			"type": "piece",
-			"piece": "cube",
-			"pos": [
-				0,
-				-1,
-				-54
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"size": [
-				10,
-				5,
-				10
+				6
 			],
 			"surface": "slick"
 		},
@@ -153,58 +302,13 @@
 			"pos": [
 				0,
 				4,
-				-56
+				-41
 			],
 			"rot": [
 				0.0,
 				0.0,
 				0.0
 			]
-		},
-		{
-			"type": "piece",
-			"piece": "pillar3",
-			"pos": [
-				-4,
-				4,
-				-58
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"surface": "stone"
-		},
-		{
-			"type": "piece",
-			"piece": "pillar3",
-			"pos": [
-				4,
-				4,
-				-58
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"surface": "stone"
-		},
-		{
-			"type": "piece",
-			"piece": "wall window",
-			"pos": [
-				0,
-				4,
-				-59
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"surface": "slick"
 		}
 	]
 }

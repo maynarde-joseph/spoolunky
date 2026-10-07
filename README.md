@@ -49,14 +49,18 @@ A level also sets how many webs you can have out at once (two by default).
 
 ## The levels
 
-1. **First Thread**: jump a gap, throw a web across a long one and grapple to it,
-   web up a ledge, then jump to the slick pad with the exit on it.
-2. **Silk Stairs**: a wall you can't climb and two webs. Leapfrog them up the wall with the Pullback.
-3. **Drop In**: the exit is on a slick island out in the open. Throw a web out over it, catch it in flight, and drop.
-4. **Call It Back**: a crate on a post in the red, behind a wall. Web it from the pulpit, stand on the plate, and call it home to open the door.
-5. **Moving Parts**: a ferry, a crate on a post, and a lift the crate starts.
-6. **Pull the Room**: rip the boards off a ledge's only stone face, then drag a block on a rail into a gap to cross it.
-7. **All Together**: a web across the drop, a tower to leapfrog, and a crate for the door.
+Every level is made of rooms sealed to the ceiling, joined by gates that silk alone
+can't open: a loose board over a doorway, a block on a rail plugging one, or a
+door on a plate. Inside a room, move however you like. CI checks that no level
+can be finished with web, grapple, drop, repeat (see `tests/flies/silk_reach.gd`).
+
+1. **First Thread**: jump a gap, web a stone face and climb it, and rip the boards off the way out.
+2. **Silk Stairs**: leapfrog two webs up a wall, then climb a post and call a block on an upright rail up out of the doorway.
+3. **Drop In**: drop onto a slick island from a web caught in flight, then rip the boards off the hut with the exit in it.
+4. **Call It Back**: web a crate behind a wall from the pulpit, stand on the plate, and call it home to open the door.
+5. **Moving Parts**: a ferry, then a crate whose plate starts a lift and opens the door at the top.
+6. **Pull the Room**: drag a block on a rail out of a doorway, then call a portcullis up from a post.
+7. **All Together**: a web across the drop, a leapfrogged tower, boards off a window, and a crate for the door.
 
 ## The level editor
 
@@ -112,7 +116,8 @@ godot --headless --path . --script res://tests/flies/levels_smoke_test.gd
 ```
 
 The mechanics suite checks each verb and each level object in a test arena. The
-levels suite checks that every level is complete and that the editor works. It
+levels suite checks that every level is complete, that none can be finished with
+silk alone, and that the editor works. It
 then plays every built-in level from start to finish with a scripted route
 through the real controls (no teleporting), so a level that can't be finished
 fails CI.

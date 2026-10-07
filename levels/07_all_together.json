@@ -2,9 +2,89 @@
 	"name": "All Together",
 	"webs": 2,
 	"kill_y": -14.0,
-	"ceiling": 24.0,
+	"ceiling": 22.0,
 	"par": 90.0,
 	"objects": [
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				-15,
+				6.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				18,
+				37.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				-15,
+				-56.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				18,
+				37.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-8.5,
+				-15,
+				-25.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1,
+				37.0,
+				62
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				8.5,
+				-15,
+				-25.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1,
+				37.0,
+				62
+			],
+			"surface": "slick"
+		},
 		{
 			"type": "piece",
 			"piece": "cube",
@@ -23,7 +103,7 @@
 				1,
 				12
 			],
-			"surface": "stone"
+			"surface": "slick"
 		},
 		{
 			"type": "start",
@@ -56,7 +136,7 @@
 				1,
 				12
 			],
-			"surface": "stone"
+			"surface": "slick"
 		},
 		{
 			"type": "piece",
@@ -144,7 +224,7 @@
 			"pos": [
 				0,
 				-1,
-				-47
+				-48
 			],
 			"rot": [
 				0.0,
@@ -154,62 +234,9 @@
 			"size": [
 				16,
 				13,
-				14
-			],
-			"surface": "stone"
-		},
-		{
-			"type": "piece",
-			"piece": "cube",
-			"pos": [
-				-3,
-				12,
-				-53
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"size": [
-				12,
-				8,
-				1
-			],
-			"surface": "stone"
-		},
-		{
-			"type": "piece",
-			"piece": "cube",
-			"pos": [
-				6,
-				12,
-				-51
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"size": [
-				2,
-				4,
-				2
+				16
 			],
 			"surface": "slick"
-		},
-		{
-			"type": "crate",
-			"pos": [
-				6,
-				16.6,
-				-51
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			]
 		},
 		{
 			"type": "plate",
@@ -226,6 +253,46 @@
 			"channel": "bag"
 		},
 		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-2.3,
+				12,
+				-52.75
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.6,
+				10.0,
+				6.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				2.5,
+				12,
+				-52.75
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1.0,
+				10.0,
+				6.5
+			],
+			"surface": "slick"
+		},
+		{
 			"type": "door",
 			"piece": "cube",
 			"pos": [
@@ -240,13 +307,13 @@
 			],
 			"size": [
 				4,
-				8,
+				4,
 				0.6
 			],
 			"surface": "stone",
 			"open": [
 				0,
-				8.2,
+				4.2,
 				0
 			],
 			"channel": "bag"
@@ -255,49 +322,9 @@
 			"type": "piece",
 			"piece": "cube",
 			"pos": [
-				-2.3,
-				12,
-				-51.3
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"size": [
-				0.6,
-				8,
-				2.6
-			],
-			"surface": "slick"
-		},
-		{
-			"type": "piece",
-			"piece": "cube",
-			"pos": [
-				2.3,
-				12,
-				-51.3
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"size": [
-				0.6,
-				8,
-				2.6
-			],
-			"surface": "slick"
-		},
-		{
-			"type": "piece",
-			"piece": "cube",
-			"pos": [
 				0,
-				20,
-				-51.3
+				16,
+				-50
 			],
 			"rot": [
 				0.0,
@@ -305,9 +332,9 @@
 				0.0
 			],
 			"size": [
-				5.2,
-				0.5,
-				3.0
+				4,
+				6.0,
+				0.6
 			],
 			"surface": "slick"
 		},
@@ -316,12 +343,144 @@
 			"pos": [
 				0,
 				12,
-				-51.3
+				-53
 			],
 			"rot": [
 				0.0,
 				0.0,
 				0.0
+			]
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				5.5,
+				12,
+				-53
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2,
+				4,
+				2
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "crate",
+			"pos": [
+				5.5,
+				16.6,
+				-53
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				5.5,
+				12,
+				-49.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				5,
+				1,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				5.5,
+				17.5,
+				-49.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				5,
+				4.5,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				3.25,
+				13,
+				-49.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.5,
+				4.5,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				7.75,
+				13,
+				-49.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.5,
+				4.5,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "panel",
+			"piece": "cube",
+			"pos": [
+				5.5,
+				12.9,
+				-48.85
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				4.4,
+				4.8,
+				0.3
 			]
 		}
 	]

@@ -152,28 +152,55 @@ tried and dropped: it caused more bugs than routes. Where a web is flat against 
 wall or floor, the face you're put on is always the one with room, the side facing
 the room, whichever side of the web you reached it from.
 
+## Gates: what silk alone can't do
+
+The grapple reaches anything in sight, and a web caught in flight drops you
+anywhere along a throw, so silk alone goes almost anywhere within 22 m. A gap
+doesn't hold you back, and neither does a wall that stops short of the ceiling:
+you drop onto its top. A level built of those is solved by web, grapple, drop,
+repeat.
+
+So every level is built of rooms sealed by walls that meet the ceiling, and the
+way from one room to the next is a **gate**: something solid, that blocks sight
+as well as the way, and that only the other tools open.
+
+* A **loose board** over a doorway: web it and call the web home.
+* A **block on a rail** plugging a doorway: stand off to the side and call it
+  clear. On an upright rail it's a portcullis: get up level with where it should
+  go, and call it up.
+* A **door** on a plate: bring a crate home onto the plate.
+
+Inside a room, silk is free movement: webs, grapples and drops however you
+like. The gates are the puzzles.
+
+`tests/flies/silk_reach.gd` checks it. It maps everywhere the spider can get to
+in a level by walking, jumping, throwing webs (as many as it likes), grappling
+to them and dropping from webs caught anywhere along a throw, with every gate
+left shut, and it's generous to the spider throughout. If that reaches the exit,
+the level fails CI. With its gates taken out, every built-in level is reached,
+so the check is doing the work.
+
 ## How the levels use them
 
-Each level has a single lesson and then a twist on it.
-
-1. **First Thread**: jumping, throwing a web across a gap and grappling to it,
-   webbing up a ledge, and a last jump onto slick, where silk can't help.
-2. **Silk Stairs**: you can't climb, but you can climb webs. The wall's top band is
-   slick, so the last web has to reach over it. With two webs, the Pullback has
-   to leapfrog them.
-3. **Drop In**: the exit is on a slick island 10 m out in the open. Nothing to
-   web there, nothing to grapple from round it, and too far to jump. Throw a web
-   out over it, catch it in flight, and drop.
+1. **First Thread**: jump a gap, web a stone face and climb it, and rip the
+   boards off the way out with the Pullback.
+2. **Silk Stairs**: climb a stone wall on two leapfrogged webs, past its slick
+   top band. Up top the way out is plugged by a block on an upright rail: climb
+   a stone post, and call the block up level with you.
+3. **Drop In**: the exit is in a hut on a slick island out in the open. Throw a
+   web out over it, catch it in flight and drop, then rip the boards off the
+   hut's door.
 4. **Call It Back**: a crate sits on a post in the red, behind a wall. Web it
    from the pulpit, then stand on the plate and call it home through the wall
-   to open the door.
-5. **Moving Parts**: a ferry, then a crate that starts a lift.
-6. **Pull the Room**: the ledge's one stone face is boarded over, so rip the
-   boards off with the Pullback before you can web it. Then a gap too wide to
-   jump with slick on both sides, and a block on a rail out to the side: web it,
-   stand at the edge, and call it into the gap.
-7. **All Together**: web the far face across the drop, leapfrog a tower, and use
-   a crate to open the exit.
+   to open the exit's door.
+5. **Moving Parts**: a ferry, then a crate whose plate starts a lift and opens
+   the door at the top.
+6. **Pull the Room**: a doorway plugged by a block on a rail (stand to the side
+   and call it out of the way), then one plugged by a block on an upright rail
+   (climb the stone post and call it up).
+7. **All Together**: a web across the drop, a tower on two leapfrogged webs,
+   boards off a window to reach a crate, and the crate onto the plate that
+   opens the way out.
 
 Every built-in level is played to the end by a scripted route in
 `tests/flies/levels_smoke_test.gd`, through the same calls the keys make. Those

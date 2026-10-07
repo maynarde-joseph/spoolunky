@@ -3,8 +3,88 @@
 	"webs": 2,
 	"kill_y": -15.0,
 	"ceiling": 12.0,
-	"par": 20.0,
+	"par": 25.0,
 	"objects": [
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				-18,
+				6.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				18,
+				30.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				-18,
+				-30.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				18,
+				30.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-8.5,
+				-18,
+				-12.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1,
+				30.0,
+				36
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				8.5,
+				-18,
+				-12.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1,
+				30.0,
+				36
+			],
+			"surface": "slick"
+		},
 		{
 			"type": "piece",
 			"piece": "cube",
@@ -19,11 +99,11 @@
 				0.0
 			],
 			"size": [
-				12,
+				16,
 				1,
 				12
 			],
-			"surface": "stone"
+			"surface": "slick"
 		},
 		{
 			"type": "start",
@@ -44,7 +124,7 @@
 			"pos": [
 				0,
 				-1,
-				-20
+				-21
 			],
 			"rot": [
 				0.0,
@@ -52,11 +132,150 @@
 				0.0
 			],
 			"size": [
-				7,
+				8,
 				1,
-				7
+				9
 			],
 			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				0,
+				-25.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				6,
+				12.0,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-2.75,
+				0,
+				-23.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.5,
+				12.0,
+				4.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				2.75,
+				0,
+				-23.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.5,
+				12.0,
+				4.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-2.0,
+				0,
+				-21.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.0,
+				12.0,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				2.0,
+				0,
+				-21.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.0,
+				12.0,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				2.5,
+				-21.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.0,
+				9.5,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "panel",
+			"piece": "cube",
+			"pos": [
+				0,
+				0,
+				-20.85
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.6,
+				2.8,
+				0.3
+			]
 		},
 		{
 			"type": "piece",
@@ -143,7 +362,7 @@
 			"pos": [
 				0,
 				0,
-				-21
+				-23.2
 			],
 			"rot": [
 				0.0,

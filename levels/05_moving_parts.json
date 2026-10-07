@@ -9,6 +9,86 @@
 			"type": "piece",
 			"piece": "cube",
 			"pos": [
+				0.0,
+				-13,
+				5.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				22,
+				29.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				-13,
+				-58.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				22,
+				29.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-10.5,
+				-13,
+				-26.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1,
+				29.0,
+				63
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				10.5,
+				-13,
+				-26.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1,
+				29.0,
+				63
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
 				0,
 				-1,
 				0
@@ -23,7 +103,7 @@
 				1,
 				10
 			],
-			"surface": "stone"
+			"surface": "slick"
 		},
 		{
 			"type": "start",
@@ -92,7 +172,7 @@
 				1,
 				12
 			],
-			"surface": "stone"
+			"surface": "slick"
 		},
 		{
 			"type": "piece",
@@ -195,14 +275,140 @@
 				11,
 				10
 			],
-			"surface": "stone"
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-3.25,
+				10,
+				-55.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.5,
+				6.0,
+				5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				3.25,
+				10,
+				-55.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.5,
+				6.0,
+				5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-2.5,
+				10,
+				-52.75
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.0,
+				6.0,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				2.5,
+				10,
+				-52.75
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.0,
+				6.0,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				13,
+				-52.75
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				3.0,
+				3.0,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "door",
+			"piece": "cube",
+			"pos": [
+				0,
+				10,
+				-52.75
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				3,
+				3,
+				0.5
+			],
+			"surface": "stone",
+			"open": [
+				0,
+				3.2,
+				0
+			],
+			"channel": "lift"
 		},
 		{
 			"type": "exit",
 			"pos": [
 				0,
 				10,
-				-55
+				-55.5
 			],
 			"rot": [
 				0.0,

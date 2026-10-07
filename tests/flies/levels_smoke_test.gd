@@ -1,7 +1,7 @@
 extends TestSuite
 
 ## Every built-in level: that it is whole, that it survives being saved and loaded,
-## and that it can be finished — each one played start to finish by a scripted
+## that silk alone can't finish it (see [SilkReach]), and that it can be finished — each one played start to finish by a scripted
 ## route through the real controls: aiming, throwing, grappling, calling webs home,
 ## running and jumping. No teleporting: if a route here goes through, a player can.
 ##
@@ -51,6 +51,18 @@ func _every_level_is_whole() -> void:
 			counts[type] = int(counts.get(type, 0)) + 1
 		check(counts.get("start", 0) == 1 and counts.get("exit", 0) == 1,
 			"%s has a start and an exit" % entry["name"])
+		if entry["built_in"]:
+			# Each needs more than web, grapple, drop, repeat: something only the
+			# Pullback, a crate or a moving part opens. See SilkReach.
+			var run := LevelRun.new()
+			run.require_captured_mouse = false
+			run.setup(data)
+			await stage(run)
+			await run_frames(10)
+			var found := SilkReach.explore(run)
+			if not check(not found["reached"],
+					"%s can't be finished with silk alone" % entry["name"]):
+				note(found["how"])
 		var again: Variant = JSON.parse_string(JSON.stringify(data))
 		check(again is Dictionary and (again as Dictionary)["objects"].size()
 			== data["objects"].size(), "%s survives being written and read" % entry["name"])
@@ -266,6 +278,13 @@ func pull(run: LevelRun) -> void:
 	await run_frames(4)
 
 
+func _first_of(type: Variant) -> Node:
+	for node in get_root().get_tree().get_nodes_in_group(LevelBuilder.GROUP):
+		if is_instance_of(node, type):
+			return node
+	return null
+
+
 ## Walks into the exit, and says whether the level was finished.
 func finish(run: LevelRun, exit_at: Vector3) -> bool:
 	await go(run, exit_at, 0.4)
@@ -283,33 +302,25 @@ func where(run: LevelRun) -> String:
 func _first_thread() -> void:
 	print("Route: First Thread")
 	var run := await load_level("01_first_thread.json")
-	await go(run, Vector3(0, 0, -4.5), 0.2, true)
-	check(await leap(run, Vector3(0, 0, -12)) and run.weaver.global_position.z < -8.0,
-		"a jump takes the first gap (%s)" % where(run))
-	await stop(run)
-	await go(run, Vector3(0, 0, -15))
-	aim(run, Vector3(0, 0, -29))
-	check(run.weaver.grapple.aimed().get("web") == null, "bare stone gives the grapple nothing")
-	check(await web_onto(run, Vector3(0, 0, -29)),
-		"a web on the far pad, and a grapple onto it, take the long gap")
-	check(run.weaver.global_position.z < -25.5 and run.weaver.mode == Weaver.Mode.GROUND,
-		"walking off it onto the pad (%s)" % where(run))
-	await pull(run)
-	await go(run, Vector3(0, 0, -35))
-	check(await web_onto(run, Vector3(0, 2.6, -38)) and run.weaver.global_position.y > 3.9,
-		"a web on the ledge's face, a grapple onto it, and up it onto the top (%s)"
-		% where(run))
-	await stop(run)
-	await pull(run)
 	var weaver := run.weaver
-	aim(run, Vector3(0, 4, -54))
-	check(weaver.grapple.aimed().get("web") == null,
-		"the last pad is slick: nothing for silk, nothing for the grapple")
-	await go(run, Vector3(0, 4, -45.6), 0.2, true)
-	check(await leap(run, Vector3(0, 4, -54)) and weaver.global_position.z < -49.0
-		and weaver.global_position.y > 3.9, "a running jump onto it (%s)" % where(run))
+	await go(run, Vector3(0, 0, -5.4), 0.2, true)
+	check(await leap(run, Vector3(0, 0, -12)) and weaver.global_position.z < -9.0,
+		"a jump takes the gap (%s)" % where(run))
 	await stop(run)
-	check(await finish(run, Vector3(0, 4, -56)), "and out")
+	await go(run, Vector3(0, 0, -19))
+	check(await web_onto(run, Vector3(0, 2.5, -21.8)) and weaver.global_position.y > 3.9,
+		"a web on the stone face, a grapple onto it, and up it onto the top (%s)" % where(run))
+	await stop(run)
+	await pull(run)
+	await go(run, Vector3(0, 4, -33))
+	await stop(run)
+	var board := await throw_at(run, Vector3(0, 6, -36.6), 0.0)
+	check(await stuck(board) and board.loose, "a web on the boards over the way out")
+	aim(run, board.global_position)
+	check(not weaver.fire_grapple(), "which won't hold the spider")
+	await pull(run)
+	await run_frames(10)
+	check(await finish(run, Vector3(0, 4, -41)), "called home, it rips them off: and out")
 
 
 func _silk_stairs() -> void:
@@ -336,7 +347,27 @@ func _silk_stairs() -> void:
 	check(weaver.global_position.y > 13.9 and weaver.mode == Weaver.Mode.GROUND,
 		"and walking off the top of it, over the slick band onto the top (%s)" % where(run))
 	await pull(run)
-	check(await finish(run, Vector3(0, 14, -19)), "and out")
+	# The way out is shut by a block on an upright rail: up the stone post, and call
+	# it up level with you.
+	var gate: SlideBlock = _first_of(SlideBlock) as SlideBlock
+	await go(run, Vector3(5, 14, -12.6), 0.2)
+	await stop(run)
+	check(await web_onto(run, Vector3(5, 16.5, -14)) and weaver.global_position.y > 18.9,
+		"a web on the stone post, and up it (%s)" % where(run))
+	await stop(run)
+	await pull(run)
+	# To the post's edge, where a throw down at the doorway clears its top.
+	await go(run, Vector3(4.4, 19, -15.6), 0.15)
+	await stop(run)
+	var on_gate := await throw_at(run, Vector3(0, 15.4, -19.6), 0.0)
+	check(await stuck(on_gate) and on_gate.get_parent() == gate, "a web on the block in the doorway")
+	await pull(run)
+	await wait_until(func() -> bool: return gate.along() > 0.98, 180)
+	check(gate.global_position.y > 16.0,
+		"called from up there, it rises level with the post (base %.1f)" % gate.global_position.y)
+	await go(run, Vector3(0, 14, -17.5))
+	await stop(run)
+	check(await finish(run, Vector3(0, 14, -25)), "and under it, out")
 
 
 func _drop_in() -> void:
@@ -344,12 +375,18 @@ func _drop_in() -> void:
 	var run := await load_level("03_drop_in.json")
 	var weaver := run.weaver
 	await go(run, Vector3(0, 0, -5.0))
-	aim(run, Vector3(0, 0, -20))
+	aim(run, Vector3(0, 0, -19))
 	check(weaver.grapple.aimed().get("web") == null, "the island is slick: nothing to grapple")
-	check(await drop_from_flight(run, Vector3(0, 4, -30), 15)
+	check(await drop_from_flight(run, Vector3(0, 5, -21), 14)
 		and weaver.global_position.z < -16.5 and weaver.global_position.y > -0.5,
 		"a web caught in flight over the island, and a drop onto it (%s)" % where(run))
-	check(await finish(run, Vector3(0, 0, -21)), "and out")
+	await go(run, Vector3(0, 0, -18.5))
+	await stop(run)
+	var board := await throw_at(run, Vector3(0, 1.5, -20.7), 0.0)
+	check(await stuck(board) and board.loose, "a web on the boards over the hut's door")
+	await pull(run)
+	await run_frames(10)
+	check(await finish(run, Vector3(0, 0, -23.2)), "called home, it rips them off: and out")
 
 
 func _call_it_back() -> void:
@@ -432,48 +469,53 @@ func _moving_parts() -> void:
 	await stop(run)
 	check(weaver.global_position.y > 9.9, "and from the top of it a jump to the high pad (%s)"
 		% where(run))
-	check(await finish(run, Vector3(0, 10, -55)), "and out")
+	check(await finish(run, Vector3(0, 10, -55.5)), "through the door the plate opened: out")
 
 
 func _pull_the_room() -> void:
 	print("Route: Pull the Room")
 	var run := await load_level("06_pull_the_room.json")
 	var weaver := run.weaver
-	await go(run, Vector3(0, 0, -5.0))
-	var board := get_root().get_tree().get_nodes_in_group(LoosePanel.GROUP)[0] as LoosePanel
-	var on_board := await throw_at(run, Vector3(0, 3.5, -8.4), 0.0)
-	check(await stuck(on_board) and on_board.loose, "a web on the boards over the ledge's face")
-	aim(run, on_board.global_position)
-	check(weaver.grapple.aimed().get("web") == null and not weaver.fire_grapple(),
-		"won't take the spider's weight")
-	await pull(run)
-	await run_frames(10)
-	check(not is_instance_valid(board) or board.is_gone(),
-		"called home, the web rips the boards away")
-	check(await web_onto(run, Vector3(0, 4.5, -8.8)) and weaver.global_position.y > 5.9,
-		"a web on the stone they covered, and up it onto the ledge (%s)" % where(run))
+	var plug: SlideBlock = null
+	var gate: SlideBlock = null
+	for node in get_root().get_tree().get_nodes_in_group(LevelBuilder.GROUP):
+		var block := node as SlideBlock
+		if block != null:
+			if block.travel.y > 0.5:
+				gate = block
+			else:
+				plug = block
+	await go(run, Vector3(0, 0, -8))
+	await stop(run)
+	var on_plug := await throw_at(run, Vector3(0, 1.5, -14.1), 0.0)
+	check(await stuck(on_plug) and on_plug.get_parent() == plug, "a web on the block in the doorway")
+	await go(run, Vector3(6, 0, -11), 0.2)
 	await stop(run)
 	await pull(run)
-	var block := get_root().get_tree().get_nodes_in_group(LevelBuilder.GROUP).filter(
-		func(n: Node) -> bool: return n is SlideBlock)[0] as SlideBlock
-	await go(run, Vector3(0, 6, -14.2), 0.2)
+	await wait_until(func() -> bool: return plug.along() > 0.98, 180)
+	check(plug.global_position.x > 4.5,
+		"called from off to the side, it slides out of the way (x %.1f)" % plug.global_position.x)
+	await go(run, Vector3(0, 0, -13))
+	await go(run, Vector3(0, 0, -18))
+	await go(run, Vector3(-5, 0, -19.5), 0.2)
 	await stop(run)
-	var on_block := await throw_at(run, Vector3(8.5, 5.0, -18), 0.0)
-	check(await stuck(on_block), "a web on the block out to the side")
+	check(await web_onto(run, Vector3(-5, 2.5, -21)) and weaver.global_position.y > 4.9,
+		"through, and up the stone post (%s)" % where(run))
+	await stop(run)
 	await pull(run)
-	await wait_until(func() -> bool: return block.along() > 0.98, 180)
-	check(absf(block.global_position.x) < 0.5,
-		"called home, the block is dragged along its rail into the gap (x %.1f)"
-		% block.global_position.x)
-	await go(run, Vector3(0, 6, -14.6), 0.2, true)
-	check(await leap(run, Vector3(0, 6, -18)) and weaver.global_position.y > 5.9,
-		"a jump onto it (%s)" % where(run))
+	# To the post's edge, where a throw down at the doorway clears its top.
+	await go(run, Vector3(-4.4, 5, -22.6), 0.15)
 	await stop(run)
-	await go(run, Vector3(0, 6, -19.2), 0.2, true)
-	check(await leap(run, Vector3(0, 6, -24)) and weaver.global_position.y > 5.9
-		and weaver.global_position.z < -21.0, "and on to the far pad (%s)" % where(run))
+	var on_gate := await throw_at(run, Vector3(0, 1.5, -29.6), 0.0)
+	check(await stuck(on_gate) and on_gate.get_parent() == gate,
+		"a web on the block plugging the next doorway")
+	await pull(run)
+	await wait_until(func() -> bool: return gate.along() > 0.6, 180)
+	check(gate.global_position.y > 1.5,
+		"called from the post, it rises level with it (base %.1f)" % gate.global_position.y)
+	await go(run, Vector3(0, 0, -27))
 	await stop(run)
-	check(await finish(run, Vector3(0, 6, -24)), "and out")
+	check(await finish(run, Vector3(0, 0, -36)), "and under it, out")
 
 
 func _all_together() -> void:
@@ -503,13 +545,22 @@ func _all_together() -> void:
 	check(weaver.global_position.y > 11.9 and weaver.mode == Weaver.Mode.GROUND,
 		"up the tower on two webs, leapfrogged (%s)" % where(run))
 	await pull(run)
-	await go(run, Vector3(4, 12, -43), 0.2)
+	await go(run, Vector3(4, 12, -45), 0.2)
 	await stop(run)
+	var board := await throw_at(run, Vector3(5.5, 15, -48.7), 0.0)
+	check(await stuck(board) and board.loose, "a web on the boards over the crate's window")
+	await pull(run)
+	await run_frames(10)
+	var went := await go(run, Vector3(4, 12, -43), 0.2)
+	await stop(run)
+	if OS.has_environment("ROUTE_DEBUG"):
+		note("to the plate %s: %s, look %s" % [went, where(run), weaver.view.forward()])
 	var crate := get_root().get_tree().get_nodes_in_group(Crate.GROUP)[0] as Crate
 	var on_crate := await throw_at(run, crate.global_position, 0.0)
 	check(await stuck(on_crate) and on_crate.carried == crate, "a web on the crate")
 	await pull(run)
 	await run_frames(100)
-	check(run.is_powered("bag"), "brought onto the plate, it opens the exit's door")
+	if not check(run.is_powered("bag"), "brought onto the plate, it opens the exit's door"):
+		note("crate at %s, spider %s" % [crate.global_position.snappedf(0.1), where(run)])
 	await go(run, Vector3(0, 12, -48))
-	check(await finish(run, Vector3(0, 12, -51.3)), "and out")
+	check(await finish(run, Vector3(0, 12, -53)), "and out")

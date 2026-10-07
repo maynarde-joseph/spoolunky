@@ -1,17 +1,17 @@
 {
 	"name": "Pull the Room",
 	"webs": 2,
-	"kill_y": -12.0,
-	"ceiling": 14.0,
+	"kill_y": -15.0,
+	"ceiling": 10.0,
 	"par": 40.0,
 	"objects": [
 		{
 			"type": "piece",
 			"piece": "cube",
 			"pos": [
-				0,
-				-1,
-				0
+				0.0,
+				-3,
+				6.5
 			],
 			"rot": [
 				0.0,
@@ -19,11 +19,91 @@
 				0.0
 			],
 			"size": [
-				10,
-				1,
-				10
+				18,
+				13.0,
+				1
 			],
-			"surface": "stone"
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				-3,
+				-40.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				18,
+				13.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-8.5,
+				-3,
+				-17.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1,
+				13.0,
+				46
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				8.5,
+				-3,
+				-17.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1,
+				13.0,
+				46
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				-4.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				16,
+				1,
+				21
+			],
+			"surface": "slick"
 		},
 		{
 			"type": "start",
@@ -42,9 +122,9 @@
 			"type": "piece",
 			"piece": "cube",
 			"pos": [
-				0,
-				-1,
-				-12
+				-4.625,
+				-3,
+				-15.5
 			],
 			"rot": [
 				0.0,
@@ -52,9 +132,9 @@
 				0.0
 			],
 			"size": [
-				10,
-				7,
-				6
+				6.75,
+				13.0,
+				1.0
 			],
 			"surface": "slick"
 		},
@@ -62,9 +142,9 @@
 			"type": "piece",
 			"piece": "cube",
 			"pos": [
-				0,
-				-1,
-				-8.9
+				4.625,
+				-3,
+				-15.5
 			],
 			"rot": [
 				0.0,
@@ -72,38 +152,19 @@
 				0.0
 			],
 			"size": [
-				4,
-				7,
-				0.2
+				6.75,
+				13.0,
+				1.0
 			],
-			"surface": "stone"
-		},
-		{
-			"type": "panel",
-			"piece": "cube",
-			"pos": [
-				0,
-				-1,
-				-8.6
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"size": [
-				4.4,
-				7.2,
-				0.3
-			]
+			"surface": "slick"
 		},
 		{
 			"type": "piece",
 			"piece": "cube",
 			"pos": [
-				0,
-				-1,
-				-24
+				0.0,
+				-3,
+				-15.5
 			],
 			"rot": [
 				0.0,
@@ -111,9 +172,29 @@
 				0.0
 			],
 			"size": [
-				6,
-				7,
-				6
+				2.5,
+				3,
+				1.0
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				2.5,
+				-15.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.5,
+				7.5,
+				1.0
 			],
 			"surface": "slick"
 		},
@@ -121,9 +202,9 @@
 			"type": "slider",
 			"piece": "cube",
 			"pos": [
-				10,
-				4,
-				-18
+				0,
+				0,
+				-14.55
 			],
 			"rot": [
 				0.0,
@@ -132,23 +213,189 @@
 			],
 			"size": [
 				3,
-				2,
-				3
+				3,
+				0.9
 			],
 			"surface": "stone",
 			"travel": [
-				-10,
+				5,
 				0,
 				0
 			],
 			"speed": 6.0
 		},
 		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				-23.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				16,
+				1,
+				14.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-5,
+				-1,
+				-22
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2,
+				6,
+				2
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-4.625,
+				-3,
+				-31
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				6.75,
+				13.0,
+				1.0
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				4.625,
+				-3,
+				-31
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				6.75,
+				13.0,
+				1.0
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				-3,
+				-31
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.5,
+				3,
+				1.0
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				2.5,
+				-31
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.5,
+				7.5,
+				1.0
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "slider",
+			"piece": "cube",
+			"pos": [
+				0,
+				0,
+				-30.05
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				3,
+				3,
+				0.9
+			],
+			"surface": "stone",
+			"travel": [
+				0,
+				3,
+				0
+			],
+			"speed": 4.0
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				-36
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				16,
+				1,
+				8
+			],
+			"surface": "slick"
+		},
+		{
 			"type": "exit",
 			"pos": [
 				0,
-				6,
-				-24
+				0,
+				-36
 			],
 			"rot": [
 				0.0,

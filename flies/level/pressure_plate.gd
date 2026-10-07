@@ -6,6 +6,7 @@ extends StaticBody3D
 
 const RADIUS := 1.5
 const HEIGHT := 0.14
+const SOLID := 0.06
 
 var channel := "a"
 
@@ -42,12 +43,14 @@ func _ready() -> void:
 	_paint.emission_energy_multiplier = 0.1
 	_pad.material_override = _paint
 	add_child(_pad)
+	# Solid only a little way up: a spider is a ball, and an edge as high as the
+	# pad is drawn would stop it walking on, like a wall.
 	var shape := CylinderShape3D.new()
 	shape.radius = RADIUS + 0.18
-	shape.height = HEIGHT
+	shape.height = SOLID
 	var solid := CollisionShape3D.new()
 	solid.shape = shape
-	solid.position.y = HEIGHT * 0.5
+	solid.position.y = SOLID * 0.5
 	add_child(solid)
 
 	_sense = Area3D.new()
