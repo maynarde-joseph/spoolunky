@@ -2,7 +2,7 @@ class_name MainMenu
 extends Node3D
 
 ## The title, and every level: pick one to play or to edit, or start a new one.
-## Behind it, the first level turns slowly, flies and all.
+## Behind it, the first level turns slowly.
 
 signal play(path: String)
 signal edit(path: String)
@@ -34,7 +34,7 @@ func _ready() -> void:
 	root.add_child(column)
 	column.add_child(UiStyle.title("Put the Flies in the Bag", 54))
 	var sub := Label.new()
-	sub.text = "Throw silk. Grapple to it. Call it back. Grapple flies, web flies, then get out."
+	sub.text = "Throw silk. Grapple to it. Call it back. Get out."
 	sub.add_theme_font_size_override("font_size", 20)
 	column.add_child(sub)
 	var panel := PanelContainer.new()
@@ -56,9 +56,6 @@ func _ready() -> void:
 			line += "   (yours)"
 		if best >= 0.0:
 			line += "   — best " + GameHUD.clock_text(best)
-		var bag := LevelRun.best_bag_for(level["path"])
-		if bag >= 0:
-			line += "   · most flies bagged %d" % bag
 		_list.add_item(line)
 	if not _levels.is_empty():
 		_list.select(0)
@@ -77,8 +74,8 @@ func _ready() -> void:
 	row.add_child(UiStyle.button("New level", func() -> void: create.emit()))
 	row.add_child(UiStyle.button("Quit", func() -> void: quit.emit()))
 	var keys := Label.new()
-	keys.text = "RIGHT MOUSE silk — hold for a bigger web   ·   LEFT MOUSE grapple to a web or a fly   ·   E / MIDDLE MOUSE pullback\n" \
-		+ "SHIFT lock on to the fly nearest the cross   ·   WASD walk   ·   SPACE jump (in the air: a banked jump)   ·   R restart   ·   ESC pause"
+	keys.text = "RIGHT MOUSE silk — hold for a bigger web   ·   LEFT MOUSE grapple to a web   ·   E / MIDDLE MOUSE pullback\n" \
+		+ "WASD walk   ·   SPACE jump   ·   R restart   ·   ESC pause"
 	keys.add_theme_font_size_override("font_size", 17)
 	keys.modulate = Color(1, 1, 1, 0.85)
 	column.add_child(keys)

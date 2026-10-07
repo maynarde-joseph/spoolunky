@@ -28,7 +28,7 @@ func run_checks() -> void:
 	if _wanted("05"):
 		await _moving_parts()
 	if _wanted("06"):
-		await _the_bag()
+		await _all_together()
 
 
 func _wanted(part: String) -> bool:
@@ -47,9 +47,8 @@ func _every_level_is_whole() -> void:
 		for thing in data.get("objects", []):
 			var type := String(thing.get("type"))
 			counts[type] = int(counts.get(type, 0)) + 1
-		check(counts.get("start", 0) == 1 and counts.get("exit", 0) == 1
-			and counts.get("fly", 0) >= 1, "%s has a start, an exit and flies (%d)"
-			% [entry["name"], counts.get("fly", 0)])
+		check(counts.get("start", 0) == 1 and counts.get("exit", 0) == 1,
+			"%s has a start and an exit" % entry["name"])
 		var again: Variant = JSON.parse_string(JSON.stringify(data))
 		check(again is Dictionary and (again as Dictionary)["objects"].size()
 			== data["objects"].size(), "%s survives being written and read" % entry["name"])
@@ -67,10 +66,10 @@ func _the_editor() -> void:
 	check(editor.level["objects"].size() == before + 1 and wall["piece"] == "wall",
 		"a kit piece goes down where it is put")
 	check(editor.selected != null, "and is selected")
-	editor.choose("fly")
-	var fly := editor.place("fly", Vector3(2.0, 1.5, 0.0))
-	editor.add_path_point(fly, Vector3(6.0, 1.5, 0.0))
-	check(LevelData.path_of(fly).size() == 2, "a fly is given a path, starting where it is")
+	editor.choose("platform")
+	var lift := editor.place("platform", Vector3(2.0, 0.0, 0.0))
+	editor.add_path_point(lift, Vector3(6.0, 0.0, 0.0))
+	check(LevelData.path_of(lift).size() == 3, "a platform is given another stop on its path")
 	editor.duplicate_selected()
 	editor._escape()
 	check(editor.level["objects"].size() == before + 3, "and can be copied")
@@ -192,18 +191,6 @@ func grapple_to(run: LevelRun, point: Vector3) -> bool:
 	return true
 
 
-## Throws at [param fly], and waits for it to be on the line.
-func catch(run: LevelRun, fly: Fly, wound := 0.0) -> bool:
-	if fly == null:
-		return false
-	var web := await throw_at(run, fly.global_position, wound)
-	await wait_until(func() -> bool: return not fly.is_free(), 60)
-	if fly.is_free() and OS.has_environment("ROUTE_DEBUG"):
-		note("missed fly at %s from %s, picked %s, web %s" % [fly.global_position.snappedf(0.1),
-			where(run), run.weaver.caster.picked_fly() == fly, web])
-	return not fly.is_free()
-
-
 ## Throws a web at [param point], grapples onto it when it sticks, and walks on
 ## up or across it until it puts the spider somewhere else. Whether it all went.
 func web_onto(run: LevelRun, point: Vector3, wound := 1.0) -> bool:
@@ -258,18 +245,7 @@ func pull(run: LevelRun) -> void:
 	await run_frames(4)
 
 
-func fly_near(point: Vector3) -> Fly:
-	var best: Fly = null
-	for node in get_root().get_tree().get_nodes_in_group(Fly.GROUP):
-		var fly := node as Fly
-		var home := fly.path[0] if fly.path.size() > 0 else fly._home
-		if best == null or home.distance_to(point) < (best.path[0] if best.path.size() > 0
-				else best._home).distance_to(point):
-			best = fly
-	return best
-
-
-## Walks into the bag, and says whether the level was finished.
+## Walks into the exit, and says whether the level was finished.
 func finish(run: LevelRun, exit_at: Vector3) -> bool:
 	await go(run, exit_at, 0.4)
 	await wait_until(func() -> bool: return run.done, 60)
@@ -286,14 +262,11 @@ func where(run: LevelRun) -> String:
 func _first_thread() -> void:
 	print("Route: First Thread")
 	var run := await load_level("01_first_thread.json")
-	check(await catch(run, fly_near(Vector3(0, 1.8, -5.8))), "the fly over the first gap")
-	check(run.weaver.air_jumps == 1, "banks a jump")
 	await go(run, Vector3(0, 0, -4.5), 0.2, true)
-	check(await leap(run, Vector3(0, 0, -10.5)) and run.weaver.global_position.z < -6.5,
+	check(await leap(run, Vector3(0, 0, -12)) and run.weaver.global_position.z < -8.0,
 		"a jump takes the first gap (%s)" % where(run))
 	await stop(run)
-	check(await catch(run, fly_near(Vector3(2.5, 1.8, -23)), 0.5), "the fly on its path")
-	await go(run, Vector3(0, 0, -14))
+	await go(run, Vector3(0, 0, -15))
 	aim(run, Vector3(0, 0, -33))
 	check(run.weaver.grapple.aimed().get("web") == null, "bare stone gives the grapple nothing")
 	check(await web_onto(run, Vector3(0, 0, -33)),
@@ -307,38 +280,21 @@ func _first_thread() -> void:
 		% where(run))
 	await stop(run)
 	await pull(run)
-	check(await catch(run, fly_near(Vector3(-2.5, 5.6, -46))), "the fly on the ledge")
 	var weaver := run.weaver
-	await go(run, Vector3(0, 4, -43.0), 0.3)
-	await stop(run)
-	aim(run, Vector3(0, 4, -59))
+	aim(run, Vector3(0, 4, -58))
 	check(weaver.grapple.aimed().get("web") == null,
 		"the last pad is slick: nothing for silk, nothing for the grapple")
-	# Walk at the edge, grapple to the fly over the gap, and hop off it across.
-	var gap_fly := fly_near(Vector3(0, 5.4, -52))
-	await go(run, Vector3(0, 4, -49.0), 0.3, true)
-	check(await grapple_to(run, gap_fly.global_position) and not gap_fly.is_free(),
-		"a grapple to the fly over the gap takes it")
-	weaver.view.pitch = -0.1
-	weaver.view.yaw = 0.0
-	weaver.drive(Vector2(0.0, 1.0))
-	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
-	weaver.drive(Vector2.ZERO)
-	check(weaver.global_position.z < -54.0 and weaver.global_position.y > 3.9,
-		"and the hop off it clears a gap one jump could not (%s)" % where(run))
-	check(await finish(run, Vector3(0, 4, -61)), "and the bag")
-	check(run.bagged == 4, "with every fly in it (%d)" % run.bagged)
+	await go(run, Vector3(0, 4, -49.6), 0.2, true)
+	check(await leap(run, Vector3(0, 4, -58)) and weaver.global_position.z < -53.0
+		and weaver.global_position.y > 3.9, "a running jump onto it (%s)" % where(run))
+	await stop(run)
+	check(await finish(run, Vector3(0, 4, -60)), "and out")
 
 
 func _silk_stairs() -> void:
 	print("Route: Silk Stairs")
 	var run := await load_level("02_silk_stairs.json")
 	var weaver := run.weaver
-	check(await catch(run, fly_near(Vector3(-4, 6, -5)), 0.4), "the low fly by the wall")
-	check(await catch(run, fly_near(Vector3(4, 10.5, -5)), 0.4), "the high one")
-	check(weaver.webs_left() == 0, "both webs went on into the wall")
-	await pull(run)
-	check(weaver.webs_left() == 2, "and the Pullback brings both home")
 	await go(run, Vector3(0, 0, -5.5))
 	var low := await throw_at(run, Vector3(0, 2.4, -7))
 	check(await stuck(low), "a big web low on the wall")
@@ -359,9 +315,7 @@ func _silk_stairs() -> void:
 	check(weaver.global_position.y > 13.9 and weaver.mode == Weaver.Mode.GROUND,
 		"and walking off the top of it, over the slick band onto the top (%s)" % where(run))
 	await pull(run)
-	await go(run, Vector3(0, 14, -12))
-	check(await catch(run, fly_near(Vector3(0, 15.5, -14)), 0.6), "the fly on top")
-	check(await finish(run, Vector3(0, 14, -19)), "and the bag")
+	check(await finish(run, Vector3(0, 14, -19)), "and out")
 
 
 func _ride_the_gap() -> void:
@@ -378,13 +332,10 @@ func _ride_the_gap() -> void:
 	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.WEB, 60)
 	check(weaver.standing_web() == web, "riding it")
 	check(await stuck(web), "across, until it sticks to the far wall")
-	check(run.caught() == 2, "taking both flies it passed (%d)" % run.caught())
 	await climb(run)
 	check(weaver.global_position.y > 5.0 and weaver.mode == Weaver.Mode.GROUND,
 		"up the web onto the top (%s)" % where(run))
-	await go(run, Vector3(0, 5, -40))
-	check(await catch(run, fly_near(Vector3(3, 7, -42)), 0.6), "the fly up there")
-	check(await finish(run, Vector3(0, 5, -44)), "and the bag")
+	check(await finish(run, Vector3(0, 5, -44)), "and out")
 
 
 func _call_it_back() -> void:
@@ -395,29 +346,6 @@ func _call_it_back() -> void:
 	await web_onto(run, Vector3(-2, 4.5, 7.5))
 	check(weaver.global_position.y > 5.9, "a web up the pulpit's side, and onto it (%s)"
 		% where(run))
-	await pull(run)
-	await go(run, Vector3(0, 6, 7.5), 0.3)
-	var stand := Vector3(-3, 0.3, 4)
-	var a := fly_near(Vector3(-3, 3, -5.5))
-	var b := fly_near(Vector3(4, 4.5, -8))
-	var first := await throw_at(run, _past(stand, a.global_position, -17.0), 0.0)
-	var second := await throw_at(run, _past(stand, b.global_position, -17.0), 0.0)
-	check(await stuck(first) and await stuck(second),
-		"two webs thrown over the divider onto the back wall")
-	check(a.is_free() and b.is_free(), "missing both flies on the way")
-	await go(run, Vector3(stand.x, 0, stand.z), 0.15)
-	await stop(run)
-	await go(run, Vector3(stand.x, 0, stand.z), 0.15)
-	await stop(run)
-	if OS.has_environment("ROUTE_DEBUG"):
-		note("webs at %s and %s, aimed %s and %s, spider %s" % [first.global_position,
-			second.global_position, _past(stand, a.global_position, -17.0),
-			_past(stand, b.global_position, -17.0), where(run)])
-	await pull(run)
-	check(not a.is_free() and not b.is_free(),
-		"called home from where the way back runs through them, they take both flies")
-	await go(run, Vector3(-6, 0, 7.5))
-	await web_onto(run, Vector3(-2, 4.5, 7.5))
 	await pull(run)
 	await go(run, Vector3(0, 6, 7.5), 0.3)
 	var crate := get_root().get_tree().get_nodes_in_group(Crate.GROUP)[0] as Crate
@@ -433,15 +361,7 @@ func _call_it_back() -> void:
 	await run_frames(60)
 	await go(run, Vector3(3, 0, 1))
 	await go(run, Vector3(7.5, 0, 1.5))
-	check(await finish(run, Vector3(8, 0, 6.5)), "and through it, the bag")
-
-
-## Where on the plane z = [param wall_z] the line from [param stand] through
-## [param fly] meets it: throw there, and the way home from there runs through the
-## fly to where you stand.
-func _past(stand: Vector3, fly: Vector3, wall_z: float) -> Vector3:
-	var along := fly - stand
-	return stand + along * ((wall_z - stand.z) / along.z)
+	check(await finish(run, Vector3(8, 0, 6.5)), "and through it, out")
 
 
 func _moving_parts() -> void:
@@ -456,9 +376,6 @@ func _moving_parts() -> void:
 				ferry = node
 			else:
 				lift = node
-	var patrol := fly_near(Vector3(-4, 2, -12))
-	await wait_until(func() -> bool: return patrol.global_position.z > -13.0, 400)
-	check(await catch(run, patrol, 0.6), "the fly circling the ferry's way")
 	await go(run, Vector3(0, 0, -2.0), 0.3)
 	await wait_until(func() -> bool: return ferry.position.z < -10.0, 900)
 	await wait_until(func() -> bool: return ferry.position.z > -9.5, 900)
@@ -481,7 +398,6 @@ func _moving_parts() -> void:
 	await pull(run)
 	await run_frames(40)
 	check(run.is_powered("lift"), "brought onto the plate, it starts the lift")
-	check(await catch(run, fly_near(Vector3(4, 7, -45))), "the fly by the lift")
 	# Round the crate, now on the plate.
 	await go(run, Vector3(0, 0, -33.5))
 	await go(run, Vector3(0, 0, -39.5))
@@ -502,13 +418,12 @@ func _moving_parts() -> void:
 	await stop(run)
 	check(weaver.global_position.y > 9.9, "and from the top of it a jump to the high pad (%s)"
 		% where(run))
-	check(await catch(run, fly_near(Vector3(-2, 11.6, -54)), 0.6), "the last fly")
-	check(await finish(run, Vector3(0, 10, -55)), "and the bag")
+	check(await finish(run, Vector3(0, 10, -55)), "and out")
 
 
-func _the_bag() -> void:
-	print("Route: Put the Flies in the Bag")
-	var run := await load_level("06_put_the_flies_in_the_bag.json")
+func _all_together() -> void:
+	print("Route: All Together")
+	var run := await load_level("06_all_together.json")
 	var weaver := run.weaver
 	await go(run, Vector3(0, 0, -5.0))
 	var ride := await throw_at(run, Vector3(0, 1.8, -34), 0.6)
@@ -522,12 +437,10 @@ func _the_bag() -> void:
 			else Vector3.ZERO, ride.state if is_instance_valid(ride) else -1, where(run),
 			weaver.standing_web()])
 	check(rode and weaver.standing_web() == ride, "a ride over the drop to the stone face")
-	check(run.caught() == 2, "taking the two flies on the way (%d)" % run.caught())
 	await climb(run)
 	check(weaver.global_position.y > 3.9, "up and over the cap (%s)" % where(run))
 	await go(run, Vector3(0, 0, -40))
 	await stop(run)
-	check(await catch(run, fly_near(Vector3(5, 8, -44)), 0.5), "the fly by the tower")
 	await pull(run)
 	await go(run, Vector3(0, 0, -44.5))
 	var low := await throw_at(run, Vector3(0, 2.4, -46))
@@ -545,19 +458,6 @@ func _the_bag() -> void:
 	check(weaver.global_position.y > 11.9 and weaver.mode == Weaver.Mode.GROUND,
 		"up the tower on two webs, leapfrogged (%s)" % where(run))
 	await pull(run)
-	var boxed := fly_near(Vector3(-4, 13.6, -56))
-	var stand := Vector3(-4, 12.3, -51)
-	await go(run, Vector3(-7.5, 12, -60.5))
-	await stop(run)
-	var behind := await throw_at(run, _past(stand, boxed.global_position, -62.5), 0.0)
-	check(await stuck(behind) and boxed.is_free(), "a web past the box onto the wall behind")
-	await go(run, Vector3(stand.x, 12, stand.z), 0.15)
-	await stop(run)
-	if OS.has_environment("ROUTE_DEBUG"):
-		note("web behind at %s, aimed %s, fly %s, spider %s" % [behind.global_position,
-			_past(stand, boxed.global_position, -62.5), boxed.global_position, where(run)])
-	await pull(run)
-	check(not boxed.is_free(), "called home through the box, it takes the fly inside")
 	await go(run, Vector3(4, 12, -53), 0.2)
 	await stop(run)
 	var crate := get_root().get_tree().get_nodes_in_group(Crate.GROUP)[0] as Crate
@@ -565,6 +465,6 @@ func _the_bag() -> void:
 	check(await stuck(on_crate) and on_crate.carried == crate, "a web on the crate")
 	await pull(run)
 	await run_frames(100)
-	check(run.is_powered("bag"), "brought onto the plate, it opens the bag's door")
+	check(run.is_powered("bag"), "brought onto the plate, it opens the exit's door")
 	await go(run, Vector3(0, 12, -58))
-	check(await finish(run, Vector3(0, 12, -61.3)), "and every fly goes in the bag")
+	check(await finish(run, Vector3(0, 12, -61.3)), "and out")

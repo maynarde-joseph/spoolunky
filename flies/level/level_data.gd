@@ -12,8 +12,7 @@ extends RefCounted
 ## [codeblock]
 ## piece     piece, size, surface        — one of the kit's pieces, stretched to size
 ## start     —                           — where the spider starts, facing -z
-## exit      —                           — the bag: flies on the line go in it
-## fly       path, speed, loop           — hovers, or flies its path; caught, a jump
+## exit      —                           — walk into it to finish
 ## crate     —                           — a crate silk can stick to and bring home
 ## plate     channel                     — pressed by a crate, it powers its channel
 ## door      piece, size, surface, open, channel — slides by `open` while powered
@@ -22,7 +21,6 @@ extends RefCounted
 ## [/codeblock]
 ##
 ## A level's settings: [code]webs[/code], how many webs may be out at once (2);
-## [code]flies_needed[/code], how many flies the bag wants before it opens (0, none);
 ## [code]kill_y[/code], how far down is falling out; [code]ceiling[/code], the height
 ## of the slick lid over the level (0 puts it a little over the top of everything);
 ## and [code]par[/code], a time to beat.
@@ -33,7 +31,7 @@ extends RefCounted
 const BUILT_IN := "res://levels/"
 const MADE := "user://levels/"
 
-const TYPES := ["piece", "start", "exit", "fly", "crate", "plate", "door", "platform", "hazard"]
+const TYPES := ["piece", "start", "exit", "crate", "plate", "door", "platform", "hazard"]
 
 
 ## A new, empty level: a floor, a start and an exit.
@@ -41,7 +39,6 @@ static func blank(title := "New level") -> Dictionary:
 	return {
 		"name": title,
 		"webs": 2,
-		"flies_needed": 0,
 		"kill_y": -20.0,
 		"ceiling": 0.0,
 		"par": 60.0,
@@ -62,10 +59,6 @@ static func make(type: String, at: Vector3) -> Dictionary:
 			thing["piece"] = "cube"
 			thing["size"] = [2.0, 2.0, 2.0]
 			thing["surface"] = Surfaces.STONE
-		"fly":
-			thing["path"] = []
-			thing["speed"] = 2.5
-			thing["loop"] = true
 		"plate":
 			thing["channel"] = "a"
 		"door":

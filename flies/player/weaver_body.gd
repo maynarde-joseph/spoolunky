@@ -69,4 +69,3 @@ func animate(delta: float) -> void:
 		else move_toward(gait.aim, 0.0, delta * 4.0)
 	gait.ball = held.global_position if held != null \
 		else global_position + global_basis.y.normalized() * Weaver.HEIGHT
-	gait.towing = _weaver.fly_line.pull()

@@ -1,11 +1,8 @@
 class_name ExitBag
 extends Node3D
 
-## The way out, and the bag the flies go in.
-##
-## A sack of silk hanging in a ring. Shut — dim, and the ring red — until the
-## level's flies are on the spider's line; open — the ring gold — once they are.
-## Walk into it open and the flies go in the bag and the level is done.
+## The way out: a sack of silk hanging in a gold ring. Walk into it and the level is
+## done. It can be shut — dim, and the ring red — though nothing shuts it now.
 
 signal entered()
 
@@ -85,11 +82,6 @@ func _ready() -> void:
 	_sense.add_child(volume)
 	add_child(_sense)
 	_sense.body_entered.connect(_on_body_entered)
-
-
-## Where the flies go.
-func mouth() -> Vector3:
-	return _sack.global_position
 
 
 func set_open(value: bool) -> void:

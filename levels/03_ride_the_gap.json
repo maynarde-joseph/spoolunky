@@ -1,7 +1,6 @@
 {
 	"name": "Ride the Gap",
 	"webs": 2,
-	"flies_needed": 0,
 	"kill_y": -15.0,
 	"ceiling": 12.0,
 	"par": 25.0,
@@ -158,65 +157,6 @@
 				2
 			],
 			"surface": "slick"
-		},
-		{
-			"type": "fly",
-			"pos": [
-				0,
-				2.4,
-				-14
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"path": [],
-			"speed": 2.5,
-			"loop": true
-		},
-		{
-			"type": "fly",
-			"pos": [
-				0.5,
-				2.6,
-				-24
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"path": [],
-			"speed": 2.5,
-			"loop": true
-		},
-		{
-			"type": "fly",
-			"pos": [
-				3,
-				7,
-				-42
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"path": [
-				[
-					3,
-					7,
-					-42
-				],
-				[
-					-3,
-					7,
-					-42
-				]
-			],
-			"speed": 2.0,
-			"loop": true
 		},
 		{
 			"type": "exit",

@@ -6,8 +6,7 @@ extends Node3D
 ## Silk is cast the way it always was — hold to wind a ball of it up over the
 ## spider's back, let go to throw — but what leaves the spider now is the web
 ## itself, already spun, flying face first down the line it was thrown along. In
-## the air it is something to grapple onto and ride. Whatever fly it passes over
-## is wrapped and taken. Where its middle meets something solid it stops and
+## the air it is something to grapple onto and ride. Where its middle meets something solid it stops and
 ## sticks, lying flat against that surface, and from then on it is ground: the
 ## spider cannot climb a wall, but it can walk on a web that is on one. Only its
 ## middle stops it; its rim passes through things, or a web thrown along a floor
@@ -22,8 +21,7 @@ extends Node3D
 ## again. Thrown at nothing, it goes as far as silk goes and comes apart there.
 ##
 ## The Pullback calls it home: it comes off whatever it was on and flies straight
-## back to the spider through anything in the way, wrapping every fly it passes,
-## and anything it was stuck to — a crate — comes with it and is put down at the
+## back to the spider through anything in the way, and anything it was stuck to — a crate — comes with it and is put down at the
 ## spider's feet.
 ##
 ## The web's face is its local XY plane, and its local +Z is the side facing
@@ -157,8 +155,7 @@ func walk_body() -> StaticBody3D:
 	return _walk
 
 
-## Comes off whatever it is on and flies home to [param to], wrapping what it
-## passes on the way. False if it is not something that can come back.
+## Comes off whatever it is on and flies home to [param to]. False if it is not something that can come back.
 func call_back(to: Node3D) -> bool:
 	if not is_standing() or to == null:
 		return false
@@ -216,8 +213,6 @@ func _fly(delta: float) -> void:
 	if distance < 0.00001:
 		return
 	var from := global_position
-	_take_flies(from, from + step, current_radius())
-
 	var hit := _first_hit(from, step)
 	if not hit.is_empty():
 		_land(hit)
@@ -247,18 +242,6 @@ func _first_hit(from: Vector3, step: Vector3) -> Dictionary:
 	return space.intersect_ray(ray)
 
 
-## Every fly the web passes over between [param a] and [param b] is wrapped and
-## goes on the spider's line.
-func _take_flies(a: Vector3, b: Vector3, reach: float) -> void:
-	if weaver == null or not weaver.has_method("catch_fly"):
-		return
-	for node in get_tree().get_nodes_in_group(Fly.GROUP):
-		var fly := node as Fly
-		if fly == null or not fly.is_free():
-			continue
-		var near := Geometry3D.get_closest_point_to_segment(fly.global_position, a, b)
-		if near.distance_to(fly.global_position) <= reach + Fly.HIT_RADIUS * 0.5:
-			weaver.call("catch_fly", fly)
 
 
 func _land(hit: Dictionary) -> void:
@@ -301,14 +284,12 @@ func _come_home(delta: float) -> void:
 	var step := RETURN_SPEED * delta
 	var from := global_position
 	if to.length() <= step + 0.9:
-		_take_flies(from, goal, radius * 0.8)
 		_arrive()
 		return
 	velocity = to.normalized() * RETURN_SPEED
 	global_position = from + to.normalized() * step
 	# Face first, the way it flies.
 	global_basis = _facing(-to.normalized(), global_basis.x)
-	_take_flies(from, global_position, radius * 0.8)
 	_carry()
 
 

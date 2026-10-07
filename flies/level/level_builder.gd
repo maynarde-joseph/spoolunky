@@ -117,17 +117,6 @@ static func build_thing(thing: Dictionary, parent: Node3D, editing := false) -> 
 			made.transform = LevelData.transform_of(thing)
 			if editing:
 				_pick(made, Vector3(2.6, 2.8, 2.6), Vector3(0.0, 1.4, 0.0))
-		"fly":
-			var fly := Fly.new()
-			fly.path = LevelData.path_of(thing)
-			fly.speed = float(thing.get("speed", 2.5))
-			fly.loops = bool(thing.get("loop", true))
-			made = fly
-			made.transform = LevelData.transform_of(thing)
-			parent.add_child(made, true)
-			if editing:
-				fly.set_physics_process(false)
-				_path_line(parent, made, fly.path, true, Color(1.0, 0.8, 0.3))
 		"crate":
 			var crate := Crate.new()
 			made = crate

@@ -9,8 +9,7 @@ extends Node3D
 ## the smallest, a full second's wind-up the biggest.
 ##
 ## What is thrown is new: a whole web, flying — see [ThrownWeb]. The size the
-## wind-up reached is the size of the web, so a bigger web is a bigger platform
-## and a wider net for a fly.
+## wind-up reached is the size of the web, so a bigger web is a bigger platform.
 ##
 ## Holding it does not stop anything else. The grapple and the Pullback both go
 ## while the ball is held, and the ball is still there, winding, when they have.
@@ -32,10 +31,6 @@ const COOLDOWN := 0.2
 ## The held ball's radius, in body heights, from a tap to a full wind-up. The
 ## ball the old game held, unchanged.
 const HELD_BODIES := Vector2(0.12, 0.4)
-
-## How far off the cross a fly can be and still be what the web is thrown at, in
-## degrees past its own outline.
-const PICK_ANGLE := 3.0
 
 var weaver: Weaver
 var view: SpiderCamera
@@ -97,17 +92,6 @@ func throw(wound := 0.0) -> bool:
 	var from := view.aim_origin()
 	var heading := view.aim_forward()
 	var radius := web_radius(wound)
-	var fly := picked_fly()
-	if fly != null:
-		# Only steered when the throw as aimed would miss: a web that will pass over
-		# the fly anyway goes where the cross is, which may be the wall behind it.
-		var meet := intercept(from, SPEED, fly.global_position, fly.velocity)
-		var along := (meet - from).dot(heading)
-		var miss := (meet - (from + heading * along)).length()
-		if along <= 0.0 or miss > radius * 0.7:
-			var lead := meet - from
-			if lead.length_squared() > 0.0001:
-				heading = lead.normalized()
 	var web := ThrownWeb.throw(weaver.web_container(), weaver, from, heading, SPEED, radius, REACH)
 	weaver.adopt_web(web)
 	_cooling = COOLDOWN
@@ -117,42 +101,6 @@ func throw(wound := 0.0) -> bool:
 ## How wide a web wound up to [param wound] is.
 func web_radius(wound: float) -> float:
 	return lerpf(SMALLEST, BIGGEST, clampf(wound, 0.0, 1.0))
-
-
-## The fly a throw now would be aimed at, if any: the one nearest the cross whose
-## outline is within [constant PICK_ANGLE] of it, in reach and in plain sight — or,
-## while Shift is held, the fly the spider has locked on to.
-func picked_fly() -> Fly:
-	if view == null or view.camera == null:
-		return null
-	if weaver.locking and weaver.lock_target != null:
-		return weaver.lock_target
-	var eye := view.camera.global_position
-	var look := -view.camera.global_basis.z.normalized()
-	var from := view.aim_origin()
-	var best: Fly = null
-	var best_slack := INF
-	for node in get_tree().get_nodes_in_group(Fly.GROUP):
-		var fly := node as Fly
-		if fly == null or not fly.is_free():
-			continue
-		var at := fly.global_position
-		if from.distance_to(at) > REACH:
-			continue
-		var sight := at - eye
-		var distance := sight.length()
-		if distance < 0.01:
-			continue
-		var slack := rad_to_deg(look.angle_to(sight)) - rad_to_deg(atan2(Fly.HIT_RADIUS, distance))
-		if slack > PICK_ANGLE or slack >= best_slack:
-			continue
-		var query := PhysicsRayQueryParameters3D.create(from, at, GameLayers.WORLD,
-			[weaver.get_rid()])
-		if not get_world_3d().direct_space_state.intersect_ray(query).is_empty():
-			continue
-		best_slack = slack
-		best = fly
-	return best
 
 
 func _process(delta: float) -> void:
@@ -202,30 +150,3 @@ func _build_held() -> void:
 	_held.top_level = true
 	_held.visible = false
 	add_child(_held)
-
-
-## Where to throw from [param from], at [param pace], to meet something at
-## [param at] moving at [param velocity] — if it keeps going the way it is going:
-## the point where web and fly arrive at the same moment. Something too fast to
-## catch, or not moving, gets thrown at where it is.
-static func intercept(from: Vector3, pace: float, at: Vector3, velocity: Vector3) -> Vector3:
-	var gap := at - from
-	var a := velocity.dot(velocity) - pace * pace
-	var b := 2.0 * gap.dot(velocity)
-	var c := gap.dot(gap)
-	var soonest := -1.0
-	if absf(a) < 0.000001:
-		if absf(b) > 0.000001:
-			soonest = -c / b
-	else:
-		var room := b * b - 4.0 * a * c
-		if room >= 0.0:
-			var first := (-b - sqrt(room)) / (2.0 * a)
-			var second := (-b + sqrt(room)) / (2.0 * a)
-			for t in [minf(first, second), maxf(first, second)]:
-				if t > 0.0:
-					soonest = t
-					break
-	if soonest <= 0.0:
-		return at
-	return at + velocity * soonest

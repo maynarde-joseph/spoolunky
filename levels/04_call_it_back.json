@@ -1,7 +1,6 @@
 {
 	"name": "Call It Back",
 	"webs": 2,
-	"flies_needed": 0,
 	"kill_y": -10.0,
 	"ceiling": 23.0,
 	"par": 50.0,
@@ -156,38 +155,6 @@
 				30
 			],
 			"surface": "slick"
-		},
-		{
-			"type": "fly",
-			"pos": [
-				-3,
-				3.0,
-				-5.5
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"path": [],
-			"speed": 2.5,
-			"loop": true
-		},
-		{
-			"type": "fly",
-			"pos": [
-				4,
-				4.5,
-				-8.0
-			],
-			"rot": [
-				0.0,
-				0.0,
-				0.0
-			],
-			"path": [],
-			"speed": 2.5,
-			"loop": true
 		},
 		{
 			"type": "piece",

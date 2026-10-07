@@ -1,20 +1,19 @@
 # Put the Flies in the Bag
 
 A fast third-person spider game in Godot 4.6, built on three verbs.
-Each level is a test chamber: get to the exit as fast as you can, and catch the
-flies on the way. A fly caught with silk banks a jump for the air; a fly you
-grapple to is an anchor you swing off. Every fly counts toward your score.
+Each level is a test chamber: get to the exit as fast as you can. (The flies the
+game is named for are out for now, while the web is the whole focus.)
 
-The spider walks and jumps the way the old spider did, but it can't climb walls
-any more. What it has instead is silk, on three buttons, and all three work at the same time:
+The spider moves the way the old spider did, at what was its sprint, but it
+can't climb walls any more. What it has instead is silk, on three buttons, and
+all three work at the same time:
 
 | Input | Verb |
 |-------|------|
-| **Left mouse** | **Grapple**: a line to a web or a fly you point at, and you're pulled along it. **Only silk and flies hold it**: stuck webs, webs still in the air (the line follows them), and flies. Your webs are your anchors. Pulled to a fly, you catch it, get the grapple back, and hop off it the way you were going: an anchor in mid-air, good once. You get one grapple in the air, and it comes back when you land on the ground or on a web that has stuck. Landing on a web that is still flying gives it back once per landing. |
-| **Right mouse** | **Silk**: hold to wind a ball of silk up over the spider's back, then let go to throw. This is cast exactly as before. What leaves the spider now is a whole web, flying face first; the longer the wind-up, the bigger the web. Grapple onto it and ride it, but a ride is a commitment: jumping off a flying web is only a hop, and a web that reaches the end of its range without hitting anything stops dead and drops you. Where its middle meets something it sticks flat against that surface and becomes ground: you can walk on a web on a wall or a ceiling. Every fly it passes over is wrapped and goes on your line. |
-| **E / middle mouse** | **Pullback**: your oldest web flies back to you (first thrown, first home), one web per press. It comes straight through walls, wraps every fly it passes, and drops whatever it was stuck to (a crate) at your feet. The web you're standing on is skipped, so two webs can leapfrog up a wall. If it reaches you in the air, it catches you: a short air-stall (about 0.6 s) with your speed mostly gone, which gives you a moment to aim the next throw. |
-| **Shift** (hold) | **Lock on** to the fly nearest the cross. While it's held the grapple and the silk both go to that fly wherever the cross is, and it wears a gold ring. |
-| WASD / Space | walk / jump. In the air, Space spends a banked jump |
+| **Left mouse** | **Grapple**: a line to a web you point at, and you're pulled along it onto the web. **Only silk holds it**: stuck webs, and webs still in the air (the line follows them). Your webs are your anchors. You get one grapple in the air, and it comes back when you land on the ground or on a web that has stuck. Landing on a web that is still flying gives it back once per landing. |
+| **Right mouse** | **Silk**: hold to wind a ball of silk up over the spider's back, then let go to throw. This is cast exactly as before. What leaves the spider now is a whole web, flying face first; the longer the wind-up, the bigger the web. Grapple onto it and ride it, but a ride is a commitment: jumping off a flying web is only a hop, and a web that reaches the end of its range without hitting anything stops dead and drops you. Where its middle meets something it sticks flat against that surface and becomes ground: you can walk on a web on a wall or a ceiling. |
+| **E / middle mouse** | **Pullback**: your oldest web flies back to you (first thrown, first home), one web per press. It comes straight through walls and drops whatever it was stuck to (a crate) at your feet. The web you're standing on is skipped, so two webs can leapfrog up a wall. If it reaches you in the air, it catches you: a short air-stall (about 0.6 s) with your speed mostly gone, which gives you a moment to aim the next throw. |
+| WASD / Space | move / jump |
 | R | restart the level (instant) |
 | Esc | pause: resume, restart, edit this level, menu |
 | L | first / third person |
@@ -32,12 +31,6 @@ floor or another web just past it to step onto.
 * **Slick** (dark striped metal): nothing sticks. A web thrown at it slides off and
   its silk comes back to you, so you can't put an anchor there. You can still
   walk on a slick floor.
-* **Flies** hover in place or fly a set path. Only silk takes them: a thrown web
-  that touches one, or a web called home through one. A web sitting on a wall
-  doesn't catch flies that wander into it. Each fly taken with silk banks a
-  jump: press Space in the air to spend one (gold beads under the silk count
-  them). They keep until spent, so you can hoard them. A fly you grapple to
-  is an anchor instead (see Grapple). Caught flies trail behind you on a line.
 * **The ceiling**: a slick lid over every level, drawn as a faint grid. A web
   thrown at the sky slides off it, so a ride can't carry you over everything.
 * **Crates**: silk sticks to them, and the Pullback is the only way to move one.
@@ -47,24 +40,20 @@ floor or another web just past it to step onto.
 * **Moving platforms** follow a path back and forth or in a loop. With a channel
   set, they only run while it's powered. Webs stuck to them ride along.
 * **Hazards** (red) and falling out of the level both restart you.
-* **The exit**: a silk bag in a ring. Walk in to finish. Your score is the time
-  plus the number of flies you caught. The menu keeps your best time and your
-  most flies separately.
+* **The exit**: a silk bag in a ring. Walk in to finish. Your score is the time,
+  and the menu keeps your best.
 
-A level also sets how many webs you can have out at once (two by default). It
-can also make the bag wait for a number of flies before it opens (none by
-default); while it's waiting, the ring is red.
+A level also sets how many webs you can have out at once (two by default).
 
 ## The levels
 
 1. **First Thread**: jump a gap, throw a web across a long one and grapple to it,
-   web up a ledge, then clear a slick gap that's too far to jump by grappling
-   to the fly over it and hopping off (or by spending banked jumps).
+   web up a ledge, then jump to the slick pad with the exit on it.
 2. **Silk Stairs**: a wall you can't climb and two webs. Leapfrog them up the wall with the Pullback.
-3. **Ride the Gap**: the gap is farther than a grapple reaches but not as far as silk flies. Ride a web across, through the flies.
-4. **Call It Back**: two flies behind a wall over a red floor. Throw webs past them, stand where the way home runs through them, and call. Then fetch a crate for the plate.
+3. **Ride the Gap**: the gap is farther than a grapple reaches but not as far as silk flies. Ride a web across.
+4. **Call It Back**: a crate on a post in the red, behind a wall. Web it from the pulpit, stand on the plate, and call it home to open the door.
 5. **Moving Parts**: a ferry, a crate on a post, and a lift the crate starts.
-6. **Put the Flies in the Bag**: all of it at once.
+6. **All Together**: a ride, a tower to leapfrog, and a crate for the door.
 
 ## The level editor
 
@@ -77,13 +66,12 @@ pause menu.
   15°) and **T** tips it.
 * **Click** a thing to select it. The panel on the right shows everything about
   it: position, turn, size, piece, surface (stone/slick), channel, speed, wait,
-  loop, and its path. **Add points** then clicking lays out a fly's or platform's
+  loop, and its path. **Add points** then clicking lays out a platform's
   path; PgUp/PgDn change the height you're placing points at.
 * **G** moves the selection, **Ctrl+D** copies it, **Delete** removes it,
   **arrows/PgUp/PgDn** nudge it, **[ ]** change the grid, **Ctrl+Z** undoes,
   **Ctrl+S** saves, and **F5** plays the level. Esc in play brings you back.
-* The bar along the top holds the level's name, its web count, how many flies
-  the bag wants (0 = none), the fall height, the ceiling height (0 = 6 m over the top) and par time, plus Open, New, Save and Save as new.
+* The bar along the top holds the level's name, its web count, the fall height, the ceiling height (0 = 6 m over the top) and par time, plus Open, New, Save and Save as new.
 
 Levels are plain JSON in `levels/`. When the project folder can't be written to,
 they're saved in `user://levels/` instead. The format is documented at the top of
@@ -95,13 +83,12 @@ they're saved in `user://levels/` instead. The format is documented at the top o
 flies/
   main.tscn, game_root.gd   the menu, play and the editor, one at a time
   player/    the spider (weaver.gd: walking, jumping, the web it's on, the pull,
-             the catch-stall, banked jumps, lock-on), and one node per verb: grapple, silk_caster, pullback,
-             fly_line (the caught flies trailing behind). The camera rig, the
+             the catch-stall), and one node per verb: grapple, silk_caster,
+             pullback. The camera rig, the
              skeleton, the minimal mesh and the eight-legged gait come from the
              earlier game unchanged
   web/       the thrown web, and the silk geometry it's drawn with
-  fly/       the fly, drawn with the body it was first given
-  rig/       bones and meshes for the fly
+  rig/       the mesh-building kit the spider's body is made with
   level/     the level format, the builder, the run (clock, channels, exit), the
              surfaces, the kit loader, and crates, plates, doors, platforms,
              hazards and the exit bag
@@ -138,4 +125,6 @@ That command renders a level from the spider's start and from above.
 
 This branch started from the spider game on `claude/eager-gauss-g1mosx`, which
 is left as it was. Only the camera, the spider's body and gait, the web
-geometry, the kit loader and the fly's original body were carried over.
+geometry and the kit loader were carried over. The flies, and the body they were
+drawn with, were in this game until they were taken out to focus on the web;
+they're in the history.

@@ -24,7 +24,7 @@ signal leave()
 
 const PICK_MASK := GameLayers.WORLD | GameLayers.PREY | LevelBuilder.EDITOR_PICK
 const SNAPS := [0.25, 0.5, 1.0, 2.0]
-const GAMEPLAY := ["start", "exit", "fly", "crate", "plate", "door", "platform", "hazard"]
+const GAMEPLAY := ["start", "exit", "crate", "plate", "door", "platform", "hazard"]
 
 var level: Dictionary = {}
 var path := ""
@@ -60,7 +60,6 @@ var _inspector: VBoxContainer
 var _status: Label
 var _name_edit: LineEdit
 var _webs_spin: SpinBox
-var _needed_spin: SpinBox
 var _kill_spin: SpinBox
 var _par_spin: SpinBox
 var _ceiling_spin: SpinBox
@@ -340,8 +339,6 @@ func _cursor_point(height: float, on_surface := false) -> Vector3:
 		var hit := _ray(GameLayers.WORLD | LevelBuilder.EDITOR_PICK)
 		if not hit.is_empty():
 			point = hit["position"]
-			if place_type == "fly":
-				point += (hit["normal"] as Vector3) * 1.2
 	if point == Vector3.INF:
 		var mouse := get_viewport().get_mouse_position()
 		var from := camera.project_ray_origin(mouse)
@@ -545,8 +542,6 @@ func _make_ghost() -> void:
 				body.collision_mask = 0
 			if node is RigidBody3D:
 				(node as RigidBody3D).freeze = true
-			if node is Fly:
-				node.remove_from_group(Fly.GROUP)
 
 
 func _update_ghost() -> void:
@@ -654,9 +649,6 @@ func _build_ui() -> void:
 	bar.add_child(_small("Webs"))
 	_webs_spin = _spin(1, 6, 1)
 	bar.add_child(_webs_spin)
-	bar.add_child(_small("Bag wants (flies)"))
-	_needed_spin = _spin(0, 50, 1)
-	bar.add_child(_needed_spin)
 	bar.add_child(_small("Fall at y"))
 	_kill_spin = _spin(-200, 50, 1)
 	bar.add_child(_kill_spin)
@@ -666,7 +658,7 @@ func _build_ui() -> void:
 	bar.add_child(_small("Ceiling y (0 = auto)"))
 	_ceiling_spin = _spin(0, 300, 1)
 	bar.add_child(_ceiling_spin)
-	for spin in [_webs_spin, _needed_spin, _kill_spin, _par_spin, _ceiling_spin]:
+	for spin in [_webs_spin, _kill_spin, _par_spin, _ceiling_spin]:
 		(spin as SpinBox).value_changed.connect(func(_v: float) -> void: _read_settings())
 	var gap := Control.new()
 	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -767,7 +759,6 @@ func _refresh_settings() -> void:
 		return
 	_name_edit.text = String(level.get("name", "New level"))
 	_webs_spin.set_value_no_signal(float(level.get("webs", 2)))
-	_needed_spin.set_value_no_signal(float(level.get("flies_needed", 0)))
 	_kill_spin.set_value_no_signal(float(level.get("kill_y", -20.0)))
 	_par_spin.set_value_no_signal(float(level.get("par", 60.0)))
 	_ceiling_spin.set_value_no_signal(float(level.get("ceiling", 0.0)))
@@ -778,7 +769,6 @@ func _read_settings() -> void:
 		return
 	level["name"] = _name_edit.text
 	level["webs"] = int(_webs_spin.value)
-	level["flies_needed"] = int(_needed_spin.value)
 	level["kill_y"] = _kill_spin.value
 	level["par"] = _par_spin.value
 	var lid := _ceiling_spin.value

@@ -3,7 +3,7 @@ extends RefCounted
 
 ## The light every level is played in: a bright, hazy sky over test chambers that
 ## hang in it, a sun to throw hard shadows to read heights by, and a little glow
-## so a fly's light and an open exit stand out.
+## so an open exit stands out.
 
 static func dress(level: Node3D) -> void:
 	var sky_paint := ProceduralSkyMaterial.new()

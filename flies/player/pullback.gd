@@ -5,8 +5,8 @@ extends Node3D
 ##
 ## First thrown, first home: one press, one web, the one that has been out
 ## longest. It comes off whatever it was on and flies straight home through
-## anything in the way, wrapping every fly it passes and bringing whatever it was
-## stuck to — a crate — to put down at your feet. The silk is yours to throw again
+## anything in the way, bringing whatever it was stuck to — a crate — to put down
+## at your feet. The silk is yours to throw again
 ## the moment it lets go. Press again for the next.
 ##
 ## The web you are standing on, or riding, is passed over for the next oldest:
