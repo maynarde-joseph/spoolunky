@@ -177,6 +177,7 @@ static func build_thing(thing: Dictionary, parent: Node3D, editing := false) -> 
 		"cutter":
 			var cutter := SilkCutter.new()
 			cutter.size = size
+			cutter.mask = PackedStringArray(thing.get("mask", []))
 			made = cutter
 			made.transform = LevelData.transform_of(thing)
 			parent.add_child(made, true)

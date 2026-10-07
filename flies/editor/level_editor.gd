@@ -863,6 +863,23 @@ func _show_inspector() -> void:
 		_vector_row("Opens by", thing, "open", 0.25)
 	if thing.has("travel"):
 		_vector_row("Slides by", thing, "travel", 0.25)
+	if String(thing.get("type")) == "cutter":
+		# Which cells hold lasers, like a tile map: a row a line, top first, "#" for
+		# lasers and "." for open. Empty is a field filled edge to edge.
+		_inspector.add_child(_small("Lasers (# filled, . open; %.1f m cells)" % SilkCutter.CELL))
+		var cells := TextEdit.new()
+		cells.custom_minimum_size = Vector2(0, 120)
+		cells.add_theme_font_override("font", SystemFont.new())
+		cells.text = "\n".join(PackedStringArray(thing.get("mask", [])))
+		cells.focus_exited.connect(func() -> void:
+			_push_undo()
+			var rows := PackedStringArray()
+			for line in cells.text.split("\n"):
+				if line.strip_edges() != "":
+					rows.append(line.strip_edges())
+			thing["mask"] = Array(rows)
+			_rebuild_thing(thing))
+		_inspector.add_child(cells)
 	for number in ["speed", "wait"]:
 		if thing.has(number):
 			var spin := _spin(0, 60, 0.1)

@@ -23,6 +23,7 @@ func run_checks() -> void:
 	await _riding_a_web()
 	await _rides_go_nowhere_for_free()
 	await _silk_cutters()
+	await _cutter_masks()
 	await _dropping_mid_pull()
 	await _the_ceiling()
 	await _one_face()
@@ -386,6 +387,46 @@ func _silk_cutters() -> void:
 	check(weaver.global_position.z < -6.0, "and the spider walks through it (z %.1f)"
 		% weaver.global_position.z)
 
+
+
+## A cutter laid out like a tile map: its mask leaves a hole silk can pass, and
+## the frame runs only round the hole and the outside.
+func _cutter_masks() -> void:
+	print("Cutter masks")
+	# 6 m square in 1.5 m cells: x -3..3, y 0..6; the hole is x -1.5..0, y 1.5..4.5.
+	var objects: Array = [{"type": "cutter", "pos": [0.0, 0.0, -4.0], "size": [6.0, 6.0, 0.2],
+		"mask": ["####", "#.##", "#.##", "####"]}]
+	var run := await arena(objects)
+	var weaver := run.weaver
+	var cutter := run.get_tree().get_nodes_in_group(SilkCutter.GROUP)[0] as SilkCutter
+	check(not cutter.filled(1, 1) and not cutter.filled(1, 2) and cutter.filled(0, 1)
+		and cutter.filled(1, 0) and cutter.filled(1, 3), "the mask's rows run top first")
+	var solids := 0
+	for child in cutter.get_children():
+		if child is CollisionShape3D:
+			solids += 1
+	check(solids == 6, "one solid per run of filled cells along a row (%d)" % solids)
+	var space := cutter.get_world_3d().direct_space_state
+	check(SilkCutter.crossing(space, Vector3(-0.75, 3.0, -2.0), Vector3(-0.75, 3.0, -6.0)).is_empty(),
+		"a line through the hole crosses nothing")
+	check(not SilkCutter.crossing(space, Vector3(1.5, 3.0, -2.0), Vector3(1.5, 3.0, -6.0)).is_empty(),
+		"a line beside it is cut")
+	await put(run, Vector3(-0.75, 0.3, 2.0))
+	aim(run, Vector3(-0.75, 5.0, -11.5))
+	weaver.caster.throw(0.0)
+	var through := first_web(run)
+	await wait_until(func() -> bool: return not is_instance_valid(through) or not through.is_flying(), 90)
+	check(is_instance_valid(through) and through.is_stuck() and through.global_position.z < -10.0,
+		"a web thrown through the hole goes on and sticks past it (%s)" % [through.global_position if is_instance_valid(through) else "gone"])
+	await pull(run)
+	await put(run, Vector3(1.5, 0.3, 2.0))
+	aim(run, Vector3(1.5, 5.0, -11.5))
+	weaver.caster._cooling = 0.0
+	weaver.caster.throw(0.0)
+	var beside := weaver.webs()[weaver.webs().size() - 1]
+	await wait_until(func() -> bool: return not is_instance_valid(beside) or not beside.is_flying(), 90)
+	check(not is_instance_valid(beside) or (not beside.is_stuck() and beside.global_position.z > -4.6),
+		"one thrown beside it is cut")
 
 ## Space mid-pull: the line lets go, and the spider drops where it is.
 func _dropping_mid_pull() -> void:

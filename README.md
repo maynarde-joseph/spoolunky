@@ -41,7 +41,7 @@ floor or another web just past it to step onto.
   set, they only run while it's powered. Webs stuck to them ride along.
 * **Loose boards** (weathered wood): silk sticks to them, but they won't hold you, so you can't grapple to or walk onto a web on one. Call that web home and the board rips away, leaving whatever it covered.
 * **Blocks on rails** (stone with orange trim, and orange arrows on their sides): call a web on one home and the block slides the way its arrows point, to the other end of its rail; then the arrows turn round, and the next call slides it back. Rails run any way, up and down too, and blocks don't fall.
-* **Silk cutters** (violet laser grids in a metal frame): any web that flies through one is cut (a ride stops dead there and drops you), and a grapple line won't cross one. They don't touch the spider, which walks straight through, and webs called home pass through them.
+* **Silk cutters** (violet laser grids in a metal frame, laid out like a tile map in 1.5 m cells, so a field can have holes, notches and windows in it): any web that flies through one is cut (a ride stops dead there and drops you), and a grapple line won't cross one. They don't touch the spider, which walks straight through, and webs called home pass through them.
 * **Hazards** (red) and falling out of the level both restart you.
 * **The exit**: a silk bag in a ring. Walk in to finish. Your score is the time,
   and the menu keeps your best.
@@ -75,7 +75,8 @@ pause menu.
   15°) and **T** tips it.
 * **Click** a thing to select it. The panel on the right shows everything about
   it: position, turn, size, piece, surface (stone/slick), channel, speed, wait,
-  loop, and its path. **Add points** then clicking lays out a platform's
+  loop, its path, a rail block's slide and a silk cutter's mask (rows of `#` for
+  lasers and `.` for open cells, top row first). **Add points** then clicking lays out a platform's
   path; PgUp/PgDn change the height you're placing points at.
 * **G** moves the selection, **Ctrl+D** copies it, **Delete** removes it,
   **arrows/PgUp/PgDn** nudge it, **[ ]** change the grid, **Ctrl+Z** undoes,

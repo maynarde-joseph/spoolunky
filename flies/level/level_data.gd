@@ -20,7 +20,8 @@ extends RefCounted
 ## hazard    size                        — touch it and start again
 ## panel     piece, size                 — a loose board: holds silk, not you; the Pullback rips it off
 ## slider    piece, size, surface, travel, speed — a block on a rail; the Pullback slides it to the other end
-## cutter    size                        — a silk cutter: cuts webs that fly through it, and grapple lines
+## cutter    size, mask                  — a silk cutter: cuts webs that fly through it, and grapple
+##                                         lines; mask rows, top first, "#" lasers and "." open
 ## [/codeblock]
 ##
 ## A level's settings: [code]webs[/code], how many webs may be out at once (2);
@@ -86,7 +87,8 @@ static func make(type: String, at: Vector3) -> Dictionary:
 			thing["piece"] = "cube"
 			thing["size"] = [4.0, 4.0, 0.3]
 		"cutter":
-			thing["size"] = [4.0, 4.0, 0.2]
+			thing["size"] = [4.5, 4.5, 0.2]
+			thing["mask"] = []
 		"slider":
 			thing["piece"] = "cube"
 			thing["size"] = [3.0, 1.0, 3.0]

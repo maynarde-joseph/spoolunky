@@ -139,7 +139,7 @@ the pull when it's called:
 | Door | slides open by a set offset while its channel is powered |
 | Platform | follows its path back and forth or round. Runs only while its channel (if any) is powered |
 | Hazard (red) | touch it and the level restarts |
-| Silk cutter (violet laser grid in a metal frame) | cuts any web that flies through it (a ride stops dead there and drops you) and any grapple line across it. Harmless to the spider, which walks through; Pullback webs come home through it |
+| Silk cutter (violet laser grid in a metal frame, laid out like a tile map: a mask of 1.5 m cells says which hold lasers, the beams run on one lattice across them all, and the frame runs only where lasers meet open space, so a hole reads as a window) | cuts any web that flies through it (a ride stops dead there and drops you) and any grapple line across it. Harmless to the spider, which walks through; Pullback webs come home through it |
 | Loose board (weathered wood) | silk sticks, but it won't hold the spider. The Pullback rips it away |
 | Block on a rail (orange trim and arrows) | stone. The Pullback slides it the way its arrows point, to the other end of its rail; then the arrows turn round |
 | Exit bag | open from the start. Walk in to finish |
