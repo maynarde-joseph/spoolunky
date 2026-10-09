@@ -732,8 +732,8 @@ func _fly_paper() -> void:
 	var run := await load_level("09_fly_paper.json")
 	var weaver := run.weaver
 	var flies := flies_of(run)
-	var high: Fly = flies.filter(func(f: Fly) -> bool: return f.global_position.x < -1.0)[0]
-	var hops: Array = flies.filter(func(f: Fly) -> bool: return f.global_position.x > -1.0)
+	var high: Fly = flies.filter(func(f: Fly) -> bool: return f.global_position.y > 6.0)[0]
+	var hops: Array = flies.filter(func(f: Fly) -> bool: return f.global_position.y < 6.0)
 	check(run.flies_total == 4 and not run.exit.open, "four flies, and the bag shut")
 	await go(run, Vector3(0, 0, -3), 0.3)
 	await stop(run)
