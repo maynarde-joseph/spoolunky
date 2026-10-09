@@ -24,6 +24,10 @@ extends Node3D
 ## back to the spider through anything in the way, and anything it was stuck to
 ## — a crate — comes with it and is put down at the spider's feet.
 ##
+## A web that flies into a fly wraps it and stops there, in the air: see [Fly]. It
+## is a grapple point then, not a floor, and stays one of the spider's webs out
+## until the spider reaches it or calls it home, either of which takes the fly.
+##
 ## The web's face is its local XY plane, and its local +Z is the side facing
 ## back the way it came, and, once it is stuck, the side facing out from the
 ## surface.
@@ -89,6 +93,9 @@ var loose := false
 ## stopped dead first: its rider is left where it was, with none of its speed.
 var stalled := false
 
+## The fly it caught and is holding in the air, if it caught one.
+var fly: Fly = null
+
 ## Changes whenever the web's face turns under the spider — it stuck at an angle to
 ## the way it was flying — so the spider riding it knows to find its footing again.
 var turned := 0
@@ -150,9 +157,14 @@ func is_stuck() -> bool:
 	return state == State.STUCK
 
 
-## Whether the spider can be on it: stuck, and not to a loose board.
+## Whether the spider can be on it: stuck, and not to a loose board or round a fly.
 func holds_weight() -> bool:
-	return state == State.STUCK and not loose
+	return state == State.STUCK and not loose and fly == null
+
+
+## Whether it is holding a fly in the air: a grapple point, and nothing to stand on.
+func holds_fly() -> bool:
+	return state == State.STUCK and fly != null and is_instance_valid(fly)
 
 
 ## How big it is right now: it opens out over its first moment in the air.
@@ -195,6 +207,15 @@ func call_back(to: Node3D) -> bool:
 	return true
 
 
+## Reached by the spider at [param by]: the fly is the spider's, and the web comes
+## apart, its silk the spider's again.
+func give_fly(by: Node3D) -> void:
+	if fly != null and is_instance_valid(fly):
+		fly.take(by)
+	fly = null
+	_come_apart()
+
+
 func _physics_process(delta: float) -> void:
 	_age += delta
 	match state:
@@ -234,6 +255,13 @@ func _fly(delta: float) -> void:
 	var from := global_position
 	var hit := _first_hit(from, step)
 	var cut := SilkCutter.crossing(get_world_3d().direct_space_state, from, from + step)
+	var first := INF if hit.is_empty() else from.distance_to(hit["position"])
+	if not cut.is_empty():
+		first = minf(first, from.distance_to(cut["position"]))
+	var caught := _fly_on(from, step, first)
+	if caught != null:
+		_catch(caught)
+		return
 	if not cut.is_empty() and (hit.is_empty()
 			or from.distance_to(cut["position"]) < from.distance_to(hit["position"])):
 		_cut(cut["position"])
@@ -261,6 +289,37 @@ func _cut(at: Vector3) -> void:
 	if weaver != null and weaver.has_method("notify"):
 		weaver.call("notify", "Cut — silk can't cross that")
 	_come_apart()
+
+
+## The free fly this step passes close enough to catch, nearer than [param before]
+## metres along it; null for none.
+func _fly_on(from: Vector3, step: Vector3, before: float) -> Fly:
+	var best: Fly = null
+	var length := step.length()
+	var way := step / length
+	var reach := Fly.HIT + current_radius() * 0.5
+	for node in get_tree().get_nodes_in_group(Fly.GROUP):
+		var found := node as Fly
+		if found == null or not found.is_free():
+			continue
+		var along := clampf((found.global_position - from).dot(way), 0.0, length)
+		if along >= before:
+			continue
+		if (from + way * along).distance_to(found.global_position) > reach:
+			continue
+		before = along
+		best = found
+	return best
+
+
+## Flew into [param caught]: wraps it, and stops there, holding it in the air.
+func _catch(caught: Fly) -> void:
+	global_position = caught.global_position
+	velocity = Vector3.ZERO
+	state = State.STUCK
+	fly = caught
+	caught.catch(self)
+	stuck.emit(self)
 
 
 func _ridden() -> bool:
@@ -332,13 +391,19 @@ func _come_home(delta: float) -> void:
 
 
 func _carry() -> void:
+	if fly != null and is_instance_valid(fly):
+		fly.global_position = global_position
 	if carried != null and is_instance_valid(carried):
 		carried.global_transform = global_transform * _carry_offset
 		carried.global_basis = carried.global_basis.orthonormalized()
 
 
-## Home. Whatever it brought is put down just in front of the spider, at its feet.
+## Home. Whatever it brought is put down just in front of the spider, at its feet;
+## a fly it brought is the spider's.
 func _arrive() -> void:
+	if fly != null and is_instance_valid(fly):
+		fly.take(weaver)
+	fly = null
 	var brought := carried
 	if brought != null and is_instance_valid(brought):
 		var ahead := -weaver.global_basis.z
@@ -371,6 +436,11 @@ func _come_apart() -> void:
 	var was := state
 	state = State.GONE
 	_walk.collision_layer = 0
+	# A fly left in a web that comes apart is the spider's, not left in the air
+	# with nothing holding it.
+	if fly != null and is_instance_valid(fly) and fly.is_caught():
+		fly.take(weaver)
+	fly = null
 	if carried != null and is_instance_valid(carried):
 		var crate := carried as RigidBody3D
 		if crate != null:

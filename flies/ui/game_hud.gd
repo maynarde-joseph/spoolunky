@@ -2,7 +2,7 @@ class_name GameHUD
 extends CanvasLayer
 
 ## What is on screen while a level is played: the cross, the clock, the silk left,
-## and a line of news.
+## the flies still out, and a line of news.
 ##
 ## The cross reads off the answers the verbs act on, so it cannot promise what
 ## they will not do. Its ring is blue over a web the grapple would take, faint over
@@ -16,6 +16,7 @@ var run: LevelRun
 var _cross: Control
 var _clock: Label
 var _best: Label
+var _flies: Label
 var _news: Label
 var _help: Label
 var _result: PanelContainer
@@ -51,11 +52,13 @@ func _ready() -> void:
 	_best = _label(Vector2.ZERO, FONT_SIZE - 6)
 	_place(_best, 0.5, 0.0, Rect2(-160, 56, 320, 30))
 	_best.modulate = Color(1, 1, 1, 0.7)
+	_flies = _label(Vector2.ZERO, FONT_SIZE)
+	_place(_flies, 0.5, 0.0, Rect2(-160, 84, 320, 32))
 	_news = _label(Vector2.ZERO, FONT_SIZE)
 	_place(_news, 0.5, 1.0, Rect2(-500, -150, 1000, 36))
 	_help = _label(Vector2.ZERO, FONT_SIZE - 4)
 	_place(_help, 0.5, 1.0, Rect2(-700, -44, 1400, 30))
-	_help.text = "WASD walk · Space jump · RIGHT MOUSE silk (hold to grow) · LEFT MOUSE grapple onto a web (one in flight you ride) · E / MIDDLE MOUSE pullback · R restart · Esc pause"
+	_help.text = "WASD walk · Space jump · RIGHT MOUSE silk (hold to grow) · LEFT MOUSE grapple onto a web (one in flight you ride; one holding a fly takes you to it) · E / MIDDLE MOUSE pullback · R restart · Esc pause"
 
 	_result = PanelContainer.new()
 	_result.name = "Result"
@@ -119,6 +122,13 @@ func _process(delta: float) -> void:
 	if run == null or run.weaver == null:
 		return
 	_clock.text = clock_text(run.time)
+	_flies.visible = run.flies_total > 0
+	if run.flies_left() > 0:
+		_flies.text = "flies %d / %d" % [run.flies_taken, run.flies_total]
+		_flies.add_theme_color_override("font_color", Color(1.0, 0.88, 0.45))
+	else:
+		_flies.text = "every fly taken — to the bag"
+		_flies.add_theme_color_override("font_color", Color(1.0, 0.78, 0.3))
 	_news_left -= delta
 	_news.modulate.a = clampf(_news_left, 0.0, 1.0)
 	_help_left -= delta

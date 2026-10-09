@@ -35,6 +35,10 @@ func run_checks() -> void:
 		await _pull_the_room()
 	if _wanted("08"):
 		await _all_together()
+	if _wanted("09"):
+		await _fly_paper()
+	if _wanted("10"):
+		await _clockwork_flies()
 
 
 func _wanted(part: String) -> bool:
@@ -70,6 +74,30 @@ func _every_level_is_whole() -> void:
 		var again: Variant = JSON.parse_string(JSON.stringify(data))
 		check(again is Dictionary and (again as Dictionary)["objects"].size()
 			== data["objects"].size(), "%s survives being written and read" % entry["name"])
+	await _reach_knows_flies()
+
+
+## That the silk-alone check counts flies as somewhere to go: Fly Paper with its
+## boards off can be crossed on its flies, and with its flies gone too, it can't.
+func _reach_knows_flies() -> void:
+	var data := LevelData.load_file(LevelData.BUILT_IN + "09_fly_paper.json")
+	var open_hut: Array = data["objects"].filter(func(t: Dictionary) -> bool:
+		return t["type"] != "panel")
+	for with_flies in [true, false]:
+		var objects := open_hut if with_flies else open_hut.filter(func(t: Dictionary) -> bool:
+			return t["type"] != "fly")
+		var level := data.duplicate(true)
+		level["objects"] = objects.duplicate(true)
+		var run := LevelRun.new()
+		run.require_captured_mouse = false
+		run.setup(level)
+		await stage(run)
+		await run_frames(10)
+		var found := SilkReach.explore(run)
+		if with_flies:
+			check(found["reached"], "the silk-alone check goes from fly to fly")
+		else:
+			check(not found["reached"], "and without them, the void can't be crossed")
 
 
 func _the_editor() -> void:
@@ -111,6 +139,7 @@ func _the_editor() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(file))
 	await _editor_handles(editor)
 	_editor_checks(editor)
+	_editor_flies(editor)
 
 
 ## Presets, the handles that stretch and move a thing, and undo and redo.
@@ -168,6 +197,25 @@ func _editor_handles(editor: LevelEditor) -> void:
 	check(editor.level["objects"].size() == count, "a copy set down with Esc stays")
 	editor.undo()
 	check(editor.level["objects"].size() == count - 1, "and one undo takes it away")
+
+
+## Flies: put down in the air, and given each way of moving.
+func _editor_flies(editor: LevelEditor) -> void:
+	editor.open(LevelData.blank("Flies"), "")
+	editor.choose("fly")
+	var fly := editor.place("fly", Vector3(0.0, 0.0, -4.0))
+	check(LevelData.vec(fly["pos"]).y >= 1.5, "a fly is put down in the air, not on the floor")
+	LevelEditor.set_fly_move(fly, "line")
+	check(fly.has("travel") and not fly.has("axis"), "back and forth: it gets a far end")
+	editor._rebuild_thing(fly)
+	check(editor._gizmo.handles.any(func(h: Dictionary) -> bool:
+		return h["kind"] == EditorGizmo.Kind.END and h["key"] == "travel"),
+		"with a ball to drag it to")
+	LevelEditor.set_fly_move(fly, "orbit")
+	check(fly.has("axis") and fly.has("radius") and not fly.has("travel"),
+		"an orbit: an axis and how far out")
+	LevelEditor.set_fly_move(fly, "still")
+	check(not fly.has("axis") and not fly.has("travel"), "and still: neither")
 
 
 ## What the editor says is wrong with a level, and painting a cutter's lasers.
@@ -381,6 +429,56 @@ func finish(run: LevelRun, exit_at: Vector3) -> bool:
 	await go(run, exit_at, 0.4)
 	await wait_until(func() -> bool: return run.done, 60)
 	return run.done
+
+
+## Throws a web at [param fly], leading it if it moves, and waits to see it caught.
+## The web, if it caught it; null if it missed.
+func catch_fly(run: LevelRun, fly: Fly) -> ThrownWeb:
+	var weaver := run.weaver
+	var eye := weaver.view.aim_pivot()
+	var aim_at := fly.global_position
+	for i in 3:
+		var flight := eye.distance_to(aim_at) / SilkCaster.SPEED
+		aim_at = fly.where_at(run.time + flight + 0.03)
+	var web := await throw_at(run, aim_at, 0.0)
+	if web == null:
+		return null
+	var ref: WeakRef = weakref(web)
+	await wait_until(func() -> bool:
+		var w := ref.get_ref() as ThrownWeb
+		return w == null or not w.is_flying(), 90)
+	var now := ref.get_ref() as ThrownWeb
+	return now if now != null and now.holds_fly() and now.fly == fly else null
+
+
+## Catches [param fly] and grapples to it: strung up where it was. Whether it went.
+func hop_to(run: LevelRun, fly: Fly) -> bool:
+	var web := await catch_fly(run, fly)
+	if web == null:
+		return false
+	var weaver := run.weaver
+	aim(run, web.global_position)
+	if not weaver.fire_grapple():
+		return false
+	await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.GRAPPLE, 120)
+	return weaver.mode == Weaver.Mode.HUNG
+
+
+## The flies in the level, nearest the start first.
+func flies_of(run: LevelRun) -> Array:
+	var found: Array = run.get_tree().get_nodes_in_group(Fly.GROUP)
+	found.sort_custom(func(a: Fly, b: Fly) -> bool: return a.global_position.z > b.global_position.z)
+	return found
+
+
+## From strung up, a web onto the stone floor at [param point], grappled to: down
+## on it, and off it onto the floor.
+func down_onto(run: LevelRun, point: Vector3) -> bool:
+	var web := await throw_at(run, point, 0.0)
+	if not await stuck(web):
+		return false
+	await grapple_to(run, web.global_position)
+	return run.weaver.standing_web() == web or run.weaver.mode == Weaver.Mode.GROUND
 
 
 func where(run: LevelRun) -> String:
@@ -627,6 +725,60 @@ func _pull_the_room() -> void:
 		"and a web on it, now under the doorway, is the way up onto it (%s)" % where(run))
 	await stop(run)
 	check(await finish(run, Vector3(0, 3, -36)), "and through, out")
+
+
+func _fly_paper() -> void:
+	print("Route: Fly Paper")
+	var run := await load_level("09_fly_paper.json")
+	var weaver := run.weaver
+	var flies := flies_of(run)
+	var high: Fly = flies.filter(func(f: Fly) -> bool: return f.global_position.x < -1.0)[0]
+	var hops: Array = flies.filter(func(f: Fly) -> bool: return f.global_position.x > -1.0)
+	check(run.flies_total == 4 and not run.exit.open, "four flies, and the bag shut")
+	await go(run, Vector3(0, 0, -3), 0.3)
+	await stop(run)
+	var far := await catch_fly(run, high)
+	check(far != null, "the high fly, out over nothing, caught from the ledge")
+	weaver.pullback._cooling = 0.0
+	weaver.pullback.cast()
+	await wait_until(func() -> bool: return run.flies_taken == 1, 90)
+	check(run.flies_taken == 1, "and called home with the web")
+	for i in hops.size():
+		var went := await hop_to(run, hops[i])
+		if not check(went, "fly %d: caught, grappled to, strung up (%s)" % [i + 1, where(run)]):
+			return
+	check(run.flies_taken == 4 and run.exit.open, "every fly taken: the bag opens")
+	check(await down_onto(run, Vector3(0, 0, -36.5)), "from the last, a web onto the far side and down (%s)"
+		% where(run))
+	await go(run, Vector3(0, 0, -38.5), 0.3)
+	await stop(run)
+	var board := await throw_at(run, Vector3(0, 1.4, -40.7), 0.0)
+	check(await stuck(board) and board.loose, "a web on the hut's boards")
+	await pull(run)
+	await run_frames(10)
+	check(await finish(run, Vector3(0, 0, -43.2)), "ripped off: into the bag")
+
+
+func _clockwork_flies() -> void:
+	print("Route: Clockwork Flies")
+	var run := await load_level("10_clockwork_flies.json")
+	var flies := flies_of(run)
+	check(run.flies_total == 3, "three flies, all moving")
+	await go(run, Vector3(0, 0, -3), 0.3)
+	await stop(run)
+	for i in flies.size():
+		var went := await hop_to(run, flies[i])
+		if not check(went, "moving fly %d: led, caught, grappled to (%s)" % [i + 1, where(run)]):
+			return
+	check(run.exit.open, "every fly taken: the bag opens")
+	check(await down_onto(run, Vector3(0, 0, -36.5)), "down onto the far side (%s)" % where(run))
+	await go(run, Vector3(0, 0, -38.5), 0.3)
+	await stop(run)
+	var board := await throw_at(run, Vector3(0, 1.4, -40.7), 0.0)
+	check(await stuck(board) and board.loose, "a web on the boards")
+	await pull(run)
+	await run_frames(10)
+	check(await finish(run, Vector3(0, 0, -43.2)), "and into the bag")
 
 
 func _all_together() -> void:

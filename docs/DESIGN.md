@@ -142,18 +142,44 @@ the pull when it's called:
 | Silk cutter (violet laser grid in a metal frame, laid out like a tile map: a mask of 1.5 m cells says which hold lasers, the beams run on one lattice across them all, and the frame runs only where lasers meet open space, so a hole reads as a window) | cuts any web that flies through it (a ride stops dead there and drops you) and any grapple line across it. Harmless to the spider, which walks through; Pullback webs come home through it |
 | Loose board (weathered wood) | silk sticks, but it won't hold the spider. The Pullback rips it away |
 | Block on a rail (orange trim and arrows) | stone. The Pullback slides it the way its arrows point, to the other end of its rail; then the arrows turn round |
-| Exit bag | open from the start. Walk in to finish |
+| Fly (cartoon fly: black body, pale wings, a yellow glow you can switch off per fly) | caught by a web that flies into it, then held still in mid-air: a grapple point, and one of your webs out. Grapple to it or ride into it and you take it, get your web and grapple back, and hang strung up for 2 s (Space drops you). Called home, the web brings it to you. Still, back and forth, or orbiting, on the level's clock |
+| Exit bag | shut until every fly in the level is taken (open at once in a level with none). Walk in to finish |
 | Ceiling | a slick lid over every level, set by its `ceiling` height or 6 m over the top of everything. Thrown silk slides off it |
 
-## Flies, for now out
+## Flies: the goal, and the stepping stones
 
-Flies were in the game as a second thing to do on the way: first a chore, then a
-burst of speed, then banked jumps and grapple anchors with a Shift lock-on. None
-of it made a player think about them while going through a level: the web was
-the game. So they're out for now, and the levels are about the web alone. The
-time is the only score. If they come back, the likeliest shape is as the goal (the
-exit opens once every fly is caught, the way every demon has to die in *Neon
-White*), with each fly placed where one verb reaches it.
+Flies were in the game once before as a second thing to do on the way: first a
+chore, then a burst of speed, then banked jumps and grapple anchors with a Shift
+lock-on. None of it made a player think about them while going through a level,
+so they came out. They're back with one job each way:
+
+* **They're the goal.** The bag opens once every fly in the level is taken, the
+  way every demon has to die in *Neon White*. So where the flies are says where
+  you have to go.
+* **They're anchors where silk has none.** Hit a fly with a web and it's caught,
+  held still in mid-air by that web. A caught fly is a grapple point in empty
+  space, over a void or under a slick ceiling, where nothing else holds silk.
+* **Using one takes it.** Reach it (grapple to it, or ride a web into it) and the
+  fly is yours, the web and grapple come back, and you hang strung up in a frame
+  of silk for 2 s to aim the next throw; Space drops you early. Or call the web
+  home and the fly comes to you, but you don't move. Each fly is a one-use
+  stepping stone, so the order you take them in is the route, and the route is
+  what a speedrun optimises.
+
+This also brings back the payoff that committed rides lost when the grapple refund
+went: a ride that ends in a fly gives the grapple back, but only where a level
+puts one.
+
+A caught fly holds one of your webs until you reach it or call it home, so a
+level's web count matters more with flies in it. Flies keep still, go back and
+forth along a line, or orbit about an axis, always on the level's clock, which
+starts on your first move: the same fly is in the same place at the same time on
+every try, so timing is something you learn. Flies don't attack.
+
+They're drawn like a cartoon fly: a round black body with a grey sheen of eye
+and two pale wings in thick black rims, about a metre across, always turned to
+face you, so the shape reads from across a room. Most glow yellow; a level can
+switch that off per fly.
 
 ## Webs have one face
 
@@ -188,8 +214,9 @@ and cutters round a board say "walk in close before you throw".
 
 `tests/flies/silk_reach.gd` checks it. It maps everywhere the spider can get to
 in a level by walking, jumping, throwing webs (as many as it likes), grappling
-to them and dropping from webs caught anywhere along a throw, with every gate
-left shut, and it's generous to the spider throughout. If that reaches the exit,
+to them and dropping from webs caught anywhere along a throw, and catching and
+hanging from flies (any point a moving fly passes, every fly as often as it likes),
+with every gate left shut, and it's generous to the spider throughout. If that reaches the exit,
 the level fails CI. With its gates taken out, every built-in level is reached,
 so the check is doing the work.
 
@@ -219,6 +246,15 @@ so the check is doing the work.
 8. **All Together**: a web across the drop, a tower on two leapfrogged webs,
    boards off a window to reach a crate, and the crate onto the plate that
    opens the way out.
+9. **Fly Paper**: flies taught. A void walled and roofed in slick metal, too wide
+   for any web or ride, with three flies hanging over it: hop from one to the
+   next, strung up at each. A fourth hangs high off to the side over nothing:
+   catch it and call it home. The far side is stone, so from the last fly a web
+   gets you down; then rip the boards off the hut. Skipping a fly is allowed,
+   and costs you calling it home later.
+10. **Clockwork Flies**: the same hall, with a fly going back and forth, one
+    orbiting and one bobbing. Lead the throws; the clock makes it the same every
+    try.
 
 Every built-in level is played to the end by a scripted route in
 `tests/flies/levels_smoke_test.gd`, through the same calls the keys make. Those
@@ -235,6 +271,7 @@ without CI noticing. They are not the only solutions, nor the fastest.
 | pullback | oldest web first, 60 m reach, 44 m/s home, 0.15 s between calls |
 | catch-stall | 1 s held up, 15% of your speed kept; once per time in the air |
 | throw-stall | 0.4 s held up when you throw in the air, 15% of your speed kept; once per time in the air |
+| fly | 0.45 m body radius, caught by a web passing within 0.9 m plus half the web's radius; strung up 2 s |
 
 All of these are constants at the top of their scripts in `flies/player/` and
 `flies/web/`.

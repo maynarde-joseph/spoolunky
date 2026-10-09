@@ -1,8 +1,8 @@
 # Put the Flies in the Bag
 
 A fast third-person spider game in Godot 4.6, built on three verbs.
-Each level is a test chamber: get to the exit as fast as you can. (The flies the
-game is named for are out for now, while the web is the whole focus.)
+Each level is a test chamber: take every fly and get to the bag as fast as you
+can.
 
 The spider moves the way the old spider did, at what was its sprint, but it
 can't climb walls any more. What it has instead is silk, on three buttons, and
@@ -10,7 +10,7 @@ all three work at the same time:
 
 | Input | Verb |
 |-------|------|
-| **Left mouse** | **Grapple**: a line to a web you point at (any web in plain sight, however far), and you're pulled along it in a straight line. **A web that has stuck: you land on it. A web still in flight: you ride it, all the way** to wherever it sticks: no jumping or walking off, and the grapple stays spent until it lands you. One that runs out of reach, hits slick metal or flies into a silk cutter stops dead and drops you. Press Space mid-pull to let go and drop where you are. **Only silk holds the grapple**: stuck webs, and webs still in the air (the line follows them). Your webs are your anchors. You get one grapple in the air, and it comes back when you land on the ground or on a web that has stuck. |
+| **Left mouse** | **Grapple**: a line to a web you point at (any web in plain sight, however far), and you're pulled along it in a straight line. **A web that has stuck: you land on it. A web still in flight: you ride it, all the way** to wherever it sticks: no jumping or walking off, and the grapple stays spent until it lands you. One that runs out of reach, hits slick metal or flies into a silk cutter stops dead and drops you. Press Space mid-pull to let go and drop where you are. **Only silk holds the grapple**: stuck webs, webs still in the air (the line follows them), and webs holding a caught fly. Your webs are your anchors. You get one grapple in the air, and it comes back when you land on the ground or on a web that has stuck. |
 | **Right mouse** | **Silk**: hold to wind a ball of silk up over the spider's back, then let go to throw. This is cast exactly as before. What leaves the spider now is a whole web, flying face first for up to 22 m; the longer the wind-up, the bigger the web. Grapple onto it in flight and ride it. Throwing in the air holds you up for 0.4 s (once per time in the air). Where its middle meets something it sticks flat against that surface and becomes ground: you can walk on a web on a wall or a ceiling. |
 | **E / middle mouse** | **Pullback**: your oldest web flies back to you (first thrown, first home), one web per press. It comes straight through walls, and what it was on feels the pull: a crate comes with it to your feet, a loose board is ripped away, a block on a rail slides to the other end of it. The web you're standing on is skipped, so two webs can leapfrog up a wall. If it reaches you in the air, it catches you: an air-stall of 1 s with your speed mostly gone, which gives you a moment to aim the next throw (once per time in the air). |
 | WASD / Space | move / jump |
@@ -42,9 +42,20 @@ floor or another web just past it to step onto.
 * **Loose boards** (weathered wood): silk sticks to them, but they won't hold you, so you can't grapple to or walk onto a web on one. Call that web home and the board rips away, leaving whatever it covered.
 * **Blocks on rails** (stone with orange trim, and orange arrows on their sides): call a web on one home and the block slides the way its arrows point, to the other end of its rail; then the arrows turn round, and the next call slides it back. Rails run any way, up and down too, and blocks don't fall.
 * **Silk cutters** (violet laser grids in a metal frame, laid out like a tile map in 1.5 m cells, so a field can have holes, notches and windows in it): any web that flies through one is cut (a ride stops dead there and drops you), and a grapple line won't cross one. They don't touch the spider, which walks straight through, and webs called home pass through them.
+* **Flies** (round and black, with two pale wings; most glow yellow): hit one with a
+  web and it's **caught**, held still in mid-air by your web, which stays one of
+  your webs out. A caught fly is a **grapple point**: grapple to it, or ride a web
+  into it, and you **take** it. You get your web and grapple back, and you hang
+  **strung up** in a frame of silk for 2 s to aim the next throw (Space drops you
+  early). Or call the web home and the fly comes with it. Each fly is a
+  one-use stepping stone, and taking every fly is how you open the bag, so a level
+  with flies is a route to plan. Flies keep still, fly back and forth along a
+  line, or orbit, all on the level's clock: the same fly is in the same place at
+  the same time on every try.
 * **Hazards** (red) and falling out of the level both restart you.
-* **The exit**: a silk bag in a ring. Walk in to finish. Your score is the time,
-  and the menu keeps your best.
+* **The exit**: a silk bag in a ring. It stays shut (red) until every fly in the
+  level is taken; the count is under the clock. Walk in to finish. Your score is
+  the time, which starts when you first move, and the menu keeps your best.
 
 A level also sets how many webs you can have out at once (two by default).
 
@@ -63,6 +74,8 @@ can be finished with web, grapple, drop, repeat (see `tests/flies/silk_reach.gd`
 6. **Moving Parts**: a ferry, then a crate whose plate starts a lift and opens the door at the top.
 7. **Pull the Room**: slide one block out of a doorway, then bring another down out of a high doorway to be the step up into it.
 8. **All Together**: a web across the drop, a leapfrogged tower, boards off a window, and a crate for the door.
+9. **Fly Paper**: a void walled and roofed in slick metal, with nothing to hold silk but the flies hanging over it. Hop from fly to fly, call home the one out of reach, then rip the boards off the hut.
+10. **Clockwork Flies**: the same hall, with a fly going back and forth, one orbiting and one bobbing up and down. Lead your throws.
 
 ## The level editor
 
@@ -105,7 +118,10 @@ its position, turn and size (x, y and z in the arrows' colours), its surface
 named wire between plates and the doors and platforms they work. Pick one from the
 list or make a new one; everything on the same link is joined by a coloured line
 in the level. A silk cutter's lasers are **painted** on a grid of its cells: click
-or drag across cells to switch them between lasers and open space.
+or drag across cells to switch them between lasers and open space. A fly's panel
+sets how it moves (still, back and forth with an orange ball for its far end, or
+an orbit), how long a trip takes, where in a trip it starts, and its glow. Flies
+are put down 2 m up, and the line they fly is drawn in the level.
 
 With nothing selected, the right panel holds the level's own settings (name, webs
 out at once, par time, fall height, ceiling) and a **Checks** list of anything that

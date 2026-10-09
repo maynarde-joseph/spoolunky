@@ -22,6 +22,13 @@ extends RefCounted
 ## slider    piece, size, surface, travel, speed — a block on a rail; the Pullback slides it to the other end
 ## cutter    size, mask                  — a silk cutter: cuts webs that fly through it, and grapple
 ##                                         lines; mask rows, top first, "#" lasers and "." open
+## fly       move, travel, axis, radius, period, phase, glow
+##                                       — a fly: a web that hits it holds it in the air as a grapple
+##                                         point; reach it or call the web home to take it. The exit
+##                                         opens once every fly is taken. move is "still", "line"
+##                                         (there and back along travel) or "orbit" (round pos about
+##                                         axis, radius out); period is seconds a trip, phase the
+##                                         share of one it starts at
 ## [/codeblock]
 ##
 ## A level's settings: [code]webs[/code], how many webs may be out at once (2);
@@ -36,7 +43,7 @@ const BUILT_IN := "res://levels/"
 const MADE := "user://levels/"
 
 const TYPES := ["piece", "start", "exit", "crate", "plate", "door", "platform", "hazard", "panel",
-	"slider", "cutter"]
+	"slider", "cutter", "fly"]
 
 
 ## A new, empty level: a floor, a start and an exit.
@@ -89,6 +96,11 @@ static func make(type: String, at: Vector3) -> Dictionary:
 		"cutter":
 			thing["size"] = [4.5, 4.5, 0.2]
 			thing["mask"] = []
+		"fly":
+			thing["move"] = "still"
+			thing["period"] = 4.0
+			thing["phase"] = 0.0
+			thing["glow"] = true
 		"slider":
 			thing["piece"] = "cube"
 			thing["size"] = [3.0, 1.0, 3.0]

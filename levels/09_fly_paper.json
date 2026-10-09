@@ -1,0 +1,362 @@
+{
+	"name": "Fly Paper",
+	"webs": 2,
+	"kill_y": -12.0,
+	"ceiling": 14.0,
+	"par": 30.0,
+	"objects": [
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				-20,
+				6.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				18,
+				34.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				-20,
+				-46.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				18,
+				34.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-8.5,
+				-20,
+				-20.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1,
+				34.0,
+				52
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				8.5,
+				-20,
+				-20.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1,
+				34.0,
+				52
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				1
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				16,
+				1,
+				10
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "start",
+			"pos": [
+				0,
+				0.2,
+				3
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				-40
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				16,
+				1,
+				12
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				0,
+				-45.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				6,
+				14.0,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-2.75,
+				0,
+				-43.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.5,
+				14.0,
+				4.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				2.75,
+				0,
+				-43.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.5,
+				14.0,
+				4.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-2.0,
+				0,
+				-41.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.0,
+				14.0,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				2.0,
+				0,
+				-41.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.0,
+				14.0,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				2.5,
+				-41.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.0,
+				11.5,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "panel",
+			"piece": "cube",
+			"pos": [
+				0,
+				0,
+				-40.85
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.6,
+				2.8,
+				0.3
+			]
+		},
+		{
+			"type": "exit",
+			"pos": [
+				0,
+				0,
+				-43.2
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "fly",
+			"pos": [
+				0,
+				3,
+				-11
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"move": "still",
+			"period": 4.0,
+			"phase": 0.0,
+			"glow": true
+		},
+		{
+			"type": "fly",
+			"pos": [
+				0,
+				4,
+				-19
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"move": "still",
+			"period": 4.0,
+			"phase": 0.0,
+			"glow": true
+		},
+		{
+			"type": "fly",
+			"pos": [
+				0,
+				4,
+				-27
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"move": "still",
+			"period": 4.0,
+			"phase": 0.0,
+			"glow": true
+		},
+		{
+			"type": "fly",
+			"pos": [
+				-5,
+				9,
+				-7
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"move": "still",
+			"period": 4.0,
+			"phase": 0.0,
+			"glow": true
+		}
+	]
+}

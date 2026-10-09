@@ -22,6 +22,11 @@ extends CharacterBody3D
 ## Silk is a few webs, no more: a level says how many. Throw them all and the
 ## Pullback is how you get them back.
 ##
+## A web that catches a fly holds it in the air, and reaching it — grappling to it,
+## or riding a web into it — takes the fly, gives back the web and the grapple,
+## and leaves the spider strung up in the air for [constant HANG] seconds, spread
+## out on a frame of silk like a hide stretched to dry. Space cuts it down early.
+##
 ## The camera is the old game's rig, unchanged: see [SpiderCamera].
 
 ## Something worth putting on screen happened.
@@ -38,6 +43,7 @@ enum Mode {
 	AIR,      ## jumping or falling
 	WEB,      ## on a web stuck to a surface
 	GRAPPLE,  ## being pulled along a line
+	HUNG,     ## strung up in the air, where it took a fly
 }
 
 ## How tall the spider is, in metres: a Huntsman.
@@ -91,6 +97,11 @@ const STALL_KEEP := 0.15
 ## see where the web goes, and to grapple onto it.
 const THROW_STALL := 0.4
 
+## How long the spider hangs strung up where it took a fly, and how big the frame
+## of silk it hangs in is, across and up.
+const HANG := 2.0
+const FRAME := Vector2(2.2, 2.4)
+
 ## Falling below this puts the spider back at the start.
 var kill_y := -30.0
 
@@ -104,6 +115,10 @@ var mode := Mode.AIR
 
 ## Whether a grapple is ready.
 var grapple_ready := true
+
+## Whether the player has done anything yet since the spider was put down: moved,
+## jumped, thrown, grappled or called a web home. The level's clock waits for it.
+var acted := false
 
 
 
@@ -143,6 +158,9 @@ var _stall := 0.0
 ## home would hold it up for ever.
 var _caught_hang_spent := false
 var _throw_hang_spent := false
+## Seconds left strung up, and the frame of silk it hangs in.
+var _hang := 0.0
+var _frame: Node3D = null
 
 
 var _facing := Vector3.FORWARD
@@ -256,6 +274,8 @@ func _physics_process(delta: float) -> void:
 	else:
 		_buffer = maxf(0.0, _buffer - delta)
 	_grace = maxf(0.0, _grace - delta)
+	if _input_axis != Vector2.ZERO or _buffer > 0.0:
+		acted = true
 	view.update(HEIGHT, global_basis.y)
 	match mode:
 		Mode.GROUND:
@@ -266,6 +286,8 @@ func _physics_process(delta: float) -> void:
 			_step_web(delta)
 		Mode.GRAPPLE:
 			_step_grapple(delta)
+		Mode.HUNG:
+			_step_hung(delta)
 	_moving = (global_position - _last_position) / maxf(delta, 0.0001)
 	_last_position = global_position
 	_orient(delta)
@@ -433,6 +455,9 @@ func standing_web() -> ThrownWeb:
 ## or the other, where that one has no room. The spider stays on that face: a web is
 ## walked on one side only, and its rim holds you.
 func attach_to_web(web: ThrownWeb, at := Vector3.INF) -> void:
+	if web != null and web.holds_fly():
+		reach_fly(web)
+		return
 	if web == null or not (web.holds_weight() or web.is_flying()):
 		return
 	if mode == Mode.GRAPPLE:
@@ -467,6 +492,10 @@ func _step_web(delta: float) -> void:
 		_set_mode(Mode.AIR)
 		return
 	if _web_airborne and not _web.is_flying():
+		if _web.holds_fly():
+			# The ride caught a fly: the spider is there, and takes it.
+			reach_fly(_web)
+			return
 		if not _web.holds_weight():
 			# The ride stuck to a loose board, which won't hold the spider: off it.
 			_web = null
@@ -698,6 +727,7 @@ func _catch_web(step: Vector3) -> bool:
 ## Left mouse. Puts a line on what is aimed at and starts the pull. False if the
 ## grapple is spent or nothing holds it.
 func fire_grapple() -> bool:
+	acted = true
 	if not grapple_ready:
 		notify("Grapple's spent — land to get it back")
 		return false
@@ -744,7 +774,7 @@ func _step_grapple(delta: float) -> void:
 		var web := grapple.web
 		grapple.end()
 		attach_to_web(web)
-		if mode != Mode.WEB:
+		if mode != Mode.WEB and mode != Mode.HUNG:
 			_set_mode(Mode.AIR)
 		return
 	# Straight there, through anything the web's rim is in — and quicker than a web
@@ -760,6 +790,100 @@ func _drop() -> void:
 	_buffer = 0.0
 	velocity = Vector3.ZERO
 	_set_mode(Mode.AIR)
+
+
+# --- strung up ------------------------------------------------------------------
+
+## At the fly [param web] is holding: the fly is the spider's, the web comes apart
+## and its silk is the spider's again, and the spider hangs strung up where the fly
+## was, with its grapple back.
+func reach_fly(web: ThrownWeb) -> void:
+	if mode == Mode.GRAPPLE:
+		grapple.end()
+	var at := web.global_position
+	_web = null
+	web.give_fly(self)
+	global_position = at
+	velocity = Vector3.ZERO
+	_moving = Vector3.ZERO
+	_last_position = at
+	_stall = 0.0
+	_set_mode(Mode.HUNG)
+	_hang = HANG
+	_refill()
+	_string_up()
+
+
+## Whether the spider is strung up.
+func is_hung() -> bool:
+	return mode == Mode.HUNG
+
+
+func _step_hung(delta: float) -> void:
+	_up = Vector3.UP
+	up_direction = Vector3.UP
+	velocity = Vector3.ZERO
+	_hang -= delta
+	if _buffer > 0.0 or _hang <= 0.0:
+		# Space, or time: the frame tears and the spider drops, with nothing to carry.
+		_buffer = 0.0
+		_set_mode(Mode.AIR)
+
+
+## The frame of silk the spider hangs in: a rectangle stood across the way it is
+## looking, and a thread from it out to each corner and each side.
+func _string_up() -> void:
+	_tear_frame(false)
+	var across := view.forward()
+	across.y = 0.0
+	if across.length_squared() < 0.0001:
+		across = -global_basis.z
+	var face := Basis.looking_at(across.normalized(), Vector3.UP)
+	_frame = Node3D.new()
+	_frame.name = "Frame"
+	_frame.top_level = true
+	add_child(_frame)
+	_frame.global_transform = Transform3D(face, global_position)
+	var mesh := ImmediateMesh.new()
+	var paint := WebGeometry.silk_material()
+	paint.emission_energy_multiplier = 0.7
+	var half := FRAME * 0.5
+	var corners := [Vector3(-half.x, -half.y, 0.0), Vector3(half.x, -half.y, 0.0),
+		Vector3(half.x, half.y, 0.0), Vector3(-half.x, half.y, 0.0)]
+	var silk := Color(0.95, 0.96, 1.0, 0.95)
+	for i in 4:
+		WebGeometry.draw_line_into(mesh, paint, corners[i], corners[(i + 1) % 4], 0.06, silk)
+	# From the spider's legs, splayed, out to the frame.
+	for i in 8:
+		var angle := TAU * (float(i) + 0.5) / 8.0
+		var leg := Vector3(cos(angle), sin(angle), 0.0) * 0.38
+		var out := Vector3(cos(angle) * half.x, sin(angle) * half.y, 0.0)
+		out = out / maxf(absf(out.x) / half.x, absf(out.y) / half.y)
+		WebGeometry.draw_line_into(mesh, paint, leg, out, 0.035, silk)
+	var view_node := MeshInstance3D.new()
+	view_node.name = "Silk"
+	view_node.mesh = mesh
+	view_node.material_override = paint
+	view_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_frame.add_child(view_node)
+	_frame.scale = Vector3.ONE * 0.4
+	_frame.create_tween().tween_property(_frame, "scale", Vector3.ONE, 0.12)
+
+
+## Tears the frame down: torn apart and fading, or straight away.
+func _tear_frame(slowly := true) -> void:
+	if _frame == null or not is_instance_valid(_frame):
+		_frame = null
+		return
+	var old := _frame
+	_frame = null
+	if not slowly:
+		old.queue_free()
+		return
+	var tear := old.create_tween()
+	tear.set_parallel(true)
+	tear.tween_property(old, "scale", Vector3(1.4, 0.2, 1.0), 0.18)
+	tear.chain().tween_callback(old.queue_free)
 
 
 # --- facing --------------------------------------------------------------------
@@ -788,6 +912,9 @@ func _orient(delta: float) -> void:
 
 
 func _set_mode(next: Mode) -> void:
+	if mode == Mode.HUNG and next != Mode.HUNG:
+		_hang = 0.0
+		_tear_frame()
 	mode = next
 
 
@@ -813,6 +940,7 @@ func web_container() -> Node:
 
 ## Keeps count of a web just thrown.
 func adopt_web(web: ThrownWeb) -> void:
+	acted = true
 	_webs.append(web)
 	web.gone.connect(func(_w: ThrownWeb) -> void: _forget_gone())
 	web.came_back.connect(_web_home)
@@ -901,4 +1029,6 @@ func put_at(where: Transform3D) -> void:
 	_caught_hang_spent = false
 	_throw_hang_spent = false
 	_stall = 0.0
+	acted = false
 	_set_mode(Mode.AIR)
+	_tear_frame(false)

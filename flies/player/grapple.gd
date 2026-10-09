@@ -9,8 +9,9 @@ extends Node3D
 ## spent until it lands you. Jump mid-pull, before you are on, and you drop where
 ## you are.
 ##
-## Only silk holds the line: a web stuck to something, or one still in the air,
-## which the line follows wherever it goes until the spider lands on it. Stone,
+## Only silk holds the line: a web stuck to something, one still in the air, which
+## the line follows wherever it goes until the spider lands on it, or one holding a
+## fly in the air, which takes the spider to the fly — see [Fly]. Stone,
 ## slick metal and everything else give it nothing to bite — so silk makes the
 ## anchors, the grapple spends them, and the Pullback brings them back to
 ## make again.
@@ -91,14 +92,15 @@ func aimed() -> Dictionary:
 		best_along = (hit["position"] - eye).dot(look)
 		var under := ThrownWeb.of(hit.get("collider"))
 		# A web on a loose board holds silk, not the spider: nothing for the line.
-		var holds := under != null and (under.is_flying() or under.holds_weight())
+		var holds := under != null and (under.is_flying() or under.holds_weight()
+			or under.holds_fly())
 		best = {"position": hit["position"], "web": under if holds else null,
 			"loose": under != null and under.loose}
 	# A web in the air, picked generously: it is small and fast, and catching one is
 	# the move.
 	for node in get_tree().get_nodes_in_group(ThrownWeb.GROUP):
 		var thrown := node as ThrownWeb
-		if thrown == null or not thrown.is_flying():
+		if thrown == null or not (thrown.is_flying() or thrown.holds_fly()):
 			continue
 		var centre := thrown.global_position
 		var along := (centre - eye).dot(look)
@@ -148,6 +150,9 @@ func fire() -> bool:
 		return false
 	local_point = web.to_local(target["position"])
 	local_point.z = 0.0
+	if web.holds_fly():
+		# To the fly, in the middle of the web, wherever on it the cross was.
+		local_point = Vector3.ZERO
 	var span := weaver.global_position.distance_to(target["position"])
 	speed = maxf(SPEED, span / LONGEST)
 	active = true

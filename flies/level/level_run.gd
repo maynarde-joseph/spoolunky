@@ -4,9 +4,11 @@ extends Node3D
 ## A level being played: built from its data, with the spider in it, the clock
 ## running, and the exit waiting.
 ##
-## The clock starts the first time the spider moves, and stops when it walks into
+## The clock starts the first time the player does anything, and stops when it walks into
 ## the exit: the time is the score. Fall out of the level or touch the red and it
 ## starts again at once: a restart is a key away (R) and costs nothing but the time.
+##
+## The exit stays shut until every fly in the level is taken: see [Fly].
 
 ## Done: the spider is at the exit. [param best] is the best time before this one,
 ## or a negative number for none.
@@ -33,11 +35,16 @@ var time := 0.0
 var running := false
 var done := false
 
+## How many flies the level has, and how many the spider has taken.
+var flies_total := 0
+var flies_taken := 0
+
 ## Whether keys need the mouse caught. Off for headless checks.
 var require_captured_mouse := true
 
 var _channels := {}
 var _start := Transform3D.IDENTITY
+var _told_shut := 0.0
 
 
 ## The level [param node] is playing in, if any.
@@ -68,6 +75,9 @@ func _ready() -> void:
 				_start = (node as Node3D).global_transform
 			"exit":
 				exit = node as ExitBag
+			"fly":
+				flies_total += 1
+				(node as Fly).taken.connect(_on_fly_taken)
 
 	weaver = Weaver.new()
 	weaver.name = "Weaver"
@@ -80,7 +90,7 @@ func _ready() -> void:
 	weaver.fell.connect(func() -> void: lose("Fell"))
 	if exit != null:
 		exit.entered.connect(_try_exit)
-		exit.set_open(true)
+		exit.set_open(flies_total == 0)
 
 	hud = GameHUD.new()
 	hud.name = "HUD"
@@ -91,10 +101,13 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if done:
 		return
-	if not running and (weaver.moving_velocity().length() > 0.5 or weaver.webs().size() > 0):
+	# The clock starts when the player first does something — a key, a throw, a
+	# grapple — not with the spider settling onto the start, which every try has.
+	if not running and weaver.acted:
 		running = true
 	if running:
 		time += delta
+	_told_shut = maxf(0.0, _told_shut - delta)
 	if exit != null and exit.holds(weaver):
 		_try_exit()
 
@@ -126,8 +139,30 @@ func lose(reason: String) -> void:
 	restart_requested.emit()
 
 
+## How many flies are still out.
+func flies_left() -> int:
+	return flies_total - flies_taken
+
+
+func _on_fly_taken(_fly: Fly) -> void:
+	flies_taken += 1
+	var left := flies_left()
+	if left == 0:
+		weaver.notify("Every fly taken — the bag is open")
+		if exit != null:
+			exit.set_open(true)
+	else:
+		weaver.notify("Fly taken — %d to go" % left)
+
+
 func _try_exit() -> void:
 	if done or exit == null:
+		return
+	if not exit.open:
+		if _told_shut <= 0.0:
+			var left := flies_left()
+			weaver.notify("The bag opens when every fly is taken — %d to go" % left)
+			_told_shut = 2.0
 		return
 	done = true
 	var best := best_time()

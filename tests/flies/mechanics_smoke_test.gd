@@ -9,7 +9,8 @@ extends TestSuite
 ## reach; walking onto a web and up a wall on it; the grapple, spent in the air
 ## and back on landing, and holding to a wall; riding a thrown web; the ceiling;
 ## webs walked on one face; a crate brought home and onto a plate that opens a
-## door; a platform carrying a web; and the exit.
+## door; a platform carrying a web; flies caught, reached, hung from and called
+## home; and the exit.
 
 const FLOOR_TOP := 0.0
 
@@ -24,6 +25,9 @@ func run_checks() -> void:
 	await _rides_go_nowhere_for_free()
 	await _silk_cutters()
 	await _cutter_masks()
+	await _catching_flies()
+	await _riding_into_a_fly()
+	await _flies_that_move()
 	await _dropping_mid_pull()
 	await _the_ceiling()
 	await _one_face()
@@ -427,6 +431,128 @@ func _cutter_masks() -> void:
 	await wait_until(func() -> bool: return not is_instance_valid(beside) or not beside.is_flying(), 90)
 	check(not is_instance_valid(beside) or (not beside.is_stuck() and beside.global_position.z > -4.6),
 		"one thrown beside it is cut")
+
+
+## A fly caught in a web: a grapple point in the air, taken by reaching it — strung
+## up for a moment, grapple and web given back — or by calling the web home. The
+## bag stays shut until every fly is taken.
+func _catching_flies() -> void:
+	print("Catching flies")
+	var objects: Array = [
+		{"type": "fly", "pos": [0.0, 3.0, -6.0]},
+		{"type": "fly", "pos": [4.0, 3.0, -6.0]},
+		{"type": "fly", "pos": [-4.0, 3.0, -6.0]},
+		{"type": "exit", "pos": [8.0, 0.0, 8.0]},
+	]
+	var run := await arena(objects)
+	var weaver := run.weaver
+	var flies: Array = run.get_tree().get_nodes_in_group(Fly.GROUP)
+	check(run.flies_total == 3 and not run.exit.open, "a level with flies starts with the bag shut")
+	var fly: Fly = flies.filter(func(f: Fly) -> bool: return f.global_position.x == 0.0)[0]
+	var second: Fly = flies.filter(func(f: Fly) -> bool: return f.global_position.x == 4.0)[0]
+	var third: Fly = flies.filter(func(f: Fly) -> bool: return f.global_position.x == -4.0)[0]
+	await put(run, Vector3(0.0, 0.3, 2.0))
+	aim(run, fly.global_position)
+	weaver.caster.throw(0.0)
+	var web := first_web(run)
+	await wait_until(func() -> bool: return not web.is_flying(), 60)
+	check(web.holds_fly() and fly.is_caught(), "a web that hits a fly wraps it and stops there")
+	check(weaver.webs_left() == 2, "and stays one of your webs out")
+	check(not web.holds_weight(), "it holds a fly, not the spider: nothing to stand on")
+	aim(run, fly.global_position)
+	check(weaver.grapple.aimed().get("web") == web, "a caught fly is a grapple point")
+	var used := weaver.global_position
+	weaver.fire_grapple()
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.HUNG, 90)
+	check(weaver.mode == Weaver.Mode.HUNG and weaver.global_position.distance_to(Vector3(0, 3, -6)) < 0.6,
+		"grappled to, it takes you there, strung up in the air (%s)" % weaver.global_position)
+	check(run.flies_taken == 1 and weaver.webs_left() == 3,
+		"the fly is yours and the web comes back")
+	check(weaver.grapple_ready, "and so does the grapple")
+	check(used.distance_to(weaver.global_position) > 5.0, "pulled across to it")
+	await run_frames(60)
+	check(weaver.mode == Weaver.Mode.HUNG and absf(weaver.global_position.y - 3.0) < 0.1,
+		"you hang there, not falling, for a while")
+	await run_frames(75)
+	check(weaver.mode != Weaver.Mode.HUNG, "and after two seconds the frame tears and you drop")
+	# Strung up, Space cuts you down at once.
+	await put(run, Vector3(4.0, 0.3, 2.0))
+	aim(run, second.global_position)
+	weaver.caster._cooling = 0.0
+	weaver.caster.throw(0.0)
+	var other := weaver.webs()[weaver.webs().size() - 1]
+	await wait_until(func() -> bool: return not other.is_flying(), 60)
+	aim(run, second.global_position)
+	weaver.fire_grapple()
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.HUNG, 90)
+	weaver.drive(Vector2.ZERO, true)
+	await run_frames(3)
+	check(weaver.mode == Weaver.Mode.AIR and run.flies_taken == 2, "Space drops you out of the frame")
+	# Caught from afar and called home: the fly comes with the web.
+	await put(run, Vector3(-4.0, 0.3, 2.0))
+	aim(run, third.global_position)
+	weaver.caster._cooling = 0.0
+	weaver.caster.throw(0.0)
+	var far := weaver.webs()[weaver.webs().size() - 1]
+	await wait_until(func() -> bool: return not far.is_flying(), 60)
+	check(third.is_caught(), "a third caught from the ground")
+	weaver.pullback._cooling = 0.0
+	weaver.pullback.cast()
+	await wait_until(func() -> bool: return run.flies_taken == 3, 90)
+	check(run.flies_taken == 3 and weaver.webs_left() == 3,
+		"called home, the web brings the fly with it, and it is yours")
+	check(run.exit.open, "every fly taken: the bag opens")
+
+
+## A web being ridden that flies into a fly stops there, and the spider takes it.
+func _riding_into_a_fly() -> void:
+	print("Riding into a fly")
+	var run := await arena([{"type": "fly", "pos": [0.0, 2.1, -6.0]}])
+	var weaver := run.weaver
+	await put(run, Vector3(0.0, 0.3, 8.0))
+	aim(run, Vector3(0.0, 2.5, -11.5))
+	weaver.caster.throw(0.5)
+	var web := first_web(run)
+	await run_frames(8)
+	aim(run, web.global_position)
+	weaver.fire_grapple()
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.WEB, 60)
+	check(weaver.standing_web() == web and not weaver.grapple_ready, "riding a web at a fly")
+	await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.WEB, 120)
+	check(weaver.mode == Weaver.Mode.HUNG and run.flies_taken == 1,
+		"the ride ends at the fly, and takes it (%s)" % where_is(weaver))
+	check(weaver.grapple_ready and weaver.webs_left() == 3, "with the grapple and the web back")
+
+
+## The three ways a fly goes: still, there and back, and round — on the level's clock.
+func _flies_that_move() -> void:
+	print("Flies that move")
+	var objects: Array = [
+		{"type": "fly", "pos": [0.0, 3.0, -4.0], "move": "line", "travel": [6.0, 0.0, 0.0],
+			"period": 4.0, "phase": 0.0},
+		{"type": "fly", "pos": [0.0, 3.0, -8.0], "move": "orbit", "axis": [0.0, 1.0, 0.0],
+			"radius": 2.0, "period": 4.0, "phase": 0.0},
+	]
+	var run := await arena(objects)
+	var flies: Array = run.get_tree().get_nodes_in_group(Fly.GROUP)
+	var line: Fly = flies.filter(func(f: Fly) -> bool: return f.move == "line")[0]
+	var orbit: Fly = flies.filter(func(f: Fly) -> bool: return f.move == "orbit")[0]
+	check(line.where_at(0.0).is_equal_approx(Vector3(0, 3, -4))
+		and line.where_at(2.0).is_equal_approx(Vector3(6, 3, -4))
+		and line.where_at(4.0).is_equal_approx(Vector3(0, 3, -4)),
+		"a fly on a line goes to its far end and back in one trip")
+	var round_ok := true
+	for i in 8:
+		var at := orbit.where_at(float(i) * 0.5)
+		round_ok = round_ok and absf(at.distance_to(Vector3(0, 3, -8)) - 2.0) < 0.01 \
+			and absf(at.y - 3.0) < 0.01
+	check(round_ok, "an orbiting fly keeps its distance, flat about its axis")
+	check(line.global_position.is_equal_approx(Vector3(0, 3, -4)), "before the clock starts, flies wait")
+	run.running = true
+	run.time = 1.0
+	await run_frames(2)
+	check(line.global_position.distance_to(line.where_at(run.time)) < 0.2,
+		"on the clock, they go where the clock says")
 
 ## Space mid-pull: the line lets go, and the spider drops where it is.
 func _dropping_mid_pull() -> void:

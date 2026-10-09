@@ -5,7 +5,9 @@ extends RefCounted
 ## reach by walking, jumping, throwing webs and grappling to them — webs as many
 ## as it likes, since the Pullback leapfrogs them forever — and by riding webs in
 ## flight to wherever they stick or stop dead. Silk cutters cut its webs as they
-## cut the spider's. What it leaves out is everything
+## cut the spider's. Flies are grapple points wherever a throw can reach them —
+## every point along a moving fly's way, and every fly as often as it likes — to
+## hang from, throw from and drop from. What it leaves out is everything
 ## else: boards stay on, blocks stay where they start, crates stay put, doors stay
 ## shut and platforms stand still.
 ##
@@ -44,6 +46,9 @@ var _spots: Dictionary = {}
 var _throws: Array = []
 var _drops_from: Dictionary = {}
 var _dirs: Array[Vector3] = []
+## Everywhere a fly is, or goes; and which of those a throw has reached.
+var _flies: Array[Vector3] = []
+var _fly_seen: Dictionary = {}
 
 
 static func explore(run: LevelRun) -> Dictionary:
@@ -80,6 +85,9 @@ func _explore(run: LevelRun) -> Dictionary:
 	_bottom = run.weaver.kill_y
 	_map_floors()
 	_dirs = _sphere(DIRECTIONS)
+	for node in run.get_tree().get_nodes_in_group(Fly.GROUP):
+		if run.world.is_ancestor_of(node):
+			_flies.append_array((node as Fly).route(12))
 
 	var start := _cell_at(run.weaver.global_position + Vector3.DOWN * Weaver.RADIUS, 1.0)
 	if start < 0:
@@ -265,6 +273,7 @@ func _throws_from(cell: int) -> bool:
 ## can't be got off — where each stops dead and drops its rider: at the end of its
 ## reach, on slick metal, or cut by a silk cutter.
 func _throw_from(eye: Vector3, cell: int, words: String) -> void:
+	_catch_flies(eye, cell, words)
 	for dir in _dirs:
 		var hit := _ray(eye, eye + dir * THROW)
 		var length := THROW
@@ -287,6 +296,23 @@ func _throw_from(eye: Vector3, cell: int, words: String) -> void:
 		if landing >= 0 and not _came.has(landing):
 			_reach(landing, cell, "%s, a web ridden to %s, stopped dead, and a drop"
 				% [words, end.snappedf(0.1)])
+
+
+## Every fly a web from [param eye] can reach: caught, grappled to, hung from — and
+## thrown from, and dropped from.
+func _catch_flies(eye: Vector3, cell: int, words: String) -> void:
+	for i in _flies.size():
+		if _fly_seen.has(i):
+			continue
+		var at := _flies[i]
+		if eye.distance_to(at) > THROW or not _clear(eye, at):
+			continue
+		if not SilkCutter.crossing(_space, eye, at).is_empty():
+			continue
+		_fly_seen[i] = true
+		var said := "%s, a fly caught at %s and reached" % [words, at.snappedf(0.1)]
+		_reach(_landing(at), cell, said + ", and a drop")
+		_throws.append([at, cell, said + ", then"])
 
 
 func _holds(collider: Variant) -> bool:

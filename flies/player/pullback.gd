@@ -67,6 +67,7 @@ func callable_webs() -> Array[ThrownWeb]:
 
 ## Calls the oldest web home. False if there was none, or it was too soon.
 func cast() -> bool:
+	weaver.acted = true
 	if _cooling > 0.0:
 		return false
 	var web := next_web()

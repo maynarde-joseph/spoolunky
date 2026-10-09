@@ -183,6 +183,24 @@ static func build_thing(thing: Dictionary, parent: Node3D, editing := false) -> 
 			parent.add_child(made, true)
 			if editing:
 				_pick(made, size, Vector3(0.0, size.y * 0.5, 0.0))
+		"fly":
+			var fly := Fly.new()
+			fly.move = String(thing.get("move", "still"))
+			fly.travel = LevelData.vec(thing.get("travel"), Vector3(0.0, 0.0, -4.0))
+			fly.axis = LevelData.vec(thing.get("axis"), Vector3.UP)
+			fly.radius = float(thing.get("radius", 2.5))
+			fly.period = float(thing.get("period", 4.0))
+			fly.phase = float(thing.get("phase", 0.0))
+			fly.glow = bool(thing.get("glow", true))
+			fly.frozen = editing
+			made = fly
+			made.transform = LevelData.transform_of(thing)
+			parent.add_child(made, true)
+			if editing:
+				_pick(made, Vector3.ONE * Fly.SIZE * 2.4, Vector3.ZERO)
+				var way := fly.route(32)
+				if way.size() > 1:
+					_path_line(parent, made, way, fly.move == "orbit", Color(1.0, 0.85, 0.3))
 		"hazard":
 			var hazard := Hazard.new()
 			hazard.size = size

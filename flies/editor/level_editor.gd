@@ -22,8 +22,12 @@ signal leave()
 
 const PICK_MASK := GameLayers.WORLD | GameLayers.PREY | LevelBuilder.EDITOR_PICK
 const SNAPS := [0.25, 0.5, 1.0, 2.0]
-const GAMEPLAY := ["start", "exit", "crate", "plate", "door", "platform", "hazard", "panel",
+const GAMEPLAY := ["start", "exit", "fly", "crate", "plate", "door", "platform", "hazard", "panel",
 	"slider", "cutter"]
+## A fly's ways of moving, as the panel names them, and what the data calls them.
+const FLY_MOVES := [["Still", "still"], ["Back and forth", "line"], ["Orbit", "orbit"]]
+## How far over the floor a fly is put down.
+const FLY_LIFT := 2.0
 ## How far the mouse has to move, in pixels, before a press becomes a drag.
 const DRAG_START := 5.0
 
@@ -31,7 +35,8 @@ const DRAG_START := 5.0
 const INFO := {
 	"piece": ["Kit piece", "A solid piece of the level. Stone holds silk; slick metal doesn't."],
 	"start": ["Spider start", "Where the spider starts, facing the way the green cone points (R turns it). A level has one."],
-	"exit": ["Exit bag", "Walk into it to finish the level. A level has one."],
+	"exit": ["Exit bag", "Walk into it to finish the level. A level has one, and it stays shut until every fly is taken."],
+	"fly": ["Fly", "Hit it with a web and it's caught: a grapple point in mid-air. Reach it, or call the web home, to take it. The bag opens once every fly is taken."],
 	"crate": ["Crate", "Silk sticks to it; call the web home and the crate comes along. Sit one on a plate to hold it down."],
 	"plate": ["Pressure plate", "A crate on it powers its link: every door and platform on the same link."],
 	"door": ["Door", "Slides open while its link is powered. Drag the aqua ball to set where it opens to."],
@@ -828,6 +833,9 @@ func place(type: String, at: Vector3) -> Dictionary:
 			_rebuild_thing(existing)
 			return existing
 	var thing := _new_thing(type, at)
+	if type == "fly":
+		# Flies hang in the air: put one down a little over where the mouse is.
+		thing["pos"] = LevelData.vec_out(at + Vector3.UP * FLY_LIFT)
 	level["objects"].append(thing)
 	var made := LevelBuilder.build_thing(thing, world, true)
 	_select(made)
@@ -1101,7 +1109,7 @@ func _update_ghost(over_ui: bool) -> void:
 	var at := Vector3.INF if over_ui or _looking or _orbiting else _place_point()
 	_ghost.visible = at != Vector3.INF
 	if at != Vector3.INF:
-		_ghost.global_position = at
+		_ghost.global_position = at + (Vector3.UP * FLY_LIFT if place_type == "fly" else Vector3.ZERO)
 		_grid_at = at
 
 
@@ -1599,7 +1607,9 @@ func _show_inspector() -> void:
 		_link_row(thing)
 	if thing.has("open"):
 		_vector_row("Opens by (metres)", thing, "open", 0.25)
-	if thing.has("travel"):
+	if type == "fly":
+		_fly_rows(thing)
+	elif thing.has("travel"):
 		_vector_row("Rail runs (metres)", thing, "travel", 0.25)
 	if type == "cutter":
 		_mask_rows(thing)
@@ -1772,6 +1782,81 @@ func _link_row(thing: Dictionary) -> void:
 				other["channel"] = named
 		_rebuild_thing(thing))
 	_inspector.add_child(rename)
+
+
+## How a fly moves: still, back and forth (with the orange ball to drag to its far
+## end), or round in an orbit; how long a trip takes; and its glow.
+func _fly_rows(thing: Dictionary) -> void:
+	var how := String(thing.get("move", "still"))
+	var moves := OptionButton.new()
+	for i in FLY_MOVES.size():
+		moves.add_item(FLY_MOVES[i][0])
+		if FLY_MOVES[i][1] == how:
+			moves.select(i)
+	moves.item_selected.connect(func(index: int) -> void:
+		_push_undo()
+		set_fly_move(thing, String(FLY_MOVES[index][1]))
+		_rebuild_thing(thing))
+	_inspector.add_child(_labelled("Moves", moves))
+	if how == "line":
+		_vector_row("Flies to (metres from here)", thing, "travel", 0.25)
+		_inspector.add_child(_note("Or drag the orange ball to its far end."))
+	elif how == "orbit":
+		_vector_row("Round the axis", thing, "axis", 0.25)
+		var reach := _spin(0.25, 50, 0.25)
+		reach.suffix = "m"
+		reach.set_value_no_signal(float(thing.get("radius", 2.5)))
+		reach.value_changed.connect(func(value: float) -> void:
+			_push_undo()
+			thing["radius"] = value
+			_rebuild_thing(thing))
+		_inspector.add_child(_labelled("This far out", reach))
+	if how != "still":
+		var trip := _spin(0.2, 60, 0.1)
+		trip.suffix = "s"
+		trip.tooltip_text = "How long one trip takes: there and back, or once round."
+		trip.set_value_no_signal(float(thing.get("period", 4.0)))
+		trip.value_changed.connect(func(value: float) -> void:
+			_push_undo()
+			thing["period"] = value
+			_rebuild_thing(thing))
+		_inspector.add_child(_labelled("One trip takes", trip))
+		var start := _spin(0, 1, 0.05)
+		start.tooltip_text = "How far into a trip it is when the clock starts: 0 to 1."
+		start.set_value_no_signal(float(thing.get("phase", 0.0)))
+		start.value_changed.connect(func(value: float) -> void:
+			_push_undo()
+			thing["phase"] = value
+			_rebuild_thing(thing))
+		_inspector.add_child(_labelled("Starts this far in", start))
+		_inspector.add_child(_note("Flies keep to the level's clock: every try, the same fly is in the same place at the same time."))
+	var glow := CheckBox.new()
+	glow.text = "Glows yellow"
+	glow.button_pressed = bool(thing.get("glow", true))
+	glow.toggled.connect(func(on: bool) -> void:
+		_push_undo()
+		thing["glow"] = on
+		_rebuild_thing(thing))
+	_inspector.add_child(glow)
+
+
+## Sets how [param thing], a fly, moves, giving it what that way of moving needs
+## and taking away what it does not.
+static func set_fly_move(thing: Dictionary, how: String) -> void:
+	thing["move"] = how
+	if how == "line":
+		if not thing.has("travel"):
+			thing["travel"] = [0.0, 0.0, -4.0]
+	else:
+		thing.erase("travel")
+	if how == "orbit":
+		if not thing.has("axis"):
+			thing["axis"] = [0.0, 1.0, 0.0]
+		if not thing.has("radius"):
+			thing["radius"] = 2.5
+	else:
+		thing.erase("axis")
+		thing.erase("radius")
 
 
 func _new_link_name() -> String:

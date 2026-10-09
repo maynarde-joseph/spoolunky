@@ -2,7 +2,8 @@ class_name ExitBag
 extends Node3D
 
 ## The way out: a sack of silk hanging in a gold ring. Walk into it and the level is
-## done. It can be shut — dim, and the ring red — though nothing shuts it now.
+## done. It is shut — dim, and the ring red — while any fly in the level is still
+## out.
 
 signal entered()
 
