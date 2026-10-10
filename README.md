@@ -1,25 +1,25 @@
 # Put the Flies in the Bag
 
-A fast third-person spider game in Godot 4.6, built on three verbs.
+A fast third-person spider game in Godot 4.6, played with WASD, Space and the two
+mouse buttons.
 Each level is a test chamber: take every fly and get to the bag as fast as you
 can.
 
 The spider moves the way the old spider did, at what was its sprint, but it
-can't climb walls any more. What it has instead is silk, on three buttons, and
-all three work at the same time:
+can't climb walls any more. What it has instead is silk, on the two mouse buttons:
 
 | Input | Verb |
 |-------|------|
-| **Left mouse** | **Grapple**: a line to a web you point at (any web in plain sight, however far), and you're pulled along it in a straight line to the web's centre, wherever on it you aimed. **A web that has stuck: you land on it. A web still in flight: you ride it, all the way** to wherever it sticks: no jumping or walking off, and the grapple stays spent until it lands you. One that runs out of reach, hits slick metal or flies into a silk cutter stops dead and drops you. Press Space mid-pull to let go and drop where you are. **Only silk holds the grapple**: stuck webs, webs still in the air (the line follows them), and webs holding a caught fly. Your webs are your anchors. You get one grapple in the air, and it comes back when you land on the ground or on a web that has stuck. |
-| **Right mouse** | **Silk**: hold to wind a ball of silk up over the spider's back, then let go to throw. This is cast exactly as before. What leaves the spider now is a whole web, flying face first for up to 22 m; the longer the wind-up, the bigger the web. Grapple onto it in flight and ride it. Throwing in the air holds you up for 0.4 s (once per time in the air). Where its middle meets something it sticks flat against that surface and becomes ground: you can walk on a web on a wall or a ceiling. |
-| **E / middle mouse** | **Pullback**: your oldest web flies back to you (first thrown, first home), one web per press. It comes straight through walls, and what it was on feels the pull: a crate comes with it to your feet, a loose board is ripped away, a block on a rail slides to the other end of it. The web you're standing on is skipped, so two webs can leapfrog up a wall. A web reaching you in the air doesn't hold you up: you keep falling. |
+| **Left mouse, tap** | **Throw a web**: a whole web flies face first down the cross for up to 22 m. Where its middle meets something it sticks flat against that surface and becomes ground: you can walk on a web on a wall or a ceiling. Slick metal doesn't take it, and a silk cutter cuts it. Throwing in the air holds you up for 0.4 s (once per time in the air). |
+| **Left mouse, hold** | **Throw a web and ride it**: hold for 0.18 s (the ring round the cross fills) and the same web goes with you on the line. You ride it, all the way, to wherever it sticks, ending up on its middle: no jumping or walking off. One that runs out of reach, hits slick metal or flies into a silk cutter stops dead and drops you. A ride spends your grapple, one in the air, back when you land on the ground or on a web that has stuck; with it spent, a hold only throws. The cross is blue where a web would stick and hold you. |
+| **Right mouse** (or E) | **Pullback**: your oldest web flies back to you (first thrown, first home), one web per press. It comes straight through walls, and what it was on feels the pull: a crate comes with it to your feet, a loose board is ripped away, a block on a rail slides to the other end of it, a fly comes home and is yours. The web you're standing on is skipped, so two webs can leapfrog up a wall. A web reaching you in the air doesn't hold you up: you keep falling. |
 | WASD / Space | move / jump |
 | R | restart the level (instant) |
 | Esc | pause: resume, restart, edit this level, menu |
 | L | first / third person |
 
-Holding silk doesn't block anything: you can grapple and pull back while the
-ball is still winding.
+You can't travel to a web that's already out: going somewhere is always a fresh
+throw. Webs out are floors to walk on, things to pull home, and flies held.
 
 A web is walked on one face: the one you landed on (on a web flat against a
 wall or floor, the side facing the room). Its rim holds you, unless there's a

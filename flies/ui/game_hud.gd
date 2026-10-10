@@ -5,9 +5,10 @@ extends CanvasLayer
 ## the flies still out, and a line of news.
 ##
 ## The cross reads off the answers the verbs act on, so it cannot promise what
-## they will not do. Its ring is blue over a web the grapple would take, faint over
-## anything else, and broken while the grapple is spent. An arc fills round it while
-## silk winds up.
+## they will not do. It is blue where a web thrown now would stick and hold you,
+## faint anywhere else; its ring is whole while a hold would ride, and broken while
+## the grapple is spent. An arc fills round it as left mouse is held, and a hold
+## goes when it closes.
 
 const FONT_SIZE := 22
 
@@ -58,7 +59,7 @@ func _ready() -> void:
 	_place(_news, 0.5, 1.0, Rect2(-500, -150, 1000, 36))
 	_help = _label(Vector2.ZERO, FONT_SIZE - 4)
 	_place(_help, 0.5, 1.0, Rect2(-700, -44, 1400, 30))
-	_help.text = "WASD walk · Space jump · RIGHT MOUSE silk (hold to grow) · LEFT MOUSE grapple onto a web (one in flight you ride; one holding a fly takes you to it) · E / MIDDLE MOUSE pullback · R restart · Esc pause"
+	_help.text = "WASD walk · Space jump · LEFT MOUSE tap: throw a web · hold: throw and ride it · RIGHT MOUSE call your oldest web home · R restart · Esc pause"
 
 	_result = PanelContainer.new()
 	_result.name = "Result"
@@ -154,11 +155,11 @@ func _draw_cross() -> void:
 		return
 	var middle := _cross.size * 0.5
 	var shadow := Color(0, 0, 0, 0.45)
-	var target := weaver.grapple.aimed()
-	# Blue over a web the grapple would take; faint over anything else, since only
-	# silk holds the line.
+	var target := weaver.caster.aimed()
+	# Blue where a web would stick and hold the spider; faint where it would slide
+	# off, be cut, not hold you, or reach nothing.
 	var tint := Color(1, 1, 1, 0.4)
-	if not target.is_empty() and target.get("web") != null:
+	if target.get("holds", false):
 		tint = Color(0.6, 0.85, 1.0, 0.95)
 	var ring := 11.0
 	_cross.draw_circle(middle, 3.0, shadow)

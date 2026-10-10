@@ -12,57 +12,45 @@ to replay for time.
 The spider can't climb. That rule makes silk into terrain. Walls are what you
 can't get past until you put a web on them.
 
-## The three verbs
+## The verbs
 
-All three are on their own buttons, and none of them waits on another.
+Everything is on WASD, Space and the two mouse buttons. Left mouse throws silk and
+takes you with it; right mouse calls it home.
 
-### Grapple (left mouse)
+### Left mouse: tap to throw, hold to go
 
-A line to a web you point at, and you're pulled along it in a straight line to
-the web's centre, wherever on it you aimed: where a pull ends is never a matter
-of a few pixels. It's
-a grapple, not a swing. Pulls go at 18.2 m/s, capped at 1.1 seconds however far
-they go, and the grapple reaches as far as you can see: any web in plain sight
-is somewhere to go. Line of sight is the only limit, so where a web can be put
-(silk only goes 22 m from where it's thrown) is the puzzle, Portal-style: set a
-web up from one place, use it from another.
+**Tap** and a web flies down the cross. **Hold** for 0.18 s (the ring round the
+cross fills while you do) and the same web is thrown with you on the line: you
+ride it to wherever it sticks. Every web is the same size, 1.7 m across the
+middle out. The cross is blue where a web thrown now would stick and hold you,
+and faint where it would slide off, be cut, land on a board that won't hold you,
+or reach nothing.
 
-* **A web that has stuck: you land on it.** From there, walk on: up a web on a
-  wall and over its top onto the ledge, off a web on a floor onto the floor.
-  Landing gives the grapple back.
-* **A web still in flight: you ride it, all the way.** You land on it and it
-  carries you until it sticks, and then you're standing on it wherever it
+* **A ride goes all the way.** You're pulled onto the web as it leaves and it
+  carries you until it sticks; then you're standing on its middle, wherever it
   landed. A ride is a commitment: there's no jumping off and no walking off its
-  rim, and getting on gives nothing back, so the grapple stays spent until the
-  web lands you. A web that reaches the end of its reach, slides off slick
-  metal or flies into a silk cutter stops dead under you, and you drop where it
-  stopped. That makes a ride one-dimensional on purpose: it ends at a handful of
-  predictable points, not anywhere along a 22 m line, which keeps it fun and
-  keeps open spaces designable.
-* **Space mid-pull** lets go of the line, and you drop where you are.
+  rim. A web that reaches the end of its reach, slides off slick metal or flies
+  into a silk cutter stops dead under you, and you drop where it stopped. That
+  makes a ride one-dimensional on purpose: it ends at a handful of predictable
+  points, not anywhere along a 22 m line, which keeps it fun and keeps open
+  spaces designable.
+* **Space** in the moment before you're on lets go of the line, and you drop
+  where you are.
+* **One ride in the air.** A ride spends the grapple, and it comes back the
+  moment you land on the ground or on a web that has stuck. With it spent, a
+  hold only throws.
+* **No going back to a web that's out.** There used to be a grapple to any web in
+  sight, so a web could be set up from one place and used from another. It's
+  gone: every trip is a fresh throw, capped at silk's 22 m, and one button does
+  "go there". Webs out are floors, things to pull home, and flies held.
 * **Why riding.** A hold-to-land button, momentum launches off flying webs, a
   timed jump boost, a short ride into a launch and a drop where you meet the
   web were all tried. They were finicky: where you ended up depended on a chase
   you couldn't see. Riding is consistent: you go where the web goes.
-* **Only silk holds it.** A stuck web, or a web still in the air, which the line
-  follows until the spider lands on it. Stone, slick metal, crates and platforms
-  give it nothing. Silk makes the anchors, the grapple spends them, and the
-  Pullback brings them back to make again, so none of the three verbs works
-  without the others. Where a web can stick (stone, not slick) is where an
-  anchor can exist, which is the level designer's main lever.
-* **One in the air.** It's spent the moment it goes, and it comes back the
-  moment you land on the ground or on a web that has stuck. A ride doesn't give
-  it back until it lands you. On the ground it is effectively always there.
-
-### Silk (right mouse)
-
-Casting is unchanged from the earlier game: hold to wind a ball of silk up over
-the spider's back while the view lifts and widens, then let go to throw. A tap
-throws a 1 m web and a full second's wind-up throws a 2.4 m web.
 
 **Throwing in the air holds you up** for 0.4 s, your speed mostly gone: a beat to
-see where the web goes and grapple onto it. Once per time in the air, like the
-Pullback's catch, so throw, call home, throw, call home can't be used to hover.
+see where the web goes. Once per time in the air, so throw, call home, throw
+can't be used to hover. A ride cancels it.
 
 What leaves the spider is a whole web, flying face first at 22 m/s for up to
 22 m, short enough that where you can throw from decides where an anchor can
@@ -81,7 +69,10 @@ go:
 A level sets how many webs you can have out at once, two by default. That limit
 is what makes the Pullback part of the loop.
 
-**History.** Grappling onto a web in flight used to put you on it, riding it to
+**History.** Silk was once on right mouse with a wind-up for size, the grapple
+on left mouse to any web in sight, and the Pullback on E. Folding throw and
+grapple into one button (tap, or hold to ride) put the whole game on the mouse.
+Before that, grappling onto a web in flight used to put you on it, riding it to
 wherever it stuck. A shot at the sky bought huge airtime, which flattened rooms
 built around getting somewhere; a dragline back to the throw point, then a dead
 stop at the end of reach, were tried to rein it in. Then launches and drops
@@ -90,7 +81,7 @@ landing and a hop off, then committed: no refund, no getting off. Silk cutters
 were added so levels can say where rides and throws can't go without walling
 everything in.
 
-### Pullback (E / middle mouse)
+### Right mouse: the Pullback
 
 First thrown, first home: each press calls your oldest web (within 60 m), and it
 flies home at 44 m/s, through walls. Press again for the next.
@@ -106,7 +97,7 @@ the pull when it's called:
 * **It brings what it held.** A web on a crate brings the crate and drops it at
   your feet. This is the only way to move a crate.
 * **It rips off loose boards.** Silk sticks to a loose board, but a board won't
-  take your weight: no grapple to a web on one, no walking onto it. Call that web
+  take your weight: a ride onto one drops you, and you can't walk onto it. Call that web
   home and the board tears away and tumbles off, leaving what it covered: stone
   to web, a way through, a line of sight. Any other silk on the board goes with
   it.
@@ -138,10 +129,10 @@ the pull when it's called:
 | Door | slides open by a set offset while its channel is powered |
 | Platform | follows its path back and forth or round. Runs only while its channel (if any) is powered |
 | Hazard (red) | touch it and the level restarts |
-| Silk cutter (violet laser grid in a metal frame, laid out like a tile map: a mask of 1.5 m cells says which hold lasers, the beams run on one lattice across them all, and the frame runs only where lasers meet open space, so a hole reads as a window) | cuts any web that flies through it (a ride stops dead there and drops you) and any grapple line across it. Harmless to the spider, which walks through; Pullback webs come home through it |
+| Silk cutter (violet laser grid in a metal frame, laid out like a tile map: a mask of 1.5 m cells says which hold lasers, the beams run on one lattice across them all, and the frame runs only where lasers meet open space, so a hole reads as a window) | cuts any web that flies through it (a ride stops dead there and drops you). Harmless to the spider, which walks through; Pullback webs come home through it |
 | Loose board (weathered wood) | silk sticks, but it won't hold the spider. The Pullback rips it away |
 | Block on a rail (orange trim and arrows) | stone. The Pullback slides it the way its arrows point, to the other end of its rail; then the arrows turn round |
-| Fly (cartoon fly: black body, pale wings, a yellow glow you can switch off per fly) | caught by a web that flies into it, then held still in mid-air: a grapple point, and one of your webs out. Grapple to it or ride into it and you take it, get your web and grapple back, and hang strung up for 2 s (Space drops you). Called home, the web brings it to you. Still, back and forth, or orbiting, on the level's clock |
+| Fly (cartoon fly: black body, pale wings, a yellow glow you can switch off per fly) | caught by a web that flies into it, then held still in mid-air, and one of your webs out. Ride a web into it (hold at it; a new web takes over a caught one) and you take it, get your web and grapple back, and hang strung up for 2 s (Space drops you). Called home, the web brings it to you. Still, back and forth, or orbiting, on the level's clock |
 | Exit bag | shut until every fly in the level is taken (open at once in a level with none). Walk in to finish |
 | Ceiling | a slick lid over every level, set by its `ceiling` height or 6 m over the top of everything. Thrown silk slides off it |
 
@@ -156,9 +147,10 @@ so they came out. They're back with one job each way:
   way every demon has to die in *Neon White*. So where the flies are says where
   you have to go.
 * **They're anchors where silk has none.** Hit a fly with a web and it's caught,
-  held still in mid-air by that web. A caught fly is a grapple point in empty
-  space, over a void or under a slick ceiling, where nothing else holds silk.
-* **Using one takes it.** Reach it (grapple to it, or ride a web into it) and the
+  held still in mid-air by that web: somewhere to go in empty space, over a void
+  or under a slick ceiling, where nothing else holds silk.
+* **Using one takes it.** Ride a web into it (hold at it; a new web takes over a
+  caught one) and the
   fly is yours, the web and grapple come back, and you hang strung up in a frame
   of silk for 2 s to aim the next throw; Space drops you early. Or call the web
   home and the fly comes to you, but you don't move. Each fly is a one-use
@@ -190,10 +182,10 @@ the room, whichever side of the web you reached it from.
 
 ## Gates: what silk alone can't do
 
-The grapple reaches anything in sight, and a ride drops you where its web stops
-dead, so silk alone goes a long way within 22 m. A gap doesn't hold you back
+A ride goes wherever a web sticks within 22 m, and drops you where its web stops
+dead, so silk alone goes a long way. A gap doesn't hold you back
 for long, and neither does a wall that stops short of the ceiling. A level built
-only of those is solved by web, grapple, ride, repeat.
+only of those is solved by hold, ride, repeat.
 
 So every level is built of rooms sealed by walls that meet the ceiling, and the
 way from one room to the next is a **gate**: something solid, that blocks sight
@@ -265,8 +257,8 @@ without CI noticing. They are not the only solutions, nor the fastest.
 | | |
 |---|---|
 | spider | 0.7 m tall, moves 6.08 m/s (7.36 on a web: the old spider's sprint), jumps 7.8 m/s (about 1 m up, about 3.5 m across at a run), falls at 29.4 m/s² |
-| grapple | webs only, as far as you can see, 18.2 m/s or 1.1 s, one in the air; always to the web's centre; lands on a stuck web, rides a flying one (no refund, no getting off) |
-| silk | 1 to 2.4 m webs, 22 m/s, 22 m reach, 0.2 s between throws |
+| silk | left mouse; 1.7 m webs, 22 m/s, 22 m reach, 0.2 s between throws |
+| ride | hold left mouse 0.18 s; pulled on at 18.2 m/s or faster, then ride to the web's middle; one in the air (no refund, no getting off) |
 | pullback | oldest web first, 60 m reach, 44 m/s home, 0.15 s between calls |
 | throw-stall | 0.4 s held up when you throw in the air, 15% of your speed kept; once per time in the air |
 | fly | 0.45 m body radius, caught by a web passing within 0.9 m plus half the web's radius; strung up 2 s |

@@ -3,10 +3,9 @@ extends Node3D
 
 ## A web, thrown.
 ##
-## Silk is cast the way it always was — hold to wind a ball of it up over the
-## spider's back, let go to throw — but what leaves the spider now is the web
-## itself, already spun, flying face first down the line it was thrown along. In
-## the air it is something to grapple onto and ride. Where its middle meets
+## Left mouse throws it: a web, already spun, flying face first down the line it
+## was thrown along — with the spider riding it, if the button was held. See
+## [SilkCaster]. Where its middle meets
 ## something solid it stops and sticks, lying flat against that surface, and from
 ## then on it is ground: the spider cannot climb a wall, but it can walk on a web
 ## that is on one. Only its middle stops it; its rim passes through things, or a
@@ -25,8 +24,9 @@ extends Node3D
 ## — a crate — comes with it and is put down at the spider's feet.
 ##
 ## A web that flies into a fly wraps it and stops there, in the air: see [Fly]. It
-## is a grapple point then, not a floor, and stays one of the spider's webs out
-## until the spider reaches it or calls it home, either of which takes the fly.
+## is not a floor then, and stays one of the spider's webs out until the spider
+## rides another web into the fly or calls this one home, either of which takes the
+## fly.
 ##
 ## The web's face is its local XY plane, and its local +Z is the side facing
 ## back the way it came, and, once it is stuck, the side facing out from the
@@ -162,7 +162,7 @@ func holds_weight() -> bool:
 	return state == State.STUCK and not loose and fly == null
 
 
-## Whether it is holding a fly in the air: a grapple point, and nothing to stand on.
+## Whether it is holding a fly in the air: nothing to stand on.
 func holds_fly() -> bool:
 	return state == State.STUCK and fly != null and is_instance_valid(fly)
 
@@ -300,7 +300,8 @@ func _fly_on(from: Vector3, step: Vector3, before: float) -> Fly:
 	var reach := Fly.HIT + current_radius() * 0.5
 	for node in get_tree().get_nodes_in_group(Fly.GROUP):
 		var found := node as Fly
-		if found == null or not found.is_free():
+		# Free, or caught in another web: a new web takes a caught fly over.
+		if found == null or not (found.is_free() or (found.is_caught() and found.web != self)):
 			continue
 		var along := clampf((found.global_position - from).dot(way), 0.0, length)
 		if along >= before:
@@ -312,8 +313,13 @@ func _fly_on(from: Vector3, step: Vector3, before: float) -> Fly:
 	return best
 
 
-## Flew into [param caught]: wraps it, and stops there, holding it in the air.
+## Flew into [param caught]: wraps it, and stops there, holding it in the air. A fly
+## another web was holding is this one's now, and that one comes apart.
 func _catch(caught: Fly) -> void:
+	var other := caught.web as ThrownWeb
+	if other != null and is_instance_valid(other) and other != self:
+		other.fly = null
+		other.spend()
 	global_position = caught.global_position
 	velocity = Vector3.ZERO
 	state = State.STUCK

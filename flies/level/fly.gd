@@ -3,12 +3,12 @@ extends Node3D
 
 ## A fly: something to catch, and once caught, somewhere to go.
 ##
-## A web that flies into a fly wraps it, and the fly stops dead where it was: a
-## grapple point in the middle of the air, held there by your web — which counts as
-## one of yours out until you deal with it. Reach it, by grappling to it or riding a
-## web into it, and you take it: the fly is yours, the web comes back, the grapple
-## with it, and you hang strung up in the air for a moment. Or call the web home
-## and the fly comes with it, and is yours without your going anywhere.
+## A web that flies into a fly wraps it, and the fly stops dead where it was, held
+## in the middle of the air by your web — which counts as one of yours out until you
+## deal with it. Ride a web into it (hold left mouse at it, caught or not; a new web
+## takes a caught fly over) and you take it: the fly is yours, the web comes back,
+## the grapple with it, and you hang strung up in the air for a moment. Or call the
+## web home and the fly comes with it, and is yours without your going anywhere.
 ##
 ## The bag at the exit only opens once every fly in the level is taken — so a level
 ## with flies is a route: which to use as stepping stones, which to pull in, and in
@@ -25,7 +25,7 @@ signal taken(fly: Fly)
 
 enum State {
 	FREE,    ## flying, or hanging still where it was put
-	CAUGHT,  ## wrapped in a web, a grapple point
+	CAUGHT,  ## wrapped in a web, held in the air
 	TAKEN,   ## the spider's
 }
 
@@ -111,9 +111,10 @@ func is_caught() -> bool:
 	return state == State.CAUGHT
 
 
-## Wrapped by [param holder]: it stops where it is, folds its wings, and waits.
+## Wrapped by [param holder]: it stops where it is, folds its wings, and waits. A
+## caught fly can be caught again, by a new web that takes it over.
 func catch(holder: Node3D) -> void:
-	if state != State.FREE:
+	if state == State.TAKEN:
 		return
 	state = State.CAUGHT
 	web = holder

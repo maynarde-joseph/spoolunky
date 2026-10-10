@@ -1,41 +1,23 @@
 class_name Grapple
 extends Node3D
 
-## Left mouse: a line to a web you point at, and you are pulled along it.
+## The line a held left mouse puts the spider on: from the spider to the web it has
+## just thrown, pulling it along to the web's middle and onto it as the web flies.
+## The spider rides the web wherever it goes, until it sticks or stops dead. A ride
+## is a commitment: no jumping off, no stepping off. Jump while the line is still
+## pulling, before you are on, and you drop where you are.
 ##
-## The pull always ends on the web, at its middle, wherever on it you aimed. A web that has stuck is somewhere to stand; one
-## still in flight you ride, wherever it is going, until it sticks or stops dead. A
-## ride is a commitment: no jumping off, no stepping off, and the grapple stays
-## spent until it lands you. Jump mid-pull, before you are on, and you drop where
-## you are.
+## One ride in the air: the grapple is spent the moment the line goes, and comes
+## back when the spider lands, on the ground or on a web that has stuck. A hold
+## with it spent only throws.
 ##
-## Only silk holds the line: a web stuck to something, one still in the air, which
-## the line follows wherever it goes until the spider lands on it, or one holding a
-## fly in the air, which takes the spider to the fly — see [Fly]. Stone,
-## slick metal and everything else give it nothing to bite — so silk makes the
-## anchors, the grapple spends them, and the Pullback brings them back to
-## make again.
-##
-## One pull in the air: the line is spent the moment it goes and comes back when
-## the spider lands, on the ground or on a web that has stuck.
-##
-## This node finds the web the line would hold, keeps hold of it while the spider is
-## pulled, and draws the line. The pulling itself is the spider's — see
-## [method Weaver.start_grapple].
-
-## How far a line reaches, in metres: as far as you can see. Where a web can be put
-## is the puzzle — silk only goes so far from where it is thrown — and any web in
-## plain sight is somewhere to go.
-const REACH := 1000.0
+## This node keeps hold of the web while the spider is pulled, and draws the line.
+## The pulling itself is the spider's — see [method Weaver.start_grapple].
 
 ## How fast the spider is pulled, in metres a second — and quicker on a long line,
 ## so that no pull takes longer than [constant LONGEST].
 const SPEED := 18.2
 const LONGEST := 1.1
-
-## How generously a web in flight is picked out, past its own rim, in metres. It is
-## moving, and it is the thing you are trying to catch.
-const WEB_SLACK := 0.9
 
 var weaver: Weaver
 var view: SpiderCamera
@@ -50,10 +32,6 @@ var speed := SPEED
 var _line: MeshInstance3D
 var _mesh: ImmediateMesh
 var _paint: StandardMaterial3D
-## A flicker of red line where a grapple found no silk, for a moment.
-var _refused := 0.0
-var _refused_at := Vector3.ZERO
-var _warned := 0.0
 
 
 func setup(owner_weaver: Weaver, camera: SpiderCamera) -> void:
@@ -71,86 +49,11 @@ func setup(owner_weaver: Weaver, camera: SpiderCamera) -> void:
 	add_child(_line)
 
 
-## What the cross is on, as far as the grapple is concerned: a dictionary with the
-## point and [code]web[/code] — the web the line would hold, or null where the cross
-## is on something that is not silk. Empty for nothing in reach.
-func aimed() -> Dictionary:
-	if view == null or weaver == null:
-		return {}
-	var space := get_world_3d().direct_space_state
-	var exclude: Array[RID] = [weaver.get_rid()]
-	var eye := view.aim_pivot()
-	var look := view.forward()
-	var far := eye + look * REACH
-	var query := PhysicsRayQueryParameters3D.create(eye, far,
-		GameLayers.WORLD | GameLayers.WEB_WALK, exclude)
-	var hit := space.intersect_ray(query)
-	var best := {}
-	var best_along := INF
-	if not hit.is_empty():
-		best_along = (hit["position"] - eye).dot(look)
-		var under := ThrownWeb.of(hit.get("collider"))
-		# A web on a loose board holds silk, not the spider: nothing for the line.
-		var holds := under != null and (under.is_flying() or under.holds_weight()
-			or under.holds_fly())
-		best = {"position": hit["position"], "web": under if holds else null,
-			"loose": under != null and under.loose}
-	# A web in the air, picked generously: it is small and fast, and catching one is
-	# the move.
-	for node in get_tree().get_nodes_in_group(ThrownWeb.GROUP):
-		var thrown := node as ThrownWeb
-		if thrown == null or not (thrown.is_flying() or thrown.holds_fly()):
-			continue
-		var centre := thrown.global_position
-		var along := (centre - eye).dot(look)
-		if along <= 0.0 or along >= best_along:
-			continue
-		var off := (centre - (eye + look * along)).length()
-		if off > thrown.current_radius() + WEB_SLACK:
-			continue
-		best_along = along
-		best = {"position": centre, "web": thrown}
-	if best.is_empty():
-		return {}
-	var at: Vector3 = best["position"]
-	var from := weaver.global_position
-	if from.distance_to(at) > REACH:
-		return {}
-	# The line runs from the spider, not the camera: something solid in the way of
-	# that is what it meets, and that is not silk.
-	if best["web"] != null:
-		var check := PhysicsRayQueryParameters3D.create(from, at, GameLayers.WORLD, exclude)
-		var blocked := space.intersect_ray(check)
-		if not blocked.is_empty() and blocked["position"].distance_to(at) > 0.3:
-			best = {"position": blocked["position"], "web": null}
-		# Nor will the line cross a silk cutter.
-		elif not SilkCutter.crossing(space, from, at).is_empty():
-			best = {"position": at, "web": null, "cut": true}
-	return best
-
-
-## Puts the line on the web aimed at. False if there is none.
-func fire() -> bool:
-	var target := aimed()
-	if target.is_empty():
-		return false
-	web = target.get("web") as ThrownWeb
-	if web == null:
-		_refused = 0.25
-		_refused_at = target["position"]
-		if _warned <= 0.0:
-			if target.get("loose", false):
-				weaver.notify("That board won't hold you — call the web home to rip it off")
-			elif target.get("cut", false):
-				weaver.notify("A silk cutter is in the way — the line won't cross it")
-			else:
-				weaver.notify("The grapple only holds silk — throw a web there first")
-			_warned = 2.0
-		return false
-	var span := weaver.global_position.distance_to(web.global_position)
-	speed = maxf(SPEED, span / LONGEST)
+## Puts the line on [param thrown], the web just thrown, to ride it.
+func hold_on(thrown: ThrownWeb) -> void:
+	web = thrown
+	speed = SPEED
 	active = true
-	return true
 
 
 ## Where the line is pulling to now: the web's middle, wherever it has gone.
@@ -170,8 +73,7 @@ func end() -> void:
 	web = null
 
 
-func _process(delta: float) -> void:
-	_warned = maxf(0.0, _warned - delta)
+func _process(_delta: float) -> void:
 	if _mesh == null:
 		return
 	_mesh.clear_surfaces()
@@ -180,7 +82,3 @@ func _process(delta: float) -> void:
 	if active:
 		WebGeometry.draw_line_into(_mesh, _paint, from, target_point(), 0.035,
 			Color(0.95, 0.96, 1.0, 0.95))
-	elif _refused > 0.0:
-		_refused -= delta
-		WebGeometry.draw_line_into(_mesh, _paint, from, from.lerp(_refused_at, 0.7), 0.03,
-			Color(1.0, 0.35, 0.3, clampf(_refused * 4.0, 0.0, 1.0)))

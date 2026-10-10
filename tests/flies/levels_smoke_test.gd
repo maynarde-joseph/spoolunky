@@ -306,14 +306,24 @@ func stop(run: LevelRun) -> void:
 	await run_frames(4)
 
 
-## Throws a web wound to [param wound] at [param point]. Returns it.
-func throw_at(run: LevelRun, point: Vector3, wound := 1.0) -> ThrownWeb:
+## Taps left mouse with the cross on [param point]: a web thrown. Returns it.
+func throw_at(run: LevelRun, point: Vector3) -> ThrownWeb:
+	var weaver := run.weaver
+	await wait_until(func() -> bool: return weaver.caster._cooling <= 0.0, 30)
+	aim(run, point)
+	weaver.caster.begin()
+	return weaver.caster.release()
+
+
+## Holds left mouse with the cross on [param point] until it goes: a web thrown,
+## and the spider on the line to it. Returns the web.
+func hold_to(run: LevelRun, point: Vector3) -> ThrownWeb:
 	var weaver := run.weaver
 	await wait_until(func() -> bool: return weaver.caster._cooling <= 0.0, 30)
 	aim(run, point)
 	var had := weaver.webs().duplicate()
-	if not weaver.caster.throw(wound):
-		return null
+	weaver.caster.begin()
+	await wait_until(func() -> bool: return not weaver.caster.charging, 30)
 	for web in weaver.webs():
 		if not had.has(web):
 			return web
@@ -331,29 +341,28 @@ func stuck(web: ThrownWeb) -> bool:
 	return now != null and now.is_stuck()
 
 
-func grapple_to(run: LevelRun, point: Vector3) -> bool:
+## Holds left mouse at [param point]: rides the web there until it sticks. Whether
+## the spider is on it, stuck.
+func ride_onto(run: LevelRun, point: Vector3) -> bool:
 	var weaver := run.weaver
-	aim(run, point)
-	if not weaver.fire_grapple():
+	var web := await hold_to(run, point)
+	if web == null:
 		return false
-	await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.GRAPPLE, 120)
+	var ref: WeakRef = weakref(web)
+	await wait_until(func() -> bool:
+		var w := ref.get_ref() as ThrownWeb
+		return w == null or not w.is_flying(), 120)
+	await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.GRAPPLE, 60)
 	await run_frames(4)
-	return true
+	if OS.has_environment("ROUTE_DEBUG"):
+		note("rode to %s" % where(run))
+	return is_instance_valid(web) and web.is_stuck() and weaver.standing_web() == web
 
 
-## Throws a web at [param point], grapples onto it when it sticks, and walks on
-## up or across it until it puts the spider somewhere else. Whether it all went.
-func web_onto(run: LevelRun, point: Vector3, wound := 1.0) -> bool:
-	var web := await throw_at(run, point, wound)
-	if not await stuck(web):
-		return false
-	if OS.has_environment("ROUTE_DEBUG"):
-		note("before grapple: look %s" % run.weaver.view.forward())
-	if not await grapple_to(run, web.global_position):
-		return false
-	if OS.has_environment("ROUTE_DEBUG"):
-		note("after grapple: look %s, %s" % [run.weaver.view.forward(), where(run)])
-	if run.weaver.standing_web() != web:
+## Rides a web onto [param point], and walks on up or across it until it puts the
+## spider somewhere else. Whether it all went.
+func web_onto(run: LevelRun, point: Vector3) -> bool:
+	if not await ride_onto(run, point):
 		return false
 	return await climb(run)
 
@@ -363,12 +372,8 @@ func web_onto(run: LevelRun, point: Vector3, wound := 1.0) -> bool:
 ## spider is back on its feet.
 func ride(run: LevelRun, point: Vector3) -> bool:
 	var weaver := run.weaver
-	var web := await throw_at(run, point, 0.6)
+	var web := await hold_to(run, point)
 	if web == null:
-		return false
-	await run_frames(4)
-	aim(run, web.global_position)
-	if not weaver.fire_grapple():
 		return false
 	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.WEB, 60)
 	if weaver.standing_web() != web:
@@ -431,16 +436,21 @@ func finish(run: LevelRun, exit_at: Vector3) -> bool:
 	return run.done
 
 
-## Throws a web at [param fly], leading it if it moves, and waits to see it caught.
-## The web, if it caught it; null if it missed.
-func catch_fly(run: LevelRun, fly: Fly) -> ThrownWeb:
-	var weaver := run.weaver
-	var eye := weaver.view.aim_pivot()
+## Where to aim at [param fly] to hit it, leading it if it moves; [param later] is
+## how long before the web leaves.
+func lead(run: LevelRun, fly: Fly, later := 0.0) -> Vector3:
+	var eye := run.weaver.view.aim_pivot()
 	var aim_at := fly.global_position
 	for i in 3:
 		var flight := eye.distance_to(aim_at) / SilkCaster.SPEED
-		aim_at = fly.where_at(run.time + flight + 0.03)
-	var web := await throw_at(run, aim_at, 0.0)
+		aim_at = fly.where_at(run.time + later + flight + 0.03)
+	return aim_at
+
+
+## Throws a web at [param fly], leading it if it moves, and waits to see it caught.
+## The web, if it caught it; null if it missed.
+func catch_fly(run: LevelRun, fly: Fly) -> ThrownWeb:
+	var web := await throw_at(run, lead(run, fly))
 	if web == null:
 		return null
 	var ref: WeakRef = weakref(web)
@@ -451,16 +461,16 @@ func catch_fly(run: LevelRun, fly: Fly) -> ThrownWeb:
 	return now if now != null and now.holds_fly() and now.fly == fly else null
 
 
-## Catches [param fly] and grapples to it: strung up where it was. Whether it went.
+## Holds left mouse at [param fly], leading it, and rides the web into it: strung
+## up where it was. Whether it went.
 func hop_to(run: LevelRun, fly: Fly) -> bool:
-	var web := await catch_fly(run, fly)
+	var weaver := run.weaver
+	await wait_until(func() -> bool: return weaver.caster._cooling <= 0.0, 30)
+	var web := await hold_to(run, lead(run, fly, SilkCaster.HOLD))
 	if web == null:
 		return false
-	var weaver := run.weaver
-	aim(run, web.global_position)
-	if not weaver.fire_grapple():
-		return false
-	await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.GRAPPLE, 120)
+	await wait_until(func() -> bool:
+		return weaver.mode != Weaver.Mode.GRAPPLE and weaver.mode != Weaver.Mode.WEB, 120)
 	return weaver.mode == Weaver.Mode.HUNG
 
 
@@ -471,14 +481,11 @@ func flies_of(run: LevelRun) -> Array:
 	return found
 
 
-## From strung up, a web onto the stone floor at [param point], grappled to: down
-## on it, and off it onto the floor.
+## From strung up, a web ridden onto the stone floor at [param point]: down on it,
+## and off it onto the floor.
 func down_onto(run: LevelRun, point: Vector3) -> bool:
-	var web := await throw_at(run, point, 0.0)
-	if not await stuck(web):
-		return false
-	await grapple_to(run, web.global_position)
-	return run.weaver.standing_web() == web or run.weaver.mode == Weaver.Mode.GROUND
+	await ride_onto(run, point)
+	return run.weaver.standing_web() != null or run.weaver.mode == Weaver.Mode.GROUND
 
 
 func where(run: LevelRun) -> String:
@@ -498,15 +505,15 @@ func _first_thread() -> void:
 	await stop(run)
 	await go(run, Vector3(0, 0, -19))
 	check(await web_onto(run, Vector3(0, 2.5, -21.8)) and weaver.global_position.y > 3.9,
-		"a web on the stone face, a grapple onto it, and up it onto the top (%s)" % where(run))
+		"a web ridden onto the stone face, and up it onto the top (%s)" % where(run))
 	await stop(run)
 	await pull(run)
 	await go(run, Vector3(0, 4, -33))
 	await stop(run)
-	var board := await throw_at(run, Vector3(0, 6, -36.6), 0.0)
+	var board := await throw_at(run, Vector3(0, 6, -36.6))
 	check(await stuck(board) and board.loose, "a web on the boards over the way out")
-	aim(run, board.global_position)
-	check(not weaver.fire_grapple(), "which won't hold the spider")
+	aim(run, Vector3(0, 6, -36.6))
+	check(not weaver.caster.aimed().get("holds", true), "which the cross says won't hold the spider")
 	await pull(run)
 	await run_frames(10)
 	check(await finish(run, Vector3(0, 4, -41)), "called home, it rips them off: and out")
@@ -517,21 +524,17 @@ func _silk_stairs() -> void:
 	var run := await load_level("02_silk_stairs.json")
 	var weaver := run.weaver
 	await go(run, Vector3(0, 0, -5.5))
-	var low := await throw_at(run, Vector3(0, 2.4, -7))
+	var low := await throw_at(run, Vector3(0, 1.7, -7))
 	check(await stuck(low), "a big web low on the wall")
 	await go(run, Vector3(0, 0, -7.5), 0.2)
 	check(weaver.mode == Weaver.Mode.WEB, "running into it takes the spider onto it")
 	await climb(run, 50)
-	var high := await throw_at(run, Vector3(0, 7.0, -7))
-	check(await stuck(high), "from up the first web, a second higher still")
-	await grapple_to(run, high.global_position)
-	check(weaver.standing_web() == high, "a grapple onto it")
+	check(await ride_onto(run, Vector3(0, 7.0, -7)), "from up the first web, a hold rides a second higher")
+	var high := weaver.standing_web()
 	await pull(run)
 	check(weaver.standing_web() == high and weaver.webs_left() == 1,
 		"the Pullback takes back the lower web and leaves the spider on the higher")
-	var top := await throw_at(run, Vector3(0, 11.4, -7))
-	check(await stuck(top), "the same silk thrown higher again")
-	await grapple_to(run, top.global_position)
+	check(await ride_onto(run, Vector3(0, 11.4, -7)), "the same silk ridden higher again")
 	await climb(run)
 	check(weaver.global_position.y > 13.9 and weaver.mode == Weaver.Mode.GROUND,
 		"and walking off the top of it, over the slick band onto the top (%s)" % where(run))
@@ -541,7 +544,7 @@ func _silk_stairs() -> void:
 	var gate: SlideBlock = _first_of(SlideBlock) as SlideBlock
 	await go(run, Vector3(0, 14, -15), 0.2)
 	await stop(run)
-	var on_gate := await throw_at(run, Vector3(0, 15.4, -19.6), 0.0)
+	var on_gate := await throw_at(run, Vector3(0, 15.4, -19.6))
 	check(await stuck(on_gate) and on_gate.get_parent() == gate, "a web on the block in the doorway")
 	await pull(run)
 	await wait_until(func() -> bool: return gate.along() > 0.999, 180)
@@ -558,14 +561,14 @@ func _drop_in() -> void:
 	var weaver := run.weaver
 	await go(run, Vector3(0, 0, -5.0))
 	aim(run, Vector3(0, 0, -19))
-	check(weaver.grapple.aimed().get("web") == null, "the island is slick: nothing to grapple")
+	check(not weaver.caster.aimed().get("holds", true), "the island is slick: no web would hold there")
 	check(await ride(run, Vector3(0, 4, -21))
 		and weaver.global_position.z < -16.5 and weaver.global_position.y > -0.5,
 		"a web ridden out over the island, stopped dead on the hut's slick wall: a drop onto it (%s)"
 		% where(run))
 	await go(run, Vector3(0, 0, -18.5))
 	await stop(run)
-	var board := await throw_at(run, Vector3(0, 1.5, -20.7), 0.0)
+	var board := await throw_at(run, Vector3(0, 1.5, -20.7))
 	check(await stuck(board) and board.loose, "a web on the boards over the hut's door")
 	await pull(run)
 	await run_frames(10)
@@ -578,7 +581,7 @@ func _cut_lines() -> void:
 	var weaver := run.weaver
 	await go(run, Vector3(3.5, 0, -5.0), 0.2)
 	await stop(run)
-	var straight := await throw_at(run, Vector3(-3, 3, -14), 0.0)
+	var straight := await throw_at(run, Vector3(-3, 3, -14))
 	await wait_until(func() -> bool:
 		return not is_instance_valid(straight) or not straight.is_flying(), 60)
 	check(not is_instance_valid(straight) or not straight.is_standing(),
@@ -591,7 +594,7 @@ func _cut_lines() -> void:
 	await stop(run)
 	aim(run, Vector3(0, 1.5, -34.7))
 	weaver.caster._cooling = 0.0
-	var blocked := await throw_at(run, Vector3(0, 1.5, -34.7), 0.0)
+	var blocked := await throw_at(run, Vector3(0, 1.5, -34.7))
 	await wait_until(func() -> bool:
 		return not is_instance_valid(blocked) or not blocked.is_flying(), 60)
 	check(not is_instance_valid(blocked) or not blocked.is_standing(),
@@ -599,7 +602,7 @@ func _cut_lines() -> void:
 	await go(run, Vector3(0, 0, -32.5), 0.2)
 	await stop(run)
 	check(weaver.global_position.z < -31.5, "but the spider walks through")
-	var board := await throw_at(run, Vector3(0, 1.5, -34.7), 0.0)
+	var board := await throw_at(run, Vector3(0, 1.5, -34.7))
 	check(await stuck(board) and board.loose, "and from inside, a web on the boards")
 	await pull(run)
 	await run_frames(10)
@@ -617,7 +620,7 @@ func _call_it_back() -> void:
 	await pull(run)
 	await go(run, Vector3(0, 6, 7.5), 0.3)
 	var crate := get_root().get_tree().get_nodes_in_group(Crate.GROUP)[0] as Crate
-	var on_crate := await throw_at(run, crate.global_position, 0.0)
+	var on_crate := await throw_at(run, crate.global_position)
 	check(await stuck(on_crate) and on_crate.carried == crate, "a web on the crate in the red")
 	await go(run, Vector3(-6, 0, 6.5), 0.2)
 	await stop(run)
@@ -659,7 +662,7 @@ func _moving_parts() -> void:
 	await go(run, Vector3(5, 0, -31))
 	await stop(run)
 	var crate := get_root().get_tree().get_nodes_in_group(Crate.GROUP)[0] as Crate
-	var web := await throw_at(run, crate.global_position + Vector3.UP * 0.3, 0.0)
+	var web := await throw_at(run, crate.global_position + Vector3.UP * 0.3)
 	check(await stuck(web) and web.carried == crate, "a web on the crate up on its post")
 	await go(run, Vector3(3, 0, -34), 0.2)
 	await stop(run)
@@ -704,7 +707,7 @@ func _pull_the_room() -> void:
 				plug = block
 	await go(run, Vector3(0, 0, -8))
 	await stop(run)
-	var on_plug := await throw_at(run, Vector3(0, 1.5, -14.1), 0.0)
+	var on_plug := await throw_at(run, Vector3(0, 1.5, -14.1))
 	check(await stuck(on_plug) and on_plug.get_parent() == plug, "a web on the block in the doorway")
 	await pull(run)
 	await wait_until(func() -> bool: return plug.along() > 0.999, 180)
@@ -714,7 +717,7 @@ func _pull_the_room() -> void:
 	await go(run, Vector3(0, 0, -13))
 	await go(run, Vector3(0, 0, -25))
 	await stop(run)
-	var on_step := await throw_at(run, Vector3(0, 4.5, -29.6), 0.0)
+	var on_step := await throw_at(run, Vector3(0, 4.5, -29.6))
 	check(await stuck(on_step) and on_step.get_parent() == step,
 		"a web on the block plugging the high doorway")
 	await pull(run)
@@ -752,7 +755,7 @@ func _fly_paper() -> void:
 		% where(run))
 	await go(run, Vector3(0, 0, -38.5), 0.3)
 	await stop(run)
-	var board := await throw_at(run, Vector3(0, 1.4, -40.7), 0.0)
+	var board := await throw_at(run, Vector3(0, 1.4, -40.7))
 	check(await stuck(board) and board.loose, "a web on the hut's boards")
 	await pull(run)
 	await run_frames(10)
@@ -774,7 +777,7 @@ func _clockwork_flies() -> void:
 	check(await down_onto(run, Vector3(0, 0, -36.5)), "down onto the far side (%s)" % where(run))
 	await go(run, Vector3(0, 0, -38.5), 0.3)
 	await stop(run)
-	var board := await throw_at(run, Vector3(0, 1.4, -40.7), 0.0)
+	var board := await throw_at(run, Vector3(0, 1.4, -40.7))
 	check(await stuck(board) and board.loose, "a web on the boards")
 	await pull(run)
 	await run_frames(10)
@@ -786,31 +789,27 @@ func _all_together() -> void:
 	var run := await load_level("08_all_together.json")
 	var weaver := run.weaver
 	await go(run, Vector3(0, 0, -5.0))
-	check(await web_onto(run, Vector3(0, 1.8, -24), 0.6),
-		"over the drop: a web on the stone face, and a grapple to it, and up (%s)" % where(run))
+	check(await web_onto(run, Vector3(0, 1.8, -24)),
+		"over the drop: a web ridden onto the stone face, and up (%s)" % where(run))
 	check(weaver.global_position.y > 3.9, "up and over the cap (%s)" % where(run))
 	await go(run, Vector3(0, 0, -30))
 	await stop(run)
 	await pull(run)
 	await go(run, Vector3(0, 0, -34.5))
-	var low := await throw_at(run, Vector3(0, 2.4, -36))
+	var low := await throw_at(run, Vector3(0, 1.7, -36))
 	await stuck(low)
 	await go(run, Vector3(0, 0, -36.5), 0.2)
 	await climb(run, 50)
-	var mid := await throw_at(run, Vector3(0, 6.5, -36))
-	await stuck(mid)
-	await grapple_to(run, mid.global_position)
+	await ride_onto(run, Vector3(0, 6.5, -36))
 	await pull(run)
-	var high := await throw_at(run, Vector3(0, 9.4, -36))
-	await stuck(high)
-	await grapple_to(run, high.global_position)
+	await ride_onto(run, Vector3(0, 9.4, -36))
 	await climb(run)
 	check(weaver.global_position.y > 11.9 and weaver.mode == Weaver.Mode.GROUND,
 		"up the tower on two webs, leapfrogged (%s)" % where(run))
 	await pull(run)
 	await go(run, Vector3(4, 12, -45), 0.2)
 	await stop(run)
-	var board := await throw_at(run, Vector3(5.5, 15, -48.7), 0.0)
+	var board := await throw_at(run, Vector3(5.5, 15, -48.7))
 	check(await stuck(board) and board.loose, "a web on the boards over the crate's window")
 	await pull(run)
 	await run_frames(10)
@@ -819,7 +818,7 @@ func _all_together() -> void:
 	if OS.has_environment("ROUTE_DEBUG"):
 		note("to the plate %s: %s, look %s" % [went, where(run), weaver.view.forward()])
 	var crate := get_root().get_tree().get_nodes_in_group(Crate.GROUP)[0] as Crate
-	var on_crate := await throw_at(run, crate.global_position, 0.0)
+	var on_crate := await throw_at(run, crate.global_position)
 	check(await stuck(on_crate) and on_crate.carried == crate, "a web on the crate")
 	await pull(run)
 	await run_frames(100)

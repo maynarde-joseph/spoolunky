@@ -1,7 +1,7 @@
 class_name Pullback
 extends Node3D
 
-## E (or the middle mouse button): your oldest web flies back to you.
+## Right mouse (or E): your oldest web flies back to you.
 ##
 ## First thrown, first home: one press, one web, the one that has been out
 ## longest. It comes off whatever it was on and flies straight home through
@@ -13,7 +13,7 @@ extends Node3D
 ## that is what lets two webs climb a wall — stand on the higher, call the lower
 ## one home, and throw it higher still.
 ##
-## It goes while silk is held, and the ball is still there afterwards.
+## It goes while left mouse is held, and the ball is still there afterwards.
 
 ## How far it reaches, in metres.
 const REACH := 60.0

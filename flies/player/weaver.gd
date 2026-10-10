@@ -4,25 +4,23 @@ extends CharacterBody3D
 ## The spider.
 ##
 ## Fast, and on the ground. It runs, it jumps, and it does not climb: walls and
-## ceilings are not floors any more. What it has instead are three things, each on
-## a button of its own and all three usable at once:
+## ceilings are not floors any more. What it has instead is silk, on the two mouse
+## buttons:
 ##
-## * **Grapple** (left mouse) — a line to a web you point at, and you are pulled
-##   along it onto the web. Only silk holds it. See [Grapple]. One in the air, back
-##   when you land — on the ground or a web that has stuck. A web still flying you
-##   ride, all the way: no getting off, and nothing back until it lands.
-## * **Silk** (right mouse) — hold to wind it up, let go to throw a web. The web
-##   flies; grapple onto it in flight and you ride it to wherever it lands, where
-##   it sticks, flat, and the spider can walk on it — up a wall, across a
-##   ceiling. See [SilkCaster] and [ThrownWeb].
-## * **Pullback** (E, or the middle mouse button) — your oldest web flies home,
-##   putting down what it held at your feet. See [Pullback].
+## * **Left mouse** — tap to throw a web; hold to throw one and go with it. A web
+##   flies down the cross and sticks, flat, where its middle meets something, and
+##   the spider can walk on it — up a wall, across a ceiling. Held, the spider is
+##   on the line at once and rides the web to wherever it sticks, a commitment:
+##   no getting off. One ride in the air, back when you land on the ground or a
+##   web that has stuck. See [SilkCaster], [ThrownWeb] and [Grapple].
+## * **Right mouse** (or E) — the Pullback: your oldest web flies home, and what
+##   it was on feels the pull. See [Pullback].
 ##
 ## Silk is a few webs, no more: a level says how many. Throw them all and the
 ## Pullback is how you get them back.
 ##
-## A web that catches a fly holds it in the air, and reaching it — grappling to it,
-## or riding a web into it — takes the fly, gives back the web and the grapple,
+## A web that catches a fly holds it in the air, and reaching it — riding a web into
+## it — takes the fly, gives back the web and the grapple,
 ## and leaves the spider strung up in the air for [constant HANG] seconds, spread
 ## out on a frame of silk like a hide stretched to dry. Space cuts it down early.
 ##
@@ -219,12 +217,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		view.look((event as InputEventMouseMotion).relative)
 		return
 	if event.is_action_pressed("grapple"):
-		fire_grapple()
-	elif event.is_action_pressed("silk"):
 		caster.begin()
-	elif event.is_action_released("silk"):
+	elif event.is_action_released("grapple"):
 		caster.release()
-	elif event.is_action_pressed("pullback"):
+	elif event.is_action_pressed("silk") or event.is_action_pressed("pullback"):
 		pullback.cast()
 	elif event.is_action_pressed("toggle_camera"):
 		view.toggle_mode()
@@ -247,7 +243,7 @@ func _read_keys(delta: float) -> void:
 		_buffer = BUFFER
 	_jump_held = Input.is_action_pressed("move_jump")
 	# A wind-up with its key no longer down is let go, in case the key-up was lost.
-	if caster.charging and not Input.is_action_pressed("silk") and require_captured_mouse:
+	if caster.charging and not Input.is_action_pressed("grapple") and require_captured_mouse:
 		caster.release()
 
 
@@ -490,6 +486,7 @@ func _step_web(delta: float) -> void:
 			return
 		if not _web.holds_weight():
 			# The ride stuck to a loose board, which won't hold the spider: off it.
+			notify("That board won't hold you — call the web home to rip it off")
 			_web = null
 			velocity = Vector3.ZERO
 			_set_mode(Mode.AIR)
@@ -498,11 +495,10 @@ func _step_web(delta: float) -> void:
 		_refill()
 	_web_airborne = _web.is_flying()
 	if _web.turned != _web_turned:
-		# The web turned under us as it stuck: find our footing on its new face.
+		# The web turned under us as it stuck: the same place on it, on whichever
+		# face of it now has room.
 		_web_turned = _web.turned
-		var local := _web.to_local(global_position)
-		_web_at = Vector2(local.x, local.y)
-		_pick_face(local.z)
+		_pick_face(_web.to_local(global_position).z)
 	_up = _web.normal() * _web_side
 	if _buffer > 0.0:
 		if _web.is_flying():
@@ -716,15 +712,14 @@ func _catch_web(step: Vector3) -> bool:
 
 # --- grappling ---------------------------------------------------------------
 
-## Left mouse. Puts a line on what is aimed at and starts the pull. False if the
-## grapple is spent or nothing holds it.
-func fire_grapple() -> bool:
+## A held left mouse: puts the spider on the line to [param web], just thrown, to
+## ride it. False, and the web only thrown, if the grapple is spent.
+func ride_web(web: ThrownWeb) -> bool:
 	acted = true
 	if not grapple_ready:
 		notify("Grapple's spent — land to get it back")
 		return false
-	if not grapple.fire():
-		return false
+	grapple.hold_on(web)
 	start_grapple()
 	return true
 
@@ -737,6 +732,8 @@ func start_grapple() -> void:
 		_web = null
 	grapple_ready = false
 	_grapple_time = 0.0
+	# The throw's hold-up is over: the spider is going somewhere.
+	_stall = 0.0
 	_set_mode(Mode.GRAPPLE)
 
 

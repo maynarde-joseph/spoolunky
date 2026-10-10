@@ -1,25 +1,25 @@
 class_name SilkCaster
 extends Node3D
 
-## Right mouse: silk.
+## Left mouse: silk, and going with it.
 ##
-## Cast exactly as it was: press and a ball of silk winds up over the spider's
-## back, growing and brightening; the view lifts and widens over the spider's
-## shoulder while it does; let go and it is thrown down the cross. A tap throws
-## the smallest, a full second's wind-up the biggest.
+## **Tap** and a web is thrown down the cross — see [ThrownWeb] — to stick where
+## it lands: somewhere to walk on, something to catch a fly with, something to
+## pull home with the Pullback.
 ##
-## What is thrown is new: a whole web, flying — see [ThrownWeb]. The size the
-## wind-up reached is the size of the web, so a bigger web is a bigger platform.
+## **Hold** and the same web is thrown with the spider on the line: it rides the
+## web to wherever it sticks, or stops dead with it. A ride takes the grapple,
+## which comes back on landing — see [Grapple] — so with it spent, a hold only
+## throws.
 ##
-## Holding it does not stop anything else. The grapple and the Pullback both go
-## while the ball is held, and the ball is still there, winding, when they have.
+## While the button is down a ball of silk winds up over the spider's back; it is
+## full at [constant HOLD] seconds, and that is when a hold goes.
 
-## How long winding up to the biggest web takes, in seconds.
-const CHARGE_TIME := 0.9
+## How long left mouse has to be held for the spider to go with the web.
+const HOLD := 0.18
 
-## A web's radius at a tap, and at a full wind-up, in metres.
-const SMALLEST := 1.0
-const BIGGEST := 2.4
+## How wide a web is, from its middle to its rim, in metres.
+const RADIUS := 1.7
 
 ## How fast a thrown web flies, and how far before it comes apart.
 const SPEED := 22.0
@@ -28,16 +28,15 @@ const REACH := 22.0
 ## The least time between throws.
 const COOLDOWN := 0.2
 
-## The held ball's radius, in body heights, from a tap to a full wind-up. The
-## ball the old game held, unchanged.
-const HELD_BODIES := Vector2(0.12, 0.4)
+## The held ball's radius, in body heights, from the press to a full hold.
+const HELD_BODIES := Vector2(0.12, 0.3)
 
 var weaver: Weaver
 var view: SpiderCamera
 
 var charging := false
 
-## How far through the wind-up, 0 to 1.
+## How far through to a hold, 0 to 1.
 var charge := 0.0
 
 var _cooling := 0.0
@@ -51,7 +50,7 @@ func setup(owner_weaver: Weaver, camera: SpiderCamera) -> void:
 	_build_held()
 
 
-## The key went down: start winding up.
+## Left mouse went down: start winding up.
 func begin() -> bool:
 	if charging:
 		return false
@@ -61,15 +60,12 @@ func begin() -> bool:
 	return true
 
 
-## Let go: throw what the wind-up reached. False if nothing went.
-func release() -> bool:
+## Left mouse came up before the hold went: a tap, and a web thrown. The web, or
+## null if none went.
+func release() -> ThrownWeb:
 	if not charging:
-		return false
-	charging = false
-	_held.visible = false
-	var wound := charge
-	charge = 0.0
-	return throw(wound)
+		return null
+	return _go(false)
 
 
 ## Put the ball away without throwing.
@@ -80,42 +76,63 @@ func cancel() -> void:
 		_held.visible = false
 
 
-## Throws a web wound up to [param wound], 0 to 1, down the cross. What letting
-## go does, and what a check calls to throw without a key.
-func throw(wound := 0.0) -> bool:
+## Throws, and with [param ride], puts the spider on the line to the web.
+func _go(ride: bool) -> ThrownWeb:
+	cancel()
+	var web := throw()
+	if web != null and ride:
+		weaver.ride_web(web)
+	return web
+
+
+## Throws a web down the cross: what a tap does, and what a check calls to throw
+## without a key. The web, or null if none went.
+func throw() -> ThrownWeb:
 	if _cooling > 0.0:
-		return false
+		return null
 	if weaver.webs_left() <= 0:
-		weaver.notify("No silk left — call your webs back (E)")
+		weaver.notify("No silk left — call your webs back (right mouse)")
 		weaver.out_of_silk.emit()
-		return false
+		return null
 	var from := view.aim_origin()
 	var heading := view.aim_forward()
-	var radius := web_radius(wound)
-	var web := ThrownWeb.throw(weaver.web_container(), weaver, from, heading, SPEED, radius, REACH)
+	var web := ThrownWeb.throw(weaver.web_container(), weaver, from, heading, SPEED, RADIUS, REACH)
 	weaver.adopt_web(web)
 	weaver.hang_after_throw()
 	_cooling = COOLDOWN
-	return true
+	return web
 
 
-## How wide a web wound up to [param wound] is.
-func web_radius(wound: float) -> float:
-	return lerpf(SMALLEST, BIGGEST, clampf(wound, 0.0, 1.0))
+## What a web thrown now would meet, within its reach: [code]{position, holds}[/code],
+## [code]holds[/code] whether silk would stick there and bear the spider. Empty for
+## nothing in reach.
+func aimed() -> Dictionary:
+	if view == null or weaver == null:
+		return {}
+	var from := view.aim_origin()
+	var query := PhysicsRayQueryParameters3D.create(from, from + view.aim_forward() * REACH,
+		GameLayers.WORLD, [weaver.get_rid()])
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return {}
+	var what := hit.get("collider") as Node
+	var holds := what != null and not Surfaces.is_slick(what) and not (what is LoosePanel)
+	if holds and not SilkCutter.crossing(get_world_3d().direct_space_state, from,
+			hit["position"]).is_empty():
+		holds = false
+	return {"position": hit["position"], "holds": holds}
 
 
 func _process(delta: float) -> void:
 	_cooling = maxf(0.0, _cooling - delta)
 	if charging:
-		charge = clampf(charge + delta / CHARGE_TIME, 0.0, 1.0)
-	# The framing: the view lifts over the spider's back while a throw winds up,
-	# and comes back down after, eased either way.
-	if view != null:
-		view.aim_blend = move_toward(view.aim_blend, 1.0 if charging else 0.0, delta * 4.0)
+		charge = clampf(charge + delta / HOLD, 0.0, 1.0)
+		if charge >= 1.0:
+			_go(true)
 	_update_held()
 
 
-## How big the held ball is at [param wound].
+## How big the held ball is [param wound] of the way to a hold.
 func ball_radius(wound: float) -> float:
 	return Weaver.HEIGHT * lerpf(HELD_BODIES.x, HELD_BODIES.y, clampf(wound, 0.0, 1.0))
 

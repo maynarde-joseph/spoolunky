@@ -74,7 +74,7 @@ func _ready() -> void:
 	row.add_child(UiStyle.button("New level", func() -> void: create.emit()))
 	row.add_child(UiStyle.button("Quit", func() -> void: quit.emit()))
 	var keys := Label.new()
-	keys.text = "RIGHT MOUSE silk — hold for a bigger web   ·   LEFT MOUSE grapple onto a web — one in flight you ride   ·   E / MIDDLE MOUSE pullback\n" \
+	keys.text = "LEFT MOUSE tap: throw a web   ·   hold: throw it and ride it   ·   RIGHT MOUSE call your oldest web home\n" \
 		+ "WASD walk   ·   SPACE jump   ·   R restart   ·   ESC pause"
 	keys.add_theme_font_size_override("font_size", 17)
 	keys.modulate = Color(1, 1, 1, 0.85)
