@@ -24,14 +24,16 @@ const WING := Color(0.74, 0.81, 0.83, 0.78)
 const WING_RIM := Color(0.6, 0.67, 0.7, 0.88)
 
 ## How fast the wings beat, in beats a second, and how far up and down they go
-## and how far out they spread while flying, in degrees.
-const BEAT := 24.0
+## and how far out they spread while flying, in degrees. Slow for a real fly, on
+## purpose: a beat has to last several frames to be seen as wings moving at all,
+## rather than a flicker.
+const BEAT := 9.0
+const STROKE := 48.0
+const SPREAD := 34.0
 
 ## How long a leg's two parts are, in body units: short, tucked under the body.
 const FEMUR := 0.36
 const TIBIA := 0.5
-const STROKE := 38.0
-const SPREAD := 34.0
 
 var skeleton: Skeleton3D
 var flying := true
@@ -132,7 +134,7 @@ func _pose(time: float) -> void:
 		if flying:
 			# Out from the body, and up and down about the body's own length.
 			var out := Quaternion(rest.inverse() * Vector3.UP, deg_to_rad(-side * SPREAD))
-			var beat := sin(time * TAU * BEAT) * deg_to_rad(STROKE)
+			var beat := flap(time) * deg_to_rad(STROKE)
 			var stroke := Quaternion(rest.inverse() * Vector3.BACK, side * beat)
 			turn = out * stroke
 		skeleton.set_bone_pose_rotation(bone, (Quaternion(rest) * turn).normalized())
@@ -160,6 +162,14 @@ func _pose(time: float) -> void:
 			* Quaternion((femur_axes.inverse() * hinge).normalized(), lift)).normalized())
 		skeleton.set_bone_pose_rotation(tibia, (Quaternion(tibia_rest)
 			* Quaternion((tibia_axes.inverse() * hinge).normalized(), bend)).normalized())
+
+
+## Where the wings are in their beat at [param time], from -1 (all the way down)
+## to 1 (all the way up): lingering at the top and the bottom and quick through
+## the middle, which is what makes a beat read as one.
+static func flap(time: float) -> float:
+	var swing := sin(time * TAU * BEAT)
+	return signf(swing) * pow(absf(swing), 0.55)
 
 
 static func _side(side: float) -> String:
