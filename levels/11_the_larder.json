@@ -1,0 +1,1061 @@
+{
+	"name": "The Larder",
+	"webs": 3,
+	"kill_y": -10.0,
+	"ceiling": 18.0,
+	"par": 60.0,
+	"objects": [
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				-16,
+				12.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				62,
+				34.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				-16,
+				-48.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				62,
+				34.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-30.5,
+				-16,
+				-18.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1,
+				34.0,
+				60
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				30.5,
+				-16,
+				-18.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1,
+				34.0,
+				60
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				7.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				12,
+				1,
+				9.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "start",
+			"pos": [
+				0,
+				0.2,
+				9
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-18,
+				-16,
+				7.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				24,
+				34.0,
+				9.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				18,
+				-16,
+				7.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				24,
+				34.0,
+				9.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				-12.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				28,
+				1,
+				29.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-9,
+				0,
+				-18
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				3,
+				14,
+				3
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				9,
+				0,
+				-21
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				3,
+				14,
+				3
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-2.75,
+				0,
+				-12
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.5,
+				4,
+				6
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				2.75,
+				0,
+				-12
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				0.5,
+				4,
+				6
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				0,
+				-14.75
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				6,
+				4,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-2.125,
+				0,
+				-9.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1.75,
+				4,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				3.2,
+				-9.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.5,
+				0.7999999999999998,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				2.125,
+				0,
+				-9.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1.75,
+				4,
+				0.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				4,
+				-12
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				6,
+				0.5,
+				6
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "door",
+			"piece": "cube",
+			"pos": [
+				0,
+				0,
+				-9.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				2.5,
+				3.2,
+				0.5
+			],
+			"surface": "stone",
+			"open": [
+				0,
+				-3.3,
+				0
+			],
+			"channel": "vault"
+		},
+		{
+			"type": "plate",
+			"pos": [
+				-5,
+				0,
+				-7
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"channel": "vault"
+		},
+		{
+			"type": "exit",
+			"pos": [
+				0,
+				0,
+				-12.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "fly",
+			"pos": [
+				0,
+				10,
+				-12
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"move": "still",
+			"period": 4.0,
+			"phase": 0.0,
+			"glow": true
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-14.5,
+				0,
+				-24.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1.0,
+				18.0,
+				5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-14.5,
+				0,
+				-18.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1.0,
+				8.5,
+				8
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-14.5,
+				16,
+				-18.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1.0,
+				2.0,
+				8
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-14.5,
+				0,
+				-12.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1.0,
+				18.0,
+				4
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-14.5,
+				3.2,
+				-8.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1.0,
+				14.8,
+				3
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-14.5,
+				0,
+				-2.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1.0,
+				18.0,
+				9.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "door",
+			"piece": "cube",
+			"pos": [
+				-14.5,
+				0,
+				-8.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1.0,
+				3.2,
+				3.0
+			],
+			"surface": "stone",
+			"open": [
+				0,
+				3.4,
+				0
+			],
+			"channel": "pantry"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-22,
+				-1,
+				-12.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				16,
+				1,
+				29.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-26,
+				0,
+				-19
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				8,
+				5.5,
+				10
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-26,
+				5.5,
+				-19
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				8,
+				2.5,
+				10
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-26,
+				8,
+				-19
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				8,
+				2,
+				10
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "crate",
+			"pos": [
+				-27,
+				10.6,
+				-19
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "fly",
+			"pos": [
+				-26,
+				13.5,
+				-19
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"move": "orbit",
+			"period": 5.0,
+			"phase": 0.0,
+			"glow": true,
+			"axis": [
+				0.0,
+				1.0,
+				0.0
+			],
+			"radius": 2.0
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				14.5,
+				0,
+				-19.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1.0,
+				18.0,
+				15
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				14.5,
+				3.6,
+				-10.0
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1.0,
+				14.4,
+				4
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				14.5,
+				0,
+				-2.75
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				1.0,
+				18.0,
+				10.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				15.5,
+				-16,
+				-12.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				3,
+				16,
+				29.5
+			],
+			"surface": "stone"
+		},
+		{
+			"type": "hazard",
+			"pos": [
+				23.5,
+				-16,
+				-12.25
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				13,
+				0.6,
+				29.5
+			]
+		},
+		{
+			"type": "fly",
+			"pos": [
+				23,
+				-5,
+				-12
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"move": "orbit",
+			"period": 6.0,
+			"phase": 0.0,
+			"glow": true,
+			"axis": [
+				1.0,
+				0.0,
+				0.0
+			],
+			"radius": 3.0
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-7.75,
+				0,
+				-27
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				12.5,
+				9.5,
+				1.0
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0.0,
+				3.0,
+				-27
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				3.0,
+				6.5,
+				1.0
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				7.75,
+				0,
+				-27
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				12.5,
+				9.5,
+				1.0
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "panel",
+			"piece": "cube",
+			"pos": [
+				0,
+				0,
+				-26.35
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				3.2,
+				3.2,
+				0.3
+			]
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-22,
+				-16,
+				-27
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				16,
+				34.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				22,
+				-16,
+				-27
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				16,
+				34.0,
+				1
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				0,
+				-1,
+				-37.5
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				28,
+				1,
+				21
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				-22.25,
+				-16,
+				-37.75
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				15.5,
+				34.0,
+				20.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "piece",
+			"piece": "cube",
+			"pos": [
+				22.25,
+				-16,
+				-37.75
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				15.5,
+				34.0,
+				20.5
+			],
+			"surface": "slick"
+		},
+		{
+			"type": "cutter",
+			"pos": [
+				0,
+				0,
+				-33
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"size": [
+				28,
+				6.0,
+				0.2
+			]
+		},
+		{
+			"type": "fly",
+			"pos": [
+				10,
+				6,
+				-38
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"move": "line",
+			"period": 8.0,
+			"phase": 0.0,
+			"glow": true,
+			"travel": [
+				-20.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "crate",
+			"pos": [
+				6,
+				0.6,
+				-45
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			]
+		},
+		{
+			"type": "plate",
+			"pos": [
+				-8,
+				0,
+				-44
+			],
+			"rot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"channel": "pantry"
+		}
+	]
+}

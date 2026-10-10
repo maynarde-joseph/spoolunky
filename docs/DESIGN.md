@@ -277,6 +277,22 @@ so the check is doing the work.
 10. **Clockwork Flies**: the same hall, with a fly going back and forth, one
     orbiting and one bobbing. Lead the throws; the clock makes it the same every
     try.
+11. **The Larder**: a whole level rather than a room, built so the way you'd find
+    and the way you'd master are minutes apart. An atrium with the bag in a sealed
+    vault in the middle, its door on a plate, and three wings with a fly each:
+    the Gallery (boarded up, a laser curtain, a fly patrolling behind it, and a
+    crate whose plate opens the Pantry), the Well (a fly circling down a pit) and
+    the Pantry (a shelf with a slick band across its face, a fly circling over it
+    and the crate for the vault). The long way visits every room in turn, and the
+    Pantry's door only opens from the far end of the Gallery. The quick way never
+    leaves the atrium: ride into the fly over the vault and hang there, climb a
+    pillar from the hang, snipe the Pantry's crate and fly through a high window,
+    ride to the other pillar and lead a throw over the Gallery's wall (it stops
+    short of the ceiling) at its fly, then stand by the plate and call everything
+    home through the walls; the crate lands on the plate. Then the Well's fly from
+    its rim. Both are scripted in CI: the long way runs about 50 s and the quick
+    way about 35 s at a script's perfect aim; by hand, figuring it out, the long
+    way is minutes.
 
 Every built-in level is played to the end by a scripted route in
 `tests/flies/levels_smoke_test.gd`, through the same calls the keys make. Those

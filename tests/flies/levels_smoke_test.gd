@@ -39,6 +39,10 @@ func run_checks() -> void:
 		await _fly_paper()
 	if _wanted("10"):
 		await _clockwork_flies()
+	if _wanted("11"):
+		await _the_larder_quick()
+	if _wanted("11"):
+		await _the_larder_long()
 
 
 func _wanted(part: String) -> bool:
@@ -448,6 +452,10 @@ func catch_fly(run: LevelRun, fly: Fly) -> ThrownWeb:
 		var w := ref.get_ref() as ThrownWeb
 		return w == null or not w.is_flying(), 90)
 	var now := ref.get_ref() as ThrownWeb
+	if OS.has_environment("ROUTE_DEBUG"):
+		note("catch: fly %s, web %s" % [fly.global_position.snappedf(0.1),
+			"gone" if now == null else "%s at %s" % [ThrownWeb.State.keys()[now.state],
+			now.global_position.snappedf(0.1)]])
 	return now if now != null and now.holds_fly() and now.fly == fly else null
 
 
@@ -779,6 +787,226 @@ func _clockwork_flies() -> void:
 	await pull(run)
 	await run_frames(10)
 	check(await finish(run, Vector3(0, 0, -43.2)), "and into the bag")
+
+
+## The Larder's flies, by where they are.
+func larder_flies(run: LevelRun) -> Dictionary:
+	var found := {}
+	for fly in flies_of(run):
+		var at: Vector3 = (fly as Fly).global_position
+		if at.x < -15.0:
+			found["pantry"] = fly
+		elif at.x > 15.0:
+			found["well"] = fly
+		elif at.z < -30.0:
+			found["gallery"] = fly
+		else:
+			found["vault"] = fly
+	return found
+
+
+## The Larder's crate on the Pantry's shelf, or with [param back], the one at the
+## back of the Gallery.
+func larder_crate(back := false) -> Crate:
+	for node in get_root().get_tree().get_nodes_in_group(Crate.GROUP):
+		var crate := node as Crate
+		if (crate.global_position.z < -40.0) == back:
+			return crate
+	return null
+
+
+## Stands just south of the plate, facing it, so what a call brings lands on it.
+func to_the_plate(run: LevelRun) -> void:
+	await go(run, Vector3(-5, 0, -2.0), 0.4)
+	await go(run, Vector3(-5, 0, -5.8), 0.15)
+	await stop(run)
+
+
+## Whether the spider has a clear throw at [param at]: nothing solid in the way.
+func clear_shot(run: LevelRun, at: Vector3) -> bool:
+	var from := run.weaver.view.aim_origin()
+	var query := PhysicsRayQueryParameters3D.create(from, at, GameLayers.WORLD,
+		[run.weaver.get_rid()])
+	return run.get_world_3d().direct_space_state.intersect_ray(query).is_empty() \
+		and from.distance_to(at) < SilkCaster.REACH - 0.5
+
+
+## Waits until [param fly] is somewhere [param good] says, at most [param limit]
+## frames.
+func wait_for_fly(fly: Fly, good: Callable, limit := 600) -> void:
+	await wait_until(func() -> bool: return good.call(fly.global_position), limit)
+
+
+func _the_larder_quick() -> void:
+	print("Route: The Larder, the quick way")
+	var run := await load_level("11_the_larder.json")
+	var weaver := run.weaver
+	var flies := larder_flies(run)
+	check(run.flies_total == 4 and flies.size() == 4, "four flies about the larder")
+	var crate := larder_crate()
+	await go(run, Vector3(0, 0, -2.0), 0.3)
+	await stop(run)
+	check(await hop_to(run, flies["vault"]), "a ride into the fly over the vault: strung up (%s)"
+		% where(run))
+	check(await web_onto(run, Vector3(-7.5, 12.0, -18)) and weaver.global_position.y > 13.5,
+		"from the hang, a web on the west pillar and up it (%s)" % where(run))
+	await stop(run)
+	# To the pillar's far edge, so the throws down at the window clear its top.
+	await go(run, Vector3(-10.1, 14, -18.2), 0.15)
+	await stop(run)
+	var on_crate := await throw_at(run, crate.global_position)
+	check(await stuck(on_crate) and on_crate.carried == crate,
+		"through the high window, a web on the crate on the shelf")
+	var pantry: Fly = flies["pantry"]
+	if OS.has_environment("ROUTE_DEBUG"):
+		var eye := weaver.view.aim_origin()
+		note("eye %s" % eye)
+		for point in pantry.route(8):
+			var q := PhysicsRayQueryParameters3D.create(eye, point, GameLayers.WORLD, [weaver.get_rid()])
+			var hit := run.get_world_3d().direct_space_state.intersect_ray(q)
+			note("fly at %s: %s" % [point.snappedf(0.1), "clear" if hit.is_empty() else
+				"hits %s at %s" % [(hit["collider"] as Node).name, (hit["position"] as Vector3).snappedf(0.1)]])
+	var in_view := func(at: Vector3) -> bool:
+		return clear_shot(run, at) and clear_shot(run, pantry.where_at(run.time + 0.6))
+	await wait_for_fly(pantry, in_view)
+	check(await catch_fly(run, flies["pantry"]) != null, "and the fly circling over it, caught")
+	await go(run, Vector3(-7.9, 14, -18.6), 0.15)
+	await stop(run)
+	check(await web_onto(run, Vector3(7.5, 12.0, -21)) and weaver.global_position.y > 13.5,
+		"a web across to the east pillar and up it (%s)" % where(run))
+	await stop(run)
+	await go(run, Vector3(9.0, 14, -22.1), 0.15)
+	await stop(run)
+	await wait_for_fly(flies["gallery"], func(at: Vector3) -> bool: return at.x > 6.0)
+	check(await catch_fly(run, flies["gallery"]) != null,
+		"over the Gallery's wall and its curtain, the fly behind caught")
+	await to_the_plate(run)
+	await pull(run)
+	await run_frames(30)
+	check(run.is_powered("vault"), "at the plate, everything called home: the crate lands on it")
+	check(run.flies_taken == 3, "and three flies are in (%d)" % run.flies_taken)
+	await go(run, Vector3(12, 0, -10), 0.5)
+	await go(run, Vector3(16.6, 0, -10), 0.2)
+	await stop(run)
+	await wait_for_fly(flies["well"], func(at: Vector3) -> bool: return at.y > -4.0)
+	check(await catch_fly(run, flies["well"]) != null, "from the Well's rim, its fly caught")
+	await pull(run)
+	await wait_until(func() -> bool: return run.flies_taken == 4, 90)
+	check(run.exit.open, "every fly in: the bag opens")
+	await go(run, Vector3(0, 0, -1.0), 0.5)
+	check(await finish(run, Vector3(0, 0, -12.5)), "into the vault, and out (%.1f s)" % run.time)
+
+
+## Calls the oldest web home, one press, and waits for it.
+func call_one(run: LevelRun) -> void:
+	var weaver := run.weaver
+	await wait_until(func() -> bool: return weaver.pullback._cooling <= 0.0, 30)
+	weaver.pullback.cast()
+	await run_frames(40)
+
+
+## The long way, room by room, as someone finding their way round would go.
+func _the_larder_long() -> void:
+	print("Route: The Larder, the long way")
+	var run := await load_level("11_the_larder.json")
+	var weaver := run.weaver
+	var flies := larder_flies(run)
+	var crate := larder_crate()
+	# The fly over the vault, from the floor.
+	await go(run, Vector3(0, 0, -3.0), 0.3)
+	await stop(run)
+	check(await catch_fly(run, flies["vault"]) != null, "the fly over the vault, caught from the floor")
+	await call_one(run)
+	check(run.flies_taken == 1, "and called home")
+	# The Gallery: boards off, through the curtain, and the fly behind it. Round the
+	# vault on the way.
+	await go(run, Vector3(5, 0, -6), 0.4)
+	await go(run, Vector3(5, 0, -17), 0.4)
+	await go(run, Vector3(0, 0, -22.5), 0.3)
+	await stop(run)
+	var board := await throw_at(run, Vector3(0, 1.5, -26.2))
+	check(await stuck(board) and board.loose, "a web on the Gallery's boards")
+	await call_one(run)
+	await go(run, Vector3(0, 0, -29.5), 0.3)
+	await go(run, Vector3(6, 0, -35.5), 0.3)
+	await stop(run)
+	check(weaver.global_position.z < -34.0, "boards off, in, and through the curtain (%s)" % where(run))
+	var gallery: Fly = flies["gallery"]
+	var near := func(at: Vector3) -> bool:
+		return absf(at.x - 6.0) < 3.0 and clear_shot(run, gallery.where_at(run.time + 0.4))
+	await wait_for_fly(gallery, near)
+	check(await catch_fly(run, gallery) != null, "the fly going back and forth, caught")
+	await call_one(run)
+	check(run.flies_taken == 2, "and called home")
+	# The crate at the back, onto the plate there: the Pantry's door opens.
+	var back := larder_crate(true)
+	var on_back := await throw_at(run, back.global_position)
+	check(await stuck(on_back) and on_back.carried == back, "a web on the crate at the back")
+	await go(run, Vector3(-8, 0, -40), 0.3)
+	await go(run, Vector3(-8, 0, -42.9), 0.15)
+	await stop(run)
+	await call_one(run)
+	await run_frames(30)
+	check(run.is_powered("pantry"), "called home onto the plate there: the Pantry's door opens")
+	# The Well: down its rim, and the fly circling in it.
+	await go(run, Vector3(-2, 0, -36), 0.4)
+	await go(run, Vector3(0, 0, -29.5), 0.3)
+	await go(run, Vector3(0, 0, -23), 0.4)
+	await go(run, Vector3(5, 0, -17), 0.4)
+	await go(run, Vector3(5, 0, -8), 0.4)
+	await go(run, Vector3(12, 0, -10), 0.5)
+	await go(run, Vector3(16.6, 0, -10), 0.2)
+	await stop(run)
+	await wait_for_fly(flies["well"], func(at: Vector3) -> bool: return at.y > -4.0)
+	check(await catch_fly(run, flies["well"]) != null, "at the Well's rim, its fly caught")
+	await call_one(run)
+	check(run.flies_taken == 3, "and called home")
+	# The Pantry, its door open now: up the shelf, the fly and the crate.
+	await go(run, Vector3(12, 0, -10), 0.5)
+	await go(run, Vector3(5, 0, -6), 0.4)
+	await go(run, Vector3(-5, 0, -6), 0.4)
+	await go(run, Vector3(-9, 0, -8.5), 0.3)
+	await go(run, Vector3(-18, 0, -8.5), 0.3)
+	check(weaver.global_position.x < -15.0, "through the Pantry's open door (%s)" % where(run))
+	await go(run, Vector3(-19.5, 0, -18.5), 0.3)
+	await stop(run)
+	# Up the shelf on two webs, past the slick band across its face.
+	var low := await throw_at(run, Vector3(-21.8, 3.0, -18.5))
+	check(await stuck(low), "a web low on the shelf's face")
+	await grapple_to(run, low.global_position)
+	await climb(run, 50)
+	var high := await throw_at(run, Vector3(-21.8, 8.8, -18.5), 0.3)
+	check(await stuck(high), "and from up it, a second over the slick band")
+	await grapple_to(run, high.global_position)
+	check(not is_instance_valid(low) or not low.is_standing(), "the lower one used up as you leave it")
+	await climb(run)
+	check(weaver.global_position.y > 9.5, "up and onto the shelf (%s)" % where(run))
+	await stop(run)
+	var pantry: Fly = flies["pantry"]
+	var overhead := func(at: Vector3) -> bool: return clear_shot(run, pantry.where_at(run.time + 0.3))
+	await wait_for_fly(pantry, overhead)
+	check(await catch_fly(run, pantry) != null, "the fly circling over the shelf, caught")
+	await call_one(run)
+	check(run.flies_taken == 4, "and called home: every fly in")
+	if OS.has_environment("ROUTE_DEBUG"):
+		note("before crate: %s, crate %s, webs left %d" % [where(run), crate.global_position.snappedf(0.1),
+			weaver.webs_left()])
+	var on_crate := await throw_at(run, crate.global_position)
+	var crate_stuck := await stuck(on_crate)
+	if OS.has_environment("ROUTE_DEBUG") and on_crate != null and is_instance_valid(on_crate):
+		note("crate web: %s at %s on %s" % [ThrownWeb.State.keys()[on_crate.state],
+			on_crate.global_position.snappedf(0.1), on_crate.get_parent().name])
+	check(crate_stuck and on_crate.carried == crate, "a web on the crate")
+	# Back to the atrium with the crate's web still on it, and home onto the plate.
+	await go(run, Vector3(-19.5, 0, -12), 0.4)
+	await go(run, Vector3(-18, 0, -8.5), 0.3)
+	await go(run, Vector3(-9, 0, -8.5), 0.4)
+	await to_the_plate(run)
+	await call_one(run)
+	await run_frames(30)
+	check(run.is_powered("vault"), "at the plate, the crate called home onto it")
+	await go(run, Vector3(0, 0, -6.0), 0.4)
+	check(await finish(run, Vector3(0, 0, -12.5)), "into the vault, and out (%.1f s)" % run.time)
 
 
 func _all_together() -> void:

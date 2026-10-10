@@ -83,6 +83,7 @@ can be finished with web, grapple, drop, repeat (see `tests/flies/silk_reach.gd`
 8. **All Together**: a web across the drop, a leapfrogged tower, boards off a window, and a crate for the door.
 9. **Fly Paper**: a void walled and roofed in slick metal, with nothing to hold silk but the flies hanging over it. Hop from fly to fly, call home the one out of reach, then rip the boards off the hut.
 10. **Clockwork Flies**: the same hall, with a fly going back and forth, one orbiting and one bobbing up and down. Lead your throws.
+11. **The Larder**: a whole level. The bag is sealed in a vault in the middle of an atrium, its door on a plate that wants a crate, with three wings off it and a fly in each. The long way goes room by room: boards off the Gallery, through its laser curtain for the fly and a crate that opens the Pantry, the Well's fly, up the Pantry's shelf past a slick band for its fly and the crate, then the crate home onto the vault's plate. The quick way stays in the atrium: hang from the fly over the vault, climb a pillar, snipe the Pantry's crate and fly through a high window, ride to the other pillar and lead a throw over the Gallery's wall at its fly, then pull everything home through the walls.
 
 ## The level editor
 

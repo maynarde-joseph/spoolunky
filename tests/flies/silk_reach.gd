@@ -185,16 +185,27 @@ func _cell_at(at: Vector3, slack: float) -> int:
 	return -1
 
 
-## The highest floor under [param at], or -1.
+## The highest floor under [param at], or -1: the one a spider dropped from there
+## lands on, however little below it that is — a ride that stops just over a roof
+## puts the spider on the roof, not through it.
 func _landing(at: Vector3) -> int:
 	var col := _column(at.x, at.z)
 	if col < 0:
 		return -1
 	var heights: Array = _floors[col]
 	for layer in heights.size():
-		if float(heights[layer]) < at.y - 0.35:
+		if float(heights[layer]) <= at.y + 0.05:
 			return col * 4 + layer
 	return -1
+
+
+## Whether [param heights], a column's floors, has one above [param low] and no
+## higher than [param high].
+func _floor_between(heights: Array, low: float, high: float) -> bool:
+	for h in heights:
+		if float(h) > low + 0.05 and float(h) <= high + 0.05:
+			return true
+	return false
 
 
 func _height(cell: int) -> float:
@@ -239,6 +250,11 @@ func _walk_from(cell: int) -> void:
 				if _came.has(next):
 					continue
 				var rise := float(heights[layer]) - _height(cell)
+				# Down onto a floor with another between it and here — a roof over
+				# it — is landing on that one instead.
+				if rise < -STEP_UP and _floor_between(heights, float(heights[layer]),
+						_height(cell)):
+					continue
 				var near := absf(dx) <= 1 and absf(dz) <= 1
 				if near and rise <= STEP_UP:
 					if _clear(here + Vector3.UP * 0.15, _stand(next) + Vector3.UP * 0.15
