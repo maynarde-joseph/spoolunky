@@ -21,6 +21,13 @@ all three work at the same time:
 Holding silk doesn't block anything: you can grapple and pull back while the
 ball is still winding.
 
+**A web you've stood on is used up when you leave it**: jump off, walk off, grapple
+away or drop, and it comes apart behind you with its silk back at once. Moving on
+never runs your silk out, and E is for pulling things. Webs you never stood on
+(holding a crate, a board, a fly, or set up for later) stay until you call them.
+**Webs are springy**: a jump off one goes 30% harder than off the ground, about
+1.7 m up off a floor web.
+
 A web is walked on one face: the one you landed on (on a web flat against a
 wall or floor, the side facing the room). Its rim holds you, unless there's a
 floor or another web just past it to step onto.

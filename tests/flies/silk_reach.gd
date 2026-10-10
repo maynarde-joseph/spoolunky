@@ -26,6 +26,9 @@ const JUMP_ACROSS := 4.0
 const JUMP_UP := 1.0
 const STEP_UP := 0.5
 const RIM := 2.3
+## How far a jump off a web carries — webs are springy — across and up.
+const WEB_JUMP_ACROSS := 6.0
+const WEB_JUMP_UP := 1.7
 const DIRECTIONS := 320
 
 var _space: PhysicsDirectSpaceState3D
@@ -350,6 +353,28 @@ func _on_web(spot: Vector3, normal: Vector3, cell: int, words: String) -> void:
 					if _clear(spot + up * 0.3, _stand(next) + Vector3.UP * 0.2):
 						_reach(next, cell, words + ", off its rim")
 	_reach(_landing(spot + up * 1.0), cell, words + ", jumped off")
+	# Jumped off it — a web throws you harder than the ground does — onto any floor
+	# in a jump's reach and in sight.
+	var col := _column(spot.x, spot.z)
+	var steps := int(ceil(WEB_JUMP_ACROSS / CELL))
+	if col >= 0:
+		var ix := col % _w
+		var iz := col / _w
+		for dz in range(-steps, steps + 1):
+			for dx in range(-steps, steps + 1):
+				if Vector2(dx, dz).length() * CELL > WEB_JUMP_ACROSS:
+					continue
+				var nx := ix + dx
+				var nz := iz + dz
+				if nx < 0 or nz < 0 or nx >= _w or nz >= _d:
+					continue
+				var heights: Array = _floors[nx + nz * _w]
+				for layer in heights.size():
+					var next := (nx + nz * _w) * 4 + layer
+					if _came.has(next) or float(heights[layer]) > spot.y + WEB_JUMP_UP:
+						continue
+					if _clear(spot + up * 0.4 + Vector3.UP * 0.5, _stand(next) + Vector3.UP * 0.5):
+						_reach(next, cell, words + ", a spring off it")
 	var eye := spot + up * 0.9
 	if not _inside(eye):
 		_throws.append([eye, cell, words + ", then"])

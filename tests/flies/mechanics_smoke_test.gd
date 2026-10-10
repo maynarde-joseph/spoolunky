@@ -22,6 +22,8 @@ func run_checks() -> void:
 	await _walking_on_webs()
 	await _grappling()
 	await _riding_a_web()
+	await _used_webs()
+	await _springy_webs()
 	await _grapple_to_the_middle()
 	await _rides_go_nowhere_for_free()
 	await _silk_cutters()
@@ -315,6 +317,101 @@ func _grapple_to_the_middle() -> void:
 	var off := web.to_local(weaver.global_position)
 	check(weaver.standing_web() == web and Vector2(off.x, off.y).length() < 0.15,
 		"the pull ends at its middle (%.2f m off)" % Vector2(off.x, off.y).length())
+
+
+## A web the spider has stood on is used up when it leaves it: its silk is back at
+## once. One it never stood on stays where it is.
+func _used_webs() -> void:
+	print("Used webs")
+	var objects: Array = [{"type": "panel", "piece": "cube", "pos": [-6.0, 0.0, -11.2],
+		"size": [4.0, 4.0, 0.3]}]
+	var run := await arena(objects)
+	var weaver := run.weaver
+	await put(run, Vector3(0.0, 0.3, 4.0))
+	aim(run, Vector3(4.0, 2.0, -11.5))
+	weaver.caster.throw(0.0)
+	var spare := first_web(run)
+	await wait_until(func() -> bool: return spare.is_stuck(), 60)
+	weaver.caster._cooling = 0.0
+	aim(run, Vector3(0.0, 1.5, -11.5))
+	weaver.caster.throw(1.0)
+	var low: ThrownWeb = weaver.webs()[1]
+	await wait_until(func() -> bool: return low.is_stuck(), 60)
+	aim(run, low.global_position)
+	weaver.fire_grapple()
+	await wait_until(func() -> bool: return weaver.standing_web() == low, 90)
+	check(weaver.standing_web() == low and weaver.webs_left() == 1, "on one web, with another set up")
+	# From it, a web higher up and a grapple to it: the one left behind is used up.
+	weaver.caster._cooling = 0.0
+	aim(run, Vector3(0.0, 5.5, -11.5))
+	weaver.caster.throw(1.0)
+	var high: ThrownWeb = weaver.webs()[2]
+	await wait_until(func() -> bool: return high.is_stuck(), 60)
+	aim(run, high.global_position)
+	weaver.fire_grapple()
+	await wait_until(func() -> bool: return weaver.standing_web() == high, 90)
+	await run_frames(2)
+	check(not is_instance_valid(low) or not low.is_standing(),
+		"grappling on, the web left behind comes apart")
+	check(weaver.webs_left() == 1 and spare.is_stuck(),
+		"its silk is back, and the web never stood on is still there")
+	weaver.drive(Vector2.ZERO, true)
+	await run_frames(3)
+	check(weaver.mode == Weaver.Mode.AIR, "jumping off the top one")
+	await run_frames(2)
+	check(not is_instance_valid(high) or not high.is_standing(), "uses it up too")
+	check(weaver.webs_left() == 2, "and its silk is back as well")
+	# Ridden onto a loose board, the spider falls off: that web is not used up, it is
+	# what rips the board away.
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
+	await put(run, Vector3(-6.0, 0.3, 4.0))
+	aim(run, Vector3(-6.0, 2.0, -11.0))
+	weaver.caster._cooling = 0.0
+	weaver.caster.throw(0.5)
+	var board_web: ThrownWeb = weaver.webs()[weaver.webs().size() - 1]
+	await run_frames(4)
+	aim(run, board_web.global_position)
+	weaver.fire_grapple()
+	await wait_until(func() -> bool: return board_web.is_stuck(), 120)
+	await run_frames(10)
+	check(board_web.is_stuck() and board_web.loose and weaver.standing_web() == null,
+		"a web ridden onto a loose board drops you, and stays on the board")
+
+
+## Jumping off a web goes higher than jumping off the ground.
+func _springy_webs() -> void:
+	print("Springy webs")
+	var run := await arena()
+	var weaver := run.weaver
+	await put(run, Vector3(0.0, 0.3, 4.0))
+	weaver.drive(Vector2.ZERO, true)
+	var ground := await _peak(run)
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
+	aim(run, Vector3(0.0, 0.0, 0.0))
+	weaver.caster.throw(1.0)
+	var floor_web := first_web(run)
+	await wait_until(func() -> bool: return floor_web.is_stuck(), 60)
+	aim(run, floor_web.global_position)
+	weaver.fire_grapple()
+	await wait_until(func() -> bool: return weaver.standing_web() == floor_web, 90)
+	await run_frames(4)
+	var from := weaver.global_position.y
+	weaver.drive(Vector2.ZERO, true)
+	var off_web := await _peak(run) - from
+	ground -= 0.3
+	check(off_web > ground * 1.4, "off a web on the floor, a jump goes higher (%.2f m, not %.2f m)"
+		% [off_web, ground])
+
+
+## How high the spider gets before it starts to fall again.
+func _peak(run: LevelRun) -> float:
+	var top := run.weaver.global_position.y
+	for i in 90:
+		await physics_frame
+		top = maxf(top, run.weaver.global_position.y)
+		if run.weaver.velocity.y < -0.5:
+			break
+	return top
 
 ## What stops throw-and-ride from being a way to fly anywhere.
 func _rides_go_nowhere_for_free() -> void:

@@ -18,8 +18,13 @@ extends CharacterBody3D
 ## * **Pullback** (E, or the middle mouse button) — your oldest web flies home,
 ##   putting down what it held at your feet. See [Pullback].
 ##
-## Silk is a few webs, no more: a level says how many. Throw them all and the
-## Pullback is how you get them back.
+## Silk is a few webs, no more: a level says how many. A web the spider has stood
+## on is used up the moment it leaves it — it comes apart, and its silk is back at
+## once — so moving on never runs the silk out. The Pullback is for webs you have
+## not stood on: the ones holding something, and the ones set up for later.
+##
+## A web is springy: jumping off one goes [constant WEB_SPRING] times as hard as a
+## jump off the ground.
 ##
 ## A web that catches a fly holds it in the air, and reaching it — grappling to it,
 ## or riding a web into it — takes the fly, gives back the web and the grapple,
@@ -87,6 +92,9 @@ const BUFFER := 0.14
 ## Seconds after leaving a web before that web can be landed on again.
 const WEB_GRACE := 0.3
 
+## How much harder a jump off a web goes than one off the ground.
+const WEB_SPRING := 1.3
+
 ## How long throwing a web in the air holds the spider up, and how much of its
 ## speed is left after the first frame of it: a beat to see where the web goes,
 ## and to grapple onto it.
@@ -142,6 +150,8 @@ var _web_airborne := false           # whether it is still flying, carrying the 
 var _web_turned := 0                 # its face's turns, to know when it sticks askew
 var _grace_web: ThrownWeb = null
 var _grace := 0.0
+## The web the spider stood on last frame: left, it is used up.
+var _stood_on: ThrownWeb = null
 var _last_position := Vector3.ZERO
 var _moving := Vector3.ZERO
 
@@ -281,6 +291,7 @@ func _physics_process(delta: float) -> void:
 			_step_grapple(delta)
 		Mode.HUNG:
 			_step_hung(delta)
+	_use_up_left_web()
 	_moving = (global_position - _last_position) / maxf(delta, 0.0001)
 	_last_position = global_position
 	_orient(delta)
@@ -592,15 +603,30 @@ func _wish_on(up: Vector3) -> Vector3:
 
 func _jump_off_web() -> void:
 	_buffer = 0.0
-	var push := _up * JUMP * 0.75 + Vector3.UP * JUMP * 0.55
+	var push := (_up * JUMP * 0.75 + Vector3.UP * JUMP * 0.55) * WEB_SPRING
 	if _up.y > 0.7:
-		push = _up * JUMP
+		push = _up * JUMP * WEB_SPRING
 	var walk := _web.global_basis * Vector3(_web_walk.x, _web_walk.y, 0.0)
 	_grace_web = _web
 	_grace = WEB_GRACE
 	_web = null
 	velocity = walk + push
 	_set_mode(Mode.AIR)
+
+
+## A web the spider was on and is not now has been left, however — jumped off,
+## walked off, pulled away from, dropped from: it comes apart where it is, and its
+## silk is the spider's again. Not one that has come apart already or is on its way
+## home, and not one on a loose board, which the spider never stood on: it rode
+## there and fell off, and that web is still wanted, to rip the board away.
+func _use_up_left_web() -> void:
+	var now := standing_web()
+	var left := _stood_on
+	_stood_on = now
+	if left == null or left == now or not is_instance_valid(left):
+		return
+	if left.is_stuck() and left.holds_weight():
+		left.spend()
 
 
 ## Off the rim of a web, going [param outward]: onto a floor there, or another web.
@@ -982,5 +1008,6 @@ func put_at(where: Transform3D) -> void:
 	_throw_hang_spent = false
 	_stall = 0.0
 	acted = false
+	_stood_on = null
 	_set_mode(Mode.AIR)
 	_tear_frame(false)

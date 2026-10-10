@@ -90,6 +90,23 @@ landing and a hop off, then committed: no refund, no getting off. Silk cutters
 were added so levels can say where rides and throws can't go without walling
 everything in.
 
+### Used webs, and springy ones
+
+**A web you've stood on is used up when you leave it,** however you leave: a
+jump, a step off its rim, a grapple to the next one, a drop. It comes apart
+behind you and its silk is back at once. That keeps the flow going: a climb or a
+crossing is throw, grapple, throw, grapple, with no stop to call webs home, and
+the Pullback is left to do what only it does, pulling things. Webs you never stood
+on are untouched: one holding a crate, a board or a fly, and one set up to use
+later. A web you rode onto a loose board and fell off stays too, since that's the
+one that rips the board away. Like a fly, a web is a one-use stepping stone once
+you use it.
+
+**Webs are springy.** A jump off one goes 1.3 times as hard as a jump off the
+ground: about 1.7 m up off a web on a floor, and a harder push away from one on a
+wall. It's the web's last push as it lets go. The silk-alone check knows: from a
+web it reaches any floor within 6 m across and 1.7 m up that's in sight.
+
 ### Pullback (E / middle mouse)
 
 First thrown, first home: each press calls your oldest web (within 60 m), and it
@@ -123,6 +140,9 @@ the pull when it's called:
   the oldest of the others. This is how two webs climb a wall that one can't:
   stand on the higher one, call the lower one home, and throw it higher.
 * Its silk counts as yours the moment it's called.
+* **Mostly for things, not silk.** Webs you stand on come back on their own when
+  you leave them, so a call is for the ones you haven't: a web on a crate, a
+  board, a rail block or a fly, or a setup you no longer want.
 * **It doesn't catch you.** A web reaching you in the air just arrives, and you
   keep falling. (It used to hold you up for a second; that slowed the game down
   for no decision.) A crate it carried is still put down beside you.
@@ -267,7 +287,7 @@ without CI noticing. They are not the only solutions, nor the fastest.
 
 | | |
 |---|---|
-| spider | 0.7 m tall, moves 6.08 m/s (7.36 on a web: the old spider's sprint), jumps 7.8 m/s (about 1 m up, about 3.5 m across at a run), falls at 29.4 m/s² |
+| spider | 0.7 m tall, moves 6.08 m/s (7.36 on a web: the old spider's sprint), jumps 7.8 m/s (about 1 m up, about 3.5 m across at a run; 1.3 times that off a web), falls at 29.4 m/s² |
 | grapple | webs only, as far as you can see, 18.2 m/s or 1.1 s, one in the air; always to the web's centre; lands on a stuck web, rides a flying one (no refund, no getting off) |
 | silk | 1 to 2.4 m webs, 22 m/s, 22 m reach, 0.2 s between throws |
 | pullback | oldest web first, 60 m reach, 44 m/s home, 0.15 s between calls |
