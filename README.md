@@ -42,7 +42,7 @@ floor or another web just past it to step onto.
 * **Loose boards** (weathered wood): silk sticks to them, but they won't hold you, so you can't grapple to or walk onto a web on one. Call that web home and the board rips away, leaving whatever it covered.
 * **Blocks on rails** (stone with orange trim, and orange arrows on their sides): call a web on one home and the block slides the way its arrows point, to the other end of its rail; then the arrows turn round, and the next call slides it back. Rails run any way, up and down too, and blocks don't fall.
 * **Silk cutters** (violet laser grids in a metal frame, laid out like a tile map in 1.5 m cells, so a field can have holes, notches and windows in it): any web that flies through one is cut (a ride stops dead there and drops you), and a grapple line won't cross one. They don't touch the spider, which walks straight through, and webs called home pass through them.
-* **Flies** (round and black, with two pale wings; most glow yellow): hit one with a
+* **Flies** (low poly, dark grey, about 1.5 m long, with long pale wings; most glow yellow): hit one with a
   web and it's **caught**, held still in mid-air by your web, which stays one of
   your webs out. A caught fly is a **grapple point**: grapple to it, or ride a web
   into it, and you **take** it. You get your web and grapple back, and you hang

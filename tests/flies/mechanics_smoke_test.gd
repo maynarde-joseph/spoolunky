@@ -29,6 +29,7 @@ func run_checks() -> void:
 	await _catching_flies()
 	await _riding_into_a_fly()
 	await _flies_that_move()
+	await _fly_bodies()
 	await _dropping_mid_pull()
 	await _the_ceiling()
 	await _one_face()
@@ -574,6 +575,42 @@ func _flies_that_move() -> void:
 	await run_frames(2)
 	check(line.global_position.distance_to(line.where_at(run.time)) < 0.2,
 		"on the clock, they go where the clock says")
+
+
+## A fly's body has a skeleton: its wings beat and its legs twitch while it flies,
+## and everything goes still once a web has it.
+func _fly_bodies() -> void:
+	print("Fly bodies")
+	var run := await arena([{"type": "fly", "pos": [0.0, 3.0, -6.0]}])
+	var fly := run.get_tree().get_nodes_in_group(Fly.GROUP)[0] as Fly
+	var body := fly.get_node("Body") as FlyBody
+	var bones := body.skeleton.get_bone_count()
+	var named := func(part: String) -> int:
+		var count := 0
+		for i in bones:
+			if body.skeleton.get_bone_name(i).begins_with(part):
+				count += 1
+		return count
+	check(named.call("wing") == 2 and named.call("femur") == 6 and named.call("tibia") == 6,
+		"a fly has two wing bones and six legs of two bones each")
+	var wing := body.skeleton.find_bone("wing.L")
+	var leg := body.skeleton.find_bone("tibia1.L")
+	var wing_was := body.skeleton.get_bone_pose_rotation(wing)
+	var leg_was := body.skeleton.get_bone_pose_rotation(leg)
+	await run_frames(3)
+	check(not body.skeleton.get_bone_pose_rotation(wing).is_equal_approx(wing_was),
+		"its wings beat while it flies")
+	await run_frames(20)
+	check(not body.skeleton.get_bone_pose_rotation(leg).is_equal_approx(leg_was),
+		"and its legs move")
+	await put(run, Vector3(0.0, 0.3, 2.0))
+	aim(run, fly.global_position)
+	run.weaver.caster.throw(0.0)
+	await wait_until(func() -> bool: return fly.is_caught(), 60)
+	var folded := body.skeleton.get_bone_pose_rotation(wing)
+	await run_frames(5)
+	check(fly.is_caught() and body.skeleton.get_bone_pose_rotation(wing).is_equal_approx(folded),
+		"caught, it folds up and goes still")
 
 ## Space mid-pull: the line lets go, and the spider drops where it is.
 func _dropping_mid_pull() -> void:

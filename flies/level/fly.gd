@@ -17,9 +17,9 @@ extends Node3D
 ## A fly keeps still, flies back and forth along a line, or circles round where it
 ## was put, all three on the level's clock: the same at the same time on every try.
 ##
-## It looks like a cartoon fly — a round black body with a sheen of eye, and two
-## pale wings with black rims — big, and always turned to face you, so its shape
-## reads from across a room. It can glow yellow, too.
+## It is drawn low poly, like everything else — see [FlyBody] — big enough to pick
+## out across a room, facing the way it flies, wings buzzing and legs hanging. It
+## can glow yellow, too.
 
 signal taken(fly: Fly)
 
@@ -52,8 +52,8 @@ var period := 4.0
 var phase := 0.0
 ## Whether it glows.
 var glow := true
-## Kept where it was put, as the level editor shows it: it still flaps and turns
-## to face you, but goes nowhere.
+## Kept where it was put, as the level editor shows it: it still buzzes, but goes
+## nowhere.
 var frozen := false
 
 var state := State.FREE
@@ -61,12 +61,13 @@ var state := State.FREE
 var web: Node3D = null
 
 var _home := Vector3.ZERO
-var _view: Node3D
-var _wings: Array[Node3D] = []
+var _body: FlyBody
 var _cocoon: MeshInstance3D
 var _halo: MeshInstance3D
 var _light: OmniLight3D
-var _flap := 0.0
+var _clock := 0.0
+## Which way it faces, flat: the way it was put, then the way it goes.
+var _heading := Vector3.FORWARD
 
 
 func _ready() -> void:
@@ -118,8 +119,7 @@ func catch(holder: Node3D) -> void:
 	state = State.CAUGHT
 	web = holder
 	_cocoon.visible = true
-	for wing in _wings:
-		wing.visible = false
+	_body.fold()
 
 
 ## Taken by the spider at [param by]: it goes to it, small, and is gone.
@@ -147,21 +147,22 @@ func set_glow(on: bool) -> void:
 
 
 func _process(delta: float) -> void:
-	if state == State.FREE:
-		if not frozen:
-			var run := LevelRun.current(self)
-			_place(run.time if run != null else 0.0)
-		_flap += delta * 40.0
-	for i in _wings.size():
-		var side := -1.0 if i == 0 else 1.0
-		_wings[i].rotation.z = -side * (0.15 + sin(_flap) * 0.3)
-	# Turned to face whoever is looking, like the cartoon it is.
-	var camera := get_viewport().get_camera_3d()
-	if camera != null and _view != null:
-		var to := camera.global_position - global_position
-		if to.length_squared() > 0.01:
-			var up := Vector3.UP if absf(to.normalized().y) < 0.98 else Vector3.FORWARD
-			_view.global_basis = Basis.looking_at(-to, up).scaled(_view.global_basis.get_scale())
+	if state != State.FREE:
+		return
+	_clock += delta
+	var was := global_position
+	if not frozen:
+		var run := LevelRun.current(self)
+		_place(run.time if run != null else 0.0)
+	# Facing the way it goes, turning into it rather than snapping round.
+	var going := global_position - was
+	going.y = 0.0
+	if going.length() > 0.0005:
+		_heading = _heading.slerp(going.normalized(), clampf(delta * 6.0, 0.0, 1.0)).normalized()
+	_body.global_basis = Basis.looking_at(_heading, Vector3.UP).scaled(Vector3.ONE * _body_scale())
+	# A hover's bob and sway.
+	_body.position = Vector3(0.0, sin(_clock * 3.1) * 0.06, 0.0)
+	_body.rotation.z = sin(_clock * 2.3) * 0.08
 
 
 func _place(seconds: float) -> void:
@@ -171,144 +172,79 @@ func _place(seconds: float) -> void:
 
 # --- how it looks ------------------------------------------------------------------
 
+static var _haze_paint: ShaderMaterial = null
+
+
+## The glow's paint: only the inside of the ball, fading out toward its rim.
+static func _haze() -> ShaderMaterial:
+	if _haze_paint != null:
+		return _haze_paint
+	var shader := Shader.new()
+	shader.code = """shader_type spatial;
+render_mode unshaded, cull_front, depth_draw_never, shadows_disabled;
+uniform vec4 tint : source_color = vec4(1.0, 0.85, 0.25, 0.55);
+void fragment() {
+	float straight = abs(dot(normalize(NORMAL), normalize(VIEW)));
+	ALBEDO = tint.rgb;
+	ALPHA = tint.a * pow(straight, 3.0);
+}
+"""
+	_haze_paint = ShaderMaterial.new()
+	_haze_paint.shader = shader
+	return _haze_paint
+
+
+## How much bigger than its body units it is drawn: about a metre and a half
+## from head to tail.
+static func _body_scale() -> float:
+	return SIZE * 3.2 / FlyBody.LENGTH
+
+
 func _build() -> void:
-	_view = Node3D.new()
-	_view.name = "View"
-	add_child(_view)
+	_heading = -global_basis.z
+	_heading.y = 0.0
+	_heading = _heading.normalized() if _heading.length() > 0.01 else Vector3.FORWARD
+	_body = FlyBody.new()
+	_body.name = "Body"
+	add_child(_body)
+	_body.global_basis = Basis.looking_at(_heading, Vector3.UP).scaled(Vector3.ONE * _body_scale())
 
-	var black := StandardMaterial3D.new()
-	black.albedo_color = Color(0.05, 0.05, 0.06)
-	black.roughness = 0.45
-	black.rim_enabled = true
-	black.rim = 0.6
-	black.rim_tint = 0.2
-
-	var body := MeshInstance3D.new()
-	body.name = "Body"
-	var ball := SphereMesh.new()
-	ball.radius = SIZE
-	ball.height = SIZE * 2.0
-	body.mesh = ball
-	body.material_override = black
-	_view.add_child(body)
-
-	# The sheen: a grey eye low on the side facing you, off to one side.
-	var eye := MeshInstance3D.new()
-	eye.name = "Eye"
-	var spot := SphereMesh.new()
-	spot.radius = SIZE * 0.36
-	spot.height = SIZE * 0.2
-	eye.mesh = spot
-	var grey := StandardMaterial3D.new()
-	grey.albedo_color = Color(0.42, 0.42, 0.44)
-	grey.roughness = 0.3
-	eye.material_override = grey
-	eye.position = Vector3(-SIZE * 0.22, -SIZE * 0.18, SIZE * 0.93)
-	eye.rotation.x = PI * 0.5
-	_view.add_child(eye)
-
-	# The wings: two round loops over its back, pale inside a thick black rim.
-	# Flat, like ink and paper: no light changes them.
-	var pale := StandardMaterial3D.new()
-	pale.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	pale.albedo_color = Color(0.93, 0.93, 0.95)
-	pale.cull_mode = BaseMaterial3D.CULL_DISABLED
-	var rim := StandardMaterial3D.new()
-	rim.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	rim.albedo_color = Color(0.04, 0.04, 0.05)
-	rim.cull_mode = BaseMaterial3D.CULL_DISABLED
-	for side in [-1.0, 1.0]:
-		var shoulder := Node3D.new()
-		shoulder.name = "Wing"
-		shoulder.position = Vector3(side * SIZE * 0.4, SIZE * 0.6, -SIZE * 0.1)
-		_view.add_child(shoulder)
-		var outline := MeshInstance3D.new()
-		outline.mesh = _wing_mesh(SIZE * 1.45, SIZE * 1.05)
-		outline.material_override = rim
-		outline.position = Vector3(side * SIZE * 0.3, SIZE * 0.7, -0.01)
-		outline.rotation.z = -side * 0.35
-		shoulder.add_child(outline)
-		var fill := MeshInstance3D.new()
-		fill.mesh = _wing_mesh(SIZE * 1.1, SIZE * 0.72)
-		fill.material_override = pale
-		fill.position = Vector3(side * SIZE * 0.33, SIZE * 0.78, 0.01)
-		fill.rotation.z = -side * 0.35
-		shoulder.add_child(fill)
-		_wings.append(shoulder)
-
-	# Wrapped: a ball of silk round it.
+	# Wrapped: silk round it, head to tail, turned with it.
 	_cocoon = MeshInstance3D.new()
 	_cocoon.name = "Cocoon"
 	var wrap := SphereMesh.new()
-	wrap.radius = SIZE * 1.15
-	wrap.height = SIZE * 2.6
+	wrap.radial_segments = 10
+	wrap.rings = 6
 	_cocoon.mesh = wrap
+	_cocoon.scale = Vector3(1.0, 0.9, 1.9)
+	_cocoon.position = Vector3(0.0, 0.0, 0.15)
 	var silk := StandardMaterial3D.new()
-	silk.albedo_color = Color(0.95, 0.96, 1.0, 0.8)
+	silk.albedo_color = Color(0.95, 0.96, 1.0, 0.75)
 	silk.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	silk.emission_enabled = true
 	silk.emission = Color(0.85, 0.9, 1.0)
 	silk.emission_energy_multiplier = 0.4
 	_cocoon.material_override = silk
+	_cocoon.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_cocoon.visible = false
-	_view.add_child(_cocoon)
+	_body.add_child(_cocoon)
 
-	# The glow: a soft yellow halo and a little light.
+	# The glow: a soft yellow haze behind it from wherever you look — the far side
+	# of a ball round it, brightest straight through the middle — and a little light.
 	_halo = MeshInstance3D.new()
 	_halo.name = "Halo"
-	var quad := QuadMesh.new()
-	quad.size = Vector2.ONE * SIZE * 7.0
-	_halo.mesh = quad
-	var soft := GradientTexture2D.new()
-	soft.fill = GradientTexture2D.FILL_RADIAL
-	soft.fill_from = Vector2(0.5, 0.5)
-	soft.fill_to = Vector2(0.5, 0.0)
-	var fade := Gradient.new()
-	fade.set_color(0, Color(YELLOW, 0.7))
-	fade.set_color(1, Color(YELLOW, 0.0))
-	soft.gradient = fade
-	var haze := StandardMaterial3D.new()
-	haze.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	haze.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	haze.albedo_texture = soft
-	haze.no_depth_test = false
-	haze.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
-	_halo.material_override = haze
+	var ball := SphereMesh.new()
+	ball.radius = SIZE * 3.2
+	ball.height = SIZE * 6.4
+	ball.radial_segments = 24
+	ball.rings = 12
+	_halo.mesh = ball
+	_halo.material_override = _haze()
 	_halo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_halo.position.z = -SIZE * 1.2
-	_view.add_child(_halo)
+	add_child(_halo)
 	_light = OmniLight3D.new()
 	_light.light_color = YELLOW
-	_light.light_energy = 1.2
-	_light.omni_range = 4.0
+	_light.light_energy = 0.5
+	_light.omni_range = 3.0
 	add_child(_light)
 	set_glow(glow)
-	for node in [body, eye] + _cocoon.get_children():
-		if node is GeometryInstance3D:
-			(node as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-
-
-## A flat rounded wing, [param long] from root to tip and [param wide] across, in
-## the xy plane, its root at the origin, pointing up.
-static func _wing_mesh(long: float, wide: float) -> ArrayMesh:
-	var outline := PackedVector2Array()
-	for i in 24:
-		var angle := TAU * float(i) / 24.0
-		# An egg: fuller at the tip than at the root.
-		var y := sin(angle) * long * 0.5
-		var x := cos(angle) * wide * 0.5 * (1.0 + 0.25 * sin(angle))
-		outline.append(Vector2(x, y))
-	var corners := PackedVector3Array()
-	for point in outline:
-		corners.append(Vector3(point.x, point.y, 0.0))
-	var arrays := []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = corners
-	arrays[Mesh.ARRAY_INDEX] = Geometry2D.triangulate_polygon(outline)
-	var normals := PackedVector3Array()
-	normals.resize(corners.size())
-	normals.fill(Vector3.BACK)
-	arrays[Mesh.ARRAY_NORMAL] = normals
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	return mesh

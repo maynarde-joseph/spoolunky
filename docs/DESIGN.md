@@ -141,7 +141,7 @@ the pull when it's called:
 | Silk cutter (violet laser grid in a metal frame, laid out like a tile map: a mask of 1.5 m cells says which hold lasers, the beams run on one lattice across them all, and the frame runs only where lasers meet open space, so a hole reads as a window) | cuts any web that flies through it (a ride stops dead there and drops you) and any grapple line across it. Harmless to the spider, which walks through; Pullback webs come home through it |
 | Loose board (weathered wood) | silk sticks, but it won't hold the spider. The Pullback rips it away |
 | Block on a rail (orange trim and arrows) | stone. The Pullback slides it the way its arrows point, to the other end of its rail; then the arrows turn round |
-| Fly (cartoon fly: black body, pale wings, a yellow glow you can switch off per fly) | caught by a web that flies into it, then held still in mid-air: a grapple point, and one of your webs out. Grapple to it or ride into it and you take it, get your web and grapple back, and hang strung up for 2 s (Space drops you). Called home, the web brings it to you. Still, back and forth, or orbiting, on the level's clock |
+| Fly (low poly: faceted dark grey body, thin black legs, long pale wings; a yellow glow you can switch off per fly) | caught by a web that flies into it, then held still in mid-air: a grapple point, and one of your webs out. Grapple to it or ride into it and you take it, get your web and grapple back, and hang strung up for 2 s (Space drops you). Called home, the web brings it to you. Still, back and forth, or orbiting, on the level's clock |
 | Exit bag | shut until every fly in the level is taken (open at once in a level with none). Walk in to finish |
 | Ceiling | a slick lid over every level, set by its `ceiling` height or 6 m over the top of everything. Thrown silk slides off it |
 
@@ -175,10 +175,13 @@ forth along a line, or orbit about an axis, always on the level's clock, which
 starts on your first move: the same fly is in the same place at the same time on
 every try, so timing is something you learn. Flies don't attack.
 
-They're drawn like a cartoon fly: a round black body with a grey sheen of eye
-and two pale wings in thick black rims, about a metre across, always turned to
-face you, so the shape reads from across a room. Most glow yellow; a level can
-switch that off per fly.
+They're drawn low poly like everything else: a faceted dark grey head, thorax
+and tapering abdomen, six thin black legs bent under the body, and two long pale
+see-through wings that lie back over the abdomen in a V. They're about 1.5 m long,
+so they read from across a room, and face the way they fly. They have a skeleton
+(see `flies/level/fly_body.gd`): the wings spread and beat and the legs hang and
+twitch while a fly flies, and everything folds still once a web has it. Most glow
+yellow, a soft haze behind them; a level can switch that off per fly.
 
 ## Webs have one face
 

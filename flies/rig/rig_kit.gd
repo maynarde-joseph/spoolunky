@@ -163,8 +163,11 @@ static func segment(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, length: 
 ## Two rows at the same place give a hard edge between their colours, which is
 ## how a band round an abdomen starts where it starts rather than fading in over
 ## a row. A row with no radius is a pole.
+##
+## With [param faceted], every face is flat and coloured by it, as [method sew]
+## does for low poly, and the rows' own colours are not used.
 static func lathe(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, frame: Transform3D,
-		rows: Array, sides := 12) -> void:
+		rows: Array, sides := 12, faceted := Callable()) -> void:
 	if bone < 0 or rows.size() < 2:
 		return
 	var grid: Array = []
@@ -198,7 +201,10 @@ static func lathe(tool: SurfaceTool, skeleton: Skeleton3D, bone: int, frame: Tra
 			ring.append([frame * Vector3(across * c, y, up * n),
 				(frame.basis * normal).normalized(), row[3]])
 		grid.append(ring)
-	sew(tool, skeleton.get_bone_global_rest(bone), bone, grid, plain(Color.WHITE), false)
+	if faceted.is_valid():
+		sew(tool, skeleton.get_bone_global_rest(bone), bone, grid, faceted, true)
+	else:
+		sew(tool, skeleton.get_bone_global_rest(bone), bone, grid, plain(Color.WHITE), false)
 
 
 ## A horn on [param bone]: a smooth rod from [param root] out along
