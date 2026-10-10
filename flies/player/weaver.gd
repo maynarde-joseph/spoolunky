@@ -16,8 +16,7 @@ extends CharacterBody3D
 ##   it sticks, flat, and the spider can walk on it — up a wall, across a
 ##   ceiling. See [SilkCaster] and [ThrownWeb].
 ## * **Pullback** (E, or the middle mouse button) — your oldest web flies home,
-##   putting down what it held at your feet; reaching you in the air, it catches
-##   you for a moment. See [Pullback].
+##   putting down what it held at your feet. See [Pullback].
 ##
 ## Silk is a few webs, no more: a level says how many. Throw them all and the
 ## Pullback is how you get them back.
@@ -88,14 +87,11 @@ const BUFFER := 0.14
 ## Seconds after leaving a web before that web can be landed on again.
 const WEB_GRACE := 0.3
 
-## How long a web called home holds the spider up when it reaches it in the air,
-## and how much of the spider's speed is left after the first frame of it.
-const STALL := 1.0
-const STALL_KEEP := 0.15
-
-## How long throwing a web in the air holds the spider up, the same way: a beat to
-## see where the web goes, and to grapple onto it.
+## How long throwing a web in the air holds the spider up, and how much of its
+## speed is left after the first frame of it: a beat to see where the web goes,
+## and to grapple onto it.
 const THROW_STALL := 0.4
+const STALL_KEEP := 0.15
 
 ## How long the spider hangs strung up where it took a fly, and how big the frame
 ## of silk it hangs in is, across and up.
@@ -150,13 +146,10 @@ var _last_position := Vector3.ZERO
 var _moving := Vector3.ZERO
 
 var _grapple_time := 0.0
-## Seconds left of being held up by a web that came home, or by a throw: see
-## [method _web_home] and [method hang_after_throw].
+## Seconds left of being held up by a throw: see [method hang_after_throw].
 var _stall := 0.0
-## Whether this time in the air has had its hang from a web coming home, and from a
-## throw: one of each, until the spider lands — or throw, call home, throw, call
-## home would hold it up for ever.
-var _caught_hang_spent := false
+## Whether this time in the air has had its hang from a throw: one, until the
+## spider lands — or throw, call home, throw would hold it up for ever.
 var _throw_hang_spent := false
 ## Seconds left strung up, and the frame of silk it hangs in.
 var _hang := 0.0
@@ -392,7 +385,6 @@ func _land() -> void:
 
 ## Stood on something that stays put: the grapple is back, and so are the hangs.
 func _refill() -> void:
-	_caught_hang_spent = false
 	_throw_hang_spent = false
 	if not grapple_ready:
 		grapple_ready = true
@@ -409,8 +401,8 @@ func _step_air(delta: float) -> void:
 		_jump()
 		return
 	if _stall > 0.0:
-		# Held up by the web that came home: no fall, and the way you were going
-		# dying away, for a moment to aim the next throw in.
+		# Held up by a throw: no fall, and the way you were going dying away, for
+		# a moment to aim in.
 		_stall -= delta
 		velocity = velocity.lerp(Vector3.ZERO, clampf(delta * 18.0, 0.0, 1.0))
 		if _catch_web(velocity * delta):
@@ -773,7 +765,8 @@ func _step_grapple(delta: float) -> void:
 	if distance <= RADIUS + 0.35 or _grapple_time > 2.5:
 		var web := grapple.web
 		grapple.end()
-		attach_to_web(web)
+		# Down on the web's middle, on the face it came at.
+		attach_to_web(web, web.global_position)
 		if mode != Mode.WEB and mode != Mode.HUNG:
 			_set_mode(Mode.AIR)
 		return
@@ -943,25 +936,11 @@ func adopt_web(web: ThrownWeb) -> void:
 	acted = true
 	_webs.append(web)
 	web.gone.connect(func(_w: ThrownWeb) -> void: _forget_gone())
-	web.came_back.connect(_web_home)
 
 
-## Whether a web that came home is holding the spider up in the air.
+## Whether a throw in the air is holding the spider up.
 func is_stalled() -> bool:
 	return _stall > 0.0
-
-
-## A web called home has reached the spider. On the ground that is the end of it.
-## In the air it catches you: wrapped for a moment, held up, the speed you had
-## mostly gone — a beat to aim the next throw in, and no height for it. What it
-## carried is put down beside you all the same.
-func _web_home(_web_back: ThrownWeb, _carried: Node3D) -> void:
-	if mode != Mode.AIR or _caught_hang_spent:
-		return
-	_caught_hang_spent = true
-	_stall = STALL
-	velocity *= STALL_KEEP
-	_wrap_flash()
 
 
 ## A web thrown in the air holds the spider up for a moment, its speed mostly gone,
@@ -972,32 +951,6 @@ func hang_after_throw() -> void:
 	_throw_hang_spent = true
 	_stall = maxf(_stall, THROW_STALL)
 	velocity *= STALL_KEEP
-
-
-## Silk closing round the spider for an instant, where a web came home to it.
-func _wrap_flash() -> void:
-	var wrap := MeshInstance3D.new()
-	wrap.name = "Wrap"
-	var ball := SphereMesh.new()
-	ball.radius = HEIGHT * 0.9
-	ball.height = HEIGHT * 1.8
-	ball.radial_segments = 16
-	ball.rings = 8
-	wrap.mesh = ball
-	var paint := StandardMaterial3D.new()
-	paint.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	paint.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	paint.albedo_color = Color(0.94, 0.96, 1.0, 0.45)
-	paint.cull_mode = BaseMaterial3D.CULL_DISABLED
-	wrap.material_override = paint
-	wrap.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(wrap)
-	wrap.scale = Vector3.ONE * 1.6
-	var close := wrap.create_tween()
-	close.set_parallel(true)
-	close.tween_property(wrap, "scale", Vector3.ONE * 0.8, STALL)
-	close.tween_property(paint, "albedo_color:a", 0.0, STALL)
-	close.chain().tween_callback(wrap.queue_free)
 
 
 func _forget_gone() -> void:
@@ -1026,7 +979,6 @@ func put_at(where: Transform3D) -> void:
 	view.face(-where.basis.z)
 	view.settle()
 	grapple_ready = true
-	_caught_hang_spent = false
 	_throw_hang_spent = false
 	_stall = 0.0
 	acted = false

@@ -10,9 +10,9 @@ all three work at the same time:
 
 | Input | Verb |
 |-------|------|
-| **Left mouse** | **Grapple**: a line to a web you point at (any web in plain sight, however far), and you're pulled along it in a straight line. **A web that has stuck: you land on it. A web still in flight: you ride it, all the way** to wherever it sticks: no jumping or walking off, and the grapple stays spent until it lands you. One that runs out of reach, hits slick metal or flies into a silk cutter stops dead and drops you. Press Space mid-pull to let go and drop where you are. **Only silk holds the grapple**: stuck webs, webs still in the air (the line follows them), and webs holding a caught fly. Your webs are your anchors. You get one grapple in the air, and it comes back when you land on the ground or on a web that has stuck. |
+| **Left mouse** | **Grapple**: a line to a web you point at (any web in plain sight, however far), and you're pulled along it in a straight line to the web's centre, wherever on it you aimed. **A web that has stuck: you land on it. A web still in flight: you ride it, all the way** to wherever it sticks: no jumping or walking off, and the grapple stays spent until it lands you. One that runs out of reach, hits slick metal or flies into a silk cutter stops dead and drops you. Press Space mid-pull to let go and drop where you are. **Only silk holds the grapple**: stuck webs, webs still in the air (the line follows them), and webs holding a caught fly. Your webs are your anchors. You get one grapple in the air, and it comes back when you land on the ground or on a web that has stuck. |
 | **Right mouse** | **Silk**: hold to wind a ball of silk up over the spider's back, then let go to throw. This is cast exactly as before. What leaves the spider now is a whole web, flying face first for up to 22 m; the longer the wind-up, the bigger the web. Grapple onto it in flight and ride it. Throwing in the air holds you up for 0.4 s (once per time in the air). Where its middle meets something it sticks flat against that surface and becomes ground: you can walk on a web on a wall or a ceiling. |
-| **E / middle mouse** | **Pullback**: your oldest web flies back to you (first thrown, first home), one web per press. It comes straight through walls, and what it was on feels the pull: a crate comes with it to your feet, a loose board is ripped away, a block on a rail slides to the other end of it. The web you're standing on is skipped, so two webs can leapfrog up a wall. If it reaches you in the air, it catches you: an air-stall of 1 s with your speed mostly gone, which gives you a moment to aim the next throw (once per time in the air). |
+| **E / middle mouse** | **Pullback**: your oldest web flies back to you (first thrown, first home), one web per press. It comes straight through walls, and what it was on feels the pull: a crate comes with it to your feet, a loose board is ripped away, a block on a rail slides to the other end of it. The web you're standing on is skipped, so two webs can leapfrog up a wall. A web reaching you in the air doesn't hold you up: you keep falling. |
 | WASD / Space | move / jump |
 | R | restart the level (instant) |
 | Esc | pause: resume, restart, edit this level, menu |
@@ -140,7 +140,7 @@ they're saved in `user://levels/` instead. The format is documented at the top o
 flies/
   main.tscn, game_root.gd   the menu, play and the editor, one at a time
   player/    the spider (weaver.gd: walking, jumping, the web it's on, the pull,
-             the catch-stall), and one node per verb: grapple, silk_caster,
+             the throw-stall, strung up on flies), and one node per verb: grapple, silk_caster,
              pullback. The camera rig, the
              skeleton, the minimal mesh and the eight-legged gait come from the
              earlier game unchanged

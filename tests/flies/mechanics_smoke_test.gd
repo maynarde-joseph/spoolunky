@@ -22,6 +22,7 @@ func run_checks() -> void:
 	await _walking_on_webs()
 	await _grappling()
 	await _riding_a_web()
+	await _grapple_to_the_middle()
 	await _rides_go_nowhere_for_free()
 	await _silk_cutters()
 	await _cutter_masks()
@@ -293,6 +294,26 @@ func _riding_a_web() -> void:
 	check(weaver.grapple_ready, "landed with it: the grapple is back")
 	check(weaver.global_position.z > -11.5, "on the room's side of it")
 
+
+
+## A grapple lands you in the middle of the web, wherever on it you aimed.
+func _grapple_to_the_middle() -> void:
+	print("Grappling to the middle")
+	var run := await arena()
+	var weaver := run.weaver
+	await put(run, Vector3(0.0, 0.3, 4.0))
+	aim(run, Vector3(0.0, 3.0, -11.5))
+	weaver.caster.throw(1.0)
+	var web := first_web(run)
+	await wait_until(func() -> bool: return web.is_stuck(), 60)
+	var rim := web.global_position + web.global_basis.x.normalized() * (web.radius - 0.3)
+	aim(run, rim)
+	check(weaver.grapple.aimed().get("web") == web, "aimed at the web's rim")
+	weaver.fire_grapple()
+	await wait_until(func() -> bool: return weaver.mode != Weaver.Mode.GRAPPLE, 120)
+	var off := web.to_local(weaver.global_position)
+	check(weaver.standing_web() == web and Vector2(off.x, off.y).length() < 0.15,
+		"the pull ends at its middle (%.2f m off)" % Vector2(off.x, off.y).length())
 
 ## What stops throw-and-ride from being a way to fly anywhere.
 func _rides_go_nowhere_for_free() -> void:
@@ -650,9 +671,8 @@ func _pullback() -> void:
 	check(newer.state == ThrownWeb.State.RETURNING, "and the next press calls the newer")
 
 
-## Throwing a web in the air holds the spider up for a moment, once until it lands;
-## and a web coming home catches it only once until it lands, too — or throw, call
-## home, throw, call home would be a way to hover.
+## Throwing a web in the air holds the spider up for a moment, once until it lands
+## — or throw, call home, throw would be a way to hover.
 func _throwing_in_the_air() -> void:
 	print("Throwing in the air")
 	var run := await arena()
@@ -674,16 +694,6 @@ func _throwing_in_the_air() -> void:
 	weaver.caster.throw(0.0)
 	await run_frames(1)
 	check(not weaver.is_stalled(), "but only once until it lands")
-	weaver.pullback._cooling = 0.0
-	weaver.pullback.cast()
-	await wait_until(func() -> bool: return weaver.is_stalled(), 40)
-	check(weaver.is_stalled(), "a web called home still catches it, once")
-	await wait_until(func() -> bool: return not weaver.is_stalled(), 90)
-	weaver.pullback._cooling = 0.0
-	weaver.pullback.cast()
-	await run_frames(20)
-	check(not weaver.is_stalled() and weaver.mode == Weaver.Mode.AIR,
-		"and the next one home doesn't: no hovering on throws and calls")
 	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 200)
 	await pull(run)
 	weaver.velocity = Vector3.ZERO
@@ -695,70 +705,34 @@ func _throwing_in_the_air() -> void:
 	check(weaver.is_stalled(), "landing gives it back")
 
 
-## A web called home that reaches the spider in the air catches it: a moment held
-## up, its speed mostly gone. What it carried still comes.
+## A web called home that reaches the spider in the air just arrives: nothing
+## holds the spider up, and it keeps falling. What it carried still comes.
 func _caught_by_your_web() -> void:
-	print("Caught by your own web")
+	print("A web home in the air")
 	var objects: Array = [{"type": "crate", "pos": [4.0, 0.6, -6.0]}]
 	var run := await arena(objects)
 	var weaver := run.weaver
 	var crate := get_root().get_tree().get_nodes_in_group(Crate.GROUP)[0] as Crate
 	await put(run, Vector3(-4.0, 0.3, 4.0))
-	aim(run, Vector3(-4.0, 3.0, -11.5))
-	weaver.caster.throw(0.0)
-	var web := first_web(run)
-	await wait_until(func() -> bool: return web.is_stuck(), 60)
-	await put(run, Vector3(-4.0, 0.3, 4.0))
 	aim(run, crate.global_position)
-	weaver.caster._cooling = 0.0
 	weaver.caster.throw(0.0)
-	var on_crate: ThrownWeb = weaver.webs()[1]
+	var on_crate := first_web(run)
 	await wait_until(func() -> bool: return on_crate.is_stuck(), 60)
-	check(on_crate.carried == crate, "one web on the wall, one on a crate")
-	# Up in the air, out from the wall web.
-	var home := web.global_position + (Vector3(0.0, 5.0, -4.0) - web.global_position) * 2.2
-	await put(run, home)
-	weaver.velocity = Vector3(6.0, 0.0, 0.0)
-	weaver.pullback.cast()
-	check(not weaver.is_stalled(), "calling it in the air: not held up yet")
-	await wait_until(func() -> bool: return weaver.is_stalled(), 60)
-	if not check(weaver.is_stalled(), "when it reaches the spider in the air, it catches it"):
-		note(where_is(weaver))
-	var height := weaver.global_position.y
-	await run_frames(8)
-	check(weaver.global_position.y > height - 0.15, "held up, not falling (%.2f to %.2f)"
-		% [height, weaver.global_position.y])
-	check(weaver.velocity.length() < 1.0, "with the speed it had mostly gone (%.1f m/s)"
-		% weaver.velocity.length())
-	await wait_until(func() -> bool: return not weaver.is_stalled(), 60)
-	var held_at := weaver.global_position.y
-	await run_frames(10)
-	check(weaver.global_position.y < held_at - 0.2 or weaver.mode == Weaver.Mode.GROUND,
-		"then the spider falls again (%.2f to %.2f, %s)" % [held_at, weaver.global_position.y,
-		Weaver.Mode.keys()[weaver.mode]])
-	# The crate web, called in the air: the crate still comes, and is put down.
-	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
-	await put(run, Vector3(-2.0, 3.0, 4.0))
+	check(on_crate.carried == crate, "a web on a crate")
+	await put(run, Vector3(-2.0, 6.0, 4.0))
+	var falling_from := weaver.global_position.y
 	weaver.pullback._cooling = 0.0
 	weaver.pullback.cast()
-	await wait_until(func() -> bool: return weaver.is_stalled(), 60)
-	check(weaver.is_stalled(), "a web bringing a crate catches the spider too")
+	var ref: WeakRef = weakref(on_crate)
+	await wait_until(func() -> bool: return ref.get_ref() == null, 60)
+	check(ref.get_ref() == null, "called home in the air, it reaches the spider")
+	check(not weaver.is_stalled(), "and holds nothing up")
+	await run_frames(6)
+	check(weaver.global_position.y < falling_from - 1.0 or weaver.mode == Weaver.Mode.GROUND,
+		"the spider just keeps falling (%.2f from %.2f)" % [weaver.global_position.y, falling_from])
 	await run_frames(60)
-	check(crate.global_position.distance_to(weaver.global_position) < 3.0 and not crate.freeze,
+	check(crate.global_position.distance_to(weaver.global_position) < 4.0 and not crate.freeze,
 		"and the crate it brought is put down beside it")
-	# On the ground, a web coming home is just home.
-	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 120)
-	aim(run, Vector3(0.0, 3.0, -11.5))
-	weaver.caster._cooling = 0.0
-	weaver.caster.throw(0.0)
-	var last := weaver.webs()[weaver.webs().size() - 1]
-	await wait_until(func() -> bool: return last.is_stuck(), 60)
-	weaver.pullback._cooling = 0.0
-	weaver.pullback.cast()
-	var ref: WeakRef = weakref(last)
-	await wait_until(func() -> bool: return ref.get_ref() == null, 90)
-	check(not weaver.is_stalled() and weaver.mode == Weaver.Mode.GROUND,
-		"on the ground, a web coming home holds nothing up")
 
 
 func _crates_plates_doors() -> void:

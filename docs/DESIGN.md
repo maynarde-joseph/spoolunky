@@ -18,7 +18,9 @@ All three are on their own buttons, and none of them waits on another.
 
 ### Grapple (left mouse)
 
-A line to a web you point at, and you're pulled along it in a straight line. It's
+A line to a web you point at, and you're pulled along it in a straight line to
+the web's centre, wherever on it you aimed: where a pull ends is never a matter
+of a few pixels. It's
 a grapple, not a swing. Pulls go at 18.2 m/s, capped at 1.1 seconds however far
 they go, and the grapple reaches as far as you can see: any web in plain sight
 is somewhere to go. Line of sight is the only limit, so where a web can be put
@@ -121,12 +123,9 @@ the pull when it's called:
   the oldest of the others. This is how two webs climb a wall that one can't:
   stand on the higher one, call the lower one home, and throw it higher.
 * Its silk counts as yours the moment it's called.
-* **It catches you if you're in the air.** Call a web home while you fall, and
-  when it reaches you it wraps you for a moment: an air-stall of 1 s, no
-  falling, your speed mostly gone. It gives you a beat to aim the next throw,
-  and no extra height. Once per time in the air: the next web home before you
-  land just arrives. A crate it carried is still put down beside you. On the
-  ground a web coming home just arrives.
+* **It doesn't catch you.** A web reaching you in the air just arrives, and you
+  keep falling. (It used to hold you up for a second; that slowed the game down
+  for no decision.) A crate it carried is still put down beside you.
 
 ## Surfaces and things
 
@@ -266,10 +265,9 @@ without CI noticing. They are not the only solutions, nor the fastest.
 | | |
 |---|---|
 | spider | 0.7 m tall, moves 6.08 m/s (7.36 on a web: the old spider's sprint), jumps 7.8 m/s (about 1 m up, about 3.5 m across at a run), falls at 29.4 m/s² |
-| grapple | webs only, as far as you can see, 18.2 m/s or 1.1 s, one in the air; lands on a stuck web, rides a flying one (no refund, no getting off) |
+| grapple | webs only, as far as you can see, 18.2 m/s or 1.1 s, one in the air; always to the web's centre; lands on a stuck web, rides a flying one (no refund, no getting off) |
 | silk | 1 to 2.4 m webs, 22 m/s, 22 m reach, 0.2 s between throws |
 | pullback | oldest web first, 60 m reach, 44 m/s home, 0.15 s between calls |
-| catch-stall | 1 s held up, 15% of your speed kept; once per time in the air |
 | throw-stall | 0.4 s held up when you throw in the air, 15% of your speed kept; once per time in the air |
 | fly | 0.45 m body radius, caught by a web passing within 0.9 m plus half the web's radius; strung up 2 s |
 

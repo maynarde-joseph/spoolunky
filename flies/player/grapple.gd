@@ -3,7 +3,7 @@ extends Node3D
 
 ## Left mouse: a line to a web you point at, and you are pulled along it.
 ##
-## The pull always ends on the web. A web that has stuck is somewhere to stand; one
+## The pull always ends on the web, at its middle, wherever on it you aimed. A web that has stuck is somewhere to stand; one
 ## still in flight you ride, wherever it is going, until it sticks or stops dead. A
 ## ride is a commitment: no jumping off, no stepping off, and the grapple stays
 ## spent until it lands you. Jump mid-pull, before you are on, and you drop where
@@ -40,9 +40,8 @@ const WEB_SLACK := 0.9
 var weaver: Weaver
 var view: SpiderCamera
 
-## The web the line is on while it pulls, and where on it.
+## The web the line is on while it pulls. It pulls to the web's middle.
 var web: ThrownWeb = null
-var local_point := Vector3.ZERO
 var active := false
 
 ## The pull's own speed, set when it goes.
@@ -148,21 +147,16 @@ func fire() -> bool:
 				weaver.notify("The grapple only holds silk — throw a web there first")
 			_warned = 2.0
 		return false
-	local_point = web.to_local(target["position"])
-	local_point.z = 0.0
-	if web.holds_fly():
-		# To the fly, in the middle of the web, wherever on it the cross was.
-		local_point = Vector3.ZERO
-	var span := weaver.global_position.distance_to(target["position"])
+	var span := weaver.global_position.distance_to(web.global_position)
 	speed = maxf(SPEED, span / LONGEST)
 	active = true
 	return true
 
 
-## Where the line is pulling to now: a point on the web, wherever it has gone.
+## Where the line is pulling to now: the web's middle, wherever it has gone.
 func target_point() -> Vector3:
 	if web != null and is_instance_valid(web):
-		return web.to_global(local_point)
+		return web.global_position
 	return weaver.global_position
 
 
