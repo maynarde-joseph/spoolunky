@@ -234,11 +234,21 @@ like. The gates are the puzzles. **Silk cutters** shape that freedom without
 walls: a cutter curtain with one window says "ride through here or not at all",
 and cutters round a board say "walk in close before you throw".
 
+A hole in a cutter floor says "only from below", which is not much on its own:
+anywhere under it, aimed steeply enough, gets through. A slick **hood** a little
+way over the hole changes that. Steep lines hit the hood; only shallow ones get
+out sideways under it, and a shallow line through a hole high in a shaft only
+starts somewhere in mid-air, at a fly. Holes for shallow lines need **thin**
+cutters (The Granary's are 6 cm): a line at a slope of 1 in 5 spends five times
+the cutter's thickness crossing it, and clips the cell next to the hole.
+
 `tests/flies/silk_reach.gd` checks it. It maps everywhere the spider can get to
 in a level by walking, jumping, throwing webs (as many as it likes), grappling
 to them and dropping from webs caught anywhere along a throw, and catching and
 hanging from flies (any point a moving fly passes, every fly as often as it likes),
-with every gate left shut, and it's generous to the spider throughout. If that reaches the exit,
+with every gate left shut, and it's generous to the spider throughout. Besides
+throws every way round, it aims a throw through every hole in every cutter, so a
+narrow hole isn't missed between two directions. If that reaches the exit,
 the level fails CI. With its gates taken out, every built-in level is reached,
 so the check is doing the work.
 
@@ -293,6 +303,30 @@ so the check is doing the work.
     its rim. Both are scripted in CI: the long way runs about 50 s and the quick
     way about 35 s at a script's perfect aim; by hand, figuring it out, the long
     way is minutes.
+
+12. **The Granary**: three chambers of the Larder's size end to end, each one a
+    chain where every step sets up the next, and the bag in a vault at the end.
+    *The Sieve* is a 32 m shaft floored three times by silk cutters, each with one
+    hole under a slick hood. Nothing stands under a hole far enough off to the
+    side for a shallow line, so each floor is: catch the fly bobbing under it
+    while it is high, hang from it, and in the two seconds you hang thread a web
+    through the hole onto the stone face of the perch beyond, then grapple up.
+    You drop back onto the perch below if you miss. A second fly on each floor
+    wheels up through the lasers: caught low, it is the same step up; caught
+    high from the perch above, it is one more for the bag. A check in CI takes
+    the Sieve on its own with the way out at its top: silk gets there with the
+    flies and not without them. *The Ferry* crosses a deep pit on blocks on
+    rails. Web the first, stand on it and call the web home to ride it to a laser
+    curtain. Nothing past the curtain can be webbed from this side, so jump
+    through, catch the fly beyond in mid-air, drop from it onto the block below
+    and ride that one on. (Webbing the block from mid-air works too.) Fall in and
+    a lift brings you back up; the pit is too deep to web the blocks from below.
+    *The Safe*: the crate for the vault's plate is on a shelf in a strongbox,
+    behind cutters with one hole high in them. The line through the hole to the
+    crate starts in mid-air, where three flies wheel round over the room: catch
+    one as it passes there, hang, web the crate, drop, and call it home onto the
+    plate through the strongbox's wall. Bag the other two. Ten flies in all; a
+    script does it in about 55 s.
 
 Every built-in level is played to the end by a scripted route in
 `tests/flies/levels_smoke_test.gd`, through the same calls the keys make. Those

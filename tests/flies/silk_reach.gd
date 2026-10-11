@@ -7,7 +7,9 @@ extends RefCounted
 ## flight to wherever they stick or stop dead. Silk cutters cut its webs as they
 ## cut the spider's. Flies are grapple points wherever a throw can reach them —
 ## every point along a moving fly's way, and every fly as often as it likes — to
-## hang from, throw from and drop from. What it leaves out is everything
+## hang from, throw from and drop from. Besides throws every way round, it throws
+## through every hole in every silk cutter, so a narrow one is not missed. What it
+## leaves out is everything
 ## else: boards stay on, blocks stay where they start, crates stay put, doors stay
 ## shut and platforms stand still.
 ##
@@ -52,6 +54,8 @@ var _dirs: Array[Vector3] = []
 ## Everywhere a fly is, or goes; and which of those a throw has reached.
 var _flies: Array[Vector3] = []
 var _fly_seen: Dictionary = {}
+## Points through the holes in silk cutters, to aim at.
+var _holes := PackedVector3Array()
 
 
 static func explore(run: LevelRun) -> Dictionary:
@@ -91,6 +95,9 @@ func _explore(run: LevelRun) -> Dictionary:
 	for node in run.get_tree().get_nodes_in_group(Fly.GROUP):
 		if run.world.is_ancestor_of(node):
 			_flies.append_array((node as Fly).route(12))
+	for node in run.get_tree().get_nodes_in_group(SilkCutter.GROUP):
+		if run.world.is_ancestor_of(node):
+			_holes.append_array((node as SilkCutter).open_points())
 
 	var start := _cell_at(run.weaver.global_position + Vector3.DOWN * Weaver.RADIUS, 1.0)
 	if start < 0:
@@ -293,7 +300,11 @@ func _throws_from(cell: int) -> bool:
 ## reach, on slick metal, or cut by a silk cutter.
 func _throw_from(eye: Vector3, cell: int, words: String) -> void:
 	_catch_flies(eye, cell, words)
-	for dir in _dirs:
+	var aimed: Array[Vector3] = _dirs.duplicate()
+	for point in _holes:
+		if eye.distance_to(point) < THROW and eye.distance_to(point) > 0.1:
+			aimed.append((point - eye).normalized())
+	for dir in aimed:
 		var hit := _ray(eye, eye + dir * THROW)
 		var length := THROW
 		if not hit.is_empty():

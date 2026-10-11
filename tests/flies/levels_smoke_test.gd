@@ -43,6 +43,12 @@ func run_checks() -> void:
 		await _the_larder_quick()
 	if _wanted("11"):
 		await _the_larder_long()
+	if _wanted("12"):
+		await _the_sieve_needs_flies()
+	if _wanted("12"):
+		await _the_granary()
+	if _wanted("12"):
+		await _granary_second_chances()
 
 
 func _wanted(part: String) -> bool:
@@ -1055,3 +1061,244 @@ func _all_together() -> void:
 		note("crate at %s, spider %s" % [crate.global_position.snappedf(0.1), where(run)])
 	await go(run, Vector3(0, 12, -48))
 	check(await finish(run, Vector3(0, 12, -53)), "and out")
+
+
+# --- The Granary ----------------------------------------------------------------
+
+const GRANARY_TOP := 32.2
+const GRANARY_LINE := 0.75
+
+
+## The Granary's flies: "a1" to "b3" for the Sieve's floors, bobbing (a) and
+## wheeling (b); "ferry"; and "safe" for the three over the Safe room.
+func granary_flies(run: LevelRun) -> Dictionary:
+	var found := {"safe": []}
+	for node in flies_of(run):
+		var fly := node as Fly
+		var at := fly.global_position
+		if at.x < 7.5:
+			found["%s%d" % ["a" if fly.move == "line" else "b", roundi(at.y / 10.0)]] = fly
+		elif at.x < 44.0:
+			found["ferry"] = fly
+		else:
+			(found["safe"] as Array).append(fly)
+	return found
+
+
+## Floor [param k] of the Sieve, from wherever the spider stands under it: catch
+## the fly bobbing under the floor while it is high, hang from it, and thread a
+## web through the hooded hole onto the face of the perch beyond; up it; then bag
+## the fly wheeling up through the floor, from the perch.
+func sieve_floor(run: LevelRun, k: int, a: Fly, b: Fly) -> void:
+	var weaver := run.weaver
+	var y := 10.0 * k
+	var hole := Vector3(0.0 if k == 2 else -1.5, y, GRANARY_LINE)
+	var face_x := hole.x + (-4.5 if k == 2 else 4.5)
+	await wait_until(func() -> bool:
+		return a.where_at(run.time + 0.3).y > y - 1.3 and a.where_at(run.time + 0.9).y > y - 1.3, 600)
+	check(await hop_to(run, a), "floor %d: the fly under it caught high and hung from (%s)"
+		% [k, where(run)])
+	# Through the side of the hole that puts the line on the middle of the face.
+	hole.z = clampf((GRANARY_LINE + weaver.global_position.z) * 0.5, 0.2, 1.3)
+	aim(run, hole)
+	var from := weaver.view.aim_origin()
+	var way := hole - from
+	var target := from + way * ((face_x - from.x) / way.x)
+	var web := await throw_at(run, target, 0.0)
+	if not check(await stuck(web), "through the hooded hole, a web on the perch's face"):
+		note("from %s at %s: web %s" % [from.snappedf(0.01), target.snappedf(0.01),
+			"gone" if web == null or not is_instance_valid(web) else str(web.global_position.snappedf(0.01))])
+		return
+	if OS.has_environment("ROUTE_DEBUG"):
+		aim(run, web.global_position)
+		note("web at %s; spider %s; pivot %s; aimed %s" % [web.global_position.snappedf(0.01),
+			weaver.global_position.snappedf(0.01), weaver.view.aim_pivot().snappedf(0.01),
+			weaver.grapple.aimed()])
+	await grapple_to(run, web.global_position)
+	await climb(run)
+	await stop(run)
+	check(weaver.global_position.y > y + 2.0 and weaver.mode == Weaver.Mode.GROUND,
+		"and up onto the perch (%s)" % where(run))
+	var over := func(_at: Vector3) -> bool:
+		var then := b.where_at(run.time + 0.6)
+		return then.y > y + 2.3 and b.where_at(run.time + 0.2).y > y + 2.3 and clear_shot(run, then)
+	await wait_for_fly(b, over, 900)
+	if OS.has_environment("ROUTE_DEBUG"):
+		note("b at %s, then %s, clear %s" % [b.global_position.snappedf(0.1),
+			b.where_at(run.time + 0.6).snappedf(0.1), clear_shot(run, b.where_at(run.time + 0.6))])
+	check(await catch_fly(run, b) != null, "from the perch, the fly wheeling up through it caught")
+	await call_one(run)
+
+
+## That the Sieve really wants its flies: with the way on out of it taken for the
+## way out of the level, silk alone gets to the top with them, and can't without.
+func _the_sieve_needs_flies() -> void:
+	print("The Sieve needs its flies")
+	var data := LevelData.load_file(LevelData.BUILT_IN + "12_the_granary.json")
+	for with_flies in [true, false]:
+		var level := data.duplicate(true)
+		var kept: Array = []
+		for thing in level["objects"]:
+			if thing["type"] == "exit":
+				thing["pos"] = [5.0, GRANARY_TOP, GRANARY_LINE]
+			elif float(thing["pos"][0]) > 8.0 or (not with_flies and thing["type"] == "fly"):
+				continue
+			kept.append(thing)
+		level["objects"] = kept
+		var run := LevelRun.new()
+		run.require_captured_mouse = false
+		run.setup(level)
+		await stage(run)
+		await run_frames(10)
+		var found := SilkReach.explore(run)
+		if with_flies:
+			if not check(found["reached"], "with its flies, silk gets to the top of the Sieve"):
+				note("not reached")
+		elif not check(not found["reached"], "and without them, it can't"):
+			note(found["how"])
+		run.free()
+
+
+func _the_granary() -> void:
+	print("Route: The Granary")
+	var run := await load_level("12_the_granary.json")
+	var weaver := run.weaver
+	var flies := granary_flies(run)
+	await go(run, Vector3(0.0, 0.0, 3.5), 0.3)
+	await stop(run)
+	check(run.flies_total == 10 and flies.size() == 8 and flies["safe"].size() == 3,
+		"ten flies in the granary")
+	# The Sieve, three floors.
+	for k in [1, 2, 3]:
+		await sieve_floor(run, k, flies["a%d" % k], flies["b%d" % k])
+		if weaver.global_position.y < 10.0 * k:
+			return
+	check(run.flies_taken == 6, "six flies in from the Sieve (%d)" % run.flies_taken)
+	# The Ferry: the first block, webbed and ridden.
+	var top := GRANARY_TOP
+	var line := GRANARY_LINE
+	await go(run, Vector3(9.0, top, line), 0.3)
+	await stop(run)
+	var first := await throw_at(run, Vector3(12.6, top, line), 0.0)
+	check(await stuck(first), "a web on the first block (%s)" % where(run))
+	await go(run, Vector3(10.6, top, line), 0.2)
+	await stop(run)
+	await pull(run)
+	await run_frames(60)
+	check(weaver.global_position.x > 16.0, "called home, the block carries the spider over the pit (%s)"
+		% where(run))
+	# Through the curtain, the fly caught in mid-air, and down onto the block below.
+	await go(run, Vector3(18.4, top, line), 0.2)
+	weaver.drive(Vector2(0.0, 1.0), true)
+	await wait_until(func() -> bool: return weaver.global_position.x > 20.4, 60)
+	check(await hop_to(run, flies["ferry"]), "through the curtain, the fly beyond caught in mid-air (%s)"
+		% where(run))
+	weaver.drive(Vector2.ZERO)
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 200)
+	await stop(run)
+	check(weaver.global_position.x > 26.0 and weaver.global_position.y > top - 0.2,
+		"and dropped onto the block below it (%s)" % where(run))
+	var second := await throw_at(run, Vector3(28.8, top, line), 0.0)
+	check(await stuck(second), "a web on it")
+	await go(run, Vector3(26.4, top, line), 0.2)
+	await stop(run)
+	await pull(run)
+	await wait_until(func() -> bool: return weaver.global_position.x > 37.2, 200)
+	check(weaver.global_position.x > 37.2, "ridden across (%s)" % where(run))
+	await go(run, Vector3(42.0, top, line), 0.3)
+	await go(run, Vector3(47.0, top, line), 0.3)
+	# The Safe: a fly caught where a line runs through the hole to the crate.
+	await go(run, Vector3(52.0, top, -4.0), 0.3)
+	await stop(run)
+	var pair: Array = flies["safe"]
+	var spot := Vector3(58.75, top + 9.9, -8.25)
+	var used: Fly = null
+	for fly in pair:
+		var near := func(_at: Vector3) -> bool:
+			return (fly as Fly).where_at(run.time + 0.7).distance_to(spot) < 0.5
+		await wait_for_fly(fly, near, 900)
+		if (fly as Fly).where_at(run.time + 0.7).distance_to(spot) < 0.5:
+			used = fly
+			break
+	check(used != null and await hop_to(run, used), "a fly over the room caught on the line to the crate (%s)"
+		% where(run))
+	var crate := get_root().get_tree().get_nodes_in_group(Crate.GROUP)[0] as Crate
+	# Through the hole, onto the crate's face beyond it.
+	var hole := Vector3(62.5, top + 7.75, -8.25)
+	var from := weaver.view.aim_origin()
+	var through := crate.global_position + Vector3(-0.45, 0.0, 0.0)
+	if OS.has_environment("ROUTE_DEBUG"):
+		note("hole at %s" % (from + (through - from) * ((hole.x - from.x) / (through.x - from.x))).snappedf(0.01))
+	var on_crate := await throw_at(run, through, 0.0)
+	if not check(await stuck(on_crate) and on_crate.carried == crate,
+			"from the hang, a web through the hole onto the crate in the strongbox"):
+		note("from %s at %s, crate %s" % [from.snappedf(0.01), through.snappedf(0.01),
+			crate.global_position.snappedf(0.01)])
+	await wait_until(func() -> bool: return weaver.mode == Weaver.Mode.GROUND, 200)
+	await go(run, Vector3(51.5, top, 0.5), 0.3)
+	await go(run, Vector3(51.5, top, -1.8), 0.15)
+	await stop(run)
+	await call_one(run)
+	await run_frames(30)
+	check(run.is_powered("vault"), "called home onto the plate: the vault opens")
+	for left in pair:
+		if not is_instance_valid(left) or left == used:
+			continue
+		var other := left as Fly
+		await wait_for_fly(other, func(_at: Vector3) -> bool:
+			return clear_shot(run, other.where_at(run.time + 0.6)), 900)
+		check(await catch_fly(run, other) != null, "another fly over the room caught")
+		await call_one(run)
+	await wait_until(func() -> bool: return run.flies_taken == 10, 90)
+	check(run.exit.open, "every fly in: the bag opens")
+	await go(run, Vector3(51.5, top, line), 0.3)
+	check(await finish(run, Vector3(57.0, top, line)), "into the vault, and out (%.1f s)" % run.time)
+
+
+## That a miss in the Granary is not the end of it: the Sieve's wheeling fly, caught
+## low, is as good a step up as the bobbing one; and a fall into the Ferry's pit
+## rides the lift back up.
+func _granary_second_chances() -> void:
+	print("The Granary: second chances")
+	var run := await load_level("12_the_granary.json")
+	var weaver := run.weaver
+	var flies := granary_flies(run)
+	var b: Fly = flies["b1"]
+	# A step, to start the clock the flies keep to.
+	await go(run, Vector3(0.0, 0.0, 3.5), 0.3)
+	await stop(run)
+	await wait_until(func() -> bool:
+		return b.where_at(run.time + 0.3).y < 9.7 and b.where_at(run.time + 0.9).y < 9.7, 900)
+	check(await hop_to(run, b), "the Sieve's wheeling fly, caught under the floor and hung from (%s)"
+		% where(run))
+	var hole := Vector3(-1.5, 10.0, clampf((GRANARY_LINE + weaver.global_position.z) * 0.5, 0.2, 1.3))
+	aim(run, hole)
+	var from := weaver.view.aim_origin()
+	var web := await throw_at(run, from + (hole - from) * ((3.0 - from.x) / (hole.x - from.x)), 0.0)
+	check(await stuck(web), "a web through the hole from there too")
+	await grapple_to(run, web.global_position)
+	await climb(run)
+	await stop(run)
+	check(weaver.global_position.y > 12.0, "and up onto the perch (%s)" % where(run))
+	run.free()
+	# The pit: dropped in by hand, to see the way back up.
+	run = await load_level("12_the_granary.json")
+	weaver = run.weaver
+	weaver.global_position = Vector3(12.0, GRANARY_TOP - 27.5, GRANARY_LINE - 3.5)
+	await stop(run)
+	var bottom := weaver.global_position.y
+	var lift := _first_of(MovingPlatform) as MovingPlatform
+	await wait_until(func() -> bool: return lift.global_position.y < GRANARY_TOP - 28.4, 900)
+	if OS.has_environment("ROUTE_DEBUG"):
+		note("lift at %s, spider %s" % [lift.global_position.snappedf(0.1), where(run)])
+	await go(run, Vector3(9.0, 0.0, GRANARY_LINE - 3.75), 0.3)
+	await stop(run)
+	if OS.has_environment("ROUTE_DEBUG"):
+		note("lift at %s, spider %s" % [lift.global_position.snappedf(0.1), where(run)])
+	await wait_until(func() -> bool: return weaver.global_position.y > GRANARY_TOP, 900)
+	await go(run, Vector3(9.0, 0.0, GRANARY_LINE), 0.3)
+	await stop(run)
+	check(bottom < GRANARY_TOP - 25.0 and weaver.global_position.y > GRANARY_TOP - 0.1
+		and weaver.global_position.z > -0.5,
+		"from the bottom of the Ferry's pit, the lift back up to the ledge (%s)" % where(run))
+	run.free()

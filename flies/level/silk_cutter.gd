@@ -79,6 +79,23 @@ func filled(col: int, row: int) -> bool:
 	return col >= text.length() or text[col] == "#"
 
 
+## Points in the world through every open cell of the field: the middle of each,
+## and one [param inset] metres in from each of its corners.
+func open_points(inset := 0.3) -> PackedVector3Array:
+	var points := PackedVector3Array()
+	for row in _rows:
+		for col in _cols:
+			if filled(col, row):
+				continue
+			var cell := _span(col, row)
+			var middle := cell.get_center()
+			points.append(global_transform * _at(middle.x, middle.y))
+			for corner: Vector2 in [Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1)]:
+				var off: Vector2 = (cell.size * 0.5 - Vector2.ONE * inset).max(Vector2.ZERO) * corner
+				points.append(global_transform * _at(middle.x + off.x, middle.y + off.y))
+	return points
+
+
 # --- the grid ----------------------------------------------------------------------
 
 ## The axes of a field of [param extent]: across, up (or along, for one lying
